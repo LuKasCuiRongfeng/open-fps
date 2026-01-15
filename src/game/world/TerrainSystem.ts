@@ -21,21 +21,23 @@ export type TerrainSystemResource = {
  * Create the GPU-first streaming terrain system.
  * 创建 GPU-first 流式地形系统
  *
- * Architecture:
+ * Architecture (GPU-first design):
  * - Height generation: GPU compute shader → StorageTexture atlas
+ * - Height readback: GPU → CPU cache (ONCE per chunk, no duplicate noise)
  * - Normal generation: GPU compute shader → StorageTexture atlas
  * - Vertex displacement: GPU vertex shader samples from height texture
- * - Frustum culling: GPU compute shader → visibility buffer
+ * - Frustum culling: Three.js built-in (GPU-optimized)
  * - LOD: Shared geometries with different tessellation
- * - Height queries: CPU proxy with cache (for gameplay)
+ * - Height queries: CPU samples from GPU-readback cache
  *
- * 架构：
+ * 架构（GPU-first 设计）：
  * - 高度生成：GPU 计算着色器 → StorageTexture 图集
+ * - 高度回读：GPU → CPU 缓存（每 chunk 一次，无重复噪声）
  * - 法线生成：GPU 计算着色器 → StorageTexture 图集
  * - 顶点位移：GPU 顶点着色器从高度纹理采样
- * - 视锥剔除：GPU 计算着色器 → 可见性缓冲区
+ * - 视锥剔除：Three.js 内置（已 GPU 优化）
  * - LOD：具有不同细分的共享几何体
- * - 高度查询：带缓存的 CPU 代理（用于游戏逻辑）
+ * - 高度查询：CPU 从 GPU 回读缓存采样
  */
 export function createTerrainSystem(
   config: TerrainConfig,
@@ -47,21 +49,19 @@ export function createTerrainSystem(
   const floatingOrigin = new FloatingOrigin(config);
   let chunkManager: ChunkManager | null = null;
 
+  // Initialize height sampler with config.
+  // 使用配置初始化高度采样器
+  TerrainHeightSampler.init(config);
+
   /**
-   * CPU-side height query (cached for gameplay queries).
-   * CPU 侧高度查询（缓存用于游戏逻辑查询）
+   * CPU-side height query (from GPU-readback cache).
+   * CPU 侧高度查询（来自 GPU 回读缓存）
    *
-   * Note: This is a CPU proxy that matches the GPU height computation.
-   * We keep this for:
-   * - Physics/collision (player standing on terrain)
-   * - Gameplay queries (spawning, pathfinding)
-   * The cache ensures fast lookups without GPU readback.
+   * GPU-first design: height is computed ONLY on GPU, then read back ONCE.
+   * CPU samples from this cache - NO duplicate noise implementation.
    *
-   * 注意：这是一个与 GPU 高度计算匹配的 CPU 代理。
-   * 保留它用于：
-   * - 物理/碰撞（玩家站在地形上）
-   * - 游戏逻辑查询（出生、寻路）
-   * 缓存确保快速查找，无需 GPU 回读。
+   * GPU-first 设计：高度仅在 GPU 上计算，然后回读一次。
+   * CPU 从此缓存采样 - 无重复噪声实现。
    */
   const heightAt = (xMeters: number, zMeters: number): number => {
     return TerrainHeightSampler.heightAt(xMeters, zMeters, config);

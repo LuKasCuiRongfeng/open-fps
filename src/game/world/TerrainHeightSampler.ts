@@ -1,20 +1,50 @@
-// TerrainHeightSampler: CPU-side height sampling with caching.
-// TerrainHeightSampler：带缓存的 CPU 侧高度采样
+// TerrainHeightSampler: GPU-first CPU-side height sampling.
+// TerrainHeightSampler：GPU-first 的 CPU 侧高度采样
 
 import type { TerrainConfig } from "./terrain";
 
 /**
- * CPU-side height sampler with optional caching.
- * 带可选缓存的 CPU 侧高度采样器
+ * GPU-first height sampler: stores height data from GPU readback.
+ * GPU-first 高度采样器：存储从 GPU 回读的高度数据
  *
- * Provides fast heightAt queries without recomputing fBm each time.
- * 提供快速的 heightAt 查询，无需每次重新计算 fBm。
+ * Key design (GPU-first principle):
+ * - Height is ONLY computed on GPU (TerrainHeightCompute)
+ * - After GPU bake, data is read back ONCE per chunk
+ * - CPU samples from this cached readback data
+ * - NO duplicate noise implementation on CPU
+ *
+ * 关键设计（GPU-first 原则）：
+ * - 高度仅在 GPU 上计算（TerrainHeightCompute）
+ * - GPU 烘焙后，每个 chunk 回读一次数据
+ * - CPU 从这个缓存的回读数据采样
+ * - CPU 上不重复实现噪声函数
  */
 export class TerrainHeightSampler {
-  // Cache: Map<chunkKey, Float32Array>.
-  // 缓存：Map<chunkKey, Float32Array>
+  // Cache: Map<chunkKey, Float32Array> from GPU readback.
+  // 缓存：Map<chunkKey, Float32Array>，来自 GPU 回读
   private static cache = new Map<string, Float32Array>();
-  private static cachedConfig: TerrainConfig | null = null;
+
+  // Resolution of cached tiles (must match GPU tile resolution).
+  // 缓存 tile 的分辨率（必须与 GPU tile 分辨率匹配）
+  private static tileResolution = 0;
+
+  // Chunk size in meters.
+  // Chunk 大小（米）
+  private static chunkSizeMeters = 0;
+
+  // Base height for fallback.
+  // 备用基础高度
+  private static baseHeight = 0;
+
+  /**
+   * Initialize the sampler with config.
+   * 使用配置初始化采样器
+   */
+  static init(config: TerrainConfig): void {
+    this.tileResolution = config.gpuCompute.tileResolution;
+    this.chunkSizeMeters = config.streaming.chunkSizeMeters;
+    this.baseHeight = config.height.baseHeightMeters;
+  }
 
   /**
    * Clear all cached height data.
@@ -22,23 +52,59 @@ export class TerrainHeightSampler {
    */
   static clearCache(): void {
     this.cache.clear();
-    this.cachedConfig = null;
   }
 
   /**
-   * Get height at a world position (cached with bilinear interpolation).
-   * 获取世界位置的高度（带双线性插值的缓存）
+   * Store height data from GPU readback for a chunk.
+   * 存储从 GPU 回读的 chunk 高度数据
+   *
+   * @param cx Chunk X coordinate.
+   * @param cz Chunk Z coordinate.
+   * @param heightData Height data from GPU readback (must be tileResolution x tileResolution).
    */
-  static heightAt(worldX: number, worldZ: number, config: TerrainConfig): number {
-    // Invalidate cache if config changed.
-    // 如果配置改变则使缓存失效
-    if (this.cachedConfig !== config) {
-      this.clearCache();
-      this.cachedConfig = config;
+  static setChunkHeightData(cx: number, cz: number, heightData: Float32Array): void {
+    const key = `${cx},${cz}`;
+
+    // Clone the data to avoid reference issues.
+    // 克隆数据以避免引用问题
+    this.cache.set(key, new Float32Array(heightData));
+  }
+
+  /**
+   * Remove cached height data for a chunk (on unload).
+   * 移除 chunk 的缓存高度数据（卸载时）
+   */
+  static removeChunkHeightData(cx: number, cz: number): void {
+    const key = `${cx},${cz}`;
+    this.cache.delete(key);
+  }
+
+  /**
+   * Check if a chunk has cached height data.
+   * 检查 chunk 是否有缓存的高度数据
+   */
+  static hasChunkData(cx: number, cz: number): boolean {
+    const key = `${cx},${cz}`;
+    return this.cache.has(key);
+  }
+
+  /**
+   * Get height at a world position (bilinear interpolation from GPU-baked data).
+   * 获取世界位置的高度（从 GPU 烘焙数据双线性插值）
+   *
+   * @param worldX World X coordinate.
+   * @param worldZ World Z coordinate.
+   * @param _config TerrainConfig (kept for API compatibility).
+   */
+  static heightAt(worldX: number, worldZ: number, _config: TerrainConfig): number {
+    if (this.tileResolution === 0 || this.chunkSizeMeters === 0) {
+      // Not initialized, return base height.
+      // 未初始化，返回基础高度
+      return this.baseHeight || _config.height.baseHeightMeters;
     }
 
-    const chunkSize = config.streaming.chunkSizeMeters;
-    const samples = config.heightCache.samplesPerChunkSide;
+    const chunkSize = this.chunkSizeMeters;
+    const samples = this.tileResolution;
 
     // Determine chunk coordinates.
     // 确定 chunk 坐标
@@ -46,12 +112,13 @@ export class TerrainHeightSampler {
     const cz = Math.floor(worldZ / chunkSize);
     const key = `${cx},${cz}`;
 
-    // Get or create chunk cache.
-    // 获取或创建 chunk 缓存
-    let heightData = this.cache.get(key);
+    // Get cached height data.
+    // 获取缓存的高度数据
+    const heightData = this.cache.get(key);
     if (!heightData) {
-      heightData = this.bakeChunkHeights(cx, cz, config);
-      this.cache.set(key, heightData);
+      // Chunk not loaded yet, return base height.
+      // Chunk 尚未加载，返回基础高度
+      return this.baseHeight;
     }
 
     // Bilinear interpolation within chunk.
@@ -88,166 +155,4 @@ export class TerrainHeightSampler {
     const h1 = h01 + (h11 - h01) * fu;
     return h0 + (h1 - h0) * fv;
   }
-
-  private static bakeChunkHeights(cx: number, cz: number, config: TerrainConfig): Float32Array {
-    const chunkSize = config.streaming.chunkSizeMeters;
-    const samples = config.heightCache.samplesPerChunkSide;
-
-    const data = new Float32Array(samples * samples);
-    const chunkOriginX = cx * chunkSize;
-    const chunkOriginZ = cz * chunkSize;
-
-    for (let vIdx = 0; vIdx < samples; vIdx++) {
-      for (let uIdx = 0; uIdx < samples; uIdx++) {
-        const worldX = chunkOriginX + (uIdx / (samples - 1)) * chunkSize;
-        const worldZ = chunkOriginZ + (vIdx / (samples - 1)) * chunkSize;
-        data[vIdx * samples + uIdx] = this.computeHeight(worldX, worldZ, config);
-      }
-    }
-
-    return data;
-  }
-
-  /**
-   * Compute height directly from noise (no cache).
-   * 直接从噪声计算高度（无缓存）
-   */
-  static computeHeight(worldX: number, worldZ: number, config: TerrainConfig): number {
-    let x = worldX;
-    let z = worldZ;
-    const seed = config.height.seed;
-
-    // Domain warp (must match GPU exactly).
-    // GPU uses: seed.add(9001) and seed.add(9002) as seedOffset
-    // 域扭曲（必须与 GPU 精确匹配）
-    // GPU 使用: seed.add(9001) 和 seed.add(9002) 作为 seedOffset
-    if (config.height.warp.enabled) {
-      const wf = config.height.warp.frequencyPerMeter;
-      const wa = config.height.warp.amplitudeMeters;
-      const wx = (valueNoise2D(x * wf, z * wf, seed + 9001, seed) * 2 - 1) * wa;
-      const wz = (valueNoise2D(x * wf, z * wf, seed + 9002, seed) * 2 - 1) * wa;
-      x += wx;
-      z += wz;
-    }
-
-    // fBm.
-    const n = fbm2D(x, z, config);
-    return config.height.baseHeightMeters + n * config.height.amplitudeMeters;
-  }
-}
-
-// ============================================================================
-// Noise functions (CPU-side, matching GPU implementation).
-// 噪声函数（CPU 侧，与 GPU 实现匹配）
-// ============================================================================
-
-// Hash texture cache (matches GPU's hash texture).
-// 哈希纹理缓存（与 GPU 的哈希纹理匹配）
-let hashTextureData: Float32Array | null = null;
-let hashTextureSeed: number | null = null;
-
-function getHashTextureData(seed: number): Float32Array {
-  if (hashTextureData && hashTextureSeed === seed) {
-    return hashTextureData;
-  }
-
-  const size = 256;
-  hashTextureData = new Float32Array(size * size);
-  hashTextureSeed = seed;
-
-  for (let i = 0; i < size * size; i++) {
-    // Must match GPU's hash texture generation exactly.
-    // 必须与 GPU 的哈希纹理生成完全匹配
-    let n = (i * 374761393 + seed * 668265263) >>> 0;
-    n = ((n ^ (n >> 13)) * 1274126177) >>> 0;
-    n = (n ^ (n >> 16)) >>> 0;
-    hashTextureData[i] = n / 4294967296;
-  }
-
-  return hashTextureData;
-}
-
-function lerp(a: number, b: number, t: number): number {
-  return a + (b - a) * t;
-}
-
-function smoothstep01(t: number): number {
-  const x = Math.max(0, Math.min(1, t));
-  return x * x * (3 - 2 * x);
-}
-
-/**
- * Hash function matching GPU's texture-based hash.
- * 与 GPU 基于纹理的哈希函数匹配
- *
- * NOTE: seedOffset should be the FULL offset (e.g. seed + 9001), same as GPU.
- * 注意：seedOffset 应该是完整的偏移量（例如 seed + 9001），与 GPU 相同。
- */
-function hash2i(xi: number, zi: number, seedOffset: number, seed: number): number {
-  const hashData = getHashTextureData(seed);
-  const size = 256;
-
-  // Match GPU's UV calculation exactly.
-  // GPU uses: fract(xi.mul(0.00390625).add(seedOffset.mul(0.1234)))
-  // where seedOffset is already (seed + baseOffset)
-  // 精确匹配 GPU 的 UV 计算
-  // GPU 使用: fract(xi.mul(0.00390625).add(seedOffset.mul(0.1234)))
-  // 其中 seedOffset 已经是 (seed + baseOffset)
-  let u = (xi * 0.00390625 + seedOffset * 0.1234) % 1;
-  let v = (zi * 0.00390625 + seedOffset * 0.5678) % 1;
-
-  // Handle negative values (fract behavior).
-  // 处理负值（fract 行为）
-  if (u < 0) u += 1;
-  if (v < 0) v += 1;
-
-  // Nearest neighbor sampling (matches GPU's NearestFilter).
-  // 最近邻采样（匹配 GPU 的 NearestFilter）
-  const px = Math.floor(u * size) % size;
-  const py = Math.floor(v * size) % size;
-
-  return hashData[py * size + px];
-}
-
-function valueNoise2D(x: number, z: number, seedOffset: number, seed: number): number {
-  const xi = Math.floor(x);
-  const zi = Math.floor(z);
-
-  const xf = x - xi;
-  const zf = z - zi;
-
-  const u = smoothstep01(xf);
-  const v = smoothstep01(zf);
-
-  // seedOffset is the FULL offset (seed + baseOffset), matching GPU.
-  // seedOffset 是完整偏移量（seed + baseOffset），与 GPU 匹配
-  const a = hash2i(xi, zi, seedOffset, seed);
-  const b = hash2i(xi + 1, zi, seedOffset, seed);
-  const c = hash2i(xi, zi + 1, seedOffset, seed);
-  const d = hash2i(xi + 1, zi + 1, seedOffset, seed);
-
-  const ab = lerp(a, b, u);
-  const cd = lerp(c, d, u);
-  return lerp(ab, cd, v);
-}
-
-function fbm2D(x: number, z: number, cfg: TerrainConfig): number {
-  let sum = 0;
-  let amp = 1;
-  let freq = cfg.height.frequencyPerMeter;
-  const seed = cfg.height.seed;
-
-  for (let i = 0; i < cfg.height.octaves; i++) {
-    // GPU uses: seed.add(float(i * 1013)) → seedOffset = seed + i * 1013
-    // GPU 使用: seed.add(float(i * 1013)) → seedOffset = seed + i * 1013
-    const seedOffset = seed + i * 1013;
-    const n01 = valueNoise2D(x * freq, z * freq, seedOffset, seed);
-    const n = n01 * 2 - 1;
-    sum += n * amp;
-
-    freq *= cfg.height.lacunarity;
-    amp *= cfg.height.gain;
-  }
-
-  return sum;
 }

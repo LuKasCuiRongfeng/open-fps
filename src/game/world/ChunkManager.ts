@@ -6,12 +6,23 @@ import type { TerrainConfig } from "./terrain";
 import { FloatingOrigin } from "./FloatingOrigin";
 import { TerrainChunk, disposeSharedGeometries } from "./TerrainChunk";
 import { TerrainHeightCompute, TerrainNormalCompute } from "./gpu";
+import { TerrainHeightSampler } from "./TerrainHeightSampler";
 
 export type ChunkCoord = { cx: number; cz: number };
 
 /**
  * GPU-first chunk manager with compute-based height baking.
  * GPU-first 分块管理器，带基于计算的高度烘焙
+ *
+ * GPU-first design:
+ * - Height computed ONLY on GPU
+ * - After bake, height data read back ONCE to CPU cache
+ * - CPU heightAt() samples from this cache (no duplicate noise)
+ *
+ * GPU-first 设计：
+ * - 高度仅在 GPU 上计算
+ * - 烘焙后，高度数据回读一次到 CPU 缓存
+ * - CPU heightAt() 从此缓存采样（无重复噪声实现）
  *
  * Frustum culling is handled by Three.js built-in culling (GPU-optimized).
  * 视锥剔除由 Three.js 内置剔除处理（已 GPU 优化）
@@ -251,10 +262,15 @@ export class ChunkManager {
     const key = this.chunkKey(cx, cz);
     if (this.chunks.has(key)) return;
 
-    // Bake height for this chunk.
-    // 为此 chunk 烘焙高度
+    // Bake height for this chunk on GPU.
+    // 在 GPU 上为此 chunk 烘焙高度
     await this.heightCompute.bakeChunk(cx, cz, this.renderer);
     this.bakePending.set(key, { cx, cz });
+
+    // GPU-first: readback height data to CPU cache (ONCE per chunk).
+    // GPU-first：回读高度数据到 CPU 缓存（每 chunk 一次）
+    const heightData = await this.heightCompute.readbackChunkHeight(cx, cz, this.renderer);
+    TerrainHeightSampler.setChunkHeightData(cx, cz, heightData);
 
     // Get tile UV info.
     // 获取 tile UV 信息
@@ -279,6 +295,10 @@ export class ChunkManager {
   private unloadChunk(key: string): void {
     const chunk = this.chunks.get(key);
     if (!chunk) return;
+
+    // Remove from CPU height cache.
+    // 从 CPU 高度缓存移除
+    TerrainHeightSampler.removeChunkHeightData(chunk.cx, chunk.cz);
 
     this.scene.remove(chunk.mesh);
     chunk.dispose();

@@ -1,5 +1,34 @@
 # Copilot instructions (open-fps)
 
+---
+
+## ⚠️ 金戈铁律 / IRONCLAD RULES ⚠️
+
+> **AI 编码时必须无条件遵守以下三条铁律，不得以任何理由违反或妥协。**
+> **AI MUST unconditionally follow these three ironclad rules. No exceptions, no compromises.**
+
+### 1️⃣ GPU-First（GPU 优先）
+- 一切能在 GPU 上做的，必须在 GPU 上做。
+- 禁止在 CPU 上实现 GPU 可以更好完成的工作。
+- 优化不得降低视觉质量。
+- **All work that CAN be done on GPU MUST be done on GPU.**
+- **Never implement CPU alternatives for GPU-capable workloads.**
+- **Optimization must never reduce visual quality.**
+
+### 2️⃣ Compute-Shader First（计算着色器优先）
+- 数据并行任务（地形、剔除、LOD、蒙皮、粒子、可见性、间接绘制）必须用 compute shader 实现。
+- CPU 仅限于微量引导代码、UI 和胶水逻辑；禁止 CPU 逐顶点/逐实例循环。
+- **Data-parallel work (terrain, culling, LOD, skinning, particles, visibility, indirect draw) MUST use compute shaders.**
+- **CPU is ONLY for tiny bootstrap, UI, and glue. NO per-vertex/per-instance CPU loops.**
+
+### 3️⃣ 业界最佳实践（Industry Best Practices from Day 1）
+- 从第一天起就按业界最推崇的方式设计（ECS、flow-field 寻路、数据导向管线等）。
+- 不要等项目"差不多"了才问是否要重构成更好的方案——一开始就用最好的方案。
+- **Design with industry best practices from day 1 (ECS, flow-field pathfinding, data-oriented pipelines).**
+- **Do NOT wait until "almost done" to ask about better approaches — use the best approach from the start.**
+
+---
+
 ## Repo shape (frontend vs backend)
 - Frontend lives in [src/](../src) (Vite + React + TypeScript + Tailwind).
 - Tauri/Rust backend lives in [src-tauri/](../src-tauri). The binary entrypoint is [src-tauri/src/main.rs](../src-tauri/src/main.rs) which calls `open_fps_lib::run()` from [src-tauri/src/lib.rs](../src-tauri/src/lib.rs).
