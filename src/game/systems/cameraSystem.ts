@@ -1,7 +1,10 @@
+// Camera System: positions and orients the camera based on player state.
+// 相机系统：根据玩家状态定位和朝向相机
+
 import { Quaternion, Vector3 } from "three/webgpu";
 import { worldConfig } from "../../config/world";
+import type { GameWorld } from "../ecs/GameEcs";
 import type { GameResources } from "../ecs/resources";
-import type { ComponentStores } from "../ecs/stores";
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
@@ -20,34 +23,42 @@ const q = new Quaternion();
 const AXIS_Y = new Vector3(0, 1, 0);
 const AXIS_X = new Vector3(1, 0, 0);
 
-export function cameraSystem(stores: ComponentStores, resources: GameResources, dt: number) {
-  // Single-player prototype: use the first player entity.
-  // 单人原型：使用第一个玩家实体
-  const firstPlayerEntry = stores.player.entries().next();
-  if (firstPlayerEntry.done) return;
+/**
+ * cameraSystem: updates camera position and orientation based on player.
+ * cameraSystem：根据玩家更新相机位置和朝向
+ */
+export function cameraSystem(world: GameWorld, res: GameResources): void {
+  const dt = res.time.dt;
+  const camera = res.singletons.camera;
+  const terrain = res.runtime.terrain;
+  const settings = res.runtime.settings;
 
-  const [entityId, player] = firstPlayerEntry.value;
-  const transform = stores.transform.get(entityId);
-  if (!transform) return;
+  // Get the first player entity.
+  // 获取第一个玩家实体
+  const result = world.queryOne("transform", "player");
+  if (!result) return;
+
+  const [, transform, player] = result;
 
   const eyeY = transform.y + worldConfig.player.eyeHeightMeters;
-
   vTarget.set(transform.x, eyeY, transform.z);
 
   const yaw = transform.yawRadians;
   const pitch = transform.pitchRadians;
 
   if (player.cameraMode === "firstPerson") {
-    resources.camera.position.copy(vTarget);
+    camera.position.copy(vTarget);
 
     qYaw.setFromAxisAngle(AXIS_Y, yaw);
     qPitch.setFromAxisAngle(AXIS_X, pitch);
     q.copy(qYaw).multiply(qPitch);
-    resources.camera.quaternion.copy(q);
+    camera.quaternion.copy(q);
     return;
   }
 
-  const follow = resources.settings.player.thirdPerson;
+  // Third person camera.
+  // 第三人称相机
+  const follow = settings.player.thirdPerson;
   const followLerp = dampFactorPerSecond(follow.followLerpPerSecond, dt);
 
   let distance: number = follow.chase.followDistance;
@@ -73,14 +84,14 @@ export function cameraSystem(stores: ComponentStores, resources: GameResources, 
 
   // Prevent camera below ground.
   // 防止相机低于地面
-  const groundY = resources.terrain.heightAt(vDesiredCam.x, vDesiredCam.z);
+  const groundY = terrain.heightAt(vDesiredCam.x, vDesiredCam.z);
   vDesiredCam.y = Math.max(vDesiredCam.y, groundY + worldConfig.camera.nearMeters * 2);
 
-  resources.camera.position.set(
-    lerp(resources.camera.position.x, vDesiredCam.x, followLerp),
-    lerp(resources.camera.position.y, vDesiredCam.y, followLerp),
-    lerp(resources.camera.position.z, vDesiredCam.z, followLerp),
+  camera.position.set(
+    lerp(camera.position.x, vDesiredCam.x, followLerp),
+    lerp(camera.position.y, vDesiredCam.y, followLerp),
+    lerp(camera.position.z, vDesiredCam.z, followLerp),
   );
 
-  resources.camera.lookAt(vTarget);
+  camera.lookAt(vTarget);
 }

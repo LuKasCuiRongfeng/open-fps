@@ -1,3 +1,6 @@
+// GameApp: main game application with system scheduler.
+// GameApp：主游戏应用，带系统调度器
+
 import {
   Clock,
   PerspectiveCamera,
@@ -6,13 +9,14 @@ import {
 } from "three/webgpu";
 import { worldConfig } from "../config/world";
 import { createWorld } from "./createWorld";
-import { GameEcs } from "./ecs/GameEcs";
-import type { GameResources } from "./ecs/resources";
+import { GameEcs, type GameWorld } from "./ecs/GameEcs";
+import { createTimeResource, type GameResources } from "./ecs/resources";
 import { InputManager } from "./input/InputManager";
 import { createPlayer } from "./prefabs/createPlayer";
 import { avatarSystem } from "./systems/avatarSystem";
 import { cameraSystem } from "./systems/cameraSystem";
 import { cameraModeSystem } from "./systems/cameraModeSystem";
+import { inputSystem } from "./systems/inputSystem";
 import { lookSystem } from "./systems/lookSystem";
 import { movementSystem } from "./systems/movementSystem";
 import { jumpSystem } from "./systems/jumpSystem";
@@ -34,6 +38,21 @@ export type GameBootPhase =
   | "creating-ecs"
   | "ready";
 
+/**
+ * System execution phases for explicit dependency management.
+ * 系统执行阶段，用于显式依赖管理
+ *
+ * Industry best practice: organize systems into phases.
+ * 业界最佳实践：将系统组织成阶段
+ */
+type SystemPhase = "input" | "gameplay" | "physics" | "render";
+
+type SystemEntry = {
+  name: string;
+  phase: SystemPhase;
+  fn: (world: GameWorld, res: GameResources) => void;
+};
+
 export class GameApp {
   private readonly container: HTMLElement;
   private readonly renderer: WebGPURenderer;
@@ -41,11 +60,17 @@ export class GameApp {
   private readonly camera: PerspectiveCamera;
   private readonly clock = new Clock();
   private readonly ecs = new GameEcs();
-  private readonly input!: InputManager;
-  private readonly resources!: GameResources;
+  private readonly input: InputManager;
+  private readonly resources: GameResources;
   private readonly settings = createDefaultGameSettings();
   readonly ready: Promise<void>;
   private disposed = false;
+
+  /**
+   * System scheduler: ordered list of systems per phase.
+   * 系统调度器：按阶段排序的系统列表
+   */
+  private readonly systems: SystemEntry[] = [];
 
   constructor(container: HTMLElement, onBootPhase?: (phase: GameBootPhase) => void) {
     this.container = container;
@@ -81,16 +106,39 @@ export class GameApp {
     const world = createWorld(this.scene);
 
     this.input = new InputManager(this.renderer.domElement);
+
+    // Initialize resources with new structure.
+    // 使用新结构初始化资源
     this.resources = {
-      scene: this.scene,
-      camera: this.camera,
-      renderer: this.renderer,
-      input: this.input,
-      settings: this.settings,
-      terrain: world.terrain,
+      time: createTimeResource(),
+      singletons: {
+        scene: this.scene,
+        camera: this.camera,
+        renderer: this.renderer,
+        input: this.input,
+      },
+      runtime: {
+        terrain: world.terrain,
+        settings: this.settings,
+      },
     };
 
     onBootPhase?.("creating-ecs");
+
+    // Register systems in execution order.
+    // 按执行顺序注册系统
+    this.registerSystems();
+
+    // Register cleanup callback for avatar objects.
+    // 注册 avatar 对象的清理回调
+    this.ecs.world.onDestroy((entityId) => {
+      const avatar = this.ecs.world.get(entityId, "avatar");
+      if (avatar) {
+        this.scene.remove(avatar.object);
+        // Dispose geometry/materials if needed.
+        // 如需要可释放几何体/材质
+      }
+    });
 
     // ECS: create a single player entity.
     // ECS：创建一个玩家实体
@@ -106,13 +154,43 @@ export class GameApp {
     this.ready = this.initRendererAndStart(onBootPhase);
   }
 
+  /**
+   * Register all systems in their execution phases.
+   * 按执行阶段注册所有系统
+   *
+   * Phase order: input -> gameplay -> physics -> render
+   * 阶段顺序：input -> gameplay -> physics -> render
+   */
+  private registerSystems(): void {
+    // Input phase: read raw input, write to components.
+    // Input 阶段：读取原始输入，写入组件
+    this.systems.push({ name: "input", phase: "input", fn: inputSystem });
+
+    // Gameplay phase: process input, apply game logic.
+    // Gameplay 阶段：处理输入，应用游戏逻辑
+    this.systems.push({ name: "cameraMode", phase: "gameplay", fn: cameraModeSystem });
+    this.systems.push({ name: "look", phase: "gameplay", fn: lookSystem });
+    this.systems.push({ name: "movement", phase: "gameplay", fn: movementSystem });
+    this.systems.push({ name: "jump", phase: "gameplay", fn: jumpSystem });
+
+    // Physics phase: integrate velocity, handle collisions.
+    // Physics 阶段：积分速度，处理碰撞
+    this.systems.push({ name: "physics", phase: "physics", fn: physicsSystem });
+    this.systems.push({ name: "worldBounds", phase: "physics", fn: worldBoundsSystem });
+
+    // Render phase: sync scene objects, update camera.
+    // Render 阶段：同步场景对象，更新相机
+    this.systems.push({ name: "camera", phase: "render", fn: cameraSystem });
+    this.systems.push({ name: "avatar", phase: "render", fn: avatarSystem });
+  }
+
   private async initRendererAndStart(onBootPhase?: (phase: GameBootPhase) => void) {
     await this.renderer.init();
     if (this.disposed) return;
 
-		// GPU-first: bake terrain height/normal via compute before the first frame.
-		// GPU-first：在第一帧前用 compute 烘焙地形高度/法线
-		await this.resources.terrain.initGpu?.(this.renderer);
+    // GPU-first: bake terrain height/normal via compute before the first frame.
+    // GPU-first：在第一帧前用 compute 烘焙地形高度/法线
+    await this.resources.runtime.terrain.initGpu?.(this.renderer);
     if (this.disposed) return;
 
     // WebGPU backends may finalize internal render targets during init; re-apply sizing.
@@ -124,10 +202,11 @@ export class GameApp {
     this.clock.start();
     this.renderer.setAnimationLoop(this.onFrame);
 
-    // Initialize camera/visibility once.
-    // 初始化一次相机/可见性
-    cameraSystem(this.ecs.stores, this.resources, 0);
-    avatarSystem(this.ecs.stores, this.resources);
+    // Initialize camera/visibility once with zero dt.
+    // 用零 dt 初始化一次相机/可见性
+    this.resources.time.dt = 0;
+    cameraSystem(this.ecs.world, this.resources);
+    avatarSystem(this.ecs.world);
 
     onBootPhase?.("ready");
   }
@@ -199,7 +278,13 @@ export class GameApp {
   private readonly onFrame = () => {
     if (this.disposed) return;
 
-    const dt = Math.min(worldConfig.render.maxDeltaSeconds, this.clock.getDelta());
+    // Update time resource.
+    // 更新时间资源
+    const rawDt = this.clock.getDelta();
+    const dt = Math.min(worldConfig.render.maxDeltaSeconds, rawDt);
+    this.resources.time.dt = dt;
+    this.resources.time.elapsed += dt;
+    this.resources.time.frame++;
 
     // Keep camera fov synced even if settings change without calling updateSettings.
     // 即使 UI 没走 updateSettings，也保持 fov 同步
@@ -208,15 +293,18 @@ export class GameApp {
       this.camera.updateProjectionMatrix();
     }
 
-    cameraModeSystem(this.ecs.stores, this.resources);
-    lookSystem(this.ecs.stores, this.resources);
-    movementSystem(this.ecs.stores, this.resources, dt);
-    jumpSystem(this.ecs.stores, this.resources);
-    physicsSystem(this.ecs.stores, this.resources, dt);
-    worldBoundsSystem(this.ecs.stores, this.resources);
-    cameraSystem(this.ecs.stores, this.resources, dt);
-    avatarSystem(this.ecs.stores, this.resources);
+    // Run all systems in order.
+    // 按顺序运行所有系统
+    for (const system of this.systems) {
+      system.fn(this.ecs.world, this.resources);
+    }
 
+    // Flush destroyed entities at end of frame.
+    // 在帧末刷新已销毁的实体
+    this.ecs.flushDestroyed();
+
+    // Render the scene.
+    // 渲染场景
     this.renderer.render(this.scene, this.camera);
   };
 }

@@ -19,6 +19,10 @@
   - Keep compute parameters config-driven (use `src/config/`), not hardcoded.
 - Only **code comments** need bilingual (中文/English) text; identifiers/UI/README and other text do not.
 
+## Design principles (day 1)
+- Design gameplay/engine systems using industry best practices from day 1 (e.g., ECS, flow-field pathfinding, data-oriented pipelines) — do not wait until the project is “almost done” to ask whether we should refactor to a better approach.
+  - 一开始就按业界最推崇/最佳实践的方式设计（例如 ECS、flow-field 寻路、数据导向管线等），不要等项目差不多了才来问是否要用更好的方式重构。
+
 ## Compute shader patterns (WebGPU/Three.js)
 - Prefer using Three.js WebGPU + TSL compute facilities (compute nodes, storage buffers/textures) instead of ad-hoc CPU generation.
 - Aim for these GPU workflows as the default:

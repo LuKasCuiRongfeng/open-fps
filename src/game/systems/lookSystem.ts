@@ -1,31 +1,29 @@
+// Look System: applies look input to transform orientation.
+// 视角系统：将视角输入应用到变换朝向
+
 import { worldConfig } from "../../config/world";
+import type { GameWorld } from "../ecs/GameEcs";
 import type { GameResources } from "../ecs/resources";
-import type { ComponentStores } from "../ecs/stores";
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-export function lookSystem(stores: ComponentStores, resources: GameResources) {
-  if (!resources.input.isPointerLocked) {
-    resources.input.consumeMouseDelta();
+/**
+ * lookSystem: reads look delta from PlayerInput and updates Transform orientation.
+ * lookSystem：从 PlayerInput 读取视角增量并更新 Transform 朝向
+ */
+export function lookSystem(world: GameWorld, res: GameResources): void {
+  // Only apply look when pointer is locked.
+  // 只有指针锁定时才应用视角
+  if (!res.singletons.input.isPointerLocked) {
     return;
   }
 
-  const { dx, dy } = resources.input.consumeMouseDelta();
-  const s = resources.settings.player.mouseSensitivity;
-  const scale = worldConfig.player.look.radiansPerPixel;
-
-  const yawDelta = -dx * scale * s;
-  const pitchDelta = -dy * scale * s;
-
-  for (const entityId of stores.player.keys()) {
-    const transform = stores.transform.get(entityId);
-    if (!transform) continue;
-
-    transform.yawRadians += yawDelta;
+  for (const [, transform, playerInput] of world.query("transform", "playerInput")) {
+    transform.yawRadians += playerInput.lookDeltaYaw;
     transform.pitchRadians = clamp(
-      transform.pitchRadians + pitchDelta,
+      transform.pitchRadians + playerInput.lookDeltaPitch,
       worldConfig.player.pitch.minRadians,
       worldConfig.player.pitch.maxRadians,
     );

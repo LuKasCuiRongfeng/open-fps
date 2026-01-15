@@ -1,16 +1,22 @@
-import type { GameResources } from "../ecs/resources";
-import type { ComponentStores } from "../ecs/stores";
+// Camera Mode System: handles camera mode toggling from input.
+// 相机模式系统：处理输入切换相机模式
 
-export function cameraModeSystem(stores: ComponentStores, resources: GameResources) {
-  const firstPlayerEntry = stores.player.entries().next();
-  if (firstPlayerEntry.done) return;
-  const [, player] = firstPlayerEntry.value;
+import type { GameWorld } from "../ecs/GameEcs";
 
-  if (resources.input.consumeToggleCameraMode()) {
-    player.cameraMode = player.cameraMode === "firstPerson" ? "thirdPerson" : "firstPerson";
-  }
+/**
+ * cameraModeSystem: toggles camera mode based on PlayerInput.
+ * cameraModeSystem：根据 PlayerInput 切换相机模式
+ */
+export function cameraModeSystem(world: GameWorld): void {
+  for (const [, player, playerInput] of world.query("player", "playerInput")) {
+    if (playerInput.toggleCameraMode) {
+      player.cameraMode = player.cameraMode === "firstPerson" ? "thirdPerson" : "firstPerson";
+      playerInput.toggleCameraMode = false;
+    }
 
-  if (resources.input.consumeToggleThirdPersonStyle()) {
-    player.thirdPersonStyle = player.thirdPersonStyle === "overShoulder" ? "chase" : "overShoulder";
+    if (playerInput.toggleThirdPersonStyle) {
+      player.thirdPersonStyle = player.thirdPersonStyle === "overShoulder" ? "chase" : "overShoulder";
+      playerInput.toggleThirdPersonStyle = false;
+    }
   }
 }
