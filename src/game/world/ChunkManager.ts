@@ -1,21 +1,30 @@
-// ChunkManager: streaming chunk management for large terrain.
-// ChunkManager：大地形的流式分块管理
+// ChunkManager: GPU-first streaming chunk management.
+// ChunkManager：GPU-first 流式分块管理
 
-import type { Scene } from "three/webgpu";
+import type { Scene, WebGPURenderer, PerspectiveCamera } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
 import { FloatingOrigin } from "./FloatingOrigin";
-import { TerrainChunk } from "./TerrainChunk";
+import { TerrainChunk, disposeSharedGeometries } from "./TerrainChunk";
+import { TerrainHeightCompute, TerrainNormalCompute } from "./gpu";
 
 export type ChunkCoord = { cx: number; cz: number };
 
 /**
- * Manages terrain chunk loading/unloading based on player position.
- * 根据玩家位置管理地形 chunk 的加载/卸载
+ * GPU-first chunk manager with compute-based height baking.
+ * GPU-first 分块管理器，带基于计算的高度烘焙
+ *
+ * Frustum culling is handled by Three.js built-in culling (GPU-optimized).
+ * 视锥剔除由 Three.js 内置剔除处理（已 GPU 优化）
  */
 export class ChunkManager {
   private readonly config: TerrainConfig;
   private readonly scene: Scene;
   private readonly floatingOrigin: FloatingOrigin;
+
+  // GPU compute pipelines.
+  // GPU 计算管线
+  private heightCompute: TerrainHeightCompute;
+  private normalCompute: TerrainNormalCompute;
 
   // Active chunks keyed by "cx,cz".
   // 活跃 chunk，键为 "cx,cz"
@@ -26,19 +35,50 @@ export class ChunkManager {
   private readonly loadQueue: ChunkCoord[] = [];
   private readonly unloadQueue: string[] = [];
 
+  // Chunks that need height baking.
+  // 需要高度烘焙的 chunk
+  private readonly bakePending = new Map<string, ChunkCoord>();
+
   // Last known player chunk for hysteresis.
   // 上次已知的玩家 chunk，用于滞后判断
   private lastPlayerCx = 0;
   private lastPlayerCz = 0;
 
-  constructor(
-    config: TerrainConfig,
-    scene: Scene,
-    floatingOrigin: FloatingOrigin,
-  ) {
+  // Renderer reference for async compute.
+  // 用于异步计算的渲染器引用
+  private renderer: WebGPURenderer | null = null;
+
+  // GPU initialization state.
+  // GPU 初始化状态
+  private gpuReady = false;
+
+  constructor(config: TerrainConfig, scene: Scene, floatingOrigin: FloatingOrigin) {
     this.config = config;
     this.scene = scene;
     this.floatingOrigin = floatingOrigin;
+
+    // Create compute pipelines.
+    // 创建计算管线
+    this.heightCompute = new TerrainHeightCompute(config);
+    this.normalCompute = new TerrainNormalCompute(config);
+  }
+
+  /**
+   * Initialize GPU resources.
+   * 初始化 GPU 资源
+   */
+  async initGpu(renderer: WebGPURenderer): Promise<void> {
+    this.renderer = renderer;
+
+    // Initialize height compute.
+    // 初始化高度计算
+    await this.heightCompute.init(renderer);
+
+    // Initialize normal compute with height texture.
+    // 使用高度纹理初始化法线计算
+    await this.normalCompute.init(renderer, this.heightCompute.heightTexture!);
+
+    this.gpuReady = true;
   }
 
   /**
@@ -53,30 +93,66 @@ export class ChunkManager {
     };
   }
 
-  /**
-   * Convert chunk coordinates to world center.
-   * 将 chunk 坐标转换为世界中心点
-   */
-  chunkToWorld(cx: number, cz: number): { x: number; z: number } {
-    const size = this.config.streaming.chunkSizeMeters;
-    return {
-      x: (cx + 0.5) * size,
-      z: (cz + 0.5) * size,
-    };
-  }
-
   private chunkKey(cx: number, cz: number): string {
     return `${cx},${cz}`;
   }
 
   /**
-   * Update chunk loading based on player world position.
-   * 根据玩家世界位置更新 chunk 加载
-   *
-   * @param playerWorldX Player X in world space (before floating origin offset).
-   * @param playerWorldZ Player Z in world space (before floating origin offset).
+   * Force load chunks around a position (for spawn).
+   * 强制加载某位置周围的 chunk（用于出生点）
    */
-  update(playerWorldX: number, playerWorldZ: number): void {
+  async forceLoadAround(worldX: number, worldZ: number): Promise<void> {
+    if (!this.gpuReady || !this.renderer) return;
+
+    const { cx: centerCx, cz: centerCz } = this.worldToChunk(worldX, worldZ);
+    const viewDist = this.config.streaming.viewDistanceChunks;
+
+    // Collect all chunks to load.
+    // 收集所有要加载的 chunk
+    const toLoad: ChunkCoord[] = [];
+    for (let dz = -viewDist; dz <= viewDist; dz++) {
+      for (let dx = -viewDist; dx <= viewDist; dx++) {
+        const cx = centerCx + dx;
+        const cz = centerCz + dz;
+        const key = this.chunkKey(cx, cz);
+        if (!this.chunks.has(key)) {
+          toLoad.push({ cx, cz });
+        }
+      }
+    }
+
+    // Bake and create all chunks.
+    // 烘焙并创建所有 chunk
+    for (const coord of toLoad) {
+      await this.bakeAndCreateChunk(coord.cx, coord.cz);
+    }
+
+    // Regenerate all normals after baking.
+    // 烘焙后重新生成所有法线
+    await this.normalCompute.regenerate(this.renderer);
+
+    this.lastPlayerCx = centerCx;
+    this.lastPlayerCz = centerCz;
+  }
+
+  /**
+   * Update chunk streaming based on player world position.
+   * 根据玩家世界位置更新 chunk 流式加载
+   *
+   * Frustum culling is handled automatically by Three.js (mesh.frustumCulled = true).
+   * 视锥剔除由 Three.js 自动处理（mesh.frustumCulled = true）
+   */
+  async update(
+    playerWorldX: number,
+    playerWorldZ: number,
+    camera: PerspectiveCamera,
+  ): Promise<void> {
+    // Suppress unused variable warning - camera used for LOD calculation via world position.
+    // 抑制未使用变量警告 - camera 通过世界位置用于 LOD 计算
+    void camera;
+
+    if (!this.gpuReady || !this.renderer) return;
+
     const { cx: playerCx, cz: playerCz } = this.worldToChunk(playerWorldX, playerWorldZ);
 
     // Check if player moved to a different chunk (with hysteresis).
@@ -93,87 +169,113 @@ export class ChunkManager {
 
     // Process load/unload operations (limited per frame).
     // 处理加载/卸载操作（每帧有限）
-    this.processQueues();
+    await this.processQueues();
+
+    // Update LOD for all chunks based on player position.
+    // 根据玩家位置更新所有 chunk 的 LOD
+    for (const chunk of this.chunks.values()) {
+      chunk.updateLod(playerWorldX, playerWorldZ);
+    }
+
+    // Note: Frustum culling is now handled by Three.js built-in culling.
+    // Each chunk's mesh has frustumCulled = true with a properly sized bounding sphere.
+    // 注意：视锥剔除现在由 Three.js 内置剔除处理。
+    // 每个 chunk 的 mesh 设置了 frustumCulled = true 并有正确大小的包围球。
   }
 
   private rebuildQueues(playerCx: number, playerCz: number): void {
     const viewDist = this.config.streaming.viewDistanceChunks;
 
-    // Determine which chunks should be loaded.
-    // 确定应该加载哪些 chunk
-    const shouldBeLoaded = new Set<string>();
-
+    // Find chunks to load.
+    // 找到要加载的 chunk
+    this.loadQueue.length = 0;
     for (let dz = -viewDist; dz <= viewDist; dz++) {
       for (let dx = -viewDist; dx <= viewDist; dx++) {
-        // Use circular distance for more natural loading.
-        // 使用圆形距离以获得更自然的加载
-        if (dx * dx + dz * dz <= viewDist * viewDist) {
-          const cx = playerCx + dx;
-          const cz = playerCz + dz;
-          shouldBeLoaded.add(this.chunkKey(cx, cz));
+        const cx = playerCx + dx;
+        const cz = playerCz + dz;
+        const key = this.chunkKey(cx, cz);
+        if (!this.chunks.has(key) && !this.bakePending.has(key)) {
+          this.loadQueue.push({ cx, cz });
         }
       }
     }
 
-    // Queue chunks to unload (currently loaded but out of range).
-    // 队列待卸载的 chunk（当前已加载但超出范围）
+    // Sort by distance (load closer chunks first).
+    // 按距离排序（先加载更近的 chunk）
+    this.loadQueue.sort((a, b) => {
+      const da = (a.cx - playerCx) ** 2 + (a.cz - playerCz) ** 2;
+      const db = (b.cx - playerCx) ** 2 + (b.cz - playerCz) ** 2;
+      return da - db;
+    });
+
+    // Find chunks to unload.
+    // 找到要卸载的 chunk
     this.unloadQueue.length = 0;
-    for (const key of this.chunks.keys()) {
-      if (!shouldBeLoaded.has(key)) {
+    const maxDist = viewDist + this.config.streaming.hysteresisChunks;
+    for (const [key, chunk] of this.chunks) {
+      const chunkDx = Math.abs(chunk.cx - playerCx);
+      const chunkDz = Math.abs(chunk.cz - playerCz);
+      if (chunkDx > maxDist || chunkDz > maxDist) {
         this.unloadQueue.push(key);
       }
     }
-
-    // Queue chunks to load (in range but not loaded).
-    // 队列待加载的 chunk（在范围内但未加载）
-    this.loadQueue.length = 0;
-    for (const key of shouldBeLoaded) {
-      if (!this.chunks.has(key)) {
-        const [cxStr, czStr] = key.split(",");
-        this.loadQueue.push({ cx: parseInt(cxStr, 10), cz: parseInt(czStr, 10) });
-      }
-    }
-
-    // Sort load queue by distance to player (load closest first).
-    // 按与玩家的距离排序加载队列（先加载最近的）
-    this.loadQueue.sort((a, b) => {
-      const distA = (a.cx - playerCx) ** 2 + (a.cz - playerCz) ** 2;
-      const distB = (b.cx - playerCx) ** 2 + (b.cz - playerCz) ** 2;
-      return distA - distB;
-    });
   }
 
-  private processQueues(): void {
+  private async processQueues(): Promise<void> {
     const maxOps = this.config.streaming.maxChunkOpsPerFrame;
     let ops = 0;
 
-    // Prioritize unloading to free memory.
-    // 优先卸载以释放内存
-    while (ops < maxOps && this.unloadQueue.length > 0) {
-      const key = this.unloadQueue.shift()!;
+    // Process unloads first (free memory).
+    // 先处理卸载（释放内存）
+    while (this.unloadQueue.length > 0 && ops < maxOps) {
+      const key = this.unloadQueue.pop()!;
       this.unloadChunk(key);
       ops++;
     }
 
-    // Then load new chunks.
-    // 然后加载新 chunk
-    while (ops < maxOps && this.loadQueue.length > 0) {
+    // Process loads.
+    // 处理加载
+    while (this.loadQueue.length > 0 && ops < maxOps) {
       const coord = this.loadQueue.shift()!;
-      this.loadChunk(coord.cx, coord.cz);
+      await this.bakeAndCreateChunk(coord.cx, coord.cz);
       ops++;
+    }
+
+    // Regenerate normals if any chunks were baked.
+    // 如果有 chunk 被烘焙，重新生成法线
+    if (this.bakePending.size > 0 && this.renderer) {
+      await this.normalCompute.regenerate(this.renderer);
+      this.bakePending.clear();
     }
   }
 
-  private loadChunk(cx: number, cz: number): void {
+  private async bakeAndCreateChunk(cx: number, cz: number): Promise<void> {
+    if (!this.renderer) return;
+
     const key = this.chunkKey(cx, cz);
     if (this.chunks.has(key)) return;
 
+    // Bake height for this chunk.
+    // 为此 chunk 烘焙高度
+    await this.heightCompute.bakeChunk(cx, cz, this.renderer);
+    this.bakePending.set(key, { cx, cz });
+
+    // Get tile UV info.
+    // 获取 tile UV 信息
+    const tileInfo = this.heightCompute.getChunkTileUV(cx, cz);
+
+    // Create chunk with GPU textures.
+    // 使用 GPU 纹理创建 chunk
     const chunk = new TerrainChunk(
       cx,
       cz,
       this.config,
       this.floatingOrigin,
+      this.heightCompute.heightTexture!,
+      this.normalCompute.normalTexture!,
+      tileInfo,
     );
+
     this.chunks.set(key, chunk);
     this.scene.add(chunk.mesh);
   }
@@ -188,54 +290,36 @@ export class ChunkManager {
   }
 
   /**
-   * Get all active chunks for GPU culling/rendering.
-   * 获取所有活跃 chunk 用于 GPU 剔除/渲染
+   * Get all active chunks.
+   * 获取所有活跃的 chunk
    */
   getActiveChunks(): TerrainChunk[] {
     return Array.from(this.chunks.values());
   }
 
   /**
-   * Get chunk count for debugging.
-   * 获取 chunk 数量用于调试
-   */
-  getChunkCount(): number {
-    return this.chunks.size;
-  }
-
-  /**
-   * Force immediate loading of chunks around a position (for initial spawn).
-   * 强制立即加载某位置周围的 chunk（用于初始出生）
-   */
-  forceLoadAround(worldX: number, worldZ: number): void {
-    const { cx: playerCx, cz: playerCz } = this.worldToChunk(worldX, worldZ);
-    this.lastPlayerCx = playerCx;
-    this.lastPlayerCz = playerCz;
-
-    const viewDist = this.config.streaming.viewDistanceChunks;
-
-    for (let dz = -viewDist; dz <= viewDist; dz++) {
-      for (let dx = -viewDist; dx <= viewDist; dx++) {
-        if (dx * dx + dz * dz <= viewDist * viewDist) {
-          const cx = playerCx + dx;
-          const cz = playerCz + dz;
-          this.loadChunk(cx, cz);
-        }
-      }
-    }
-  }
-
-  /**
-   * Dispose all chunks and clear state.
-   * 销毁所有 chunk 并清理状态
+   * Dispose all resources.
+   * 释放所有资源
    */
   dispose(): void {
+    // Dispose all chunks.
+    // 释放所有 chunk
     for (const chunk of this.chunks.values()) {
       this.scene.remove(chunk.mesh);
       chunk.dispose();
     }
     this.chunks.clear();
-    this.loadQueue.length = 0;
-    this.unloadQueue.length = 0;
+
+    // Dispose compute pipelines.
+    // 释放计算管线
+    this.heightCompute.dispose();
+    this.normalCompute.dispose();
+
+    // Dispose shared geometries.
+    // 释放共享几何体
+    disposeSharedGeometries();
+
+    this.gpuReady = false;
+    this.renderer = null;
   }
 }

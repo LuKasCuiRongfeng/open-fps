@@ -188,9 +188,9 @@ export class GameApp {
     await this.renderer.init();
     if (this.disposed) return;
 
-    // GPU-first: bake terrain height/normal via compute before the first frame.
-    // GPU-first：在第一帧前用 compute 烘焙地形高度/法线
-    await this.resources.runtime.terrain.initGpu?.(this.renderer);
+    // Initialize streaming terrain system.
+    // 初始化流式地形系统
+    await this.resources.runtime.terrain.initGpu(this.renderer);
     if (this.disposed) return;
 
     // WebGPU backends may finalize internal render targets during init; re-apply sizing.
@@ -222,7 +222,7 @@ export class GameApp {
 
     // Dispose terrain system.
     // 释放地形系统
-    this.resources.runtime.terrain.dispose?.();
+    this.resources.runtime.terrain.dispose();
 
     // Detach canvas.
     // 移除画布
@@ -322,15 +322,14 @@ export class GameApp {
    */
   private updateTerrainStreaming(): void {
     const terrain = this.resources.runtime.terrain;
-    if (!terrain.update) return;
 
-    // Find player position.
-    // 找到玩家位置
+    // Find player position and update terrain.
+    // 找到玩家位置并更新地形
     for (const [entityId] of this.ecs.world.query("transform", "player")) {
       const transform = this.ecs.world.get(entityId, "transform");
       if (transform) {
         terrain.update(transform.x, transform.z, this.camera);
-        break; // Only need first player.
+        break; // Only need first player. / 只需第一个玩家
       }
     }
   }

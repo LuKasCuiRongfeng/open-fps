@@ -1,22 +1,66 @@
-// TerrainChunk: single chunk of terrain with LOD support.
-// TerrainChunk：支持 LOD 的单个地形块
+// TerrainChunk: GPU-first terrain chunk with shared geometry and vertex displacement.
+// TerrainChunk：GPU-first 地形块，共享几何体和顶点位移
 
 import {
-  BufferAttribute,
   BufferGeometry,
   Mesh,
   MeshStandardNodeMaterial,
   PlaneGeometry,
   Vector3,
+  type StorageTexture,
 } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
 import type { FloatingOrigin } from "./FloatingOrigin";
-import { createChunkMaterial } from "./terrainMaterial";
-import { TerrainHeightSampler } from "./TerrainHeightSampler";
+import { createGpuTerrainMaterial, type TerrainMaterialParams } from "./terrainMaterial";
 
 /**
- * A single terrain chunk with multi-LOD geometry.
- * 单个地形 chunk，支持多 LOD 几何体
+ * Cache for shared LOD geometries (all chunks share the same flat planes).
+ * 共享 LOD 几何体的缓存（所有 chunk 共享相同的平面）
+ */
+const sharedGeometryCache = new Map<string, BufferGeometry>();
+
+function getOrCreateSharedGeometry(chunkSize: number, segments: number): BufferGeometry {
+  const key = `${chunkSize}-${segments}`;
+  let geo = sharedGeometryCache.get(key);
+
+  if (!geo) {
+    // Create flat plane centered at origin.
+    // 创建以原点为中心的平面
+    geo = new PlaneGeometry(chunkSize, chunkSize, segments, segments);
+    geo.rotateX(-Math.PI / 2);
+    geo.computeBoundingBox();
+    geo.computeBoundingSphere();
+    sharedGeometryCache.set(key, geo);
+  }
+
+  return geo;
+}
+
+/**
+ * Dispose all shared geometries (call on shutdown).
+ * 释放所有共享几何体（关闭时调用）
+ */
+export function disposeSharedGeometries(): void {
+  for (const geo of sharedGeometryCache.values()) {
+    geo.dispose();
+  }
+  sharedGeometryCache.clear();
+}
+
+/**
+ * GPU-first terrain chunk using shared geometry and vertex displacement.
+ * GPU-first 地形块，使用共享几何体和顶点位移
+ *
+ * Key differences from CPU-based chunk:
+ * - Uses shared flat geometry (no per-chunk vertex data)
+ * - Height displacement happens in vertex shader
+ * - Normal comes from pre-computed texture
+ * - LOD switches geometry only (material textures stay same)
+ * 与基于 CPU 的 chunk 的关键区别：
+ * - 使用共享平面几何体（无每 chunk 顶点数据）
+ * - 高度位移在顶点着色器中进行
+ * - 法线来自预计算纹理
+ * - LOD 仅切换几何体（材质纹理保持不变）
  */
 export class TerrainChunk {
   readonly cx: number;
@@ -25,19 +69,26 @@ export class TerrainChunk {
 
   private readonly config: TerrainConfig;
   private readonly floatingOrigin: FloatingOrigin;
-  private readonly lodGeometries: BufferGeometry[] = [];
   private currentLodIndex = 0;
 
   // World center (true world, not local).
   // 世界中心（真实世界坐标，非本地）
-  private readonly worldCenterX: number;
-  private readonly worldCenterZ: number;
+  readonly worldCenterX: number;
+  readonly worldCenterZ: number;
+
+  // Atlas tile info for this chunk.
+  // 此 chunk 的图集 tile 信息
+  private readonly tileUvOffset: { x: number; y: number };
+  private readonly tileUvScale: number;
 
   constructor(
     cx: number,
     cz: number,
     config: TerrainConfig,
     floatingOrigin: FloatingOrigin,
+    heightTexture: StorageTexture,
+    normalTexture: StorageTexture,
+    tileInfo: { uOffset: number; vOffset: number; uvScale: number },
   ) {
     this.cx = cx;
     this.cz = cz;
@@ -48,21 +99,33 @@ export class TerrainChunk {
     this.worldCenterX = (cx + 0.5) * chunkSize;
     this.worldCenterZ = (cz + 0.5) * chunkSize;
 
-    // Create LOD geometries.
-    // 创建 LOD 几何体
-    for (const level of config.lod.levels) {
-      const geo = this.createChunkGeometry(level.segmentsPerSide);
-      this.lodGeometries.push(geo);
-    }
+    this.tileUvOffset = { x: tileInfo.uOffset, y: tileInfo.vOffset };
+    this.tileUvScale = tileInfo.uvScale;
 
-    // Create material.
-    // 创建材质
-    const material = createChunkMaterial(config);
+    // Create per-chunk geometry with correct bounding sphere for frustum culling.
+    // 创建带正确包围球的每 chunk 几何体用于视锥剔除
+    const segments = config.lod.levels[0].segmentsPerSide;
+    const geometry = this.createChunkGeometry(segments);
 
-    // Start with highest LOD.
-    // 从最高 LOD 开始
-    this.mesh = new Mesh(this.lodGeometries[0], material);
-    this.mesh.name = `terrain-chunk-${cx}-${cz}`;
+    // Create GPU-displaced material.
+    // 创建 GPU 位移材质
+    const materialParams: TerrainMaterialParams = {
+      heightTexture,
+      normalTexture,
+      tileUvOffset: this.tileUvOffset,
+      tileUvScale: this.tileUvScale,
+      chunkWorldX: this.worldCenterX,
+      chunkWorldZ: this.worldCenterZ,
+      chunkSize,
+    };
+    const material = createGpuTerrainMaterial(config, materialParams);
+
+    this.mesh = new Mesh(geometry, material);
+    this.mesh.name = `terrain-chunk-gpu-${cx}-${cz}`;
+
+    // Enable Three.js built-in frustum culling (GPU-optimized in WebGPU renderer).
+    // 启用 Three.js 内置视锥剔除（WebGPU 渲染器中已 GPU 优化）
+    this.mesh.frustumCulled = true;
 
     // Update position based on floating origin.
     // 根据浮动原点更新位置
@@ -73,70 +136,43 @@ export class TerrainChunk {
     this.floatingOrigin.onRebase(this.handleOriginRebase);
   }
 
-  private createChunkGeometry(segments: number): BufferGeometry {
-    const chunkSize = this.config.streaming.chunkSizeMeters;
-
-    // Create plane geometry and rotate to XZ plane.
-    // 创建平面几何体并旋转到 XZ 平面
-    const geo = new PlaneGeometry(chunkSize, chunkSize, segments, segments);
-    geo.rotateX(-Math.PI / 2);
-
-    // Apply height displacement using CPU heightAt (for initial geometry).
-    // 使用 CPU heightAt 应用高度位移（用于初始几何体）
-    // Note: GPU bake will override this in the shader.
-    // 注意：GPU 烘焙会在 shader 中覆盖这个
-    const pos = geo.getAttribute("position") as BufferAttribute;
-    const normal = geo.getAttribute("normal") as BufferAttribute;
-
-    const step = this.config.height.normalSampleStepMeters;
-
-    for (let i = 0; i < pos.count; i++) {
-      const localX = pos.getX(i);
-      const localZ = pos.getZ(i);
-
-      // Convert to true world coordinates.
-      // 转换为真实世界坐标
-      const worldX = this.worldCenterX + localX;
-      const worldZ = this.worldCenterZ + localZ;
-
-      // Sample height.
-      // 采样高度
-      const y = TerrainHeightSampler.heightAt(worldX, worldZ, this.config);
-      pos.setY(i, y);
-
-      // Compute normal from height gradients.
-      // 从高度梯度计算法线
-      const hL = TerrainHeightSampler.heightAt(worldX - step, worldZ, this.config);
-      const hR = TerrainHeightSampler.heightAt(worldX + step, worldZ, this.config);
-      const hD = TerrainHeightSampler.heightAt(worldX, worldZ - step, this.config);
-      const hU = TerrainHeightSampler.heightAt(worldX, worldZ + step, this.config);
-
-      const dhdx = (hR - hL) / (2 * step);
-      const dhdz = (hU - hD) / (2 * step);
-
-      let nx = -dhdx;
-      let ny = 1;
-      let nz = -dhdz;
-      const invLen = 1 / Math.hypot(nx, ny, nz);
-      nx *= invLen;
-      ny *= invLen;
-      nz *= invLen;
-      normal.setXYZ(i, nx, ny, nz);
-    }
-
-    pos.needsUpdate = true;
-    normal.needsUpdate = true;
-    geo.computeBoundingBox();
-    geo.computeBoundingSphere();
-
-    return geo;
-  }
-
   private updatePosition(): void {
     // Convert world center to local render coordinates.
     // 将世界中心转换为本地渲染坐标
     const local = this.floatingOrigin.worldToLocal(this.worldCenterX, 0, this.worldCenterZ);
     this.mesh.position.set(local.x, 0, local.z);
+  }
+
+  /**
+   * Create per-chunk geometry with correct bounding sphere for frustum culling.
+   * 为每个 chunk 创建带正确包围球的几何体用于视锥剔除
+   *
+   * We clone the shared geometry just to set per-chunk bounding sphere
+   * (the actual vertex data is still shared via BufferAttribute references).
+   * 我们仅为设置每 chunk 包围球而克隆共享几何体
+   * （实际顶点数据仍通过 BufferAttribute 引用共享）
+   */
+  private createChunkGeometry(segments: number): BufferGeometry {
+    const chunkSize = this.config.streaming.chunkSizeMeters;
+    const sharedGeo = getOrCreateSharedGeometry(chunkSize, segments);
+
+    // Clone geometry to have per-chunk bounding sphere.
+    // 克隆几何体以拥有每 chunk 的包围球
+    const geo = sharedGeo.clone();
+
+    // Calculate expanded bounding sphere for GPU height displacement.
+    // 计算扩展的包围球以考虑 GPU 高度位移
+    const halfChunk = chunkSize / 2;
+    const heightRange = this.config.height.amplitudeMeters * 2;
+    const baseRadius = halfChunk * Math.SQRT2;
+    const radius = Math.sqrt(baseRadius * baseRadius + heightRange * heightRange);
+
+    // Set bounding sphere with height offset.
+    // 设置带高度偏移的包围球
+    geo.boundingSphere!.radius = radius;
+    geo.boundingSphere!.center.set(0, this.config.height.baseHeightMeters, 0);
+
+    return geo;
   }
 
   private handleOriginRebase = (dx: number, _dy: number, dz: number): void => {
@@ -154,8 +190,6 @@ export class TerrainChunk {
    * @param cameraWorldZ Camera Z in true world coordinates.
    */
   updateLod(cameraWorldX: number, cameraWorldZ: number): void {
-    if (!this.config.lod.enabled) return;
-
     const dx = cameraWorldX - this.worldCenterX;
     const dz = cameraWorldZ - this.worldCenterZ;
     const dist = Math.sqrt(dx * dx + dz * dz);
@@ -170,11 +204,16 @@ export class TerrainChunk {
       }
     }
 
-    // Switch geometry if LOD changed.
-    // 如果 LOD 改变则切换几何体
+    // Switch to per-chunk geometry with correct bounding sphere for new LOD.
+    // 切换到带正确包围球的每 chunk 几何体用于新 LOD
     if (newLodIndex !== this.currentLodIndex) {
+      // Dispose old per-chunk geometry.
+      // 释放旧的每 chunk 几何体
+      this.mesh.geometry.dispose();
+
       this.currentLodIndex = newLodIndex;
-      this.mesh.geometry = this.lodGeometries[newLodIndex];
+      const segments = this.config.lod.levels[newLodIndex].segmentsPerSide;
+      this.mesh.geometry = this.createChunkGeometry(segments);
     }
   }
 
@@ -200,17 +239,31 @@ export class TerrainChunk {
   }
 
   /**
-   * Dispose all resources.
-   * 释放所有资源
+   * Get bounding sphere in world coordinates.
+   * 获取世界坐标中的包围球
+   */
+  getWorldBoundingSphere(): { x: number; y: number; z: number; radius: number } {
+    return {
+      x: this.worldCenterX,
+      y: this.config.height.baseHeightMeters,
+      z: this.worldCenterZ,
+      radius: this.getBoundingSphereRadius(),
+    };
+  }
+
+  /**
+   * Dispose resources.
+   * 释放资源
    */
   dispose(): void {
     this.floatingOrigin.offRebase(this.handleOriginRebase);
 
-    for (const geo of this.lodGeometries) {
-      geo.dispose();
-    }
-    this.lodGeometries.length = 0;
+    // Dispose per-chunk geometry (it's a clone).
+    // 释放每 chunk 几何体（它是克隆的）
+    this.mesh.geometry.dispose();
 
+    // Dispose material.
+    // 释放材质
     if (this.mesh.material instanceof MeshStandardNodeMaterial) {
       this.mesh.material.dispose();
     }

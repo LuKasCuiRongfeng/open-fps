@@ -26,20 +26,10 @@ export class TerrainHeightSampler {
   }
 
   /**
-   * Get height at a world position.
-   * 获取世界位置的高度
-   *
-   * Uses cache if enabled, otherwise computes directly.
-   * 如果启用缓存则使用缓存，否则直接计算。
+   * Get height at a world position (cached with bilinear interpolation).
+   * 获取世界位置的高度（带双线性插值的缓存）
    */
   static heightAt(worldX: number, worldZ: number, config: TerrainConfig): number {
-    if (config.heightCache.enabled) {
-      return this.heightAtCached(worldX, worldZ, config);
-    }
-    return this.computeHeight(worldX, worldZ, config);
-  }
-
-  private static heightAtCached(worldX: number, worldZ: number, config: TerrainConfig): number {
     // Invalidate cache if config changed.
     // 如果配置改变则使缓存失效
     if (this.cachedConfig !== config) {

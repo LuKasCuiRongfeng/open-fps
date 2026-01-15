@@ -4,7 +4,7 @@
 import type { PerspectiveCamera, Scene, WebGPURenderer } from "three/webgpu";
 import type { InputManager } from "../input/InputManager";
 import type { GameSettings } from "../settings/GameSettings";
-import type { TerrainResource } from "../world/terrain";
+import type { TerrainSystemResource } from "../world/terrain";
 
 // --- Time Resource / 时间资源 ---
 
@@ -51,8 +51,8 @@ export type Singletons = {
  * 运行时资源：系统读写的共享数据
  */
 export type RuntimeResources = {
-  /** Terrain height/sampling. / 地形高度/采样 */
-  terrain: TerrainResource;
+  /** Streaming terrain system. / 流式地形系统 */
+  terrain: TerrainSystemResource;
   /** Player-configurable settings. / 玩家可配置的设置 */
   settings: GameSettings;
 };

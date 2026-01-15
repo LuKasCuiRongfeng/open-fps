@@ -86,10 +86,6 @@ export class FloatingOrigin {
    * @returns True if rebase was performed.
    */
   checkAndRebase(localPlayerX: number, localPlayerZ: number): boolean {
-    if (!this.config.floatingOrigin.enabled) {
-      return false;
-    }
-
     const threshold = this.config.floatingOrigin.rebaseThresholdMeters;
     const distSq = localPlayerX * localPlayerX + localPlayerZ * localPlayerZ;
 

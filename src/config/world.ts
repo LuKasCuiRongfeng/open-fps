@@ -5,48 +5,10 @@ export type CameraMode = "firstPerson" | "thirdPerson";
 export type ThirdPersonStyle = "overShoulder" | "chase";
 
 export const worldConfig = {
-  // Small prototype map now; may expand to ~10km later.
-  // 当前先做小地图，后续可能扩展到 10km。
-  map: {
-    widthMeters: 500,
-    depthMeters: 500,
-    groundY: 0,
-
-    // Air-wall inset from the map edge (meters).
-    // 空气墙：距离地图边界的内缩距离（米）
-    airWallInsetMeters: 0.35,
-  },
-
   terrain: {
-    gpuBake: {
-      // Bake terrain height/normal on GPU via compute into storage textures.
-      // 使用 GPU compute 烘焙地形高度/法线到 storage texture
-      enabled: true,
-
-      // Debug patterns to validate the bake/sampling pipeline.
-      // 调试模式：用于验证 bake/采样链路是否正常
-      debugPattern: "procedural" as "procedural" | "gradient" | "flat",
-
-      // Used when debugPattern === "gradient" (meters).
-      // 当 debugPattern === "gradient" 时使用（米）
-      debugAmplitudeMeters: 20,
-
-      // Workgroup size for the compute kernel.
-      // compute kernel 的 workgroup 尺寸
-      workgroupSize: 8,
-
-      // Bake a normal texture too (recommended: avoids expensive per-fragment reconstruction).
-      // 同时烘焙法线贴图（推荐：避免在像素阶段做昂贵的法线重建）
-      bakeNormals: true,
-    },
-
     // Streaming chunk system for large worlds.
     // 大世界的流式分块系统
     streaming: {
-      // Enable streaming chunk management (load/unload based on player position).
-      // 启用流式分块管理（根据玩家位置加载/卸载）
-      enabled: true,
-
       // Per-chunk size in meters (power of 2 recommended).
       // 每个 chunk 的尺寸（米，建议 2 的幂）
       chunkSizeMeters: 64,
@@ -67,10 +29,6 @@ export const worldConfig = {
     // LOD (Level of Detail) system for terrain chunks.
     // 地形 chunk 的 LOD（细节层级）系统
     lod: {
-      // Enable GPU-driven LOD selection.
-      // 启用 GPU 驱动的 LOD 选择
-      enabled: true,
-
       // LOD levels (index 0 = highest detail).
       // LOD 级别（索引 0 = 最高细节）
       levels: [
@@ -82,25 +40,25 @@ export const worldConfig = {
       ] as const,
     },
 
-    // GPU culling configuration.
-    // GPU 剔除配置
-    culling: {
-      // Enable GPU frustum culling via compute shader.
-      // 启用 GPU compute shader 的视锥剔除
-      enabled: true,
+    // GPU compute pipeline configuration.
+    // GPU 计算管线配置
+    gpuCompute: {
+      // Resolution per chunk tile in the atlas (power of 2).
+      // 图集中每个 chunk tile 的分辨率（2 的幂）
+      tileResolution: 64,
 
-      // Workgroup size for culling compute.
-      // 剔除 compute 的 workgroup 尺寸
-      workgroupSize: 64,
+      // Number of tiles per side in the atlas texture.
+      // 图集纹理每边的 tile 数
+      atlasTilesPerSide: 32,
+
+      // Maximum chunks for culling buffer.
+      // 剔除缓冲区的最大 chunk 数
+      maxCullChunks: 1024,
     },
 
     // Floating origin for large world precision.
     // 大世界精度的浮动原点
     floatingOrigin: {
-      // Enable origin rebasing when player moves far from origin.
-      // 当玩家远离原点时启用原点重置
-      enabled: true,
-
       // Rebase threshold in meters (rebase when player exceeds this distance from origin).
       // 重置阈值（米），当玩家距原点超过此距离时重置
       rebaseThresholdMeters: 2000,
@@ -109,31 +67,17 @@ export const worldConfig = {
     // CPU heightmap cache for fast heightAt queries.
     // CPU 高度图缓存，用于快速 heightAt 查询
     heightCache: {
-      // Enable CPU-side height cache (avoids per-query fBm computation).
-      // 启用 CPU 侧高度缓存（避免每次查询都算 fBm）
-      enabled: true,
-
       // Resolution of the cached heightmap (samples per chunk side).
       // 缓存高度图的分辨率（每 chunk 边的采样数）
       samplesPerChunkSide: 17,
     },
 
-    // Legacy tile config (used when streaming is disabled).
-    // 旧的 tile 配置（streaming 禁用时使用）
-    tile: {
-      // Terrain is made of tiles laid out on XZ.
-      // 地形由多个 tile 在 XZ 平面拼接而成
-      tilesX: 4,
-      tilesZ: 4,
-
-      // Per-tile size in meters.
-      // 单块 tile 的尺寸（米）
-      widthMeters: 125,
-      depthMeters: 125,
-
-      // Controls mesh resolution. 64 => ~4k vertices per tile.
-      // 控制网格分辨率。64 => 每 tile ~4k 顶点
-      segmentsPerSide: 64,
+    // Ground plane constraints (prevents falling through world).
+    // 地面约束（防止穿透世界）
+    groundPlane: {
+      // Minimum Y offset above terrain surface (meters).
+      // 地形表面上方的最小 Y 偏移（米）
+      minYMeters: 0.1,
     },
 
     height: {
@@ -426,7 +370,7 @@ export const worldConfig = {
       roughness: 1.0,
     },
     grid: {
-      divisions: 50,
+      divisions: 500,
       majorColorHex: 0x223322,
       minorColorHex: 0x112211,
       yOffsetMeters: 0.001,
