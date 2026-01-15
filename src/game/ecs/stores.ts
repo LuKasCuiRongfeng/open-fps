@@ -1,10 +1,11 @@
 import type { EntityId } from "./EcsWorld";
-import type { AvatarComponent, PlayerComponent, TransformComponent } from "./components";
+import type { AvatarComponent, PhysicsComponent, PlayerComponent, TransformComponent } from "./components";
 
 export type ComponentStores = {
   transform: Map<EntityId, TransformComponent>;
   player: Map<EntityId, PlayerComponent>;
   avatar: Map<EntityId, AvatarComponent>;
+  physics: Map<EntityId, PhysicsComponent>;
 };
 
 export function createStores(): ComponentStores {
@@ -12,5 +13,6 @@ export function createStores(): ComponentStores {
     transform: new Map(),
     player: new Map(),
     avatar: new Map(),
+    physics: new Map(),
   };
 }

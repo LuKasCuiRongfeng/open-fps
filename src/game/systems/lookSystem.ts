@@ -13,7 +13,7 @@ export function lookSystem(stores: ComponentStores, resources: GameResources) {
   }
 
   const { dx, dy } = resources.input.consumeMouseDelta();
-  const s = worldConfig.player.mouseSensitivity;
+  const s = resources.settings.player.mouseSensitivity;
   const scale = worldConfig.player.look.radiansPerPixel;
 
   const yawDelta = -dx * scale * s;

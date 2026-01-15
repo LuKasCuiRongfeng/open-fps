@@ -20,16 +20,19 @@ export function createHumanoidAvatar(): HumanoidAvatar {
   materialBody.colorNode = color(...avatar.colors.bodyRgb);
   materialBody.roughnessNode = float(avatar.roughness);
   materialBody.metalnessNode = float(avatar.metalness);
+  materialBody.fog = true;
 
   const materialHead = new MeshStandardNodeMaterial();
   materialHead.colorNode = color(...avatar.colors.headRgb);
   materialHead.roughnessNode = float(avatar.roughness);
   materialHead.metalnessNode = float(avatar.metalness);
+  materialHead.fog = true;
 
   const materialLegs = new MeshStandardNodeMaterial();
   materialLegs.colorNode = color(...avatar.colors.legsRgb);
   materialLegs.roughnessNode = float(avatar.roughness);
   materialLegs.metalnessNode = float(avatar.metalness);
+  materialLegs.fog = true;
 
   const root = new Group();
 

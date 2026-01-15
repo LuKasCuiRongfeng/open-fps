@@ -30,7 +30,6 @@ export function cameraSystem(stores: ComponentStores, resources: GameResources, 
   const transform = stores.transform.get(entityId);
   if (!transform) return;
 
-  const groundY = worldConfig.map.groundY;
   const eyeY = transform.y + worldConfig.player.eyeHeightMeters;
 
   vTarget.set(transform.x, eyeY, transform.z);
@@ -48,17 +47,17 @@ export function cameraSystem(stores: ComponentStores, resources: GameResources, 
     return;
   }
 
-  const follow = worldConfig.player.thirdPerson;
+  const follow = resources.settings.player.thirdPerson;
   const followLerp = dampFactorPerSecond(follow.followLerpPerSecond, dt);
 
-  let distance: number = follow.chase.followDistanceMeters;
-  let height: number = follow.chase.heightOffsetMeters;
+  let distance: number = follow.chase.followDistance;
+  let height: number = follow.chase.heightOffset;
   let shoulder: number = 0;
 
   if (player.thirdPersonStyle === "overShoulder") {
-    distance = follow.overShoulder.followDistanceMeters;
-    height = follow.overShoulder.heightOffsetMeters;
-    shoulder = follow.overShoulder.shoulderOffsetMeters;
+    distance = follow.overShoulder.followDistance;
+    height = follow.overShoulder.heightOffset;
+    shoulder = follow.overShoulder.shoulderOffset;
   }
 
   // Offset in rig-local space: x = shoulder, y = height, z = behind.
@@ -74,6 +73,7 @@ export function cameraSystem(stores: ComponentStores, resources: GameResources, 
 
   // Prevent camera below ground.
   // 防止相机低于地面
+  const groundY = resources.terrain.heightAt(vDesiredCam.x, vDesiredCam.z);
   vDesiredCam.y = Math.max(vDesiredCam.y, groundY + worldConfig.camera.nearMeters * 2);
 
   resources.camera.position.set(

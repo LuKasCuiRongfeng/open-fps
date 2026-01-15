@@ -17,3 +17,8 @@ export type PlayerComponent = {
 export type AvatarComponent = {
   object: Group;
 };
+
+export type PhysicsComponent = {
+  vy: number;
+  grounded: boolean;
+};

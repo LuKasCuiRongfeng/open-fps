@@ -7,10 +7,14 @@ import { createHumanoidAvatar } from "./createHumanoidAvatar";
 export function createPlayer(ecs: GameEcs, resources: GameResources): EntityId {
   const playerId = ecs.createEntity();
 
+  const spawnX = worldConfig.player.spawn.xMeters;
+  const spawnZ = worldConfig.player.spawn.zMeters;
+  const spawnY = resources.terrain.heightAt(spawnX, spawnZ);
+
   ecs.stores.transform.set(playerId, {
-    x: worldConfig.player.spawn.xMeters,
-    y: worldConfig.map.groundY,
-    z: worldConfig.player.spawn.zMeters,
+    x: spawnX,
+    y: spawnY,
+    z: spawnZ,
     yawRadians: 0,
     pitchRadians: 0,
   });
@@ -18,6 +22,11 @@ export function createPlayer(ecs: GameEcs, resources: GameResources): EntityId {
   ecs.stores.player.set(playerId, {
     cameraMode: worldConfig.defaults.cameraMode,
     thirdPersonStyle: worldConfig.defaults.thirdPersonStyle,
+  });
+
+  ecs.stores.physics.set(playerId, {
+    vy: 0,
+    grounded: true,
   });
 
   const avatar = createHumanoidAvatar();

@@ -1,10 +1,5 @@
-import { worldConfig } from "../../config/world";
 import type { GameResources } from "../ecs/resources";
 import type { ComponentStores } from "../ecs/stores";
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
 
 export function movementSystem(stores: ComponentStores, resources: GameResources, dt: number) {
   const forwardDown = resources.input.isDown("KeyW") || resources.input.isDown("ArrowUp");
@@ -13,7 +8,7 @@ export function movementSystem(stores: ComponentStores, resources: GameResources
   const rightDown = resources.input.isDown("KeyD") || resources.input.isDown("ArrowRight");
   const sprint = resources.input.isDown("ShiftLeft") || resources.input.isDown("ShiftRight");
 
-  const speed = sprint ? worldConfig.player.sprintSpeed : worldConfig.player.moveSpeed;
+  const speed = sprint ? resources.settings.player.sprintSpeed : resources.settings.player.moveSpeed;
 
   let localX = (rightDown ? 1 : 0) - (leftDown ? 1 : 0);
   let localZ = (forwardDown ? 1 : 0) - (backwardDown ? 1 : 0);
@@ -23,9 +18,6 @@ export function movementSystem(stores: ComponentStores, resources: GameResources
     localX /= len;
     localZ /= len;
   }
-
-  const halfW = worldConfig.map.widthMeters * 0.5;
-  const halfD = worldConfig.map.depthMeters * 0.5;
 
   for (const entityId of stores.player.keys()) {
     const transform = stores.transform.get(entityId);
@@ -46,9 +38,5 @@ export function movementSystem(stores: ComponentStores, resources: GameResources
       transform.x += worldDx * speed * dt;
       transform.z += worldDz * speed * dt;
     }
-
-    transform.x = clamp(transform.x, -halfW, halfW);
-    transform.z = clamp(transform.z, -halfD, halfD);
-    transform.y = worldConfig.map.groundY;
   }
 }

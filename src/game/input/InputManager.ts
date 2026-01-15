@@ -4,6 +4,7 @@ export class InputManager {
   private readonly domElement: HTMLElement;
 
   private readonly pressed = new Set<string>();
+  private readonly justPressed = new Set<string>();
   private pointerLocked = false;
 
   private mouseDeltaX = 0;
@@ -46,6 +47,12 @@ export class InputManager {
     return this.pressed.has(code);
   }
 
+  consumeJustPressed(code: string) {
+    const has = this.justPressed.has(code);
+    if (has) this.justPressed.delete(code);
+    return has;
+  }
+
   consumeMouseDelta() {
     const dx = this.mouseDeltaX;
     const dy = this.mouseDeltaY;
@@ -82,6 +89,7 @@ export class InputManager {
 
   private readonly onKeyDown = (e: KeyboardEvent) => {
     if (!e.repeat) {
+      this.justPressed.add(e.code);
       if (e.code === worldConfig.input.toggleCameraMode.code) {
         this.toggleCameraModeRequested = true;
       }
