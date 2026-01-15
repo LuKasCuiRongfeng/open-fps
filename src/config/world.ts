@@ -40,8 +40,86 @@ export const worldConfig = {
       bakeNormals: true,
     },
 
-    // Single-tile terrain for now; later this becomes chunked/streamed.
-    // 当前先做单块地形；后续会做分块/流式加载
+    // Streaming chunk system for large worlds.
+    // 大世界的流式分块系统
+    streaming: {
+      // Enable streaming chunk management (load/unload based on player position).
+      // 启用流式分块管理（根据玩家位置加载/卸载）
+      enabled: true,
+
+      // Per-chunk size in meters (power of 2 recommended).
+      // 每个 chunk 的尺寸（米，建议 2 的幂）
+      chunkSizeMeters: 64,
+
+      // View distance in chunks (radius around player).
+      // 视距（以 chunk 为单位的半径）
+      viewDistanceChunks: 8,
+
+      // Maximum chunks to load/unload per frame (prevent stutter).
+      // 每帧最多加载/卸载的 chunk 数量（防止卡顿）
+      maxChunkOpsPerFrame: 2,
+
+      // Hysteresis distance to prevent thrashing at boundaries (chunks).
+      // 边界滞后距离，防止在边界处频繁加载/卸载（chunk 数）
+      hysteresisChunks: 1,
+    },
+
+    // LOD (Level of Detail) system for terrain chunks.
+    // 地形 chunk 的 LOD（细节层级）系统
+    lod: {
+      // Enable GPU-driven LOD selection.
+      // 启用 GPU 驱动的 LOD 选择
+      enabled: true,
+
+      // LOD levels (index 0 = highest detail).
+      // LOD 级别（索引 0 = 最高细节）
+      levels: [
+        { segmentsPerSide: 64, maxDistanceMeters: 64 },
+        { segmentsPerSide: 32, maxDistanceMeters: 128 },
+        { segmentsPerSide: 16, maxDistanceMeters: 256 },
+        { segmentsPerSide: 8, maxDistanceMeters: 512 },
+        { segmentsPerSide: 4, maxDistanceMeters: Infinity },
+      ] as const,
+    },
+
+    // GPU culling configuration.
+    // GPU 剔除配置
+    culling: {
+      // Enable GPU frustum culling via compute shader.
+      // 启用 GPU compute shader 的视锥剔除
+      enabled: true,
+
+      // Workgroup size for culling compute.
+      // 剔除 compute 的 workgroup 尺寸
+      workgroupSize: 64,
+    },
+
+    // Floating origin for large world precision.
+    // 大世界精度的浮动原点
+    floatingOrigin: {
+      // Enable origin rebasing when player moves far from origin.
+      // 当玩家远离原点时启用原点重置
+      enabled: true,
+
+      // Rebase threshold in meters (rebase when player exceeds this distance from origin).
+      // 重置阈值（米），当玩家距原点超过此距离时重置
+      rebaseThresholdMeters: 2000,
+    },
+
+    // CPU heightmap cache for fast heightAt queries.
+    // CPU 高度图缓存，用于快速 heightAt 查询
+    heightCache: {
+      // Enable CPU-side height cache (avoids per-query fBm computation).
+      // 启用 CPU 侧高度缓存（避免每次查询都算 fBm）
+      enabled: true,
+
+      // Resolution of the cached heightmap (samples per chunk side).
+      // 缓存高度图的分辨率（每 chunk 边的采样数）
+      samplesPerChunkSide: 17,
+    },
+
+    // Legacy tile config (used when streaming is disabled).
+    // 旧的 tile 配置（streaming 禁用时使用）
     tile: {
       // Terrain is made of tiles laid out on XZ.
       // 地形由多个 tile 在 XZ 平面拼接而成
@@ -53,10 +131,8 @@ export const worldConfig = {
       widthMeters: 125,
       depthMeters: 125,
 
-      // Controls mesh resolution. 256 => ~66k vertices.
-      // 控制网格分辨率。256 => ~6.6 万顶点
-      // Note: total vertex count roughly scales with (tilesX*tilesZ*segments^2).
-      // 注意：总顶点数大致随 (tilesX*tilesZ*segments^2) 增长
+      // Controls mesh resolution. 64 => ~4k vertices per tile.
+      // 控制网格分辨率。64 => 每 tile ~4k 顶点
       segmentsPerSide: 64,
     },
 

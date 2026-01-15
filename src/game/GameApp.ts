@@ -220,6 +220,10 @@ export class GameApp {
 
     this.input.dispose();
 
+    // Dispose terrain system.
+    // 释放地形系统
+    this.resources.runtime.terrain.dispose?.();
+
     // Detach canvas.
     // 移除画布
     if (this.renderer.domElement.parentElement === this.container) {
@@ -299,6 +303,10 @@ export class GameApp {
       system.fn(this.ecs.world, this.resources);
     }
 
+    // Update terrain streaming system (chunk loading/unloading, LOD, culling).
+    // 更新地形流式系统（chunk 加载/卸载、LOD、剔除）
+    this.updateTerrainStreaming();
+
     // Flush destroyed entities at end of frame.
     // 在帧末刷新已销毁的实体
     this.ecs.flushDestroyed();
@@ -307,4 +315,23 @@ export class GameApp {
     // 渲染场景
     this.renderer.render(this.scene, this.camera);
   };
+
+  /**
+   * Update terrain streaming based on player position.
+   * 根据玩家位置更新地形流式加载
+   */
+  private updateTerrainStreaming(): void {
+    const terrain = this.resources.runtime.terrain;
+    if (!terrain.update) return;
+
+    // Find player position.
+    // 找到玩家位置
+    for (const [entityId] of this.ecs.world.query("transform", "player")) {
+      const transform = this.ecs.world.get(entityId, "transform");
+      if (transform) {
+        terrain.update(transform.x, transform.z, this.camera);
+        break; // Only need first player.
+      }
+    }
+  }
 }

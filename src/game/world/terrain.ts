@@ -49,14 +49,28 @@ import {
 	vec4,
 } from "three/tsl";
 import type { worldConfig } from "../../config/world";
-import type { WebGPURenderer } from "three/webgpu";
+import type { WebGPURenderer, PerspectiveCamera } from "three/webgpu";
 
 export type TerrainConfig = (typeof worldConfig)["terrain"];
+
+// Re-export new streaming system components.
+// 重新导出新的流式系统组件
+export { createTerrainSystem, type TerrainSystemResource } from "./TerrainSystem";
+export { ChunkManager } from "./ChunkManager";
+export { FloatingOrigin } from "./FloatingOrigin";
+export { TerrainChunk } from "./TerrainChunk";
+export { TerrainGpuCuller } from "./TerrainGpuCuller";
+export { TerrainHeightSampler } from "./TerrainHeightSampler";
+export { createChunkMaterial } from "./terrainMaterial";
 
 export type TerrainResource = {
 	root: Group;
 	heightAt: (xMeters: number, zMeters: number) => number;
 	initGpu?: (renderer: WebGPURenderer) => Promise<void>;
+	// New streaming system additions.
+	// 新流式系统添加的接口
+	update?: (playerWorldX: number, playerWorldZ: number, camera: PerspectiveCamera) => void;
+	dispose?: () => void;
 };
 
 function lerp(a: number, b: number, t: number) {

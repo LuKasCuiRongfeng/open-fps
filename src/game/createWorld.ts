@@ -10,7 +10,7 @@ import {
 } from "three/webgpu";
 import { color, float } from "three/tsl";
 import { worldConfig } from "../config/world";
-import { createTerrain } from "./world/terrain";
+import { createTerrain, createTerrainSystem, type TerrainResource } from "./world/terrain";
 
 export function createWorld(scene: Scene) {
   const { widthMeters, depthMeters, groundY } = worldConfig.map;
@@ -21,9 +21,18 @@ export function createWorld(scene: Scene) {
   scene.background = new Color(visuals.sky.colorHex);
   scene.fog = new FogExp2(visuals.fog.colorHex, visuals.fog.densityPerMeter);
 
-  // Terrain (procedural, single tile for now).
-  // 地形（程序生成，当前先做单块）
-  const terrain = createTerrain(worldConfig.terrain);
+  // Choose terrain system based on streaming config.
+  // 根据 streaming 配置选择地形系统
+  let terrain: TerrainResource;
+  if (worldConfig.terrain.streaming.enabled) {
+    // Use new streaming terrain system.
+    // 使用新的流式地形系统
+    terrain = createTerrainSystem(worldConfig.terrain, scene);
+  } else {
+    // Use legacy single-tile terrain.
+    // 使用旧的单块地形
+    terrain = createTerrain(worldConfig.terrain);
+  }
   scene.add(terrain.root);
 
   // Basic lighting.
