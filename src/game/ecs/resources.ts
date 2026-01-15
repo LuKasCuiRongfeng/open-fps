@@ -3,6 +3,7 @@
 
 import type { PerspectiveCamera, Scene, WebGPURenderer } from "three/webgpu";
 import type { InputManager } from "../input/InputManager";
+import type { RawInputState } from "../input/RawInputState";
 import type { GameSettings } from "../settings/GameSettings";
 import type { TerrainSystemResource } from "../world/terrain";
 
@@ -40,8 +41,23 @@ export type Singletons = {
   camera: PerspectiveCamera;
   /** WebGPU renderer. / WebGPU 渲染器 */
   renderer: WebGPURenderer;
-  /** Raw input manager. / 原始输入管理器 */
-  input: InputManager;
+  /** Input manager (DOM event handler). / 输入管理器（DOM 事件处理） */
+  inputManager: InputManager;
+};
+
+// --- Input Resources / 输入资源 ---
+
+/**
+ * Input resources: raw input state as ECS resource (data-oriented).
+ * 输入资源：原始输入状态作为 ECS 资源（数据导向）
+ *
+ * Industry best practice: input state is pure data, separate from DOM handling.
+ * 业界最佳实践：输入状态是纯数据，与 DOM 处理分离
+ */
+export type InputResources = {
+  /** Raw input state (written by InputManager, read by inputSystem). */
+  /** 原始输入状态（由 InputManager 写入，由 inputSystem 读取） */
+  raw: RawInputState;
 };
 
 // --- Runtime Resources / 运行时资源 ---
@@ -66,16 +82,19 @@ export type RuntimeResources = {
  * Structure:
  * - time: frame timing (updated each frame)
  * - singletons: global service instances
+ * - input: raw input state (data-oriented)
  * - runtime: shared game data
  *
  * 结构：
  * - time：帧时间（每帧更新）
  * - singletons：全局服务实例
+ * - input：原始输入状态（数据导向）
  * - runtime：共享游戏数据
  */
 export type GameResources = {
   time: TimeResource;
   singletons: Singletons;
+  input: InputResources;
   runtime: RuntimeResources;
 };
 

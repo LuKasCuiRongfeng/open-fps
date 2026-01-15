@@ -9,11 +9,13 @@ import {
   Scene,
 } from "three/webgpu";
 import { color, float } from "three/tsl";
-import { worldConfig } from "../config/world";
+import { playerConfig } from "../config/player";
+import { terrainConfig } from "../config/terrain";
+import { visualsConfig } from "../config/visuals";
 import { createTerrainSystem } from "./world/terrain";
 
 export function createWorld(scene: Scene) {
-  const { visuals } = worldConfig;
+  const visuals = visualsConfig;
 
   // Sky / atmosphere.
   // 天空 / 大气
@@ -22,7 +24,7 @@ export function createWorld(scene: Scene) {
 
   // Streaming terrain system.
   // 流式地形系统
-  const terrain = createTerrainSystem(worldConfig.terrain, scene);
+  const terrain = createTerrainSystem(terrainConfig, scene);
   scene.add(terrain.root);
 
   // Basic lighting.
@@ -40,8 +42,8 @@ export function createWorld(scene: Scene) {
   sun.castShadow = true;
   scene.add(sun);
 
-  // A small marker cube (origin reference).
-  // 原点参考方块
+  // A small marker cube near spawn point (reference object).
+  // 出生点附近的小方块（参考物体）
   const s = visuals.debug.originMarkerSizeMeters;
   const markerMat = new MeshStandardNodeMaterial();
   markerMat.colorNode = color(0.95, 0.25, 0.25);
@@ -50,8 +52,12 @@ export function createWorld(scene: Scene) {
   markerMat.fog = true;
 
   const marker = new Mesh(new BoxGeometry(s, s, s), markerMat);
-  marker.position.set(0, terrain.heightAt(0, 0) + s * 0.5, 0);
+  // Position marker near spawn point - will be repositioned after terrain init.
+  // 将 marker 放在出生点附近 - 地形初始化后会重新定位
+  const markerX = playerConfig.spawn.xMeters + 3;
+  const markerZ = playerConfig.spawn.zMeters;
+  marker.position.set(markerX, terrain.heightAt(markerX, markerZ) + s * 0.5, markerZ);
   scene.add(marker);
 
-  return { terrain };
+  return { terrain, marker };
 }

@@ -1,7 +1,7 @@
 // Look System: applies look input to transform orientation.
 // 视角系统：将视角输入应用到变换朝向
 
-import { worldConfig } from "../../config/world";
+import { playerConfig } from "../../config/player";
 import type { GameWorld } from "../ecs/GameEcs";
 import type { GameResources } from "../ecs/resources";
 
@@ -16,7 +16,7 @@ function clamp(value: number, min: number, max: number) {
 export function lookSystem(world: GameWorld, res: GameResources): void {
   // Only apply look when pointer is locked.
   // 只有指针锁定时才应用视角
-  if (!res.singletons.input.isPointerLocked) {
+  if (!res.input.raw.pointerLocked) {
     return;
   }
 
@@ -24,8 +24,8 @@ export function lookSystem(world: GameWorld, res: GameResources): void {
     transform.yawRadians += playerInput.lookDeltaYaw;
     transform.pitchRadians = clamp(
       transform.pitchRadians + playerInput.lookDeltaPitch,
-      worldConfig.player.pitch.minRadians,
-      worldConfig.player.pitch.maxRadians,
+      playerConfig.pitch.minRadians,
+      playerConfig.pitch.maxRadians,
     );
   }
 }

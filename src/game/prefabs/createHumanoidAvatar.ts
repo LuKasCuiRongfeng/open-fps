@@ -6,14 +6,14 @@ import {
   SphereGeometry,
 } from "three/webgpu";
 import { color, float } from "three/tsl";
-import { worldConfig } from "../../config/world";
+import { playerConfig } from "../../config/player";
 
 export type HumanoidAvatar = {
   root: Group;
 };
 
 export function createHumanoidAvatar(): HumanoidAvatar {
-  const avatar = worldConfig.player.avatar;
+  const avatar = playerConfig.avatar;
   const { geometry } = avatar;
 
   const materialBody = new MeshStandardNodeMaterial();

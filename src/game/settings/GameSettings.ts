@@ -1,4 +1,6 @@
-import { worldConfig } from "../../config/world";
+import { cameraConfig } from "../../config/camera";
+import { playerConfig } from "../../config/player";
+import { renderConfig } from "../../config/render";
 
 export type GameSettings = {
   player: {
@@ -61,30 +63,30 @@ export type GameSettingsPatch = {
 export function createDefaultGameSettings(): GameSettings {
   return {
     player: {
-      mouseSensitivity: worldConfig.player.mouseSensitivity,
-      moveSpeed: worldConfig.player.moveSpeed,
-      sprintSpeed: worldConfig.player.sprintSpeed,
-      jumpVelocity: worldConfig.player.jump.velocityMetersPerSecond,
-      gravity: worldConfig.player.physics.gravityMetersPerSecond2,
-      maxFallSpeed: worldConfig.player.physics.maxFallSpeedMetersPerSecond,
+      mouseSensitivity: playerConfig.mouseSensitivity,
+      moveSpeed: playerConfig.moveSpeed,
+      sprintSpeed: playerConfig.sprintSpeed,
+      jumpVelocity: playerConfig.jump.velocityMetersPerSecond,
+      gravity: playerConfig.physics.gravityMetersPerSecond2,
+      maxFallSpeed: playerConfig.physics.maxFallSpeedMetersPerSecond,
       thirdPerson: {
         chase: {
-          followDistance: worldConfig.player.thirdPerson.chase.followDistanceMeters,
-          heightOffset: worldConfig.player.thirdPerson.chase.heightOffsetMeters,
+          followDistance: playerConfig.thirdPerson.chase.followDistanceMeters,
+          heightOffset: playerConfig.thirdPerson.chase.heightOffsetMeters,
         },
         overShoulder: {
-          followDistance: worldConfig.player.thirdPerson.overShoulder.followDistanceMeters,
-          heightOffset: worldConfig.player.thirdPerson.overShoulder.heightOffsetMeters,
-          shoulderOffset: worldConfig.player.thirdPerson.overShoulder.shoulderOffsetMeters,
+          followDistance: playerConfig.thirdPerson.overShoulder.followDistanceMeters,
+          heightOffset: playerConfig.thirdPerson.overShoulder.heightOffsetMeters,
+          shoulderOffset: playerConfig.thirdPerson.overShoulder.shoulderOffsetMeters,
         },
-        followLerpPerSecond: worldConfig.player.thirdPerson.followLerpPerSecond,
+        followLerpPerSecond: playerConfig.thirdPerson.followLerpPerSecond,
       },
     },
     camera: {
-      fovDegrees: worldConfig.camera.fovDegrees,
+      fovDegrees: cameraConfig.fovDegrees,
     },
     render: {
-      maxPixelRatio: worldConfig.render.maxPixelRatio,
+      maxPixelRatio: renderConfig.maxPixelRatio,
     },
   };
 }

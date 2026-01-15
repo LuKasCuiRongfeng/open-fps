@@ -2,7 +2,8 @@
 // 相机系统：根据玩家状态定位和朝向相机
 
 import { Quaternion, Vector3 } from "three/webgpu";
-import { worldConfig } from "../../config/world";
+import { cameraConfig } from "../../config/camera";
+import { playerConfig } from "../../config/player";
 import type { GameWorld } from "../ecs/GameEcs";
 import type { GameResources } from "../ecs/resources";
 
@@ -40,7 +41,7 @@ export function cameraSystem(world: GameWorld, res: GameResources): void {
 
   const [, transform, player] = result;
 
-  const eyeY = transform.y + worldConfig.player.eyeHeightMeters;
+  const eyeY = transform.y + playerConfig.eyeHeightMeters;
   vTarget.set(transform.x, eyeY, transform.z);
 
   const yaw = transform.yawRadians;
@@ -85,7 +86,7 @@ export function cameraSystem(world: GameWorld, res: GameResources): void {
   // Prevent camera below ground.
   // 防止相机低于地面
   const groundY = terrain.heightAt(vDesiredCam.x, vDesiredCam.z);
-  vDesiredCam.y = Math.max(vDesiredCam.y, groundY + worldConfig.camera.nearMeters * 2);
+  vDesiredCam.y = Math.max(vDesiredCam.y, groundY + cameraConfig.nearMeters * 2);
 
   camera.position.set(
     lerp(camera.position.x, vDesiredCam.x, followLerp),

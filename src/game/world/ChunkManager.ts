@@ -145,12 +145,8 @@ export class ChunkManager {
   async update(
     playerWorldX: number,
     playerWorldZ: number,
-    camera: PerspectiveCamera,
+    _camera: PerspectiveCamera,
   ): Promise<void> {
-    // Suppress unused variable warning - camera used for LOD calculation via world position.
-    // 抑制未使用变量警告 - camera 通过世界位置用于 LOD 计算
-    void camera;
-
     if (!this.gpuReady || !this.renderer) return;
 
     const { cx: playerCx, cz: playerCz } = this.worldToChunk(playerWorldX, playerWorldZ);

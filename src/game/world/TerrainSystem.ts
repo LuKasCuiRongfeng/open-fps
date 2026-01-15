@@ -12,7 +12,7 @@ export type TerrainSystemResource = {
   root: Group;
   heightAt: (xMeters: number, zMeters: number) => number;
   floatingOrigin: FloatingOrigin;
-  initGpu: (renderer: WebGPURenderer) => Promise<void>;
+  initGpu: (renderer: WebGPURenderer, spawnX?: number, spawnZ?: number) => Promise<void>;
   update: (playerWorldX: number, playerWorldZ: number, camera: PerspectiveCamera) => void;
   dispose: () => void;
 };
@@ -67,7 +67,7 @@ export function createTerrainSystem(
     return TerrainHeightSampler.heightAt(xMeters, zMeters, config);
   };
 
-  const initGpu = async (r: WebGPURenderer): Promise<void> => {
+  const initGpu = async (r: WebGPURenderer, spawnX = 32, spawnZ = 32): Promise<void> => {
     // Create GPU chunk manager.
     // 创建 GPU chunk 管理器
     chunkManager = new ChunkManager(config, scene, floatingOrigin);
@@ -78,8 +78,6 @@ export function createTerrainSystem(
 
     // Force load chunks around spawn point.
     // 强制加载出生点周围的 chunk
-    const spawnX = 0;
-    const spawnZ = 5;
     await chunkManager.forceLoadAround(spawnX, spawnZ);
   };
 

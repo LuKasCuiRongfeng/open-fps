@@ -1,13 +1,15 @@
 // Input System: converts raw input into PlayerInput components.
 // 输入系统：将原始输入转换为 PlayerInput 组件
 
-import { worldConfig } from "../../config/world";
+import { inputConfig } from "../../config/input";
+import { playerConfig } from "../../config/player";
 import type { GameWorld } from "../ecs/GameEcs";
 import type { GameResources } from "../ecs/resources";
+import { clearFrameInputState } from "../input/RawInputState";
 
 /**
- * inputSystem: reads raw input and writes to PlayerInput components.
- * inputSystem：读取原始输入并写入 PlayerInput 组件
+ * inputSystem: reads raw input state and writes to PlayerInput components.
+ * inputSystem：读取原始输入状态并写入 PlayerInput 组件
  *
  * Industry best practice: decouple raw input from gameplay.
  * 业界最佳实践：将原始输入与游戏逻辑解耦
@@ -22,16 +24,19 @@ import type { GameResources } from "../ecs/resources";
  * - 网络：跨客户端同步 PlayerInput
  */
 export function inputSystem(world: GameWorld, res: GameResources): void {
-  const input = res.singletons.input;
+  const rawInput = res.input.raw;
   const settings = res.runtime.settings;
 
-  // Read raw input state.
-  // 读取原始输入状态
-  const forwardDown = input.isDown("KeyW") || input.isDown("ArrowUp");
-  const backwardDown = input.isDown("KeyS") || input.isDown("ArrowDown");
-  const leftDown = input.isDown("KeyA") || input.isDown("ArrowLeft");
-  const rightDown = input.isDown("KeyD") || input.isDown("ArrowRight");
-  const sprintDown = input.isDown("ShiftLeft") || input.isDown("ShiftRight");
+  // Read raw input state (data-oriented: read from RawInputState resource).
+  // 读取原始输入状态（数据导向：从 RawInputState 资源读取）
+  const keysDown = rawInput.keysDown;
+  const keysJustPressed = rawInput.keysJustPressed;
+
+  const forwardDown = keysDown.has(inputConfig.forward.code) || keysDown.has("ArrowUp");
+  const backwardDown = keysDown.has(inputConfig.backward.code) || keysDown.has("ArrowDown");
+  const leftDown = keysDown.has(inputConfig.left.code) || keysDown.has("ArrowLeft");
+  const rightDown = keysDown.has(inputConfig.right.code) || keysDown.has("ArrowRight");
+  const sprintDown = keysDown.has(inputConfig.sprint.code) || keysDown.has("ShiftRight");
 
   // Compute normalized movement direction.
   // 计算归一化的移动方向
@@ -43,16 +48,17 @@ export function inputSystem(world: GameWorld, res: GameResources): void {
     moveZ /= len;
   }
 
-  // Consume one-shot inputs.
-  // 消费一次性输入
-  const jumpPressed = input.consumeJustPressed(worldConfig.input.jump.code);
-  const toggleCameraMode = input.consumeToggleCameraMode();
-  const toggleThirdPersonStyle = input.consumeToggleThirdPersonStyle();
+  // Read one-shot inputs from raw state.
+  // 从原始状态读取一次性输入
+  const jumpPressed = keysJustPressed.has(inputConfig.jump.code);
+  const toggleCameraMode = rawInput.toggleCameraModeRequested;
+  const toggleThirdPersonStyle = rawInput.toggleThirdPersonStyleRequested;
 
   // Look delta from mouse.
   // 鼠标视角增量
-  const { dx: mouseDx, dy: mouseDy } = input.consumeMouseDelta();
-  const radiansPerPixel = worldConfig.player.look.radiansPerPixel * settings.player.mouseSensitivity;
+  const mouseDx = rawInput.mouseDeltaX;
+  const mouseDy = rawInput.mouseDeltaY;
+  const radiansPerPixel = playerConfig.look.radiansPerPixel * settings.player.mouseSensitivity;
   const lookDeltaYaw = -mouseDx * radiansPerPixel;
   const lookDeltaPitch = -mouseDy * radiansPerPixel;
 
@@ -68,4 +74,8 @@ export function inputSystem(world: GameWorld, res: GameResources): void {
     playerInput.toggleCameraMode = toggleCameraMode;
     playerInput.toggleThirdPersonStyle = toggleThirdPersonStyle;
   }
+
+  // Clear per-frame input state after processing.
+  // 处理后清除每帧输入状态
+  clearFrameInputState(rawInput);
 }

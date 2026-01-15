@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { worldConfig } from "../config/world";
+import { inputConfig } from "../config/input";
 import type { GameSettings, GameSettingsPatch } from "../game/settings/GameSettings";
 
 type RangeFieldProps = {
@@ -171,10 +171,10 @@ export default function SettingsPanel({
                     <div>Shift: Sprint</div>
                     <div>Space: Jump</div>
                     <div>
-                      {keyLabelFromCode(worldConfig.input.toggleCameraMode.code)}: Toggle 1st / 3rd person
+                      {keyLabelFromCode(inputConfig.toggleCameraMode.code)}: Toggle 1st / 3rd person
                     </div>
                     <div>
-                      {keyLabelFromCode(worldConfig.input.toggleThirdPersonStyle.code)}: Toggle OTS / Chase
+                      {keyLabelFromCode(inputConfig.toggleThirdPersonStyle.code)}: Toggle OTS / Chase
                     </div>
                     <div>Escape: Open/Close Settings</div>
                   </div>

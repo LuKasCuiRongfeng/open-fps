@@ -1,16 +1,18 @@
+// Loading overlay with shadcn/ui style.
+// shadcn/ui 风格的加载界面
+
 export type LoadingStep = {
   id: string;
   label: string;
 };
 
 type LoadingOverlayProps = {
-  title: string;
   steps: LoadingStep[];
   activeStepId?: string;
   visible: boolean;
 };
 
-export default function LoadingOverlay({ title, steps, activeStepId, visible }: LoadingOverlayProps) {
+export default function LoadingOverlay({ steps, activeStepId, visible }: LoadingOverlayProps) {
   if (!visible) return null;
 
   const activeIndex = activeStepId
@@ -20,37 +22,30 @@ export default function LoadingOverlay({ title, steps, activeStepId, visible }: 
       )
     : 0;
 
+  // Progress from 0 to 1 based on current step.
+  // 基于当前步骤计算进度 0~1
+  const progress = (activeIndex + 1) / Math.max(1, steps.length);
+
   return (
-    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-      <div className="w-[min(520px,calc(100vw-2rem))] rounded-xl border border-white/10 bg-black/70 p-5 text-white shadow-2xl backdrop-blur-sm">
-        <div className="mb-3 text-sm font-semibold tracking-wide">{title}</div>
+    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-zinc-950">
+      <div className="flex w-80 flex-col items-center gap-6">
+        {/* Title / 标题 */}
+        <h1 className="text-lg font-medium tracking-tight text-zinc-50">
+          Loading...
+        </h1>
 
-        <div className="space-y-1.5 text-xs text-white/75">
-          {steps.map((s, i) => {
-            const status = i < activeIndex ? "done" : i === activeIndex ? "active" : "pending";
-            return (
-              <div
-                key={s.id}
-                className={
-                  status === "active"
-                    ? "text-white"
-                    : status === "done"
-                      ? "text-white/70"
-                      : "text-white/40"
-                }
-              >
-                {status === "done" ? "•" : status === "active" ? "›" : "·"} {s.label}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="mt-4 h-1.5 w-full overflow-hidden rounded bg-white/10">
+        {/* Progress bar (shadcn/ui style) / 进度条（shadcn/ui 风格） */}
+        <div className="relative h-2 w-full overflow-hidden rounded-full bg-zinc-800">
           <div
-            className="h-full bg-white/60"
-            style={{ width: `${((activeIndex + 1) / Math.max(1, steps.length)) * 100}%` }}
+            className="h-full bg-zinc-50 transition-all duration-300 ease-out"
+            style={{ width: `${progress * 100}%` }}
           />
         </div>
+
+        {/* Current step / 当前步骤 */}
+        <p className="text-sm text-zinc-400">
+          {steps[activeIndex]?.label ?? "Initializing"}
+        </p>
       </div>
     </div>
   );

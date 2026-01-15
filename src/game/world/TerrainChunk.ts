@@ -186,6 +186,9 @@ export class TerrainChunk {
    * Update LOD based on camera distance.
    * 根据相机距离更新 LOD
    *
+   * Uses hysteresis to prevent frequent LOD switches when near boundaries.
+   * 使用滞后防止在边界附近频繁切换 LOD
+   *
    * @param cameraWorldX Camera X in true world coordinates.
    * @param cameraWorldZ Camera Z in true world coordinates.
    */
@@ -194,11 +197,20 @@ export class TerrainChunk {
     const dz = cameraWorldZ - this.worldCenterZ;
     const dist = Math.sqrt(dx * dx + dz * dz);
 
-    // Find appropriate LOD level.
-    // 找到合适的 LOD 级别
+    // Find appropriate LOD level with hysteresis.
+    // 使用滞后找到合适的 LOD 级别
+    const hysteresis = 8; // meters of hysteresis to prevent thrashing
     let newLodIndex = this.config.lod.levels.length - 1;
+
     for (let i = 0; i < this.config.lod.levels.length; i++) {
-      if (dist <= this.config.lod.levels[i].maxDistanceMeters) {
+      const threshold = this.config.lod.levels[i].maxDistanceMeters;
+      // Use hysteresis: require crossing further to switch away from current LOD.
+      // 使用滞后：切换到新 LOD 需要更大的距离变化
+      const adjustedThreshold = i === this.currentLodIndex
+        ? threshold + hysteresis
+        : threshold;
+
+      if (dist <= adjustedThreshold) {
         newLodIndex = i;
         break;
       }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { GameApp, type GameBootPhase } from "../game/GameApp";
 import type { GameSettings, GameSettingsPatch } from "../game/settings/GameSettings";
+import FpsCounter from "./FpsCounter";
 import LoadingOverlay, { type LoadingStep } from "./LoadingOverlay";
 import SettingsPanel from "./SettingsPanel";
 
@@ -106,8 +107,9 @@ export default function GameView() {
     <div className="relative h-screen w-screen overflow-hidden bg-black text-white">
       <div ref={hostRef} className="h-full w-full" />
 
+      <FpsCounter visible={!loading && !error} />
+
       <LoadingOverlay
-        title="Loading"
         steps={loadingSteps}
         activeStepId={bootPhase}
         visible={loading && !error}

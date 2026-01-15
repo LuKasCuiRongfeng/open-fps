@@ -2,7 +2,7 @@
 // ECS 组件 - 纯数据，无方法
 
 import type { Group } from "three/webgpu";
-import type { CameraMode, ThirdPersonStyle } from "../../config/world";
+import type { CameraMode, ThirdPersonStyle } from "../../config/camera";
 
 // --- Core Components / 核心组件 ---
 

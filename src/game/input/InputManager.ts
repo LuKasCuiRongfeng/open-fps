@@ -1,20 +1,21 @@
-import { worldConfig } from "../../config/world";
+// InputManager: DOM event handling, writes to RawInputState resource.
+// InputManager：DOM 事件处理，写入 RawInputState 资源
+//
+// Industry best practice: InputManager only handles DOM events and updates raw state.
+// 业界最佳实践：InputManager 只处理 DOM 事件并更新原始状态
+// The actual gameplay input processing happens in inputSystem.
+// 实际的游戏输入处理在 inputSystem 中进行
+
+import { inputConfig } from "../../config/input";
+import type { RawInputState } from "./RawInputState";
 
 export class InputManager {
   private readonly domElement: HTMLElement;
+  private readonly state: RawInputState;
 
-  private readonly pressed = new Set<string>();
-  private readonly justPressed = new Set<string>();
-  private pointerLocked = false;
-
-  private mouseDeltaX = 0;
-  private mouseDeltaY = 0;
-
-  private toggleCameraModeRequested = false;
-  private toggleThirdPersonStyleRequested = false;
-
-  constructor(domElement: HTMLElement) {
+  constructor(domElement: HTMLElement, state: RawInputState) {
     this.domElement = domElement;
+    this.state = state;
 
     domElement.addEventListener("click", this.onClick);
 
@@ -39,69 +40,35 @@ export class InputManager {
     }
   }
 
-  get isPointerLocked() {
-    return this.pointerLocked;
-  }
-
-  isDown(code: string) {
-    return this.pressed.has(code);
-  }
-
-  consumeJustPressed(code: string) {
-    const has = this.justPressed.has(code);
-    if (has) this.justPressed.delete(code);
-    return has;
-  }
-
-  consumeMouseDelta() {
-    const dx = this.mouseDeltaX;
-    const dy = this.mouseDeltaY;
-    this.mouseDeltaX = 0;
-    this.mouseDeltaY = 0;
-    return { dx, dy };
-  }
-
-  consumeToggleCameraMode() {
-    const v = this.toggleCameraModeRequested;
-    this.toggleCameraModeRequested = false;
-    return v;
-  }
-
-  consumeToggleThirdPersonStyle() {
-    const v = this.toggleThirdPersonStyleRequested;
-    this.toggleThirdPersonStyleRequested = false;
-    return v;
-  }
-
   private readonly onClick = () => {
     this.domElement.requestPointerLock();
   };
 
   private readonly onPointerLockChange = () => {
-    this.pointerLocked = document.pointerLockElement === this.domElement;
+    this.state.pointerLocked = document.pointerLockElement === this.domElement;
   };
 
   private readonly onMouseMove = (e: MouseEvent) => {
-    if (!this.pointerLocked) return;
-    this.mouseDeltaX += e.movementX;
-    this.mouseDeltaY += e.movementY;
+    if (!this.state.pointerLocked) return;
+    this.state.mouseDeltaX += e.movementX;
+    this.state.mouseDeltaY += e.movementY;
   };
 
   private readonly onKeyDown = (e: KeyboardEvent) => {
     if (!e.repeat) {
-      this.justPressed.add(e.code);
-      if (e.code === worldConfig.input.toggleCameraMode.code) {
-        this.toggleCameraModeRequested = true;
+      this.state.keysJustPressed.add(e.code);
+      if (e.code === inputConfig.toggleCameraMode.code) {
+        this.state.toggleCameraModeRequested = true;
       }
-      if (e.code === worldConfig.input.toggleThirdPersonStyle.code) {
-        this.toggleThirdPersonStyleRequested = true;
+      if (e.code === inputConfig.toggleThirdPersonStyle.code) {
+        this.state.toggleThirdPersonStyleRequested = true;
       }
     }
 
-    this.pressed.add(e.code);
+    this.state.keysDown.add(e.code);
   };
 
   private readonly onKeyUp = (e: KeyboardEvent) => {
-    this.pressed.delete(e.code);
+    this.state.keysDown.delete(e.code);
   };
 }

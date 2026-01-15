@@ -1,32 +1,17 @@
-// World Bounds System: constrains entities within loaded terrain area.
-// 世界边界系统：将实体限制在已加载地形区域内
-
-import { worldConfig } from "../../config/world";
+// World Bounds System: safety net for extreme cases.
+// 世界边界系统：极端情况的安全网
+//
+// Note: Primary ground collision is handled by physicsSystem.
+// This system is a fallback for edge cases (e.g., teleportation, respawn).
+// 注意：主要的地面碰撞由 physicsSystem 处理。
+// 此系统是边缘情况的后备（例如，传送、重生）。n
 import type { GameWorld } from "../ecs/GameEcs";
 import type { GameResources } from "../ecs/resources";
 
-/**
- * worldBoundsSystem: clamps player Y position to terrain surface.
- * worldBoundsSystem：将玩家 Y 位置限制在地形表面
- *
- * With streaming terrain, XZ bounds are effectively infinite.
- * Only Y is constrained to prevent falling through the world.
- * 流式地形下，XZ 边界实际上是无限的。
- * 只有 Y 被限制以防止穿透世界。
- */
-export function worldBoundsSystem(world: GameWorld, res: GameResources): void {
-  const terrain = res.runtime.terrain;
-  const minY = worldConfig.terrain.groundPlane.minYMeters;
-
-  for (const [, transform] of world.query("transform", "player")) {
-    // Query terrain height at player position.
-    // 查询玩家位置的地形高度
-    const terrainY = terrain.heightAt(transform.x, transform.z);
-
-    // Clamp Y to be above terrain surface.
-    // 将 Y 限制在地形表面以上
-    if (transform.y < terrainY + minY) {
-      transform.y = terrainY + minY;
-    }
-  }
+export function worldBoundsSystem(world: GameWorld, _res: GameResources): void {
+  // Currently a no-op. Ground collision is handled by physicsSystem.
+  // physicsSystem already uses terrain.heightAt() for ground detection.
+  // 当前为空操作。地面碰撞由 physicsSystem 处理。
+  // physicsSystem 已经使用 terrain.heightAt() 进行地面检测。
+  void world;
 }

@@ -1,7 +1,8 @@
 // Player Prefab: creates a player entity with all required components.
 // 玩家预制件：创建带有所有必需组件的玩家实体
 
-import { worldConfig } from "../../config/world";
+import { defaultsConfig } from "../../config/defaults";
+import { playerConfig } from "../../config/player";
 import type { GameResources } from "../ecs/resources";
 import type { EntityId } from "../ecs/EcsWorld";
 import type { GameEcs } from "../ecs/GameEcs";
@@ -23,8 +24,8 @@ export function createPlayer(ecs: GameEcs, resources: GameResources): EntityId {
   const playerId = ecs.createEntity();
   const world = ecs.world;
 
-  const spawnX = worldConfig.player.spawn.xMeters;
-  const spawnZ = worldConfig.player.spawn.zMeters;
+  const spawnX = playerConfig.spawn.xMeters;
+  const spawnZ = playerConfig.spawn.zMeters;
   const spawnY = resources.runtime.terrain.heightAt(spawnX, spawnZ);
 
   // Transform: position and orientation.
@@ -67,8 +68,8 @@ export function createPlayer(ecs: GameEcs, resources: GameResources): EntityId {
   // Player: camera mode state.
   // Player：相机模式状态
   world.add(playerId, "player", {
-    cameraMode: worldConfig.defaults.cameraMode,
-    thirdPersonStyle: worldConfig.defaults.thirdPersonStyle,
+    cameraMode: defaultsConfig.cameraMode,
+    thirdPersonStyle: defaultsConfig.thirdPersonStyle,
   });
 
   // Avatar: visual representation.

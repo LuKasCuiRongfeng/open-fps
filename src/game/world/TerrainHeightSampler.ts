@@ -115,14 +115,17 @@ export class TerrainHeightSampler {
   static computeHeight(worldX: number, worldZ: number, config: TerrainConfig): number {
     let x = worldX;
     let z = worldZ;
+    const seed = config.height.seed;
 
-    // Domain warp.
-    // 域扭曲
+    // Domain warp (must match GPU exactly).
+    // GPU uses: seed.add(9001) and seed.add(9002) as seedOffset
+    // 域扭曲（必须与 GPU 精确匹配）
+    // GPU 使用: seed.add(9001) 和 seed.add(9002) 作为 seedOffset
     if (config.height.warp.enabled) {
       const wf = config.height.warp.frequencyPerMeter;
       const wa = config.height.warp.amplitudeMeters;
-      const wx = (valueNoise2D(x * wf, z * wf, config.height.seed + 9001) * 2 - 1) * wa;
-      const wz = (valueNoise2D(x * wf, z * wf, config.height.seed + 9002) * 2 - 1) * wa;
+      const wx = (valueNoise2D(x * wf, z * wf, seed + 9001, seed) * 2 - 1) * wa;
+      const wz = (valueNoise2D(x * wf, z * wf, seed + 9002, seed) * 2 - 1) * wa;
       x += wx;
       z += wz;
     }
@@ -138,6 +141,32 @@ export class TerrainHeightSampler {
 // 噪声函数（CPU 侧，与 GPU 实现匹配）
 // ============================================================================
 
+// Hash texture cache (matches GPU's hash texture).
+// 哈希纹理缓存（与 GPU 的哈希纹理匹配）
+let hashTextureData: Float32Array | null = null;
+let hashTextureSeed: number | null = null;
+
+function getHashTextureData(seed: number): Float32Array {
+  if (hashTextureData && hashTextureSeed === seed) {
+    return hashTextureData;
+  }
+
+  const size = 256;
+  hashTextureData = new Float32Array(size * size);
+  hashTextureSeed = seed;
+
+  for (let i = 0; i < size * size; i++) {
+    // Must match GPU's hash texture generation exactly.
+    // 必须与 GPU 的哈希纹理生成完全匹配
+    let n = (i * 374761393 + seed * 668265263) >>> 0;
+    n = ((n ^ (n >> 13)) * 1274126177) >>> 0;
+    n = (n ^ (n >> 16)) >>> 0;
+    hashTextureData[i] = n / 4294967296;
+  }
+
+  return hashTextureData;
+}
+
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
@@ -147,15 +176,40 @@ function smoothstep01(t: number): number {
   return x * x * (3 - 2 * x);
 }
 
-function hash2i(xi: number, zi: number, seed: number): number {
-  let n = (xi | 0) * 374761393 + (zi | 0) * 668265263 + (seed | 0) * 2147483647;
-  n = (n ^ (n >> 13)) | 0;
-  n = Math.imul(n, 1274126177) | 0;
-  n = (n ^ (n >> 16)) >>> 0;
-  return n / 4294967296;
+/**
+ * Hash function matching GPU's texture-based hash.
+ * 与 GPU 基于纹理的哈希函数匹配
+ *
+ * NOTE: seedOffset should be the FULL offset (e.g. seed + 9001), same as GPU.
+ * 注意：seedOffset 应该是完整的偏移量（例如 seed + 9001），与 GPU 相同。
+ */
+function hash2i(xi: number, zi: number, seedOffset: number, seed: number): number {
+  const hashData = getHashTextureData(seed);
+  const size = 256;
+
+  // Match GPU's UV calculation exactly.
+  // GPU uses: fract(xi.mul(0.00390625).add(seedOffset.mul(0.1234)))
+  // where seedOffset is already (seed + baseOffset)
+  // 精确匹配 GPU 的 UV 计算
+  // GPU 使用: fract(xi.mul(0.00390625).add(seedOffset.mul(0.1234)))
+  // 其中 seedOffset 已经是 (seed + baseOffset)
+  let u = (xi * 0.00390625 + seedOffset * 0.1234) % 1;
+  let v = (zi * 0.00390625 + seedOffset * 0.5678) % 1;
+
+  // Handle negative values (fract behavior).
+  // 处理负值（fract 行为）
+  if (u < 0) u += 1;
+  if (v < 0) v += 1;
+
+  // Nearest neighbor sampling (matches GPU's NearestFilter).
+  // 最近邻采样（匹配 GPU 的 NearestFilter）
+  const px = Math.floor(u * size) % size;
+  const py = Math.floor(v * size) % size;
+
+  return hashData[py * size + px];
 }
 
-function valueNoise2D(x: number, z: number, seed: number): number {
+function valueNoise2D(x: number, z: number, seedOffset: number, seed: number): number {
   const xi = Math.floor(x);
   const zi = Math.floor(z);
 
@@ -165,10 +219,12 @@ function valueNoise2D(x: number, z: number, seed: number): number {
   const u = smoothstep01(xf);
   const v = smoothstep01(zf);
 
-  const a = hash2i(xi, zi, seed);
-  const b = hash2i(xi + 1, zi, seed);
-  const c = hash2i(xi, zi + 1, seed);
-  const d = hash2i(xi + 1, zi + 1, seed);
+  // seedOffset is the FULL offset (seed + baseOffset), matching GPU.
+  // seedOffset 是完整偏移量（seed + baseOffset），与 GPU 匹配
+  const a = hash2i(xi, zi, seedOffset, seed);
+  const b = hash2i(xi + 1, zi, seedOffset, seed);
+  const c = hash2i(xi, zi + 1, seedOffset, seed);
+  const d = hash2i(xi + 1, zi + 1, seedOffset, seed);
 
   const ab = lerp(a, b, u);
   const cd = lerp(c, d, u);
@@ -179,9 +235,13 @@ function fbm2D(x: number, z: number, cfg: TerrainConfig): number {
   let sum = 0;
   let amp = 1;
   let freq = cfg.height.frequencyPerMeter;
+  const seed = cfg.height.seed;
 
   for (let i = 0; i < cfg.height.octaves; i++) {
-    const n01 = valueNoise2D(x * freq, z * freq, cfg.height.seed + i * 1013);
+    // GPU uses: seed.add(float(i * 1013)) → seedOffset = seed + i * 1013
+    // GPU 使用: seed.add(float(i * 1013)) → seedOffset = seed + i * 1013
+    const seedOffset = seed + i * 1013;
+    const n01 = valueNoise2D(x * freq, z * freq, seedOffset, seed);
     const n = n01 * 2 - 1;
     sum += n * amp;
 
