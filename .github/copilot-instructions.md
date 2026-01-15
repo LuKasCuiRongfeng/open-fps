@@ -9,6 +9,11 @@
 - Rendering is Three.js **WebGPU-only**. Prefer importing WebGPU/TSL types via the TS path mappings in [tsconfig.json](../tsconfig.json):
   - Use `three/webgpu` for WebGPU renderer APIs.
   - Use `three/tsl` for TSL shader authoring.
+- **Three.js import rules (important for AI)**:
+  - TSL shader functions (`float`, `vec2`, `vec3`, `vec4`, `texture`, `uv`, `uniform`, `attribute`, `varying`, `mix`, `smoothstep`, `step`, `clamp`, `sin`, `cos`, `pow`, `normalize`, `dot`, `cross`, `reflect`, `length`, `distance`, `Fn`, `If`, etc.) → import from `three/tsl`
+  - All classes (`WebGPURenderer`, `Scene`, `PerspectiveCamera`, `Mesh`, `BufferGeometry`, `NodeMaterial`, `MeshStandardNodeMaterial`, `Vector3`, `Matrix4`, `Color`, `Texture`, `Clock`, etc.) and TypeScript types → import from `three/webgpu`
+  - TSL node types (return types of TSL functions) such as `Node`, `ShaderNodeObject`, `UniformNode`, `MathNode`, `FunctionNode`, `VarNode`, `AttributeNode`, etc. → also import from `three/webgpu` (do NOT define custom types for these)
+  - Never import from bare `three` — always use the specific subpath.
 - Materials should be **NodeMaterial/TSL-based** (no WebGL compatibility paths).
 - **GPU-first is mandatory**: aggressively prefer GPU acceleration. If a GPU approach can improve results/perf, don’t implement a CPU alternative; optimization must not reduce visual quality.
 - **Compute-shader first (maximize compute)**: when work is data-parallel (terrain, culling, LOD selection, animation skinning, particle simulation, visibility lists, indirect draws), implement it as a **compute shader / compute-node pipeline** rather than CPU loops.
