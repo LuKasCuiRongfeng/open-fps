@@ -56,7 +56,10 @@
 ## Design principles (day 1)
 - Design gameplay/engine systems using industry best practices from day 1 (e.g., ECS, flow-field pathfinding, data-oriented pipelines) — do not wait until the project is “almost done” to ask whether we should refactor to a better approach.
   - 一开始就按业界最推崇/最佳实践的方式设计（例如 ECS、flow-field 寻路、数据导向管线等），不要等项目差不多了才来问是否要用更好的方式重构。
-
+## Code cleanliness (AI must follow)
+- When improving or refactoring code, **delete dead code, unused imports, redundant logic, and meaningless comments**.
+- Do not leave behind obsolete code "just in case" — keep the codebase lean and maintainable.
+- 改进代码时必须删除无用代码、未使用的导入、冗余逻辑和无意义的注释，不要留"以防万一"的废代码，保持代码简洁。
 ## Compute shader patterns (WebGPU/Three.js)
 - Prefer using Three.js WebGPU + TSL compute facilities (compute nodes, storage buffers/textures) instead of ad-hoc CPU generation.
 - Aim for these GPU workflows as the default:
