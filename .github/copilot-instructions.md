@@ -71,6 +71,12 @@
 - Full Tauri dev: `pnpm tauri dev`.
 - Production build: `pnpm build` then `pnpm tauri build`.
 
+## AI testing rules (for Copilot/AI agents)
+- **Do NOT run `pnpm dev`** when testing code — the dev server may already be running in another terminal, causing port conflicts.
+- To verify code compiles: run `pnpm build`.
+- To check TypeScript type errors: run `pnpm tsc --noEmit` (or `npx tsc --noEmit`).
+- 测试代码时禁止运行 `pnpm dev`（可能与用户正在运行的开发服务器冲突），应使用 `pnpm build` 验证编译，使用 `tsc` 检查类型。
+
 ## Local dev ports / Vite+Tauri wiring
 - Vite is configured for Tauri with a fixed port in [vite.config.ts](../vite.config.ts):
   - `http://localhost:1420` (strict port; Tauri expects this).
