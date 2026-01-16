@@ -163,7 +163,16 @@ export class TerrainChunk {
     // Calculate expanded bounding sphere for GPU height displacement.
     // 计算扩展的包围球以考虑 GPU 高度位移
     const halfChunk = chunkSize / 2;
-    const heightRange = this.config.height.amplitudeMeters * 2;
+    // Total height range from all terrain layers.
+    // 所有地形层的总高度范围
+    const hcfg = this.config.height;
+    const heightRange = (
+      (hcfg.continental.enabled ? hcfg.continental.amplitudeMeters : 0) +
+      (hcfg.mountain.enabled ? hcfg.mountain.amplitudeMeters : 0) +
+      (hcfg.hills.enabled ? hcfg.hills.amplitudeMeters : 0) +
+      (hcfg.detail.enabled ? hcfg.detail.amplitudeMeters : 0) +
+      (hcfg.erosion.enabled ? hcfg.erosion.detailAmplitude : 0)
+    ) * 2;
     const baseRadius = halfChunk * Math.SQRT2;
     const radius = Math.sqrt(baseRadius * baseRadius + heightRange * heightRange);
 
@@ -246,7 +255,16 @@ export class TerrainChunk {
     // 近似：chunk 半对角线 + 最大高度振幅
     const chunkSize = this.config.streaming.chunkSizeMeters;
     const halfDiag = (chunkSize * Math.SQRT2) / 2;
-    const heightRange = this.config.height.amplitudeMeters * 2;
+    // Total height range from all terrain layers.
+    // 所有地形层的总高度范围
+    const hcfg = this.config.height;
+    const heightRange = (
+      (hcfg.continental.enabled ? hcfg.continental.amplitudeMeters : 0) +
+      (hcfg.mountain.enabled ? hcfg.mountain.amplitudeMeters : 0) +
+      (hcfg.hills.enabled ? hcfg.hills.amplitudeMeters : 0) +
+      (hcfg.detail.enabled ? hcfg.detail.amplitudeMeters : 0) +
+      (hcfg.erosion.enabled ? hcfg.erosion.detailAmplitude : 0)
+    ) * 2;
     return Math.sqrt(halfDiag * halfDiag + heightRange * heightRange);
   }
 

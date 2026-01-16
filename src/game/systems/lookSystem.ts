@@ -1,5 +1,5 @@
-// Look System: applies look input to transform orientation.
-// 视角系统：将视角输入应用到变换朝向
+// Look System: applies look input to transform orientation with smoothing.
+// 视角系统：将视角输入应用到变换朝向，带平滑处理
 
 import { playerConfig } from "../../config/player";
 import type { GameWorld } from "../ecs/GameEcs";
@@ -12,6 +12,9 @@ function clamp(value: number, min: number, max: number) {
 /**
  * lookSystem: reads look delta from PlayerInput and updates Transform orientation.
  * lookSystem：从 PlayerInput 读取视角增量并更新 Transform 朝向
+ *
+ * Uses exponential smoothing for silky camera rotation.
+ * 使用指数平滑实现丝滑的相机旋转
  */
 export function lookSystem(world: GameWorld, res: GameResources): void {
   // Only apply look when pointer is locked.
@@ -20,12 +23,28 @@ export function lookSystem(world: GameWorld, res: GameResources): void {
     return;
   }
 
+  const dt = res.time.dt;
+  const smoothFactor = playerConfig.look.smoothingFactor;
+
+  // Calculate interpolation factor using exponential smoothing.
+  // 使用指数平滑计算插值因子
+  // alpha approaches 1 as dt increases, ensuring responsiveness.
+  // alpha 随 dt 增大趋近于 1，确保响应性
+  const alpha = 1 - Math.pow(smoothFactor, dt);
+
   for (const [, transform, playerInput] of world.query("transform", "playerInput")) {
-    transform.yawRadians += playerInput.lookDeltaYaw;
-    transform.pitchRadians = clamp(
-      transform.pitchRadians + playerInput.lookDeltaPitch,
+    // Update target orientation from input.
+    // 从输入更新目标朝向
+    transform.targetYawRadians += playerInput.lookDeltaYaw;
+    transform.targetPitchRadians = clamp(
+      transform.targetPitchRadians + playerInput.lookDeltaPitch,
       playerConfig.pitch.minRadians,
       playerConfig.pitch.maxRadians,
     );
+
+    // Smoothly interpolate current orientation toward target.
+    // 将当前朝向平滑插值到目标
+    transform.yawRadians += (transform.targetYawRadians - transform.yawRadians) * alpha;
+    transform.pitchRadians += (transform.targetPitchRadians - transform.pitchRadians) * alpha;
   }
 }

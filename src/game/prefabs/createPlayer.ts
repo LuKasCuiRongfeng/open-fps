@@ -36,6 +36,8 @@ export function createPlayer(ecs: GameEcs, resources: GameResources): EntityId {
     z: spawnZ,
     yawRadians: 0,
     pitchRadians: 0,
+    targetYawRadians: 0,
+    targetPitchRadians: 0,
   });
 
   // Velocity: movement speed (physics will integrate).

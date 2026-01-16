@@ -16,6 +16,11 @@ export type TransformComponent = {
   z: number;
   yawRadians: number;
   pitchRadians: number;
+
+  // Smoothed target orientation (for interpolation).
+  // 平滑目标朝向（用于插值）
+  targetYawRadians: number;
+  targetPitchRadians: number;
 };
 
 /**

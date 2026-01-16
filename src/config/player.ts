@@ -60,6 +60,12 @@ export const playerConfig = {
     // Mouse pixels -> radians scaling.
     // 鼠标像素 -> 弧度 的缩放
     radiansPerPixel: 0.002,
+
+    // Smoothing factor for camera rotation (0 = no smoothing, higher = smoother but more lag).
+    // 相机旋转的平滑系数（0 = 无平滑，越高 = 越平滑但延迟越大）
+    // Uses exponential smoothing: smoothed = lerp(smoothed, target, 1 - smoothFactor^dt)
+    // 使用指数平滑：smoothed = lerp(smoothed, target, 1 - smoothFactor^dt)
+    smoothingFactor: 0.0001,
   },
 
   // Vertical look limits.

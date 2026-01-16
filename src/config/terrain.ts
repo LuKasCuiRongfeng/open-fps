@@ -57,7 +57,9 @@ export const terrainConfig = {
   floatingOrigin: {
     // Rebase threshold in meters (rebase when player exceeds this distance from origin).
     // 重置阈值（米），当玩家距原点超过此距离时重置
-    rebaseThresholdMeters: 2000,
+    // NOTE: Temporarily set very high to disable until chunk system properly supports it.
+    // 注意：临时设置很高以禁用，直到 chunk 系统正确支持它
+    rebaseThresholdMeters: 100000,
   },
 
   // World bounds (invisible walls at map edges).
@@ -67,8 +69,8 @@ export const terrainConfig = {
     // 可玩区域的半尺寸（米）。总尺寸 = 2 * halfSize
     // Terrain chunks stream dynamically, so this can be any size.
     // 地形 chunk 动态流式加载，所以这可以是任意大小
-    // 1000m = 1km radius = 2km × 2km playable area
-    halfSizeMeters: 1000,
+    // 2500m = 2.5km radius = 5km × 5km playable area
+    halfSizeMeters: 2500,
   },
 
   // CPU heightmap cache for fast heightAt queries.
@@ -92,74 +94,195 @@ export const terrainConfig = {
     // 基准高度（米，世界坐标 Y）
     baseHeightMeters: 0,
 
-    // Peak-to-valley scale in meters (roughly).
-    // 地形起伏尺度（大致，米）
-    amplitudeMeters: 18,
-
-    // Base frequency (1/m). 0.01 => ~100m main features.
-    // 基础频率（1/米）。0.01 => ~100 米尺度的主地形
-    frequencyPerMeter: 0.01,
-
-    // fBm parameters.
-    // fBm 参数
-    octaves: 5,
-    lacunarity: 2.0,
-    gain: 0.5,
+    // Normal sampling step for the CPU mesh (meters).
+    // CPU 生成网格法线的采样步长（米）
+    normalSampleStepMeters: 0.6,
 
     // Terrain seed (deterministic).
     // 地形随机种子（确定性）
     seed: 1337,
 
-    // Normal sampling step for the CPU mesh (meters).
-    // CPU 生成网格法线的采样步长（米）
-    normalSampleStepMeters: 0.6,
+    // ============== Multi-layer terrain generation ==============
+    // ============== 多层地形生成 ==============
+    // Realistic terrain uses multiple noise layers at different scales:
+    // 真实地形使用不同尺度的多层噪声叠加：
+    // - Continental: very large scale mountain ranges / 大陆尺度的山脉
+    // - Mountains: mid-scale peaks and ridges / 中尺度的山峰和山脊
+    // - Hills: rolling hills and valleys / 丘陵起伏
+    // - Details: small surface variation / 小尺度表面细节
 
-    warp: {
-      // Domain warp makes terrain less grid-like.
-      // 域扭曲能减少网格感
+    // Continental layer (very large features ~1000-3000m).
+    // 大陆层（非常大的地貌特征 ~1000-3000m）
+    // Creates base elevation variance - most areas are low, few are high.
+    // 创建基础高度变化 - 大部分区域较低，少部分较高
+    continental: {
       enabled: true,
-      amplitudeMeters: 18,
-      frequencyPerMeter: 0.004,
+      amplitudeMeters: 120,         // Max height contribution / 最大高度贡献
+      frequencyPerMeter: 0.0003,    // ~3300m features / ~3300m 尺度特征
+      octaves: 2,
+      lacunarity: 2.0,
+      gain: 0.5,
+      // DISABLED ridged noise - causes all-high terrain.
+      // 禁用山脊噪声 - 会导致全部高地形
+      ridged: false,
+      ridgeSharpness: 2.0,
+      // Power curve: <1 = more low areas, >1 = more high areas.
+      // 幂曲线：<1 = 更多低地，>1 = 更多高地
+      // 2.5 means ~70% of terrain is below 30% of max height.
+      // 2.5 意味着约70%的地形低于最大高度的30%
+      powerCurve: 2.5,
+    },
+
+    // Mountain layer (sparse high peaks).
+    // 山地层（稀疏的高峰）
+    // Only adds significant height in select areas.
+    // 只在选定区域添加显著高度
+    mountain: {
+      enabled: true,
+      amplitudeMeters: 200,         // Tall peaks where they occur / 出现处的高峰
+      frequencyPerMeter: 0.0008,    // ~1250m features / ~1250m 尺度特征
+      octaves: 3,
+      lacunarity: 2.0,
+      gain: 0.5,
+      ridged: false,
+      ridgeSharpness: 2.0,
+      // Strong power curve: most areas get near-zero contribution.
+      // 强幂曲线：大部分区域贡献接近零
+      powerCurve: 3.0,
+    },
+
+    // Hills layer (gentle rolling terrain).
+    // 丘陵层（平缓起伏的地形）
+    hills: {
+      enabled: true,
+      amplitudeMeters: 25,          // Gentle hills / 平缓丘陵
+      frequencyPerMeter: 0.003,     // ~333m features / ~333m 尺度特征
+      octaves: 4,
+      lacunarity: 2.0,
+      gain: 0.5,
+      ridged: false,
+      // Mild power curve for natural variation.
+      // 温和的幂曲线产生自然变化
+      powerCurve: 1.5,
+    },
+
+    // Detail layer (small surface variation).
+    // 细节层（小表面变化）
+    detail: {
+      enabled: true,
+      amplitudeMeters: 8,           // Small bumps / 小凸起
+      frequencyPerMeter: 0.015,     // ~67m features / ~67m 尺度特征
+      octaves: 3,
+      lacunarity: 2.0,
+      gain: 0.5,
+      ridged: false,
+      powerCurve: 1.0,              // No power curve for detail / 细节不用幂曲线
+    },
+
+    // ============== Terrain shaping ==============
+    // ============== 地形塑形 ==============
+
+    // Plains flattening: flatten low areas to create plains.
+    // 平原压平：将低洼区域压平形成平原
+    plains: {
+      enabled: false,  // Disabled to allow full height range / 禁用以保留完整高度范围
+      // Heights below this become flatter (meters).
+      // 低于此高度的区域会变平坦（米）
+      thresholdMeters: 50,
+      // Flattening strength (0=none, 1=completely flat).
+      // 压平强度（0=无，1=完全平坦）
+      strength: 0.4,
+      // Transition smoothness (meters).
+      // 过渡平滑度（米）
+      transitionMeters: 30,
+    },
+
+    // Valley carving: create river-like depressions.
+    // 山谷雕刻：创建类似河谷的凹陷
+    valleys: {
+      enabled: true,
+      amplitudeMeters: 15,          // Subtle valleys / 微妙的山谷
+      frequencyPerMeter: 0.0006,    // Large scale valleys / 大尺度山谷
+      octaves: 2,
+      // Only carve into lower terrain (blends out at high elevations).
+      // 只在低地雕刻（在高海拔逐渐消失）
+      heightFadeStartMeters: 40,
+      heightFadeEndMeters: 80,
+    },
+
+    // Domain warp makes terrain less grid-like.
+    // 域扭曲能减少网格感
+    warp: {
+      enabled: true,
+      amplitudeMeters: 80,
+      frequencyPerMeter: 0.0015,
+    },
+
+    // Erosion simulation (simplified thermal erosion).
+    // 侵蚀模拟（简化的热力侵蚀）
+    erosion: {
+      enabled: true,
+      // Smooths steep slopes / 平滑陡坡
+      thermalStrength: 0.15,
+      // Adds fine noise to simulate erosion patterns / 添加细噪声模拟侵蚀纹理
+      detailFrequency: 0.08,
+      detailAmplitude: 1.5,
     },
   },
 
   material: {
-    // Height-based biome thresholds.
-    // 基于高度的地表分区阈值
-    dirtToGrassStartMeters: -2,
-    dirtToGrassEndMeters: 2,
-    rockHeightStartMeters: 8,
-    rockHeightEndMeters: 14,
+    // Height-based biome thresholds (realistic: grass -> rock -> snow).
+    // 基于高度的生物群落阈值（真实：草地 -> 岩石 -> 雪）
+    // Low elevation: grass (green)
+    // 低海拔：草地（绿色）
+    // Mid elevation: rock (gray) - starts where grass ends
+    // 中海拔：岩石（灰色）- 从草地结束处开始
+    // High elevation: snow (white) - mountain peaks
+    // 高海拔：雪（白色）- 山峰
+
+    // Grass to rock transition (meters).
+    // 草地到岩石的过渡（米）
+    // Most terrain should be grassy plains (0-40m).
+    // 大部分地形应该是草地平原（0-40m）
+    grassToRockStartMeters: 40,
+    grassToRockEndMeters: 70,
+
+    // Rock to snow transition (meters).
+    // 岩石到雪的过渡（米）
+    // Only high mountain peaks get snow (100m+).
+    // 只有高山峰有雪（100m+）
+    rockToSnowStartMeters: 100,
+    rockToSnowEndMeters: 140,
 
     // Slope thresholds (0=flat, 1=vertical).
-    // 坡度阈值（0=平坦，1=垂直）
-    rockSlopeStart: 0.28,
+    // 坡度阈值（0=平坦，1=垂直）- 陡坡显示岩石
+    rockSlopeStart: 0.3,
     rockSlopeEnd: 0.55,
 
     // Albedo colors (linear RGB 0..1).
     // 反照率颜色（线性 RGB 0..1）
-    grassColorRgb: [0.13, 0.46, 0.12] as const,
-    dirtColorRgb: [0.21, 0.18, 0.12] as const,
-    rockColorRgb: [0.35, 0.35, 0.36] as const,
+    grassColorRgb: [0.15, 0.45, 0.12] as const,
+    rockColorRgb: [0.35, 0.33, 0.30] as const,
+    snowColorRgb: [0.95, 0.95, 0.98] as const,
 
     // Macro variation (GPU noise) for biome patchiness.
     // 宏观变化（GPU 噪声），让地表更自然/成片
     macro: {
-      frequencyPerMeter: 0.006,
+      frequencyPerMeter: 0.004,
       octaves: 3,
       lacunarity: 2.0,
       diminish: 0.5,
       amplitude: 1.0,
 
-      // How much the macro noise shifts the dirt/grass transition heights.
-      // 宏观噪声对"泥土/草地"高度过渡的偏移强度
-      heightShiftMeters: 3.0,
+      // How much the macro noise shifts transition heights.
+      // 宏观噪声对过渡高度的偏移强度
+      heightShiftMeters: 8.0,
     },
 
     // Rock breakup (GPU Worley noise) to avoid smooth rock bands.
     // 岩石破碎度（GPU Worley 噪声），避免岩石带过于平滑
     rockBreakup: {
-      frequencyPerMeter: 0.08,
+      frequencyPerMeter: 0.06,
       jitter: 0.9,
       threshold: 0.55,
       softness: 0.12,
@@ -173,8 +296,8 @@ export const terrainConfig = {
 
       // Height range where wetness fades out.
       // 湿度消退的高度范围
-      startHeightMeters: -1.5,
-      endHeightMeters: 1.5,
+      startHeightMeters: 10,
+      endHeightMeters: 30,
 
       // Favor flatter surfaces (slope: 0 flat -> 1 vertical).
       // 更偏向平坦区域（坡度：0 平坦 -> 1 垂直）

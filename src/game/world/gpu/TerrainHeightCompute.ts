@@ -34,6 +34,9 @@ import type { TerrainConfig } from "../terrain";
  * GPU compute pipeline for terrain height generation.
  * GPU 地形高度生成的计算管线
  *
+ * Uses dynamic tile allocation to support infinite terrain streaming.
+ * 使用动态 tile 分配以支持无限地形流式加载
+ *
  * Generates a tiled heightmap texture where each tile represents a chunk.
  * 生成一个分块高度图纹理，每个 tile 代表一个 chunk。
  */
@@ -47,6 +50,16 @@ export class TerrainHeightCompute {
   // Atlas dimensions (number of tiles per side, from config).
   // 图集尺寸（每边的 tile 数，来自配置）
   private readonly atlasTilesPerSide: number;
+
+  // Dynamic tile allocation tracking.
+  // 动态 tile 分配跟踪
+  // Maps "cx,cz" -> tile index (0 to atlasTilesPerSide² - 1).
+  // 映射 "cx,cz" -> tile 索引（0 到 atlasTilesPerSide² - 1）
+  private readonly chunkToTile = new Map<string, number>();
+  
+  // Free tile indices (stack for O(1) alloc/free).
+  // 空闲 tile 索引（栈结构，O(1) 分配/释放）
+  private readonly freeTiles: number[] = [];
 
   // Total atlas resolution.
   // 图集总分辨率
@@ -79,6 +92,62 @@ export class TerrainHeightCompute {
     this.tileResolution = config.gpuCompute.tileResolution;
     this.atlasTilesPerSide = config.gpuCompute.atlasTilesPerSide;
     this.atlasResolution = this.tileResolution * this.atlasTilesPerSide;
+
+    // Initialize free tile list with all tiles.
+    // 初始化空闲 tile 列表，包含所有 tile
+    const totalTiles = this.atlasTilesPerSide * this.atlasTilesPerSide;
+    for (let i = totalTiles - 1; i >= 0; i--) {
+      this.freeTiles.push(i);
+    }
+  }
+
+  /**
+   * Allocate a tile for a chunk. Returns tile index or -1 if no free tiles.
+   * 为 chunk 分配一个 tile。返回 tile 索引，如果没有空闲 tile 则返回 -1
+   */
+  allocateTile(cx: number, cz: number): number {
+    const key = `${cx},${cz}`;
+    
+    // Check if already allocated.
+    // 检查是否已分配
+    const existing = this.chunkToTile.get(key);
+    if (existing !== undefined) {
+      return existing;
+    }
+
+    // Allocate new tile from free list.
+    // 从空闲列表分配新 tile
+    if (this.freeTiles.length === 0) {
+      console.error(`[TerrainHeightCompute] No free tiles available!`);
+      return -1;
+    }
+
+    const tileIndex = this.freeTiles.pop()!;
+    this.chunkToTile.set(key, tileIndex);
+    return tileIndex;
+  }
+
+  /**
+   * Free a tile when chunk is unloaded.
+   * chunk 卸载时释放 tile
+   */
+  freeTile(cx: number, cz: number): void {
+    const key = `${cx},${cz}`;
+    const tileIndex = this.chunkToTile.get(key);
+    if (tileIndex !== undefined) {
+      this.chunkToTile.delete(key);
+      this.freeTiles.push(tileIndex);
+    }
+  }
+
+  /**
+   * Convert tile index to (tileX, tileZ) coordinates.
+   * 将 tile 索引转换为 (tileX, tileZ) 坐标
+   */
+  private tileIndexToCoords(tileIndex: number): { tileX: number; tileZ: number } {
+    const tileX = tileIndex % this.atlasTilesPerSide;
+    const tileZ = Math.floor(tileIndex / this.atlasTilesPerSide);
+    return { tileX, tileZ };
   }
 
   /**
@@ -160,10 +229,10 @@ export class TerrainHeightCompute {
       const xf = fract(x);
       const zf = fract(z);
 
-      // Smoothstep interpolation.
-      // Smoothstep 插值
-      const u = xf.mul(xf).mul(float(3).sub(xf.mul(2)));
-      const v = zf.mul(zf).mul(float(3).sub(zf.mul(2)));
+      // Quintic smoothstep interpolation for smoother results.
+      // 五次平滑插值，效果更平滑
+      const u = xf.mul(xf).mul(xf).mul(xf.mul(xf.mul(6).sub(15)).add(10));
+      const v = zf.mul(zf).mul(zf).mul(zf.mul(zf.mul(6).sub(15)).add(10));
 
       const a = hash2i(xi, zi, seedOffset);
       const b = hash2i(xi.add(1), zi, seedOffset);
@@ -175,64 +244,16 @@ export class TerrainHeightCompute {
       return mix(ab, cd, v);
     });
 
-    // fBm noise.
-    // fBm 噪声
-    const fbm2D = Fn(([wx, wz]: [
-      ReturnType<typeof float>,
-      ReturnType<typeof float>
-    ]) => {
-      const sum = float(0).toVar();
-      const amp = float(1).toVar();
-      const freq = float(cfg.height.frequencyPerMeter).toVar();
-      const octaves = cfg.height.octaves;
-      const lacunarity = float(cfg.height.lacunarity);
-      const gain = float(cfg.height.gain);
-      const seed = float(cfg.height.seed);
-
-      // Unroll octaves loop.
-      // 展开八度循环
-      for (let i = 0; i < octaves; i++) {
-        const n01 = valueNoise2D(wx.mul(freq), wz.mul(freq), seed.add(float(i * 1013)));
-        const n = n01.mul(2).sub(1);
-        sum.addAssign(n.mul(amp));
-        freq.mulAssign(lacunarity);
-        amp.mulAssign(gain);
-      }
-
-      return sum;
-    });
-
-    // Domain warp.
-    // 域扭曲
-    const warpedCoords = Fn(([wx, wz]: [
-      ReturnType<typeof float>,
-      ReturnType<typeof float>
-    ]) => {
-      const warpCfg = cfg.height.warp;
-      const warpFreq = float(warpCfg.frequencyPerMeter);
-      const warpAmp = float(warpCfg.amplitudeMeters);
-      const seed = float(cfg.height.seed);
-
-      If(float(warpCfg.enabled ? 1 : 0).greaterThan(0.5), () => {
-        const wx2 = valueNoise2D(wx.mul(warpFreq), wz.mul(warpFreq), seed.add(9001));
-        const wz2 = valueNoise2D(wx.mul(warpFreq), wz.mul(warpFreq), seed.add(9002));
-        wx.addAssign(wx2.mul(2).sub(1).mul(warpAmp));
-        wz.addAssign(wz2.mul(2).sub(1).mul(warpAmp));
-      });
-
-      return vec2(wx, wz);
-    });
-
-    // Main compute function.
-    // 主计算函数
+    // Main compute function with all noise inlined.
+    // 主计算函数，所有噪声内联
     const computeFn = Fn(() => {
       // Compute pixel coordinates from instance index.
       // 从实例索引计算像素坐标
       const pixelX = mod(instanceIndex, uint(tileRes));
       const pixelY = mod(instanceIndex.div(uint(tileRes)), uint(tileRes));
 
-      // Use pre-computed tile coordinates from JavaScript (handles negative coords).
-      // 使用 JavaScript 预计算的 tile 坐标（正确处理负数）
+      // Use pre-computed tile coordinates from JavaScript.
+      // 使用 JavaScript 预计算的 tile 坐标
       const tileXCoord = uint(this.tileX);
       const tileZCoord = uint(this.tileZ);
 
@@ -243,22 +264,209 @@ export class TerrainHeightCompute {
       const worldX = float(this.chunkOffsetX).mul(chunkSize).add(localU.mul(chunkSize)).toVar();
       const worldZ = float(this.chunkOffsetZ).mul(chunkSize).add(localV.mul(chunkSize)).toVar();
 
-      // Apply domain warp.
-      // 应用域扭曲
-      const warped = warpedCoords(worldX, worldZ);
-      worldX.assign(warped.x);
-      worldZ.assign(warped.y);
+      const seed = float(cfg.height.seed);
 
-      // Compute height.
-      // 计算高度
-      const height = fbm2D(worldX, worldZ)
-        .mul(float(cfg.height.amplitudeMeters))
-        .add(float(cfg.height.baseHeightMeters));
+      // ============== Domain warp (inline) ==============
+      // ============== 域扭曲（内联） ==============
+      const warpCfg = cfg.height.warp;
+      If(float(warpCfg.enabled ? 1 : 0).greaterThan(0.5), () => {
+        const warpFreq = float(warpCfg.frequencyPerMeter);
+        const warpAmp = float(warpCfg.amplitudeMeters);
 
-      // Write to atlas (vec4 required for textureStore, only R channel used).
-      // 写入图集（textureStore 需要 vec4，仅使用 R 通道）
-      // IMPORTANT: .toWriteOnly() is required for compute shader texture writes!
-      // 重要：compute shader 写入纹理必须调用 .toWriteOnly()！
+        // Simple warp using value noise.
+        // 使用值噪声的简单扭曲
+        const wn1 = valueNoise2D(worldX.mul(warpFreq), worldZ.mul(warpFreq), seed.add(9001));
+        const wn2 = valueNoise2D(worldX.mul(warpFreq), worldZ.mul(warpFreq), seed.add(9002));
+        worldX.addAssign(wn1.mul(2).sub(1).mul(warpAmp));
+        worldZ.addAssign(wn2.mul(2).sub(1).mul(warpAmp));
+      });
+
+      const height = float(cfg.height.baseHeightMeters).toVar();
+
+      // ============== Continental layer (fBm with power curve) ==============
+      // ============== 大陆层（fBm 带幂曲线） ==============
+      // Power curve creates natural distribution: most areas low, few areas high.
+      // 幂曲线创建自然分布：大部分区域低，少部分区域高
+      const contCfg = cfg.height.continental;
+      const contPower = contCfg.powerCurve ?? 1.0;
+      If(float(contCfg.enabled ? 1 : 0).greaterThan(0.5), () => {
+        const contSum = float(0).toVar();
+        const contAmp = float(1).toVar();
+        const contFreq = float(contCfg.frequencyPerMeter).toVar();
+        const contMaxAmp = float(0).toVar();
+
+        // Standard fBm.
+        // 标准 fBm
+        for (let i = 0; i < contCfg.octaves; i++) {
+          const n01 = valueNoise2D(worldX.mul(contFreq), worldZ.mul(contFreq), seed.add(1000 + i * 1013));
+          contSum.addAssign(n01.mul(contAmp));
+          contMaxAmp.addAssign(contAmp);
+          contFreq.mulAssign(float(contCfg.lacunarity));
+          contAmp.mulAssign(float(contCfg.gain));
+        }
+
+        // Normalize to 0..1, apply power curve, then scale.
+        // 归一化到 0..1，应用幂曲线，然后缩放
+        const normalized = contSum.div(contMaxAmp);
+        const curved = normalized.pow(float(contPower));
+        height.addAssign(curved.mul(float(contCfg.amplitudeMeters)));
+      });
+
+      // ============== Mountain layer (fBm with power curve) ==============
+      // ============== 山地层（fBm 带幂曲线） ==============
+      // Strong power curve means only select areas get mountains.
+      // 强幂曲线意味着只有选定区域有山
+      const mtnCfg = cfg.height.mountain;
+      const mtnPower = mtnCfg.powerCurve ?? 1.0;
+      If(float(mtnCfg.enabled ? 1 : 0).greaterThan(0.5), () => {
+        const mtnSum = float(0).toVar();
+        const mtnAmp = float(1).toVar();
+        const mtnFreq = float(mtnCfg.frequencyPerMeter).toVar();
+        const mtnMaxAmp = float(0).toVar();
+
+        for (let i = 0; i < mtnCfg.octaves; i++) {
+          const n01 = valueNoise2D(worldX.mul(mtnFreq), worldZ.mul(mtnFreq), seed.add(2000 + i * 1013));
+          mtnSum.addAssign(n01.mul(mtnAmp));
+          mtnMaxAmp.addAssign(mtnAmp);
+          mtnFreq.mulAssign(float(mtnCfg.lacunarity));
+          mtnAmp.mulAssign(float(mtnCfg.gain));
+        }
+
+        // Normalize to 0..1, apply power curve, then scale.
+        // 归一化到 0..1，应用幂曲线，然后缩放
+        const normalized = mtnSum.div(mtnMaxAmp);
+        const curved = normalized.pow(float(mtnPower));
+        height.addAssign(curved.mul(float(mtnCfg.amplitudeMeters)));
+      });
+
+      // ============== Hills layer (fBm with power curve) ==============
+      // ============== 丘陵层（fBm 带幂曲线） ==============
+      const hillCfg = cfg.height.hills;
+      const hillPower = hillCfg.powerCurve ?? 1.0;
+      If(float(hillCfg.enabled ? 1 : 0).greaterThan(0.5), () => {
+        const hillSum = float(0).toVar();
+        const hillAmp = float(1).toVar();
+        const hillFreq = float(hillCfg.frequencyPerMeter).toVar();
+        const hillMaxAmp = float(0).toVar();
+
+        for (let i = 0; i < hillCfg.octaves; i++) {
+          const n01 = valueNoise2D(worldX.mul(hillFreq), worldZ.mul(hillFreq), seed.add(3000 + i * 1013));
+          hillSum.addAssign(n01.mul(hillAmp));
+          hillMaxAmp.addAssign(hillAmp);
+          hillFreq.mulAssign(float(hillCfg.lacunarity));
+          hillAmp.mulAssign(float(hillCfg.gain));
+        }
+
+        // Apply power curve for natural hill distribution.
+        // 应用幂曲线以获得自然的丘陵分布
+        const normalized = hillSum.div(hillMaxAmp);
+        const curved = normalized.pow(float(hillPower));
+        height.addAssign(curved.mul(float(hillCfg.amplitudeMeters)));
+      });
+
+      // ============== Detail layer (fBm - symmetric) ==============
+      // ============== 细节层（fBm - 对称） ==============
+      // Detail uses signed noise for bumps and dips.
+      // 细节使用有符号噪声产生凸起和凹陷
+      const detCfg = cfg.height.detail;
+      If(float(detCfg.enabled ? 1 : 0).greaterThan(0.5), () => {
+        const detSum = float(0).toVar();
+        const detAmp = float(1).toVar();
+        const detFreq = float(detCfg.frequencyPerMeter).toVar();
+        const detMaxAmp = float(0).toVar();
+
+        for (let i = 0; i < detCfg.octaves; i++) {
+          const n01 = valueNoise2D(worldX.mul(detFreq), worldZ.mul(detFreq), seed.add(4000 + i * 1013));
+          // Convert to signed noise -1..1 for symmetric detail.
+          // 转换为有符号噪声 -1..1 以获得对称细节
+          const n = n01.mul(2).sub(1);
+          detSum.addAssign(n.mul(detAmp));
+          detMaxAmp.addAssign(detAmp);
+          detFreq.mulAssign(float(detCfg.lacunarity));
+          detAmp.mulAssign(float(detCfg.gain));
+        }
+
+        height.addAssign(detSum.div(detMaxAmp).mul(float(detCfg.amplitudeMeters)));
+      });
+
+      // ============== Plains flattening ==============
+      // ============== 平原压平 ==============
+      const plainsCfg = cfg.height.plains;
+      If(float(plainsCfg.enabled ? 1 : 0).greaterThan(0.5), () => {
+        const threshold = float(plainsCfg.thresholdMeters);
+        const transition = float(plainsCfg.transitionMeters);
+        const strength = float(plainsCfg.strength);
+
+        // Smoothstep: (height - (threshold-transition)) / (2*transition), clamped 0..1
+        const t = height.sub(threshold.sub(transition)).div(transition.mul(2)).clamp(0, 1);
+        const smoothT = t.mul(t).mul(float(3).sub(t.mul(2)));
+        const flattenFactor = float(1).sub(smoothT).mul(strength);
+
+        const targetHeight = float(cfg.height.baseHeightMeters);
+        height.assign(mix(height, targetHeight, flattenFactor));
+      });
+
+      // ============== Valley carving ==============
+      // ============== 山谷雕刻 ==============
+      const valCfg = cfg.height.valleys;
+      If(float(valCfg.enabled ? 1 : 0).greaterThan(0.5), () => {
+        // Valley noise using fBm.
+        // 使用 fBm 的山谷噪声
+        const valSum = float(0).toVar();
+        const valAmp = float(1).toVar();
+        const valFreq = float(valCfg.frequencyPerMeter).toVar();
+        const valMaxAmp = float(0).toVar();
+
+        for (let i = 0; i < valCfg.octaves; i++) {
+          const n01 = valueNoise2D(worldX.mul(valFreq), worldZ.mul(valFreq), seed.add(5000 + i * 1013));
+          const n = n01.mul(2).sub(1);
+          valSum.addAssign(n.mul(valAmp));
+          valMaxAmp.addAssign(valAmp);
+          valFreq.mulAssign(float(2.0));
+          valAmp.mulAssign(float(0.5));
+        }
+
+        const valleyNoise = valSum.div(valMaxAmp);
+
+        // Valley shape: valleys where noise is near 0.
+        // 山谷形状：噪声接近 0 的地方
+        const valleyShape = float(1).sub(valleyNoise.abs().mul(2).clamp(0, 1));
+        const valleyDepth = valleyShape.mul(valleyShape).mul(float(valCfg.amplitudeMeters));
+
+        // Fade out valleys at high elevations.
+        // 高海拔淡出山谷
+        const fadeT = height.sub(float(valCfg.heightFadeStartMeters))
+          .div(float(valCfg.heightFadeEndMeters - valCfg.heightFadeStartMeters)).clamp(0, 1);
+        const heightFade = float(1).sub(fadeT);
+
+        height.subAssign(valleyDepth.mul(heightFade));
+      });
+
+      // ============== Erosion detail ==============
+      // ============== 侵蚀细节 ==============
+      const erosionCfg = cfg.height.erosion;
+      If(float(erosionCfg.enabled ? 1 : 0).greaterThan(0.5), () => {
+        // Simple 2-octave fBm for erosion detail.
+        // 简单的 2 八度 fBm 用于侵蚀细节
+        const eroSum = float(0).toVar();
+        const eroAmp = float(1).toVar();
+        const eroFreq = float(erosionCfg.detailFrequency).toVar();
+        const eroMaxAmp = float(0).toVar();
+
+        for (let i = 0; i < 2; i++) {
+          const n01 = valueNoise2D(worldX.mul(eroFreq), worldZ.mul(eroFreq), seed.add(6000 + i * 1013));
+          const n = n01.mul(2).sub(1);
+          eroSum.addAssign(n.mul(eroAmp));
+          eroMaxAmp.addAssign(eroAmp);
+          eroFreq.mulAssign(float(2.0));
+          eroAmp.mulAssign(float(0.5));
+        }
+
+        height.addAssign(eroSum.div(eroMaxAmp).mul(float(erosionCfg.detailAmplitude)));
+      });
+
+      // Write to atlas.
+      // 写入图集
       const atlasX = tileXCoord.mul(uint(tileRes)).add(pixelX);
       const atlasY = tileZCoord.mul(uint(tileRes)).add(pixelY);
 
@@ -272,21 +480,33 @@ export class TerrainHeightCompute {
    * Bake height for a chunk into the atlas.
    * 将一个 chunk 的高度烘焙到图集中
    *
+   * Uses dynamic tile allocation for infinite terrain support.
+   * 使用动态 tile 分配以支持无限地形
+   *
    * @param cx Chunk X coordinate.
    * @param cz Chunk Z coordinate.
    * @param renderer WebGPU renderer.
+   * @returns The allocated tile index, or -1 if allocation failed.
    */
-  async bakeChunk(cx: number, cz: number, renderer: WebGPURenderer): Promise<void> {
+  async bakeChunk(cx: number, cz: number, renderer: WebGPURenderer): Promise<number> {
+    // Allocate tile for this chunk (or get existing).
+    // 为此 chunk 分配 tile（或获取已有的）
+    const tileIndex = this.allocateTile(cx, cz);
+    if (tileIndex < 0) {
+      return -1;
+    }
+
+    const { tileX, tileZ } = this.tileIndexToCoords(tileIndex);
+
     // Set chunk world coordinates.
     // 设置 chunk 世界坐标
     this.chunkOffsetX.value = cx;
     this.chunkOffsetZ.value = cz;
 
-    // Pre-compute tile coordinates with proper negative number handling.
-    // 预计算 tile 坐标，正确处理负数
-    const atlasTiles = this.atlasTilesPerSide;
-    this.tileX.value = ((cx % atlasTiles) + atlasTiles) % atlasTiles;
-    this.tileZ.value = ((cz % atlasTiles) + atlasTiles) % atlasTiles;
+    // Set tile coordinates from dynamic allocation.
+    // 从动态分配设置 tile 坐标
+    this.tileX.value = tileX;
+    this.tileZ.value = tileZ;
 
     await renderer.computeAsync(this.computeNode!);
 
@@ -298,15 +518,24 @@ export class TerrainHeightCompute {
     const backend = (renderer as any).backend;
     const device: GPUDevice = backend.device;
     await device.queue.onSubmittedWorkDone();
+
+    return tileIndex;
   }
 
   /**
-   * Get tile UV offset for a chunk.
-   * 获取 chunk 的 tile UV 偏移
+   * Get tile UV offset for a chunk (using dynamic allocation).
+   * 获取 chunk 的 tile UV 偏移（使用动态分配）
    */
   getChunkTileUV(cx: number, cz: number): { uOffset: number; vOffset: number; uvScale: number } {
-    const tileX = ((cx % this.atlasTilesPerSide) + this.atlasTilesPerSide) % this.atlasTilesPerSide;
-    const tileZ = ((cz % this.atlasTilesPerSide) + this.atlasTilesPerSide) % this.atlasTilesPerSide;
+    const key = `${cx},${cz}`;
+    const tileIndex = this.chunkToTile.get(key);
+    
+    if (tileIndex === undefined) {
+      console.error(`[TerrainHeightCompute] No tile allocated for chunk (${cx}, ${cz})`);
+      return { uOffset: 0, vOffset: 0, uvScale: 1 / this.atlasTilesPerSide };
+    }
+
+    const { tileX, tileZ } = this.tileIndexToCoords(tileIndex);
 
     return {
       uOffset: tileX / this.atlasTilesPerSide,
@@ -328,8 +557,8 @@ export class TerrainHeightCompute {
   }
 
   /**
-   * Read back height data for a chunk from GPU.
-   * 从 GPU 回读 chunk 的高度数据
+   * Read back height data for a chunk from GPU (using dynamic tile allocation).
+   * 从 GPU 回读 chunk 的高度数据（使用动态 tile 分配）
    *
    * GPU-first design: height is computed ONLY on GPU, then read back ONCE.
    * GPU-first 设计：高度仅在 GPU 上计算，然后回读一次。
@@ -344,8 +573,17 @@ export class TerrainHeightCompute {
    */
   async readbackChunkHeight(cx: number, cz: number, renderer: WebGPURenderer): Promise<Float32Array> {
     const tileRes = this.tileResolution;
-    const tileX = ((cx % this.atlasTilesPerSide) + this.atlasTilesPerSide) % this.atlasTilesPerSide;
-    const tileZ = ((cz % this.atlasTilesPerSide) + this.atlasTilesPerSide) % this.atlasTilesPerSide;
+    
+    // Get tile coordinates from dynamic allocation.
+    // 从动态分配获取 tile 坐标
+    const key = `${cx},${cz}`;
+    const tileIndex = this.chunkToTile.get(key);
+    if (tileIndex === undefined) {
+      console.error(`[TerrainHeightCompute] No tile allocated for chunk (${cx}, ${cz}) in readback`);
+      return new Float32Array(tileRes * tileRes);
+    }
+
+    const { tileX, tileZ } = this.tileIndexToCoords(tileIndex);
 
     // Calculate tile offset in atlas.
     // 计算 tile 在图集中的偏移

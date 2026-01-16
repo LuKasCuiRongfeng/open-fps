@@ -118,8 +118,8 @@ export class ChunkManager {
     const { cx: centerCx, cz: centerCz } = this.worldToChunk(worldX, worldZ);
     const viewDist = this.config.streaming.viewDistanceChunks;
 
-    // Collect all chunks to load.
-    // 收集所有要加载的 chunk
+    // Collect all chunks to load (based on view distance).
+    // 收集所有要加载的 chunk（基于视距）
     const toLoad: ChunkCoord[] = [];
     for (let dz = -viewDist; dz <= viewDist; dz++) {
       for (let dx = -viewDist; dx <= viewDist; dx++) {
@@ -193,9 +193,14 @@ export class ChunkManager {
   private rebuildQueues(playerCx: number, playerCz: number): void {
     const viewDist = this.config.streaming.viewDistanceChunks;
 
-    // Find chunks to load.
-    // 找到要加载的 chunk
+    // Find chunks to load (based on view distance around player).
+    // 找到要加载的 chunk（基于玩家周围的视距）
+    // No world bounds check here - chunks can extend beyond playable area.
+    // 此处不检查世界边界 - chunk 可以延伸到可玩区域之外
+    // Player movement is restricted by worldBoundsSystem separately.
+    // 玩家移动由 worldBoundsSystem 单独限制
     this.loadQueue.length = 0;
+    
     for (let dz = -viewDist; dz <= viewDist; dz++) {
       for (let dx = -viewDist; dx <= viewDist; dx++) {
         const cx = playerCx + dx;
@@ -295,6 +300,10 @@ export class ChunkManager {
   private unloadChunk(key: string): void {
     const chunk = this.chunks.get(key);
     if (!chunk) return;
+
+    // Free the tile in the height atlas (dynamic allocation).
+    // 释放高度图集中的 tile（动态分配）
+    this.heightCompute.freeTile(chunk.cx, chunk.cz);
 
     // Remove from CPU height cache.
     // 从 CPU 高度缓存移除
