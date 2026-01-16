@@ -107,7 +107,11 @@ export default function GameView() {
     <div className="relative h-screen w-screen overflow-hidden bg-black text-white">
       <div ref={hostRef} className="h-full w-full" />
 
-      <FpsCounter visible={!loading && !error} />
+      <FpsCounter
+        visible={!loading && !error}
+        getFps={() => appRef.current?.getFps() ?? 0}
+        getPlayerPosition={() => appRef.current?.getPlayerPosition() ?? null}
+      />
 
       <LoadingOverlay
         steps={loadingSteps}

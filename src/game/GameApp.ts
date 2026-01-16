@@ -3,6 +3,7 @@
 
 import {
   Clock,
+  FogExp2,
   Mesh,
   PerspectiveCamera,
   Scene,
@@ -70,6 +71,12 @@ export class GameApp {
   private readonly marker: Mesh;
   readonly ready: Promise<void>;
   private disposed = false;
+
+  // FPS tracking (based on actual render loop).
+  // FPS 追踪（基于实际渲染循环）
+  private fpsFrameCount = 0;
+  private fpsLastTime = 0;
+  private fpsValue = 0;
 
   /**
    * System scheduler: ordered list of systems per phase.
@@ -316,6 +323,28 @@ export class GameApp {
     return cloneSettings(this.settings);
   }
 
+  /**
+   * Get player position for debug display.
+   * 获取玩家位置用于调试显示
+   */
+  getPlayerPosition(): { x: number; y: number; z: number } | null {
+    for (const [entityId] of this.ecs.world.query("transform", "player")) {
+      const transform = this.ecs.world.get(entityId, "transform");
+      if (transform) {
+        return { x: transform.x, y: transform.y, z: transform.z };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Get current FPS based on actual render loop.
+   * 获取基于实际渲染循环的当前 FPS
+   */
+  getFps(): number {
+    return this.fpsValue;
+  }
+
   updateSettings(patch: GameSettingsPatch) {
     applySettingsPatch(this.settings, patch);
 
@@ -329,6 +358,12 @@ export class GameApp {
     // 立即应用相机设置
     this.camera.fov = this.settings.camera.fovDegrees;
     this.camera.updateProjectionMatrix();
+
+    // Apply fog settings immediately.
+    // 立即应用雾设置
+    if (this.scene.fog instanceof FogExp2) {
+      this.scene.fog.density = this.settings.fog.density;
+    }
   }
 
   resetSettings() {
@@ -344,6 +379,12 @@ export class GameApp {
     // 立即应用相机设置
     this.camera.fov = this.settings.camera.fovDegrees;
     this.camera.updateProjectionMatrix();
+
+    // Apply fog settings immediately.
+    // 立即应用雾设置
+    if (this.scene.fog instanceof FogExp2) {
+      this.scene.fog.density = this.settings.fog.density;
+    }
   }
 
   private readonly onResize = () => {
@@ -368,6 +409,17 @@ export class GameApp {
     this.resources.time.dt = dt;
     this.resources.time.elapsed += dt;
     this.resources.time.frame++;
+
+    // Update FPS counter (based on actual render loop).
+    // 更新 FPS 计数器（基于实际渲染循环）
+    this.fpsFrameCount++;
+    const now = performance.now();
+    const fpsDelta = now - this.fpsLastTime;
+    if (fpsDelta >= 500) {
+      this.fpsValue = Math.round((this.fpsFrameCount * 1000) / fpsDelta);
+      this.fpsFrameCount = 0;
+      this.fpsLastTime = now;
+    }
 
     // Keep camera fov synced even if settings change without calling updateSettings.
     // 即使 UI 没走 updateSettings，也保持 fov 同步

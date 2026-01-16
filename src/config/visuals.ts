@@ -3,30 +3,53 @@
 
 export const visualsConfig = {
   sky: {
-    // Simple sky background (fallback); later can be replaced with procedural sky.
-    // 简单天空背景色（兜底）；后续可替换为程序化天空
-    colorHex: 0x7fb7ff,
+    // Realistic sky gradient - clear day sky blue (based on Rayleigh scattering).
+    // 真实天空渐变 - 晴天天空蓝（基于瑞利散射）
+    // Typical clear sky at noon: ~0x87CEEB (sky blue) to ~0x4A90D9 (deeper blue)
+    // 典型正午晴空：~0x87CEEB（天蓝色）到 ~0x4A90D9（深蓝色）
+    colorHex: 0x87ceeb,
   },
 
   fog: {
-    // Atmospheric fog for large maps.
-    // 大地图的大气雾（模拟薄雾/轻霾）
-    // density units: 1/m (FogExp2)
-    // density 单位：1/米（FogExp2）
-    colorHex: 0xb7d9ff,
-    densityPerMeter: 0.0025,
+    // Realistic atmospheric fog / aerial perspective.
+    // 真实大气雾 / 空气透视
+    // Real-world visibility: clear day ~20-50km, hazy ~5-10km, foggy <1km
+    // 真实能见度：晴天 ~20-50km，有霾 ~5-10km，有雾 <1km
+    // FogExp2 density formula: visibility ≈ 3.912 / density
+    // FogExp2 浓度公式：能见度 ≈ 3.912 / density
+    // density 0.00015 → ~26km visibility (clear day)
+    // density 0.00015 → ~26km 能见度（晴天）
+    //
+    // Fog color should match horizon sky for realism (slightly desaturated).
+    // 雾颜色应匹配地平线天空以获得真实感（略微去饱和）
+    colorHex: 0xa8c8e8,
+    // Default density for clear day (~25km visibility).
+    // 晴天默认浓度（~25km 能见度）
+    densityPerMeter: 0.00015,
+    // Min/max for UI slider.
+    // UI 滑块的最小/最大值
+    minDensity: 0.00005, // ~78km visibility (very clear)
+    maxDensity: 0.005,   // ~780m visibility (heavy fog)
   },
 
   lights: {
     hemi: {
-      skyColorHex: 0xbdd7ff,
-      groundColorHex: 0x223322,
-      intensity: 0.8,
+      // Sky light: slightly warm blue to simulate sky dome illumination.
+      // 天空光：略带暖色的蓝色，模拟天穹照明
+      skyColorHex: 0x8ec8e8,
+      // Ground bounce: greenish brown from grass/earth.
+      // 地面反射：来自草地/土壤的绿褐色
+      groundColorHex: 0x3d5c3d,
+      intensity: 0.6,
     },
     sun: {
-      colorHex: 0xffffff,
-      intensity: 1.0,
-      position: [20, 30, 10] as const,
+      // Sunlight: slightly warm white (6500K daylight).
+      // 阳光：略带暖色的白光（6500K 日光）
+      colorHex: 0xfffaf0,
+      intensity: 1.2,
+      // Sun position: high angle for midday lighting.
+      // 太阳位置：高角度模拟正午光照
+      position: [50, 80, 30] as const,
     },
   },
 

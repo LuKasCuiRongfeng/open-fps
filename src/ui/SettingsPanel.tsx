@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { inputConfig } from "../config/input";
+import { visualsConfig } from "../config/visuals";
 import type { GameSettings, GameSettingsPatch } from "../game/settings/GameSettings";
 
 type RangeFieldProps = {
@@ -50,6 +51,7 @@ const TABS = [
   { id: "help", label: "Help" },
   { id: "render", label: "Render" },
   { id: "camera", label: "Camera" },
+  { id: "fog", label: "Fog" },
   { id: "movement", label: "Movement" },
   { id: "physics", label: "Physics" },
   { id: "thirdPerson", label: "3rd Person" },
@@ -216,6 +218,29 @@ export default function SettingsPanel({
               </div>
             ) : null}
 
+            {tab === "fog" ? (
+              <div className="space-y-4">
+                <div className="text-xs text-white/60 mb-4">
+                  Fog density controls atmospheric haze. Lower values = clearer visibility.
+                  <br />
+                  雾浓度控制大气雾化。数值越低 = 能见度越高。
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <RangeField
+                    label="Fog Density"
+                    value={settings.fog.density}
+                    min={visualsConfig.fog.minDensity}
+                    max={visualsConfig.fog.maxDensity}
+                    step={0.00001}
+                    onChange={(v) => onPatch({ fog: { density: v } })}
+                  />
+                </div>
+                <div className="text-xs text-white/40 mt-2">
+                  Visibility ≈ {Math.round(3.912 / settings.fog.density)}m
+                </div>
+              </div>
+            ) : null}
+
             {tab === "movement" ? (
               <div className="grid gap-4 md:grid-cols-2">
                 <RangeField
@@ -230,17 +255,17 @@ export default function SettingsPanel({
                   label="Move Speed (m/s)"
                   value={settings.player.moveSpeed}
                   min={0.5}
-                  max={20}
+                  max={40}
                   step={0.1}
                   onChange={(v) => onPatch({ player: { moveSpeed: v } })}
                 />
                 <RangeField
-                  label="Sprint Speed (m/s)"
-                  value={settings.player.sprintSpeed}
-                  min={0.5}
-                  max={30}
+                  label="Sprint Bonus (m/s)"
+                  value={settings.player.sprintBonus}
+                  min={0}
+                  max={60}
                   step={0.1}
-                  onChange={(v) => onPatch({ player: { sprintSpeed: v } })}
+                  onChange={(v) => onPatch({ player: { sprintBonus: v } })}
                 />
               </div>
             ) : null}

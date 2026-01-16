@@ -1,12 +1,13 @@
 import { cameraConfig } from "../../config/camera";
 import { playerConfig } from "../../config/player";
 import { renderConfig } from "../../config/render";
+import { visualsConfig } from "../../config/visuals";
 
 export type GameSettings = {
   player: {
     mouseSensitivity: number;
     moveSpeed: number;
-    sprintSpeed: number;
+    sprintBonus: number;
     jumpVelocity: number;
     gravity: number;
     maxFallSpeed: number;
@@ -29,13 +30,16 @@ export type GameSettings = {
   render: {
     maxPixelRatio: number;
   };
+  fog: {
+    density: number;
+  };
 };
 
 export type GameSettingsPatch = {
   player?: {
     mouseSensitivity?: number;
     moveSpeed?: number;
-    sprintSpeed?: number;
+    sprintBonus?: number;
     jumpVelocity?: number;
     gravity?: number;
     maxFallSpeed?: number;
@@ -58,6 +62,9 @@ export type GameSettingsPatch = {
   render?: {
     maxPixelRatio?: number;
   };
+  fog?: {
+    density?: number;
+  };
 };
 
 export function createDefaultGameSettings(): GameSettings {
@@ -65,7 +72,7 @@ export function createDefaultGameSettings(): GameSettings {
     player: {
       mouseSensitivity: playerConfig.mouseSensitivity,
       moveSpeed: playerConfig.moveSpeed,
-      sprintSpeed: playerConfig.sprintSpeed,
+      sprintBonus: playerConfig.sprintBonus,
       jumpVelocity: playerConfig.jump.velocityMetersPerSecond,
       gravity: playerConfig.physics.gravityMetersPerSecond2,
       maxFallSpeed: playerConfig.physics.maxFallSpeedMetersPerSecond,
@@ -88,6 +95,9 @@ export function createDefaultGameSettings(): GameSettings {
     render: {
       maxPixelRatio: renderConfig.maxPixelRatio,
     },
+    fog: {
+      density: visualsConfig.fog.densityPerMeter,
+    },
   };
 }
 
@@ -97,7 +107,7 @@ export function applySettingsPatch(settings: GameSettings, patch: GameSettingsPa
   if (patch.player) {
     settings.player.mouseSensitivity = patch.player.mouseSensitivity ?? settings.player.mouseSensitivity;
     settings.player.moveSpeed = patch.player.moveSpeed ?? settings.player.moveSpeed;
-    settings.player.sprintSpeed = patch.player.sprintSpeed ?? settings.player.sprintSpeed;
+    settings.player.sprintBonus = patch.player.sprintBonus ?? settings.player.sprintBonus;
     settings.player.jumpVelocity = patch.player.jumpVelocity ?? settings.player.jumpVelocity;
     settings.player.gravity = patch.player.gravity ?? settings.player.gravity;
     settings.player.maxFallSpeed = patch.player.maxFallSpeed ?? settings.player.maxFallSpeed;
@@ -130,6 +140,10 @@ export function applySettingsPatch(settings: GameSettings, patch: GameSettingsPa
   if (patch.render) {
     settings.render.maxPixelRatio = patch.render.maxPixelRatio ?? settings.render.maxPixelRatio;
   }
+
+  if (patch.fog) {
+    settings.fog.density = patch.fog.density ?? settings.fog.density;
+  }
 }
 
 export function cloneSettings(settings: GameSettings): GameSettings {
@@ -139,7 +153,7 @@ export function cloneSettings(settings: GameSettings): GameSettings {
 export function setSettings(settings: GameSettings, next: GameSettings) {
   settings.player.mouseSensitivity = next.player.mouseSensitivity;
   settings.player.moveSpeed = next.player.moveSpeed;
-  settings.player.sprintSpeed = next.player.sprintSpeed;
+  settings.player.sprintBonus = next.player.sprintBonus;
   settings.player.jumpVelocity = next.player.jumpVelocity;
   settings.player.gravity = next.player.gravity;
   settings.player.maxFallSpeed = next.player.maxFallSpeed;
@@ -153,4 +167,5 @@ export function setSettings(settings: GameSettings, next: GameSettings) {
 
   settings.camera.fovDegrees = next.camera.fovDegrees;
   settings.render.maxPixelRatio = next.render.maxPixelRatio;
+  settings.fog.density = next.fog.density;
 }

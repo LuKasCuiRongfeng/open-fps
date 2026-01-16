@@ -9,7 +9,11 @@ export const playerConfig = {
   // Movement speeds (m/s).
   // 移动速度（米/秒）
   moveSpeed: 1.6,
-  sprintSpeed: 5.5,
+  // Sprint bonus: extra speed added when sprinting (m/s).
+  // 奔跑加成：奔跑时额外增加的速度（米/秒）
+  // Final sprint speed = moveSpeed + sprintBonus
+  // 最终奔跑速度 = moveSpeed + sprintBonus
+  sprintBonus: 3.9,
 
   // Jump/physics.
   // 跳跃/物理参数
@@ -86,12 +90,12 @@ export const playerConfig = {
   },
 
   spawn: {
-    // Spawn position on the ground plane (center of initially loaded area).
-    // 出生点（地面平面上，初始加载区域的中心）
-    // With viewDistanceChunks=5 and chunkSize=64m, loaded area is ~640m x 640m.
-    // 视距5个chunk，每个64m，加载区域约 640m x 640m
-    xMeters: 160,
-    zMeters: 160,
+    // Spawn position (center of world, where bounds are centered).
+    // 出生点（世界中心，边界以此为中心）
+    // World bounds are ±halfSizeMeters from origin.
+    // 世界边界为从原点 ±halfSizeMeters
+    xMeters: 0,
+    zMeters: 0,
   },
 
   avatar: {

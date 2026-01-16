@@ -60,6 +60,17 @@ export const terrainConfig = {
     rebaseThresholdMeters: 2000,
   },
 
+  // World bounds (invisible walls at map edges).
+  // 世界边界（地图边缘的空气墙）
+  worldBounds: {
+    // Half-size of the playable area (meters). Total size = 2 * halfSize.
+    // 可玩区域的半尺寸（米）。总尺寸 = 2 * halfSize
+    // Terrain chunks stream dynamically, so this can be any size.
+    // 地形 chunk 动态流式加载，所以这可以是任意大小
+    // 1000m = 1km radius = 2km × 2km playable area
+    halfSizeMeters: 1000,
+  },
+
   // CPU heightmap cache for fast heightAt queries.
   // CPU 高度图缓存，用于快速 heightAt 查询
   heightCache: {

@@ -47,8 +47,10 @@ export function movementSystem(world: GameWorld, res: GameResources): void {
       // Grounded: instant velocity (responsive control).
       // 着地：瞬时速度（响应式控制）
       if (hasInput) {
+        // Sprint speed = base move speed + sprint bonus.
+        // 奔跑速度 = 基础移动速度 + 奔跑加成
         const speed = playerInput.sprint
-          ? settings.player.sprintSpeed
+          ? settings.player.moveSpeed + settings.player.sprintBonus
           : settings.player.moveSpeed;
         velocity.vx = worldDx * speed;
         velocity.vz = worldDz * speed;
@@ -64,10 +66,12 @@ export function movementSystem(world: GameWorld, res: GameResources): void {
 
         // Only accelerate if below max air speed or decelerating.
         // 只有在低于最大空中速度或减速时才加速
-        const wishSpeed = Math.min(
-          playerInput.sprint ? settings.player.sprintSpeed : settings.player.moveSpeed,
-          maxAirSpeed,
-        );
+        // Sprint speed = base move speed + sprint bonus.
+        // 奔跑速度 = 基础移动速度 + 奔跑加成
+        const baseSpeed = playerInput.sprint
+          ? settings.player.moveSpeed + settings.player.sprintBonus
+          : settings.player.moveSpeed;
+        const wishSpeed = Math.min(baseSpeed, maxAirSpeed);
 
         // Project current velocity onto wish direction.
         // 将当前速度投影到期望方向
