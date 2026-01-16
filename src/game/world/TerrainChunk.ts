@@ -3,9 +3,11 @@
 
 import {
   BufferGeometry,
+  Float32BufferAttribute,
   Mesh,
   MeshStandardNodeMaterial,
   PlaneGeometry,
+  Uint32BufferAttribute,
   Vector3,
   type StorageTexture,
 } from "three/webgpu";
@@ -13,23 +15,210 @@ import type { TerrainConfig } from "./terrain";
 import type { FloatingOrigin } from "./FloatingOrigin";
 import { createGpuTerrainMaterial, type TerrainMaterialParams } from "./terrainMaterial";
 
+// Skirt depth in meters (how far down the skirt extends).
+// 裙边深度（米）（裙边向下延伸多远）
+// Must be large enough to cover max terrain height difference between adjacent chunks.
+// With LOD, adjacent chunks may sample different positions, causing height mismatch.
+// Max terrain height ~ continental(120) + mountain(200) + hills(25) + detail(8) ≈ 350m
+// 必须足够大以覆盖相邻 chunk 之间的最大地形高度差
+// 使用 LOD 时，相邻 chunk 可能采样不同位置，导致高度不匹配
+// 最大地形高度 ~ continental(120) + mountain(200) + hills(25) + detail(8) ≈ 350m
+const SKIRT_DEPTH_METERS = 300;
+
 /**
- * Cache for shared LOD geometries (all chunks share the same flat planes).
- * 共享 LOD 几何体的缓存（所有 chunk 共享相同的平面）
+ * Cache for shared LOD geometries with skirts (all chunks share the same flat planes).
+ * 带裙边的共享 LOD 几何体缓存（所有 chunk 共享相同的平面）
  */
 const sharedGeometryCache = new Map<string, BufferGeometry>();
 
-function getOrCreateSharedGeometry(chunkSize: number, segments: number): BufferGeometry {
-  const key = `${chunkSize}-${segments}`;
+/**
+ * Create a plane geometry with skirts to hide LOD cracks.
+ * 创建带裙边的平面几何体以隐藏 LOD 裂缝
+ *
+ * Skirts are vertical strips hanging down from the chunk edges.
+ * They fill gaps between chunks at different LOD levels.
+ * 裙边是从 chunk 边缘向下悬挂的垂直条带。
+ * 它们填充不同 LOD 级别 chunk 之间的缝隙。
+ */
+function createPlaneWithSkirt(chunkSize: number, segments: number, skirtDepth: number): BufferGeometry {
+  // Create base plane.
+  // 创建基础平面
+  const plane = new PlaneGeometry(chunkSize, chunkSize, segments, segments);
+  plane.rotateX(-Math.PI / 2);
+
+  const positions = plane.getAttribute("position");
+  const uvs = plane.getAttribute("uv");
+  const normals = plane.getAttribute("normal");
+  const indices = plane.getIndex();
+
+  if (!positions || !uvs || !normals || !indices) {
+    return plane;
+  }
+
+  // Count edge vertices (4 edges, each has segments+1 vertices, corners shared).
+  // 计算边缘顶点数（4条边，每条有 segments+1 个顶点，角点共享）
+  const vertsPerEdge = segments + 1;
+  const skirtVerts = vertsPerEdge * 4; // One row of skirt verts per edge
+  const skirtTris = segments * 4 * 2; // 2 triangles per skirt quad, 4 edges
+
+  const baseVertCount = positions.count;
+  const baseIndexCount = indices.count;
+
+  // Create new arrays with space for skirt.
+  // 创建带裙边空间的新数组
+  const newPositions = new Float32Array((baseVertCount + skirtVerts) * 3);
+  const newUvs = new Float32Array((baseVertCount + skirtVerts) * 2);
+  const newNormals = new Float32Array((baseVertCount + skirtVerts) * 3);
+  const newIndices = new Uint32Array(baseIndexCount + skirtTris * 3);
+
+  // Copy base geometry data.
+  // 复制基础几何体数据
+  for (let i = 0; i < baseVertCount; i++) {
+    newPositions[i * 3] = positions.getX(i);
+    newPositions[i * 3 + 1] = positions.getY(i);
+    newPositions[i * 3 + 2] = positions.getZ(i);
+    newUvs[i * 2] = uvs.getX(i);
+    newUvs[i * 2 + 1] = uvs.getY(i);
+    newNormals[i * 3] = normals.getX(i);
+    newNormals[i * 3 + 1] = normals.getY(i);
+    newNormals[i * 3 + 2] = normals.getZ(i);
+  }
+  for (let i = 0; i < baseIndexCount; i++) {
+    newIndices[i] = indices.getX(i);
+  }
+
+  const half = chunkSize / 2;
+  let skirtVertIndex = baseVertCount;
+  let skirtIndexOffset = baseIndexCount;
+
+  // Helper to find edge vertex index in original plane.
+  // 辅助函数：在原始平面中找到边缘顶点索引
+  const getEdgeVertIndex = (edgeX: number, edgeZ: number): number => {
+    // PlaneGeometry vertices are laid out in a grid.
+    // PlaneGeometry 顶点按网格排列
+    for (let i = 0; i < baseVertCount; i++) {
+      const x = positions.getX(i);
+      const z = positions.getZ(i);
+      if (Math.abs(x - edgeX) < 0.001 && Math.abs(z - edgeZ) < 0.001) {
+        return i;
+      }
+    }
+    return 0;
+  };
+
+  // Add skirt for each edge.
+  // 为每条边添加裙边
+  const edges = [
+    { axis: "x", fixed: -half, dir: 1, normalX: 0, normalZ: -1 },  // -Z edge
+    { axis: "x", fixed: half, dir: 1, normalX: 0, normalZ: 1 },    // +Z edge
+    { axis: "z", fixed: -half, dir: 1, normalX: -1, normalZ: 0 },  // -X edge
+    { axis: "z", fixed: half, dir: 1, normalX: 1, normalZ: 0 },    // +X edge
+  ];
+
+  for (const edge of edges) {
+    const startVert = skirtVertIndex;
+
+    for (let i = 0; i <= segments; i++) {
+      const t = i / segments;
+      let x: number, z: number;
+
+      if (edge.axis === "x") {
+        x = -half + t * chunkSize;
+        z = edge.fixed;
+      } else {
+        x = edge.fixed;
+        z = -half + t * chunkSize;
+      }
+
+      // Skirt vertex (same UV as edge vertex, but offset Y for skirt depth).
+      // 裙边顶点（与边缘顶点相同的 UV，但 Y 偏移用于裙边深度）
+      const u = (x + half) / chunkSize;
+      const v = (z + half) / chunkSize;
+
+      newPositions[skirtVertIndex * 3] = x;
+      newPositions[skirtVertIndex * 3 + 1] = -skirtDepth; // Skirt hangs down / 裙边向下悬挂
+      newPositions[skirtVertIndex * 3 + 2] = z;
+      newUvs[skirtVertIndex * 2] = u;
+      newUvs[skirtVertIndex * 2 + 1] = v;
+      // Skirt normal points outward.
+      // 裙边法线朝外
+      newNormals[skirtVertIndex * 3] = edge.normalX;
+      newNormals[skirtVertIndex * 3 + 1] = 0;
+      newNormals[skirtVertIndex * 3 + 2] = edge.normalZ;
+
+      skirtVertIndex++;
+    }
+
+    // Create triangles connecting edge vertices to skirt vertices.
+    // 创建连接边缘顶点和裙边顶点的三角形
+    for (let i = 0; i < segments; i++) {
+      const t0 = i / segments;
+      const t1 = (i + 1) / segments;
+      let x0: number, z0: number, x1: number, z1: number;
+
+      if (edge.axis === "x") {
+        x0 = -half + t0 * chunkSize;
+        z0 = edge.fixed;
+        x1 = -half + t1 * chunkSize;
+        z1 = edge.fixed;
+      } else {
+        x0 = edge.fixed;
+        z0 = -half + t0 * chunkSize;
+        x1 = edge.fixed;
+        z1 = -half + t1 * chunkSize;
+      }
+
+      const topLeft = getEdgeVertIndex(x0, z0);
+      const topRight = getEdgeVertIndex(x1, z1);
+      const bottomLeft = startVert + i;
+      const bottomRight = startVert + i + 1;
+
+      // Two triangles per quad (winding order for front-facing).
+      // 每个四边形两个三角形（正面朝向的绕序）
+      // Flip winding based on edge direction to ensure correct facing.
+      // 根据边缘方向翻转绕序以确保正确朝向
+      if (edge.fixed < 0 || edge.axis === "z") {
+        newIndices[skirtIndexOffset++] = topLeft;
+        newIndices[skirtIndexOffset++] = bottomLeft;
+        newIndices[skirtIndexOffset++] = topRight;
+        newIndices[skirtIndexOffset++] = topRight;
+        newIndices[skirtIndexOffset++] = bottomLeft;
+        newIndices[skirtIndexOffset++] = bottomRight;
+      } else {
+        newIndices[skirtIndexOffset++] = topLeft;
+        newIndices[skirtIndexOffset++] = topRight;
+        newIndices[skirtIndexOffset++] = bottomLeft;
+        newIndices[skirtIndexOffset++] = topRight;
+        newIndices[skirtIndexOffset++] = bottomRight;
+        newIndices[skirtIndexOffset++] = bottomLeft;
+      }
+    }
+  }
+
+  // Create new geometry with skirt.
+  // 创建带裙边的新几何体
+  const geo = new BufferGeometry();
+  geo.setAttribute("position", new Float32BufferAttribute(newPositions, 3));
+  geo.setAttribute("uv", new Float32BufferAttribute(newUvs, 2));
+  geo.setAttribute("normal", new Float32BufferAttribute(newNormals, 3));
+  geo.setIndex(new Uint32BufferAttribute(newIndices, 1));
+
+  geo.computeBoundingBox();
+  geo.computeBoundingSphere();
+
+  // Clean up temporary plane.
+  // 清理临时平面
+  plane.dispose();
+
+  return geo;
+}
+
+function getOrCreateSharedGeometry(chunkSize: number, segments: number, skirtDepth: number): BufferGeometry {
+  const key = `${chunkSize}-${segments}-${skirtDepth}`;
   let geo = sharedGeometryCache.get(key);
 
   if (!geo) {
-    // Create flat plane centered at origin.
-    // 创建以原点为中心的平面
-    geo = new PlaneGeometry(chunkSize, chunkSize, segments, segments);
-    geo.rotateX(-Math.PI / 2);
-    geo.computeBoundingBox();
-    geo.computeBoundingSphere();
+    geo = createPlaneWithSkirt(chunkSize, segments, skirtDepth);
     sharedGeometryCache.set(key, geo);
   }
 
@@ -147,6 +336,9 @@ export class TerrainChunk {
    * Create per-chunk geometry with correct bounding sphere for frustum culling.
    * 为每个 chunk 创建带正确包围球的几何体用于视锥剔除
    *
+   * Geometry includes skirt to hide LOD cracks between chunks.
+   * 几何体包含裙边以隐藏 chunk 之间的 LOD 裂缝
+   *
    * We clone the shared geometry just to set per-chunk bounding sphere
    * (the actual vertex data is still shared via BufferAttribute references).
    * 我们仅为设置每 chunk 包围球而克隆共享几何体
@@ -154,7 +346,7 @@ export class TerrainChunk {
    */
   private createChunkGeometry(segments: number): BufferGeometry {
     const chunkSize = this.config.streaming.chunkSizeMeters;
-    const sharedGeo = getOrCreateSharedGeometry(chunkSize, segments);
+    const sharedGeo = getOrCreateSharedGeometry(chunkSize, segments, SKIRT_DEPTH_METERS);
 
     // Clone geometry to have per-chunk bounding sphere.
     // 克隆几何体以拥有每 chunk 的包围球

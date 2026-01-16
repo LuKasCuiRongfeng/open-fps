@@ -17,6 +17,7 @@ import {
 } from "three/tsl";
 import {
   FloatType,
+  LinearFilter,
   RGBAFormat,
   StorageTexture,
   type WebGPURenderer,
@@ -76,6 +77,10 @@ export class TerrainNormalCompute {
     this.normalTexture = new StorageTexture(this.atlasResolution, this.atlasResolution);
     this.normalTexture.type = FloatType;
     this.normalTexture.format = RGBAFormat;
+    // Use LINEAR filter for smooth interpolation.
+    // 使用 LINEAR 过滤器进行平滑插值
+    this.normalTexture.magFilter = LinearFilter;
+    this.normalTexture.minFilter = LinearFilter;
 
     // Build compute shader.
     // 构建计算着色器
@@ -92,9 +97,13 @@ export class TerrainNormalCompute {
     const chunkSize = cfg.streaming.chunkSizeMeters;
     const tileRes = this.tileResolution;
 
-    // Texel size in world units.
-    // 纹素在世界单位中的大小
-    const worldTexelSize = float(chunkSize / (tileRes - 1));
+    // World distance between adjacent pixels in a tile.
+    // tile 中相邻像素之间的世界距离
+    // With edge alignment: pixel 0 at x=0, pixel 63 at x=chunkSize
+    // So pixel step = chunkSize / (tileRes - 1)
+    // 边缘对齐：像素 0 在 x=0，像素 63 在 x=chunkSize
+    // 所以像素步长 = chunkSize / (tileRes - 1)
+    const pixelWorldStep = float(chunkSize / (tileRes - 1));
 
     // Height texture sampler.
     // 高度纹理采样器
@@ -106,39 +115,71 @@ export class TerrainNormalCompute {
       ReturnType<typeof float>,
       ReturnType<typeof float>
     ]) => {
-      // Clamp to valid range.
-      // 限制到有效范围
       const clampedU = u.clamp(0, 1);
       const clampedV = v.clamp(0, 1);
       return heightTex.sample(vec2(clampedU, clampedV)).r;
     });
 
     const computeFn = Fn(() => {
-      // Compute pixel coordinates.
-      // 计算像素坐标
+      // Compute pixel coordinates within atlas.
+      // 计算图集内的像素坐标
       const pixelX = mod(instanceIndex, uint(atlasRes));
       const pixelY = instanceIndex.div(uint(atlasRes));
 
-      // UV in atlas.
-      // 图集中的 UV
-      const u = float(pixelX).div(float(atlasRes - 1));
-      const v = float(pixelY).div(float(atlasRes - 1));
+      // Compute which tile this pixel belongs to.
+      // 计算此像素属于哪个 tile
+      const tileX = pixelX.div(uint(tileRes));
+      const tileY = pixelY.div(uint(tileRes));
 
-      // Texel offset for gradient sampling.
-      // 用于梯度采样的纹素偏移
-      const texelOffset = float(1).div(float(atlasRes - 1));
+      // Pixel position within tile (0 to tileRes-1).
+      // tile 内的像素位置（0 到 tileRes-1）
+      const localX = mod(pixelX, uint(tileRes));
+      const localY = mod(pixelY, uint(tileRes));
 
-      // Sample heights for gradient (central differences).
-      // 采样高度用于梯度（中心差分）
-      const hL = sampleHeight(u.sub(texelOffset), v);
-      const hR = sampleHeight(u.add(texelOffset), v);
-      const hD = sampleHeight(u, v.sub(texelOffset));
-      const hU = sampleHeight(u, v.add(texelOffset));
+      // UV in atlas (pixel center for sampling).
+      // 图集中的 UV（采样用的像素中心）
+      const u = float(pixelX).add(0.5).div(float(atlasRes));
+      const v = float(pixelY).add(0.5).div(float(atlasRes));
 
-      // Compute gradients.
-      // 计算梯度
-      const dhdx = hR.sub(hL).div(worldTexelSize.mul(2));
-      const dhdz = hU.sub(hD).div(worldTexelSize.mul(2));
+      // One pixel step in atlas UV space.
+      // 图集 UV 空间中的一像素步长
+      const texelStep = float(1).div(float(atlasRes));
+
+      // Tile boundaries (first and last pixel centers).
+      // tile 边界（第一个和最后一个像素中心）
+      const tileStartU = float(tileX.mul(uint(tileRes))).add(0.5).div(float(atlasRes));
+      const tileStartV = float(tileY.mul(uint(tileRes))).add(0.5).div(float(atlasRes));
+      const tileEndU = float(tileX.mul(uint(tileRes)).add(uint(tileRes - 1))).add(0.5).div(float(atlasRes));
+      const tileEndV = float(tileY.mul(uint(tileRes)).add(uint(tileRes - 1))).add(0.5).div(float(atlasRes));
+
+      // Sample heights, clamping to tile boundaries.
+      // 采样高度，限制在 tile 边界内
+      const uL = u.sub(texelStep).max(tileStartU);
+      const uR = u.add(texelStep).min(tileEndU);
+      const vD = v.sub(texelStep).max(tileStartV);
+      const vU = v.add(texelStep).min(tileEndV);
+
+      const hL = sampleHeight(uL, v);
+      const hR = sampleHeight(uR, v);
+      const hD = sampleHeight(u, vD);
+      const hU = sampleHeight(u, vU);
+
+      // Check if we're at tile boundary (use one-sided difference).
+      // 检查是否在 tile 边界（使用单侧差分）
+      const isLeftEdge = float(localX).lessThan(0.5);
+      const isRightEdge = float(localX).greaterThan(float(tileRes - 1).sub(0.5));
+      const isBottomEdge = float(localY).lessThan(0.5);
+      const isTopEdge = float(localY).greaterThan(float(tileRes - 1).sub(0.5));
+
+      // Distance for gradient (1 pixel step normally, half at edges).
+      // 梯度距离（正常是 1 像素步长，边界是半个）
+      const dxPixels = isLeftEdge.or(isRightEdge).select(float(1), float(2));
+      const dzPixels = isBottomEdge.or(isTopEdge).select(float(1), float(2));
+
+      // Compute gradients in world units.
+      // 计算世界单位的梯度
+      const dhdx = hR.sub(hL).div(dxPixels.mul(pixelWorldStep));
+      const dhdz = hU.sub(hD).div(dzPixels.mul(pixelWorldStep));
 
       // Normal from height gradient: n = normalize(-dhdx, 1, -dhdz).
       // 从高度梯度计算法线: n = normalize(-dhdx, 1, -dhdz)

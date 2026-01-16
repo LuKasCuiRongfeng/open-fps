@@ -27,40 +27,58 @@ export function inputSystem(world: GameWorld, res: GameResources): void {
   const rawInput = res.input.raw;
   const settings = res.runtime.settings;
 
+  // Game input is only active when pointer is locked.
+  // 游戏输入仅在指针锁定时有效
+  const inputActive = rawInput.pointerLocked;
+
   // Read raw input state (data-oriented: read from RawInputState resource).
   // 读取原始输入状态（数据导向：从 RawInputState 资源读取）
   const keysDown = rawInput.keysDown;
   const keysJustPressed = rawInput.keysJustPressed;
 
-  const forwardDown = keysDown.has(inputConfig.forward.code) || keysDown.has("ArrowUp");
-  const backwardDown = keysDown.has(inputConfig.backward.code) || keysDown.has("ArrowDown");
-  const leftDown = keysDown.has(inputConfig.left.code) || keysDown.has("ArrowLeft");
-  const rightDown = keysDown.has(inputConfig.right.code) || keysDown.has("ArrowRight");
-  const sprintDown = keysDown.has(inputConfig.sprint.code) || keysDown.has("ShiftRight");
+  // Only process movement/look when pointer is locked.
+  // 仅在指针锁定时处理移动/视角
+  let moveX = 0;
+  let moveZ = 0;
+  let sprintDown = false;
+  let jumpPressed = false;
+  let lookDeltaYaw = 0;
+  let lookDeltaPitch = 0;
 
-  // Compute normalized movement direction.
-  // 计算归一化的移动方向
-  let moveX = (rightDown ? 1 : 0) - (leftDown ? 1 : 0);
-  let moveZ = (forwardDown ? 1 : 0) - (backwardDown ? 1 : 0);
-  const len = Math.hypot(moveX, moveZ);
-  if (len > 0) {
-    moveX /= len;
-    moveZ /= len;
+  if (inputActive) {
+    const forwardDown = keysDown.has(inputConfig.forward.code) || keysDown.has("ArrowUp");
+    const backwardDown = keysDown.has(inputConfig.backward.code) || keysDown.has("ArrowDown");
+    const leftDown = keysDown.has(inputConfig.left.code) || keysDown.has("ArrowLeft");
+    const rightDown = keysDown.has(inputConfig.right.code) || keysDown.has("ArrowRight");
+    sprintDown = keysDown.has(inputConfig.sprint.code) || keysDown.has("ShiftRight");
+
+    // Compute normalized movement direction.
+    // 计算归一化的移动方向
+    moveX = (rightDown ? 1 : 0) - (leftDown ? 1 : 0);
+    moveZ = (forwardDown ? 1 : 0) - (backwardDown ? 1 : 0);
+    const len = Math.hypot(moveX, moveZ);
+    if (len > 0) {
+      moveX /= len;
+      moveZ /= len;
+    }
+
+    // Read one-shot inputs from raw state.
+    // 从原始状态读取一次性输入
+    jumpPressed = keysJustPressed.has(inputConfig.jump.code);
+
+    // Look delta from mouse.
+    // 鼠标视角增量
+    const mouseDx = rawInput.mouseDeltaX;
+    const mouseDy = rawInput.mouseDeltaY;
+    const radiansPerPixel = playerConfig.look.radiansPerPixel * settings.player.mouseSensitivity;
+    lookDeltaYaw = -mouseDx * radiansPerPixel;
+    lookDeltaPitch = -mouseDy * radiansPerPixel;
   }
 
-  // Read one-shot inputs from raw state.
-  // 从原始状态读取一次性输入
-  const jumpPressed = keysJustPressed.has(inputConfig.jump.code);
+  // Toggle requests work regardless of pointer lock (for UI interactions).
+  // 切换请求无论指针是否锁定都有效（用于 UI 交互）
   const toggleCameraMode = rawInput.toggleCameraModeRequested;
   const toggleThirdPersonStyle = rawInput.toggleThirdPersonStyleRequested;
-
-  // Look delta from mouse.
-  // 鼠标视角增量
-  const mouseDx = rawInput.mouseDeltaX;
-  const mouseDy = rawInput.mouseDeltaY;
-  const radiansPerPixel = playerConfig.look.radiansPerPixel * settings.player.mouseSensitivity;
-  const lookDeltaYaw = -mouseDx * radiansPerPixel;
-  const lookDeltaPitch = -mouseDy * radiansPerPixel;
 
   // Write to all entities with playerInput component.
   // 写入所有拥有 playerInput 组件的实体

@@ -22,6 +22,7 @@ import {
   DataTexture,
   FloatType,
   RedFormat,
+  LinearFilter,
   NearestFilter,
   RepeatWrapping,
   StorageTexture,
@@ -164,6 +165,12 @@ export class TerrainHeightCompute {
     this.heightTexture = new StorageTexture(this.atlasResolution, this.atlasResolution);
     this.heightTexture.type = FloatType;
     this.heightTexture.format = RedFormat;
+    // Use LINEAR filter for smooth interpolation between samples.
+    // Edge alignment ensures adjacent chunks share exact boundary values.
+    // 使用 LINEAR 过滤器在采样点之间平滑插值
+    // 边缘对齐确保相邻 chunk 共享精确的边界值
+    this.heightTexture.magFilter = LinearFilter;
+    this.heightTexture.minFilter = LinearFilter;
 
     // Build compute shader.
     // 构建计算着色器

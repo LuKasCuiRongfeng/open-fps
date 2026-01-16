@@ -80,33 +80,51 @@ export function createGpuTerrainMaterial(
   const localU = positionLocal.x.div(chunkSize).add(0.5);
   const localV = positionLocal.z.div(chunkSize).add(0.5);
 
-  // Transform to atlas UV with half-pixel inset to prevent bleeding.
-  // 变换到图集 UV，带半像素内缩以防止渗透
-  // Tile resolution is 64, so half-pixel = 0.5/64 = 0.0078125
-  // tile 分辨率为 64，所以半像素 = 0.5/64 = 0.0078125
-  const halfPixel = float(0.5 / 64.0).mul(tileScale);
-  const atlasU = tileOffsetU.add(localU.mul(tileScale));
-  const atlasV = tileOffsetV.add(localV.mul(tileScale));
-  
-  // Clamp to tile bounds with half-pixel margin.
-  // 限制在 tile 边界内，带半像素边距
-  const tileMinU = tileOffsetU.add(halfPixel);
-  const tileMaxU = tileOffsetU.add(tileScale).sub(halfPixel);
-  const tileMinV = tileOffsetV.add(halfPixel);
-  const tileMaxV = tileOffsetV.add(tileScale).sub(halfPixel);
-  const clampedU = clamp(atlasU, tileMinU, tileMaxU);
-  const clampedV = clamp(atlasV, tileMinV, tileMaxV);
-  const atlasUv = vec2(clampedU, clampedV);
+  // Map to atlas UV with proper boundary handling.
+  // 映射到图集 UV，正确处理边界
+  //
+  // The height texture uses EDGE ALIGNMENT in baking:
+  // - Pixel 0 bakes localU=0 (chunk start)
+  // - Pixel 63 bakes localU=1 (chunk end, same as next chunk's start)
+  // 高度纹理在烘焙时使用边缘对齐：
+  // - 像素 0 烘焙 localU=0（chunk 起点）
+  // - 像素 63 烘焙 localU=1（chunk 终点，与下一个 chunk 起点相同）
+  //
+  // With LINEAR filter, we want to sample pixel centers:
+  // - Pixel 0 center is at texU = 0.5/64
+  // - Pixel 63 center is at texU = 63.5/64
+  // So localU [0,1] maps to texU [0.5/64, 63.5/64] within the tile.
+  // 使用 LINEAR 过滤器时，我们要采样像素中心：
+  // - 像素 0 中心在 texU = 0.5/64
+  // - 像素 63 中心在 texU = 63.5/64
+  // 所以 localU [0,1] 映射到 tile 内的 texU [0.5/64, 63.5/64]
+  //
+  // Formula: texU = (0.5 + localU * 63) / 64 = 0.5/64 + localU * 63/64
+  // 公式：texU = (0.5 + localU * 63) / 64 = 0.5/64 + localU * 63/64
+  const tilePixels = float(64.0);
+  const halfPixel = float(0.5).div(tilePixels);
+  const pixelRange = tilePixels.sub(1.0).div(tilePixels); // 63/64
+  const pixelU = halfPixel.add(localU.mul(pixelRange));
+  const pixelV = halfPixel.add(localV.mul(pixelRange));
+  const atlasU = tileOffsetU.add(pixelU.mul(tileScale));
+  const atlasV = tileOffsetV.add(pixelV.mul(tileScale));
+  const atlasUv = vec2(atlasU, atlasV);
 
   // Sample height from texture.
   // 从纹理采样高度
   const height = heightTex.sample(atlasUv).r;
 
-  // Displace vertex Y position.
-  // 位移顶点 Y 位置
+  // Displace vertex Y position by ADDING height to original Y.
+  // 通过将高度加到原始 Y 来位移顶点 Y 位置
+  // This is critical for skirt vertices:
+  // - Main surface: Y=0 → final Y = 0 + height = height ✓
+  // - Skirt vertices: Y=-150 → final Y = -150 + height (hangs below surface) ✓
+  // 这对裙边顶点至关重要：
+  // - 主表面：Y=0 → 最终 Y = 0 + height = height ✓
+  // - 裙边顶点：Y=-150 → 最终 Y = -150 + height（悬挂在表面下方）✓
   mat.positionNode = vec3(
     positionLocal.x,
-    height,
+    positionLocal.y.add(height),
     positionLocal.z,
   );
 
