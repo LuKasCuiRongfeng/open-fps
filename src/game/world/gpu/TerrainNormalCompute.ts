@@ -187,7 +187,7 @@ export class TerrainNormalCompute {
 
       // Write to normal atlas.
       // 写入法线图集
-      textureStore(this.normalTexture!, uvec2(pixelX, pixelY), vec4(normal, float(1)));
+      textureStore(this.normalTexture!, uvec2(pixelX, pixelY), vec4(normal, float(1))).toWriteOnly();
     });
 
     this.computeNode = computeFn().compute(atlasRes * atlasRes);

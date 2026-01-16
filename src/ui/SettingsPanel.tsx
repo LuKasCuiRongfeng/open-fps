@@ -3,7 +3,7 @@ import { inputConfig } from "../config/input";
 import { visualsConfig } from "../config/visuals";
 import type { GameSettings, GameSettingsPatch } from "../game/settings/GameSettings";
 import type { GameApp } from "../game/GameApp";
-import type { TerrainEditor, EditorMode } from "../game/editor";
+import type { TerrainEditor, EditorMode, EditorMouseAction, EditorMouseConfig } from "../game/editor";
 import { 
   exportMapWithDialog, 
   importMapWithDialog, 
@@ -131,9 +131,36 @@ export default function SettingsPanel({
   const [statusMessage, setStatusMessage] = useState("");
   const [processing, setProcessing] = useState(false);
   const [mapLoadCounter, setMapLoadCounter] = useState(0);
+  
+  // Mouse button configuration state.
+  // 鼠标按键配置状态
+  const [mouseConfig, setMouseConfig] = useState<EditorMouseConfig>(() => ({
+    leftButton: terrainEditor?.mouseConfig.leftButton ?? "brush",
+    rightButton: terrainEditor?.mouseConfig.rightButton ?? "orbit",
+    middleButton: terrainEditor?.mouseConfig.middleButton ?? "pan",
+  }));
 
   const canEdit = terrainMode === "editable";
   const dirty = terrainEditor?.dirty ?? false;
+
+  // Sync mouse config from editor when it changes.
+  // 当编辑器配置变化时同步鼠标配置
+  useEffect(() => {
+    if (terrainEditor) {
+      setMouseConfig({
+        leftButton: terrainEditor.mouseConfig.leftButton,
+        rightButton: terrainEditor.mouseConfig.rightButton,
+        middleButton: terrainEditor.mouseConfig.middleButton,
+      });
+    }
+  }, [terrainEditor]);
+
+  // Handle mouse config change.
+  // 处理鼠标配置变化
+  const handleMouseConfigChange = useCallback((button: keyof EditorMouseConfig, action: EditorMouseAction) => {
+    setMouseConfig(prev => ({ ...prev, [button]: action }));
+    terrainEditor?.setMouseConfig({ [button]: action });
+  }, [terrainEditor]);
 
   // Sync map name and file path.
   // 同步地图名称和文件路径
@@ -499,6 +526,55 @@ export default function SettingsPanel({
                     {statusMessage}
                   </div>
                 )}
+
+                {/* Mouse button configuration / 鼠标按键配置 */}
+                <div>
+                  <div className="text-sm font-semibold mb-3">Mouse Controls</div>
+                  <div className="space-y-3">
+                    {/* Left button */}
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm text-white/80">Left Button</label>
+                      <select
+                        value={mouseConfig.leftButton}
+                        onChange={(e) => handleMouseConfigChange("leftButton", e.target.value as EditorMouseAction)}
+                        className="rounded-md border border-white/15 bg-black/40 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30"
+                      >
+                        <option value="brush">🖌️ Brush (Paint)</option>
+                        <option value="orbit">🔄 Orbit (Rotate)</option>
+                        <option value="pan">✋ Pan (Move)</option>
+                      </select>
+                    </div>
+                    {/* Right button */}
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm text-white/80">Right Button</label>
+                      <select
+                        value={mouseConfig.rightButton}
+                        onChange={(e) => handleMouseConfigChange("rightButton", e.target.value as EditorMouseAction)}
+                        className="rounded-md border border-white/15 bg-black/40 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30"
+                      >
+                        <option value="brush">🖌️ Brush (Paint)</option>
+                        <option value="orbit">🔄 Orbit (Rotate)</option>
+                        <option value="pan">✋ Pan (Move)</option>
+                      </select>
+                    </div>
+                    {/* Middle button */}
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm text-white/80">Middle Button</label>
+                      <select
+                        value={mouseConfig.middleButton}
+                        onChange={(e) => handleMouseConfigChange("middleButton", e.target.value as EditorMouseAction)}
+                        className="rounded-md border border-white/15 bg-black/40 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30"
+                      >
+                        <option value="brush">🖌️ Brush (Paint)</option>
+                        <option value="orbit">🔄 Orbit (Rotate)</option>
+                        <option value="pan">✋ Pan (Move)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-white/50">
+                    Scroll: Zoom camera • Shift+Scroll: Brush radius
+                  </div>
+                </div>
 
                 {/* Help / 帮助 */}
                 <div className="rounded-lg bg-blue-900/30 p-3 text-xs text-blue-200">

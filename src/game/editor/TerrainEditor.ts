@@ -46,6 +46,22 @@ export interface BrushStroke {
 }
 
 /**
+ * Mouse button actions in edit mode.
+ * 编辑模式下的鼠标按钮操作
+ */
+export type EditorMouseAction = "brush" | "orbit" | "pan";
+
+/**
+ * Editor mouse button configuration.
+ * 编辑器鼠标按钮配置
+ */
+export interface EditorMouseConfig {
+  leftButton: EditorMouseAction;    // Left mouse button action / 左键操作
+  rightButton: EditorMouseAction;   // Right mouse button action / 右键操作
+  middleButton: EditorMouseAction;  // Middle mouse button action / 中键操作
+}
+
+/**
  * TerrainEditor: manages terrain editing state.
  * TerrainEditor：管理地形编辑状态
  */
@@ -99,10 +115,18 @@ export class TerrainEditor {
   private readonly cameraTarget = new Vector3(0, 0, 0);
   private readonly cameraTempVec = new Vector3();
 
+  // Mouse button configuration (user-configurable).
+  // 鼠标按钮配置（用户可配置）
+  private _mouseConfig: EditorMouseConfig = {
+    leftButton: "brush",    // Default: left = brush / 默认：左键 = 画刷
+    rightButton: "orbit",   // Default: right = orbit / 默认：右键 = 轨道旋转
+    middleButton: "pan",    // Default: middle = pan / 默认：中键 = 平移
+  };
+
   // Camera drag state.
   // 相机拖拽状态
-  private _cameraOrbitActive = false;     // Right-drag: rotate / 右键拖拽：旋转
-  private _cameraPanActive = false;        // Middle-drag: pan / 中键拖拽：平移
+  private _cameraOrbitActive = false;     // Orbit active / 轨道旋转激活
+  private _cameraPanActive = false;        // Pan active / 平移激活
   private _lastMouseX = 0;
   private _lastMouseY = 0;
 
@@ -155,6 +179,49 @@ export class TerrainEditor {
 
   get currentMapData(): Readonly<MapData> {
     return this.mapData;
+  }
+
+  get mouseConfig(): Readonly<EditorMouseConfig> {
+    return this._mouseConfig;
+  }
+
+  /**
+   * Set mouse button configuration.
+   * 设置鼠标按钮配置
+   */
+  setMouseConfig(config: Partial<EditorMouseConfig>): void {
+    if (config.leftButton !== undefined) {
+      this._mouseConfig.leftButton = config.leftButton;
+    }
+    if (config.rightButton !== undefined) {
+      this._mouseConfig.rightButton = config.rightButton;
+    }
+    if (config.middleButton !== undefined) {
+      this._mouseConfig.middleButton = config.middleButton;
+    }
+  }
+
+  /**
+   * Swap middle and right button actions.
+   * 交换中键和右键操作
+   */
+  swapMouseButtons(): void {
+    const temp = this._mouseConfig.rightButton;
+    this._mouseConfig.rightButton = this._mouseConfig.middleButton;
+    this._mouseConfig.middleButton = temp;
+  }
+
+  /**
+   * Get action for a mouse button.
+   * 获取鼠标按钮的操作
+   */
+  getActionForButton(button: number): EditorMouseAction | null {
+    switch (button) {
+      case 0: return this._mouseConfig.leftButton;
+      case 1: return this._mouseConfig.middleButton;
+      case 2: return this._mouseConfig.rightButton;
+      default: return null;
+    }
   }
 
   // --- Mode Control / 模式控制 ---
@@ -358,15 +425,14 @@ export class TerrainEditor {
     this._lastMouseX = mouseX;
     this._lastMouseY = mouseY;
 
-    if (button === 2) {
-      // Right button: orbit.
-      // 右键：轨道旋转
+    const action = this.getActionForButton(button);
+    if (action === "orbit") {
       this._cameraOrbitActive = true;
-    } else if (button === 1) {
-      // Middle button: pan.
-      // 中键：平移
+    } else if (action === "pan") {
       this._cameraPanActive = true;
     }
+    // "brush" is handled separately via startBrush/endBrush
+    // "brush" 通过 startBrush/endBrush 单独处理
   }
 
   /**
@@ -374,11 +440,14 @@ export class TerrainEditor {
    * 处理相机控制的鼠标抬起
    */
   endCameraControl(button: number): void {
-    if (button === 2) {
+    const action = this.getActionForButton(button);
+    if (action === "orbit") {
       this._cameraOrbitActive = false;
-    } else if (button === 1) {
+    } else if (action === "pan") {
       this._cameraPanActive = false;
     }
+    // "brush" is handled separately via startBrush/endBrush
+    // "brush" 通过 startBrush/endBrush 单独处理
   }
 
   /**
@@ -399,7 +468,7 @@ export class TerrainEditor {
       // Orbit: rotate around target.
       // 轨道：围绕目标旋转
       this.cameraSpherical.theta -= dx * sensitivity;
-      this.cameraSpherical.phi += dy * sensitivity;
+      this.cameraSpherical.phi -= dy * sensitivity;  // Inverted: drag up = look down / 反转：向上拖 = 向下看
 
       // Clamp phi: min ~15° from top, max ~80° from horizontal (stay above ground).
       // 限制 phi：最小从顶部约 15°，最大从水平约 80°（保持在地面上方）

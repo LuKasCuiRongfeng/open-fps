@@ -163,13 +163,14 @@ export default function GameView() {
 
     e.preventDefault();
 
-    if (e.button === 0) {
-      // Left click: paint brush.
-      // 左键：画刷绘制
+    const action = terrainEditor.getActionForButton(e.button);
+    if (action === "brush") {
+      // Brush action: paint terrain.
+      // 画刷操作：绘制地形
       terrainEditor.startBrush();
-    } else if (e.button === 1 || e.button === 2) {
-      // Middle/Right click: camera control.
-      // 中键/右键：相机控制
+    } else if (action === "orbit" || action === "pan") {
+      // Camera control action.
+      // 相机控制操作
       terrainEditor.startCameraControl(e.button, e.clientX, e.clientY);
     }
   }, [terrainEditor]);
@@ -177,9 +178,10 @@ export default function GameView() {
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
     if (!terrainEditor) return;
 
-    if (e.button === 0) {
+    const action = terrainEditor.getActionForButton(e.button);
+    if (action === "brush") {
       terrainEditor.endBrush();
-    } else if (e.button === 1 || e.button === 2) {
+    } else if (action === "orbit" || action === "pan") {
       terrainEditor.endCameraControl(e.button);
     }
   }, [terrainEditor]);
@@ -220,7 +222,6 @@ export default function GameView() {
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
           onWheel={handleWheel}
-          onContextMenu={(e) => e.preventDefault()}
         />
       )}
 

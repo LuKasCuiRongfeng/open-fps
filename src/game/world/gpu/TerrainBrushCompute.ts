@@ -1,5 +1,17 @@
 // TerrainBrushCompute: GPU compute shader for terrain brush editing.
 // TerrainBrushCompute：用于地形画刷编辑的 GPU 计算着色器
+//
+// GPU-first design: All brush operations run on GPU compute shaders.
+// GPU-first 设计：所有画刷操作都在 GPU 计算着色器上运行
+//
+// Uses ping-pong (double buffer) pattern for read-write on same data:
+// - Read from source texture (textureLoad)
+// - Write to destination texture (textureStore)
+// - Copy result back to primary texture
+// 使用乒乓（双缓冲）模式处理同一数据的读写：
+// - 从源纹理读取 (textureLoad)
+// - 写入目标纹理 (textureStore)
+// - 将结果复制回主纹理
 
 import {
   float,
@@ -19,6 +31,7 @@ import {
 import {
   FloatType,
   RedFormat,
+  LinearFilter,
   StorageTexture,
   type WebGPURenderer,
 } from "three/webgpu";
@@ -30,8 +43,8 @@ import type { BrushStroke } from "../../editor/TerrainEditor";
  * GPU compute pipeline for terrain brush editing.
  * GPU 地形画刷编辑的计算管线
  *
- * Applies brush strokes directly to the height texture atlas.
- * 将画刷笔触直接应用到高度纹理图集
+ * Uses ping-pong double buffering for read-write operations.
+ * 使用乒乓双缓冲进行读写操作
  */
 export class TerrainBrushCompute {
   private readonly config: TerrainConfig;
@@ -43,14 +56,16 @@ export class TerrainBrushCompute {
   // Atlas dimensions.
   // 图集尺寸
   private readonly atlasTilesPerSide: number;
+  private readonly atlasResolution: number;
 
-  // Reference to height texture (from TerrainHeightCompute).
-  // 高度纹理的引用（来自 TerrainHeightCompute）
-  private heightTexture: StorageTexture | null = null;
-
-  // Edit delta texture (stores accumulated edits).
-  // 编辑增量纹理（存储累积的编辑）
-  editDeltaTexture: StorageTexture | null = null;
+  // Ping-pong height textures for double buffering.
+  // 用于双缓冲的乒乓高度纹理
+  // heightTextureA is the "primary" texture shared with TerrainHeightCompute.
+  // heightTextureA 是与 TerrainHeightCompute 共享的"主"纹理
+  private heightTextureA: StorageTexture | null = null;
+  // heightTextureB is the secondary buffer for ping-pong.
+  // heightTextureB 是乒乓的次要缓冲区
+  private heightTextureB: StorageTexture | null = null;
 
   // Brush uniforms.
   // 画刷 uniform
@@ -73,14 +88,20 @@ export class TerrainBrushCompute {
   private chunkOffsetX = uniform(0);
   private chunkOffsetZ = uniform(0);
 
-  // Compute node for brush application.
+  // Compute nodes for brush application.
   // 画刷应用的计算节点
-  private computeNode: ComputeNode | null = null;
+  // Read from A, write to B
+  private computeNodeAtoB: ComputeNode | null = null;
+  // Copy B back to A
+  private copyNodeBtoA: ComputeNode | null = null;
+
+  private initialized = false;
 
   constructor(config: TerrainConfig) {
     this.config = config;
     this.tileResolution = config.gpuCompute.tileResolution;
     this.atlasTilesPerSide = config.gpuCompute.atlasTilesPerSide;
+    this.atlasResolution = this.tileResolution * this.atlasTilesPerSide;
   }
 
   /**
@@ -88,29 +109,55 @@ export class TerrainBrushCompute {
    * 初始化 GPU 资源
    */
   async init(renderer: WebGPURenderer, heightTexture: StorageTexture): Promise<void> {
-    this.heightTexture = heightTexture;
+    this.heightTextureA = heightTexture;
 
-    // Create edit delta texture (same resolution as height texture).
-    // 创建编辑增量纹理（与高度纹理相同分辨率）
-    const atlasRes = this.tileResolution * this.atlasTilesPerSide;
-    this.editDeltaTexture = new StorageTexture(atlasRes, atlasRes);
-    this.editDeltaTexture.type = FloatType;
-    this.editDeltaTexture.format = RedFormat;
+    // Create secondary buffer for ping-pong (same format as primary).
+    // 为乒乓创建次要缓冲区（与主缓冲区相同格式）
+    this.heightTextureB = new StorageTexture(this.atlasResolution, this.atlasResolution);
+    this.heightTextureB.type = FloatType;
+    this.heightTextureB.format = RedFormat;
+    this.heightTextureB.magFilter = LinearFilter;
+    this.heightTextureB.minFilter = LinearFilter;
 
-    // Build compute shader.
+    // Build compute shaders.
     // 构建计算着色器
-    this.buildComputeShader();
+    this.buildComputeShaders();
 
-    // Initialize with renderer.
-    // 使用渲染器初始化
-    await renderer.computeAsync(this.computeNode!);
+    // Build copy shader for syncing back.
+    // 构建用于同步回的复制着色器
+    this.buildCopyShader();
+
+    // Initialize secondary buffer by copying from primary.
+    // 通过从主缓冲区复制来初始化次要缓冲区
+    await this.syncSecondaryBuffer(renderer);
+
+    this.initialized = true;
   }
 
-  private buildComputeShader(): void {
+  /**
+   * Build compute shaders for brush operations.
+   * 为画刷操作构建计算着色器
+   */
+  private buildComputeShaders(): void {
+    // A -> B: read from A, write to B
+    // A -> B: 从 A 读取，写入 B
+    this.computeNodeAtoB = this.buildBrushShader(
+      this.heightTextureA!,
+      this.heightTextureB!
+    );
+  }
+
+  /**
+   * Build a brush compute shader that reads from src and writes to dst.
+   * 构建从 src 读取并写入 dst 的画刷计算着色器
+   */
+  private buildBrushShader(
+    srcTexture: StorageTexture,
+    dstTexture: StorageTexture
+  ): ComputeNode {
     const tileRes = this.tileResolution;
     const chunkSize = float(this.config.streaming.chunkSizeMeters);
-    const atlasSize = this.tileResolution * this.atlasTilesPerSide;
-    const heightTexRef = this.heightTexture!;
+    const atlasSize = this.atlasResolution;
 
     const computeFn = Fn(() => {
       // Compute pixel coordinates from instance index.
@@ -157,10 +204,10 @@ export class TerrainBrushCompute {
       // 只影响画刷半径内的像素
       const insideBrush = dist.lessThan(outerRadius);
 
-      // Read current height using textureLoad with integer coords.
-      // 使用整数坐标的 textureLoad 读取当前高度
+      // Read current height from SOURCE texture.
+      // 从源纹理读取当前高度
       const readCoord = ivec2(int(atlasX), int(atlasY));
-      const currentHeight = textureLoad(heightTexRef, readCoord).r;
+      const currentHeight = textureLoad(srcTexture, readCoord).r;
 
       // Calculate height delta based on brush type.
       // 根据画刷类型计算高度增量
@@ -183,12 +230,12 @@ export class TerrainBrushCompute {
       // Smooth (type 2) - blend towards average of neighbors.
       // 平滑（类型 2）- 混合邻居的平均值
       If(this.brushType.equal(2), () => {
-        // Sample neighbors (simplified 4-sample average) using textureLoad.
-        // 使用 textureLoad 采样邻居（简化的 4 采样平均）
-        const h0 = textureLoad(heightTexRef, readCoord.add(ivec2(1, 0))).r;
-        const h1 = textureLoad(heightTexRef, readCoord.add(ivec2(-1, 0))).r;
-        const h2 = textureLoad(heightTexRef, readCoord.add(ivec2(0, 1))).r;
-        const h3 = textureLoad(heightTexRef, readCoord.add(ivec2(0, -1))).r;
+        // Sample neighbors from SOURCE texture.
+        // 从源纹理采样邻居
+        const h0 = textureLoad(srcTexture, readCoord.add(ivec2(1, 0))).r;
+        const h1 = textureLoad(srcTexture, readCoord.add(ivec2(-1, 0))).r;
+        const h2 = textureLoad(srcTexture, readCoord.add(ivec2(0, 1))).r;
+        const h3 = textureLoad(srcTexture, readCoord.add(ivec2(0, -1))).r;
         const avgHeight = h0.add(h1).add(h2).add(h3).div(4);
 
         const smoothFactor = this.brushStrength.mul(this.brushDt).mul(5).mul(falloffMask);
@@ -198,8 +245,8 @@ export class TerrainBrushCompute {
       // Flatten (type 3) - bring towards brush center height.
       // 平整（类型 3）- 向画刷中心高度靠拢
       If(this.brushType.equal(3), () => {
-        // Sample center height.
-        // 采样中心高度
+        // Sample center height from SOURCE texture.
+        // 从源纹理采样中心高度
         const centerU = float(this.brushCenterX).div(chunkSize).sub(float(this.chunkOffsetX));
         const centerV = float(this.brushCenterZ).div(chunkSize).sub(float(this.chunkOffsetZ));
         const centerPixelX = int(centerU.mul(float(tileRes - 1)));
@@ -210,27 +257,89 @@ export class TerrainBrushCompute {
           centerAtlasX.clamp(0, atlasSize - 1),
           centerAtlasY.clamp(0, atlasSize - 1)
         );
-        const targetHeight = textureLoad(heightTexRef, centerCoord).r;
+        const targetHeight = textureLoad(srcTexture, centerCoord).r;
 
         const flattenFactor = this.brushStrength.mul(this.brushDt).mul(3).mul(falloffMask);
         delta.assign(targetHeight.sub(currentHeight).mul(flattenFactor));
       });
 
-      // Apply delta if inside brush.
-      // 如果在画刷内则应用增量
+      // Compute new height.
+      // 计算新高度
       const newHeight = currentHeight.add(delta);
 
-      If(insideBrush, () => {
-        textureStore(heightTexRef, uvec2(atlasX, atlasY), vec4(newHeight, float(0), float(0), float(1)));
-      });
+      // Write to DESTINATION texture.
+      // 写入目标纹理
+      // Inside brush: write modified height. Outside brush: copy original.
+      // 画刷内：写入修改后的高度。画刷外：复制原始值
+      const outputHeight = insideBrush.select(newHeight, currentHeight);
+      textureStore(dstTexture, uvec2(atlasX, atlasY), vec4(outputHeight, float(0), float(0), float(1))).toWriteOnly();
     });
 
-    this.computeNode = computeFn().compute(tileRes * tileRes);
+    return computeFn().compute(tileRes * tileRes);
+  }
+
+  /**
+   * Build copy shader for syncing B back to A (tile-based).
+   * 构建用于将 B 同步回 A 的复制着色器（基于 tile）
+   */
+  private buildCopyShader(): void {
+    const tileRes = this.tileResolution;
+
+    // Copy single tile from B -> A
+    // 从 B -> A 复制单个 tile
+    const copyTileFn = Fn(() => {
+      const pixelX = mod(instanceIndex, uint(tileRes));
+      const pixelY = instanceIndex.div(uint(tileRes));
+
+      const tileXCoord = uint(this.targetTileX);
+      const tileZCoord = uint(this.targetTileZ);
+
+      const atlasX = tileXCoord.mul(uint(tileRes)).add(pixelX);
+      const atlasY = tileZCoord.mul(uint(tileRes)).add(pixelY);
+
+      const coord = ivec2(int(atlasX), int(atlasY));
+      const value = textureLoad(this.heightTextureB!, coord);
+      textureStore(this.heightTextureA!, uvec2(atlasX, atlasY), value).toWriteOnly();
+    });
+    this.copyNodeBtoA = copyTileFn().compute(tileRes * tileRes);
+  }
+
+  /**
+   * Sync secondary buffer from primary (after external changes like chunk upload).
+   * 从主缓冲区同步次要缓冲区（在外部更改如 chunk 上传后）
+   */
+  async syncSecondaryBuffer(renderer: WebGPURenderer): Promise<void> {
+    // Build a full-atlas copy shader for initial sync.
+    // 为初始同步构建完整图集复制着色器
+    const atlasRes = this.atlasResolution;
+    const copyFullFn = Fn(() => {
+      const pixelX = mod(instanceIndex, uint(atlasRes));
+      const pixelY = instanceIndex.div(uint(atlasRes));
+      const coord = ivec2(int(pixelX), int(pixelY));
+      const value = textureLoad(this.heightTextureA!, coord);
+      textureStore(this.heightTextureB!, uvec2(pixelX, pixelY), value).toWriteOnly();
+    });
+    const copyNode = copyFullFn().compute(atlasRes * atlasRes);
+    await renderer.computeAsync(copyNode);
+  }
+
+  /**
+   * Get the current "active" height texture (the one with latest data).
+   * 获取当前"活跃"的高度纹理（包含最新数据的那个）
+   *
+   * This is always heightTextureA (primary), as we ensure it's synced after brush ops.
+   * 这始终是 heightTextureA（主），因为我们确保它在画刷操作后同步
+   */
+  getActiveHeightTexture(): StorageTexture {
+    return this.heightTextureA!;
   }
 
   /**
    * Apply a brush stroke to a chunk.
    * 将画刷笔触应用到 chunk
+   *
+   * GPU-first: All brush math runs on GPU compute shader.
+   * GPU-first：所有画刷数学运算在 GPU 计算着色器上运行
    */
   async applyBrushToChunk(
     cx: number,
@@ -240,6 +349,11 @@ export class TerrainBrushCompute {
     stroke: BrushStroke,
     renderer: WebGPURenderer
   ): Promise<void> {
+    if (!this.initialized) {
+      console.error("[TerrainBrushCompute] Not initialized!");
+      return;
+    }
+
     // Set uniforms.
     // 设置 uniform
     this.brushCenterX.value = stroke.worldX;
@@ -266,16 +380,24 @@ export class TerrainBrushCompute {
     this.chunkOffsetX.value = cx;
     this.chunkOffsetZ.value = cz;
 
-    // Execute compute shader.
-    // 执行计算着色器
-    await renderer.computeAsync(this.computeNode!);
+    // Execute compute shader: A -> B (read from A, write to B)
+    // 执行计算着色器：A -> B（从 A 读取，写入 B）
+    await renderer.computeAsync(this.computeNodeAtoB!);
+
+    // Copy result back: B -> A (so A always has latest data)
+    // 复制结果回来：B -> A（使 A 始终有最新数据）
+    await renderer.computeAsync(this.copyNodeBtoA!);
   }
 
   dispose(): void {
-    if (this.editDeltaTexture) {
-      this.editDeltaTexture = null;
-    }
-    this.heightTexture = null;
-    this.computeNode = null;
+    // Only dispose the secondary buffer we created.
+    // 只释放我们创建的次要缓冲区
+    // Primary (heightTextureA) is owned by TerrainHeightCompute.
+    // 主缓冲区 (heightTextureA) 由 TerrainHeightCompute 拥有
+    this.heightTextureB = null;
+    this.heightTextureA = null;
+    this.computeNodeAtoB = null;
+    this.copyNodeBtoA = null;
+    this.initialized = false;
   }
 }

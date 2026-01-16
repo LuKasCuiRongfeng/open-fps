@@ -1,7 +1,7 @@
 // terrainMaterial: GPU-first TSL terrain material with vertex displacement.
 // terrainMaterial：GPU-first TSL 地形材质，带顶点位移
 
-import { MeshStandardNodeMaterial, type StorageTexture } from "three/webgpu";
+import { DoubleSide, MeshStandardNodeMaterial, type StorageTexture } from "three/webgpu";
 import {
   clamp,
   color,
@@ -58,6 +58,9 @@ export function createGpuTerrainMaterial(
 ): MeshStandardNodeMaterial {
   const mat = new MeshStandardNodeMaterial();
   mat.fog = true;
+  // Enable double-sided rendering for skirts to be visible from below.
+  // 启用双面渲染以便从下方看到裙边
+  mat.side = DoubleSide;
 
   // Uniforms for this chunk's atlas tile location.
   // 此 chunk 在图集中的 tile 位置 uniform

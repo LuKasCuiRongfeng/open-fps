@@ -568,42 +568,32 @@ export class GameApp {
   }
 
   /**
-   * Update terrain editor: apply pending brush strokes using CPU-based editing.
-   * 更新地形编辑器：使用 CPU 编辑应用待处理的画刷笔触
+   * Update terrain editor: apply pending brush strokes using GPU compute shaders.
+   * 更新地形编辑器：使用 GPU 计算着色器应用待处理的画刷笔触
    *
-   * Simplified workflow (v2):
-   * 1. User saves procedural terrain first (exports current heights)
-   * 2. Then loads the saved map for editing
-   * 3. Brush edits modify CPU cache directly
-   * 4. Modified chunks are uploaded to GPU
+   * GPU-first workflow:
+   * 1. TerrainEditor collects brush strokes
+   * 2. TerrainBrushCompute applies them via ping-pong compute shader
+   * 3. TerrainNormalCompute regenerates normals on GPU
    *
-   * 简化工作流程（v2）：
-   * 1. 用户先保存程序地形（导出当前高度）
-   * 2. 然后加载保存的地图进行编辑
-   * 3. 画刷编辑直接修改 CPU 缓存
-   * 4. 修改的 chunk 上传到 GPU
+   * GPU-first 工作流程：
+   * 1. TerrainEditor 收集画刷笔触
+   * 2. TerrainBrushCompute 通过乒乓计算着色器应用它们
+   * 3. TerrainNormalCompute 在 GPU 上重新生成法线
    */
   private updateTerrainEditor(dt: number): void {
-    // Apply brush if active (CPU-based editing).
-    // 如果画刷激活则应用（CPU 编辑）
-    const stroke = this.terrainEditor.applyBrush(dt);
-    if (stroke) {
-      // Apply brush stroke directly to CPU cache.
-      // 直接将画刷笔触应用到 CPU 缓存
-      this.resources.runtime.terrain.applyBrushToCpuCache(
-        stroke.worldX,
-        stroke.worldZ,
-        stroke.brush,
-        stroke.dt
-      );
+    // Generate brush stroke if brush is active this frame.
+    // 如果本帧画刷激活，则生成画刷笔触
+    this.terrainEditor.applyBrush(dt);
+
+    // Collect pending strokes from editor.
+    // 从编辑器收集待处理的笔触
+    const strokes = this.terrainEditor.consumePendingStrokes();
+
+    // Apply strokes on GPU (async, non-blocking).
+    // 在 GPU 上应用笔触（异步，非阻塞）
+    if (strokes.length > 0) {
+      void this.resources.runtime.terrain.applyBrushStrokes(strokes);
     }
-
-    // Consume pending strokes (for compatibility, though we now apply directly above).
-    // 消耗待处理的笔触（为了兼容性，虽然现在我们直接在上面应用）
-    this.terrainEditor.consumePendingStrokes();
-
-    // Upload modified chunks to GPU (batched, async).
-    // 上传修改的 chunk 到 GPU（批量，异步）
-    void this.resources.runtime.terrain.uploadModifiedChunks();
   }
 }
