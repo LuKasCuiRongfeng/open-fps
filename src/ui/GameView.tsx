@@ -197,7 +197,7 @@ export default function GameView() {
       // Shift + wheel: adjust brush radius.
       // Shift + 滚轮：调整画刷半径
       const delta = e.deltaY > 0 ? -2 : 2;
-      const newRadius = terrainEditor.brush.radiusMeters + delta;
+      const newRadius = terrainEditor.brushSettings.radiusMeters + delta;
       terrainEditor.setBrushRadius(newRadius);
     } else {
       // Wheel: zoom camera.

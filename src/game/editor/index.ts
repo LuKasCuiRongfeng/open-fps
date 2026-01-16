@@ -4,3 +4,5 @@
 export * from "./MapData";
 export * from "./MapStorage";
 export * from "./TerrainEditor";
+export * from "./EditorOrbitCamera";
+export * from "./TerrainBrush";

@@ -29,7 +29,7 @@ export function TerrainEditorPanel({ editor }: Props) {
   useEffect(() => {
     if (!editor) return;
 
-    const brush = editor.brush;
+    const brush = editor.brushSettings;
     setBrushType(brush.type);
     setBrushRadius(brush.radiusMeters);
     setBrushStrength(brush.strength);
