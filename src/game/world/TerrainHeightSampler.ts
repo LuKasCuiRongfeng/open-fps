@@ -71,6 +71,23 @@ export class TerrainHeightSampler {
   }
 
   /**
+   * Get raw height data for a chunk (for saving map).
+   * 获取 chunk 的原始高度数据（用于保存地图）
+   */
+  static getChunkHeightData(cx: number, cz: number): Float32Array | null {
+    const key = `${cx},${cz}`;
+    return this.cache.get(key) ?? null;
+  }
+
+  /**
+   * Get all cached chunk keys.
+   * 获取所有缓存的 chunk 键
+   */
+  static getAllCachedChunkKeys(): string[] {
+    return Array.from(this.cache.keys());
+  }
+
+  /**
    * Remove cached height data for a chunk (on unload).
    * 移除 chunk 的缓存高度数据（卸载时）
    */
@@ -86,6 +103,22 @@ export class TerrainHeightSampler {
   static hasChunkData(cx: number, cz: number): boolean {
     const key = `${cx},${cz}`;
     return this.cache.has(key);
+  }
+
+  /**
+   * Get the tile resolution.
+   * 获取 tile 分辨率
+   */
+  static getTileResolution(): number {
+    return this.tileResolution;
+  }
+
+  /**
+   * Get the chunk size in meters.
+   * 获取 chunk 大小（米）
+   */
+  static getChunkSizeMeters(): number {
+    return this.chunkSizeMeters;
   }
 
   /**

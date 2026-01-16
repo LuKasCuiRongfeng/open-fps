@@ -670,6 +670,126 @@ export class TerrainHeightCompute {
     return heightData;
   }
 
+  /**
+   * Upload height data from CPU to GPU texture.
+   * 从 CPU 上传高度数据到 GPU 纹理
+   *
+   * Used when loading a saved map or after CPU-side brush edits.
+   * 用于加载保存的地图或 CPU 侧画刷编辑后
+   *
+   * @param cx Chunk X coordinate.
+   * @param cz Chunk Z coordinate.
+   * @param heightData Height data to upload (tileResolution x tileResolution).
+   * @param renderer WebGPU renderer.
+   */
+  async uploadChunkHeight(
+    cx: number,
+    cz: number,
+    heightData: Float32Array,
+    renderer: WebGPURenderer
+  ): Promise<void> {
+    const tileRes = this.tileResolution;
+
+    // Validate data size.
+    // 验证数据大小
+    if (heightData.length !== tileRes * tileRes) {
+      console.error(`[TerrainHeightCompute] Invalid height data size: ${heightData.length}, expected ${tileRes * tileRes}`);
+      return;
+    }
+
+    // Get or allocate tile for this chunk.
+    // 获取或分配此 chunk 的 tile
+    const key = `${cx},${cz}`;
+    let tileIndex = this.chunkToTile.get(key);
+    if (tileIndex === undefined) {
+      tileIndex = this.allocateTile(cx, cz);
+      if (tileIndex < 0) {
+        console.error(`[TerrainHeightCompute] Failed to allocate tile for chunk (${cx}, ${cz})`);
+        return;
+      }
+    }
+
+    const { tileX, tileZ } = this.tileIndexToCoords(tileIndex);
+
+    // Calculate tile offset in atlas.
+    // 计算 tile 在图集中的偏移
+    const offsetX = tileX * tileRes;
+    const offsetY = tileZ * tileRes;
+
+    // Access Three.js backend internals.
+    // 访问 Three.js backend 内部
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const backend = (renderer as any).backend;
+
+    // Get texture data from backend.
+    // 从 backend 获取纹理数据
+    const textureData = backend.get(this.heightTexture!);
+    if (!textureData || !textureData.texture) {
+      console.error(`[TerrainHeightCompute] heightTexture not registered with backend!`);
+      return;
+    }
+
+    const textureGPU: GPUTexture = textureData.texture;
+    const device: GPUDevice = backend.device;
+
+    // Create staging buffer for upload (needs COPY_SRC).
+    // 创建用于上传的暂存缓冲区（需要 COPY_SRC）
+    const bytesPerPixel = 4; // R32F = 4 bytes
+    const bytesPerRow = Math.ceil(tileRes * bytesPerPixel / 256) * 256;
+    const bufferSize = bytesPerRow * tileRes;
+
+    // Prepare data with row padding.
+    // 准备带行填充的数据
+    const paddedData = new Float32Array(bufferSize / 4);
+    const floatsPerRow = bytesPerRow / 4;
+    for (let row = 0; row < tileRes; row++) {
+      for (let col = 0; col < tileRes; col++) {
+        paddedData[row * floatsPerRow + col] = heightData[row * tileRes + col];
+      }
+    }
+
+    const stagingBuffer = device.createBuffer({
+      size: bufferSize,
+      usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.MAP_WRITE,
+      mappedAtCreation: true,
+    });
+
+    // Write data to staging buffer.
+    // 将数据写入暂存缓冲区
+    const mappedRange = stagingBuffer.getMappedRange();
+    new Float32Array(mappedRange).set(paddedData);
+    stagingBuffer.unmap();
+
+    // Copy from staging buffer to texture.
+    // 从暂存缓冲区复制到纹理
+    const commandEncoder = device.createCommandEncoder();
+    commandEncoder.copyBufferToTexture(
+      {
+        buffer: stagingBuffer,
+        bytesPerRow,
+        rowsPerImage: tileRes,
+      },
+      {
+        texture: textureGPU,
+        origin: { x: offsetX, y: offsetY, z: 0 },
+      },
+      {
+        width: tileRes,
+        height: tileRes,
+        depthOrArrayLayers: 1,
+      },
+    );
+    device.queue.submit([commandEncoder.finish()]);
+
+    // Wait for GPU to finish.
+    // 等待 GPU 完成
+    await device.queue.onSubmittedWorkDone();
+
+    // Clean up staging buffer.
+    // 清理暂存缓冲区
+    stagingBuffer.destroy();
+  }
+
   dispose(): void {
     if (this.hashTexture) {
       this.hashTexture.dispose();

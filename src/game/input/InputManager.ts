@@ -13,6 +13,10 @@ export class InputManager {
   private readonly domElement: HTMLElement;
   private readonly state: RawInputState;
 
+  // Flag to disable pointer lock (e.g., in edit mode).
+  // 禁用指针锁定的标志（例如在编辑模式下）
+  private _pointerLockEnabled = true;
+
   constructor(domElement: HTMLElement, state: RawInputState) {
     this.domElement = domElement;
     this.state = state;
@@ -24,6 +28,27 @@ export class InputManager {
 
     window.addEventListener("keydown", this.onKeyDown);
     window.addEventListener("keyup", this.onKeyUp);
+  }
+
+  /**
+   * Enable or disable pointer lock requests.
+   * 启用或禁用指针锁定请求
+   *
+   * When disabled, clicks won't lock the pointer (for edit mode).
+   * 禁用时，点击不会锁定指针（用于编辑模式）
+   */
+  setPointerLockEnabled(enabled: boolean): void {
+    this._pointerLockEnabled = enabled;
+
+    // If disabling and currently locked, exit pointer lock.
+    // 如果禁用且当前已锁定，退出指针锁定
+    if (!enabled && document.pointerLockElement === this.domElement) {
+      document.exitPointerLock();
+    }
+  }
+
+  get pointerLockEnabled(): boolean {
+    return this._pointerLockEnabled;
   }
 
   dispose() {
@@ -41,7 +66,11 @@ export class InputManager {
   }
 
   private readonly onClick = () => {
-    this.domElement.requestPointerLock();
+    // Only request pointer lock if enabled.
+    // 仅在启用时请求指针锁定
+    if (this._pointerLockEnabled) {
+      this.domElement.requestPointerLock();
+    }
   };
 
   private readonly onPointerLockChange = () => {

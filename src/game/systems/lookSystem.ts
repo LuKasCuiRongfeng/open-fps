@@ -9,6 +9,11 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+// Play mode pitch limits (prevents looking too far up/down).
+// 游戏模式俯仰角限制（防止视角过度上下）
+const PITCH_MIN_RAD = -1.40;  // ~-80 degrees (looking up)
+const PITCH_MAX_RAD = 1.40;   // ~80 degrees (looking down)
+
 /**
  * lookSystem: reads look delta from PlayerInput and updates Transform orientation.
  * lookSystem：从 PlayerInput 读取视角增量并更新 Transform 朝向
@@ -36,10 +41,13 @@ export function lookSystem(world: GameWorld, res: GameResources): void {
     // Update target orientation from input.
     // 从输入更新目标朝向
     transform.targetYawRadians += playerInput.lookDeltaYaw;
+    
+    // Clamp pitch to prevent looking too far up/down.
+    // 限制俯仰角以防止视角过度上下
     transform.targetPitchRadians = clamp(
       transform.targetPitchRadians + playerInput.lookDeltaPitch,
-      playerConfig.pitch.minRadians,
-      playerConfig.pitch.maxRadians,
+      PITCH_MIN_RAD,
+      PITCH_MAX_RAD,
     );
 
     // Smoothly interpolate current orientation toward target.

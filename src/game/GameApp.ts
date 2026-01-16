@@ -12,9 +12,11 @@ import {
 import { cameraConfig } from "../config/camera";
 import { renderConfig } from "../config/render";
 import { visualsConfig } from "../config/visuals";
+import { terrainConfig } from "../config/terrain";
 import { createWorld } from "./createWorld";
 import { GameEcs, type GameWorld } from "./ecs/GameEcs";
 import { createTimeResource, type GameResources } from "./ecs/resources";
+import { TerrainEditor } from "./editor/TerrainEditor";
 import { InputManager } from "./input/InputManager";
 import { createRawInputState } from "./input/RawInputState";
 import { createPlayer } from "./prefabs/createPlayer";
@@ -69,6 +71,7 @@ export class GameApp {
   private readonly resources: GameResources;
   private readonly settings = createDefaultGameSettings();
   private readonly marker: Mesh;
+  private readonly terrainEditor: TerrainEditor;
   readonly ready: Promise<void>;
   private disposed = false;
 
@@ -143,6 +146,27 @@ export class GameApp {
     };
 
     onBootPhase?.("creating-ecs");
+
+    // Create terrain editor.
+    // 创建地形编辑器
+    this.terrainEditor = new TerrainEditor(terrainConfig);
+
+    // Connect editor mode changes to pointer lock control.
+    // 连接编辑器模式变化到指针锁定控制
+    this.terrainEditor.setOnModeChange((mode) => {
+      // Disable pointer lock in edit mode, enable in play mode.
+      // 编辑模式禁用指针锁定，游戏模式启用
+      this.inputManager.setPointerLockEnabled(mode === "play");
+
+      // Initialize editor camera when entering edit mode.
+      // 进入编辑模式时初始化编辑器相机
+      if (mode === "edit") {
+        const pos = this.getPlayerPosition();
+        if (pos) {
+          this.terrainEditor.initCameraFromPlayer(pos.x, pos.y, pos.z);
+        }
+      }
+    });
 
     // Register systems in execution order.
     // 按执行顺序注册系统
@@ -345,6 +369,66 @@ export class GameApp {
     return this.fpsValue;
   }
 
+  /**
+   * Get terrain editor instance.
+   * 获取地形编辑器实例
+   */
+  getTerrainEditor(): TerrainEditor {
+    return this.terrainEditor;
+  }
+
+  /**
+   * Update editor brush target from mouse position.
+   * 从鼠标位置更新编辑器画刷目标
+   */
+  updateEditorBrushTarget(mouseX: number, mouseY: number): void {
+    const canvas = this.renderer.domElement;
+    this.terrainEditor.updateBrushTarget(
+      mouseX,
+      mouseY,
+      canvas.clientWidth,
+      canvas.clientHeight,
+      this.camera,
+      this.resources.runtime.terrain.heightAt
+    );
+  }
+
+  // --- Map Save/Load API / 地图保存/加载 API ---
+
+  /**
+   * Export current terrain as map data (for saving).
+   * 导出当前地形为地图数据（用于保存）
+   */
+  exportCurrentMapData(): import("./editor/MapData").MapData {
+    return this.resources.runtime.terrain.exportCurrentMapData();
+  }
+
+  /**
+   * Load terrain from map data.
+   * 从地图数据加载地形
+   */
+  async loadMapData(mapData: import("./editor/MapData").MapData): Promise<void> {
+    await this.resources.runtime.terrain.loadMapData(mapData);
+    // Update editor's map data reference.
+    // 更新编辑器的地图数据引用
+    this.terrainEditor.loadMap(JSON.stringify({
+      version: mapData.version,
+      seed: mapData.seed,
+      tileResolution: mapData.tileResolution,
+      chunkSizeMeters: mapData.chunkSizeMeters,
+      chunks: {}, // Don't duplicate chunks in editor, they're in TerrainHeightSampler
+      metadata: mapData.metadata,
+    }));
+  }
+
+  /**
+   * Reset terrain to original loaded data (discard all edits).
+   * 重置地形为原始加载数据（丢弃所有编辑）
+   */
+  async resetTerrain(): Promise<void> {
+    await this.resources.runtime.terrain.resetToOriginal();
+  }
+
   updateSettings(patch: GameSettingsPatch) {
     applySettingsPatch(this.settings, patch);
 
@@ -428,15 +512,25 @@ export class GameApp {
       this.camera.updateProjectionMatrix();
     }
 
-    // Run all systems in order.
-    // 按顺序运行所有系统
-    for (const system of this.systems) {
-      system.fn(this.ecs.world, this.resources);
+    // Run all systems in order (only in play mode).
+    // 按顺序运行所有系统（仅在游戏模式）
+    if (this.terrainEditor.mode === "play") {
+      for (const system of this.systems) {
+        system.fn(this.ecs.world, this.resources);
+      }
+    } else {
+      // In edit mode: apply editor camera state.
+      // 编辑模式：应用编辑器相机状态
+      this.terrainEditor.applyCameraState(this.camera);
     }
 
     // Update terrain streaming system (chunk loading/unloading, LOD, culling).
     // 更新地形流式系统（chunk 加载/卸载、LOD、剔除）
     this.updateTerrainStreaming();
+
+    // Process terrain editor brush strokes.
+    // 处理地形编辑器画刷笔触
+    this.updateTerrainEditor(dt);
 
     // Flush destroyed entities at end of frame.
     // 在帧末刷新已销毁的实体
@@ -448,14 +542,22 @@ export class GameApp {
   };
 
   /**
-   * Update terrain streaming based on player position.
-   * 根据玩家位置更新地形流式加载
+   * Update terrain streaming based on player/camera position.
+   * 根据玩家/相机位置更新地形流式加载
    */
   private updateTerrainStreaming(): void {
     const terrain = this.resources.runtime.terrain;
 
-    // Find player position and update terrain.
-    // 找到玩家位置并更新地形
+    // In edit mode, stream terrain around camera target.
+    // 编辑模式下，围绕相机目标流式加载地形
+    if (this.terrainEditor.mode === "edit") {
+      const target = this.terrainEditor.getCameraTarget();
+      terrain.update(target.x, target.z, this.camera);
+      return;
+    }
+
+    // In play mode, stream around player position.
+    // 游戏模式下，围绕玩家位置流式加载
     for (const [entityId] of this.ecs.world.query("transform", "player")) {
       const transform = this.ecs.world.get(entityId, "transform");
       if (transform) {
@@ -463,5 +565,45 @@ export class GameApp {
         break; // Only need first player. / 只需第一个玩家
       }
     }
+  }
+
+  /**
+   * Update terrain editor: apply pending brush strokes using CPU-based editing.
+   * 更新地形编辑器：使用 CPU 编辑应用待处理的画刷笔触
+   *
+   * Simplified workflow (v2):
+   * 1. User saves procedural terrain first (exports current heights)
+   * 2. Then loads the saved map for editing
+   * 3. Brush edits modify CPU cache directly
+   * 4. Modified chunks are uploaded to GPU
+   *
+   * 简化工作流程（v2）：
+   * 1. 用户先保存程序地形（导出当前高度）
+   * 2. 然后加载保存的地图进行编辑
+   * 3. 画刷编辑直接修改 CPU 缓存
+   * 4. 修改的 chunk 上传到 GPU
+   */
+  private updateTerrainEditor(dt: number): void {
+    // Apply brush if active (CPU-based editing).
+    // 如果画刷激活则应用（CPU 编辑）
+    const stroke = this.terrainEditor.applyBrush(dt);
+    if (stroke) {
+      // Apply brush stroke directly to CPU cache.
+      // 直接将画刷笔触应用到 CPU 缓存
+      this.resources.runtime.terrain.applyBrushToCpuCache(
+        stroke.worldX,
+        stroke.worldZ,
+        stroke.brush,
+        stroke.dt
+      );
+    }
+
+    // Consume pending strokes (for compatibility, though we now apply directly above).
+    // 消耗待处理的笔触（为了兼容性，虽然现在我们直接在上面应用）
+    this.terrainEditor.consumePendingStrokes();
+
+    // Upload modified chunks to GPU (batched, async).
+    // 上传修改的 chunk 到 GPU（批量，异步）
+    void this.resources.runtime.terrain.uploadModifiedChunks();
   }
 }

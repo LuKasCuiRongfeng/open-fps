@@ -5,8 +5,9 @@ import type { Scene, WebGPURenderer, PerspectiveCamera } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
 import { FloatingOrigin } from "./FloatingOrigin";
 import { TerrainChunk, disposeSharedGeometries } from "./TerrainChunk";
-import { TerrainHeightCompute, TerrainNormalCompute } from "./gpu";
+import { TerrainHeightCompute, TerrainNormalCompute, TerrainBrushCompute } from "./gpu";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
+import type { BrushStroke } from "../editor/TerrainEditor";
 
 export type ChunkCoord = { cx: number; cz: number };
 
@@ -36,6 +37,7 @@ export class ChunkManager {
   // GPU 计算管线
   private heightCompute: TerrainHeightCompute;
   private normalCompute: TerrainNormalCompute;
+  private brushCompute: TerrainBrushCompute;
 
   // Active chunks keyed by "cx,cz".
   // 活跃 chunk，键为 "cx,cz"
@@ -72,6 +74,7 @@ export class ChunkManager {
     // 创建计算管线
     this.heightCompute = new TerrainHeightCompute(config);
     this.normalCompute = new TerrainNormalCompute(config);
+    this.brushCompute = new TerrainBrushCompute(config);
   }
 
   /**
@@ -88,6 +91,10 @@ export class ChunkManager {
     // Initialize normal compute with height texture.
     // 使用高度纹理初始化法线计算
     await this.normalCompute.init(renderer, this.heightCompute.heightTexture!);
+
+    // Initialize brush compute with height texture.
+    // 使用高度纹理初始化画刷计算
+    await this.brushCompute.init(renderer, this.heightCompute.heightTexture!);
 
     this.gpuReady = true;
   }
@@ -267,15 +274,32 @@ export class ChunkManager {
     const key = this.chunkKey(cx, cz);
     if (this.chunks.has(key)) return;
 
-    // Bake height for this chunk on GPU.
-    // 在 GPU 上为此 chunk 烘焙高度
-    await this.heightCompute.bakeChunk(cx, cz, this.renderer);
-    this.bakePending.set(key, { cx, cz });
+    // Check if we have cached height data from previous edits.
+    // 检查是否有之前编辑的缓存高度数据
+    const cachedHeightData = TerrainHeightSampler.getChunkHeightData(cx, cz);
 
-    // GPU-first: readback height data to CPU cache (ONCE per chunk).
-    // GPU-first：回读高度数据到 CPU 缓存（每 chunk 一次）
-    const heightData = await this.heightCompute.readbackChunkHeight(cx, cz, this.renderer);
-    TerrainHeightSampler.setChunkHeightData(cx, cz, heightData);
+    if (cachedHeightData) {
+      // Reuse cached data: upload to GPU instead of regenerating.
+      // 重用缓存数据：上传到 GPU 而不是重新生成
+      // This preserves edits when player returns to a previously edited chunk.
+      // 这在玩家返回之前编辑过的 chunk 时保留编辑内容
+      await this.heightCompute.bakeChunk(cx, cz, this.renderer);
+      this.bakePending.set(key, { cx, cz });
+
+      // Upload cached height data to GPU.
+      // 上传缓存的高度数据到 GPU
+      await this.heightCompute.uploadChunkHeight(cx, cz, cachedHeightData, this.renderer);
+    } else {
+      // No cached data: generate procedural terrain on GPU.
+      // 无缓存数据：在 GPU 上生成程序地形
+      await this.heightCompute.bakeChunk(cx, cz, this.renderer);
+      this.bakePending.set(key, { cx, cz });
+
+      // GPU-first: readback height data to CPU cache (ONCE per chunk).
+      // GPU-first：回读高度数据到 CPU 缓存（每 chunk 一次）
+      const heightData = await this.heightCompute.readbackChunkHeight(cx, cz, this.renderer);
+      TerrainHeightSampler.setChunkHeightData(cx, cz, heightData);
+    }
 
     // Get tile UV info.
     // 获取 tile UV 信息
@@ -305,9 +329,13 @@ export class ChunkManager {
     // 释放高度图集中的 tile（动态分配）
     this.heightCompute.freeTile(chunk.cx, chunk.cz);
 
-    // Remove from CPU height cache.
-    // 从 CPU 高度缓存移除
-    TerrainHeightSampler.removeChunkHeightData(chunk.cx, chunk.cz);
+    // NOTE: Do NOT remove CPU height cache here!
+    // 注意：此处不要移除 CPU 高度缓存！
+    // In editable mode, we need to preserve edited data so it can be
+    // reloaded when the player returns to this chunk.
+    // 在可编辑模式下，我们需要保留编辑数据，以便玩家返回此 chunk 时可以重新加载。
+    // The cache will be cleared when starting a new game or loading a different map.
+    // 缓存将在开始新游戏或加载不同地图时清除。
 
     this.scene.remove(chunk.mesh);
     chunk.dispose();
@@ -320,6 +348,125 @@ export class ChunkManager {
    */
   getActiveChunks(): TerrainChunk[] {
     return Array.from(this.chunks.values());
+  }
+
+  /**
+   * Apply brush strokes to affected chunks.
+   * 将画刷笔触应用到受影响的 chunk
+   *
+   * GPU-first: modifies height texture directly on GPU.
+   * GPU-first：直接在 GPU 上修改高度纹理
+   * @deprecated Use CPU-based editing with reuploadChunks instead.
+   */
+  async applyBrushStrokes(strokes: BrushStroke[]): Promise<void> {
+    if (!this.gpuReady || !this.renderer || strokes.length === 0) return;
+
+    const chunkSize = this.config.streaming.chunkSizeMeters;
+    const affectedChunks = new Set<string>();
+
+    for (const stroke of strokes) {
+      // Find all chunks affected by this stroke.
+      // 找到被此笔触影响的所有 chunk
+      const radius = stroke.brush.radiusMeters;
+      const minCx = Math.floor((stroke.worldX - radius) / chunkSize);
+      const maxCx = Math.floor((stroke.worldX + radius) / chunkSize);
+      const minCz = Math.floor((stroke.worldZ - radius) / chunkSize);
+      const maxCz = Math.floor((stroke.worldZ + radius) / chunkSize);
+
+      for (let cx = minCx; cx <= maxCx; cx++) {
+        for (let cz = minCz; cz <= maxCz; cz++) {
+          const key = this.chunkKey(cx, cz);
+          if (this.chunks.has(key)) {
+            affectedChunks.add(key);
+
+            // Get tile coordinates from height compute.
+            // 从高度计算获取 tile 坐标
+            const tileInfo = this.heightCompute.getChunkTileUV(cx, cz);
+            const tileX = Math.round(tileInfo.uOffset * this.config.gpuCompute.atlasTilesPerSide);
+            const tileZ = Math.round(tileInfo.vOffset * this.config.gpuCompute.atlasTilesPerSide);
+
+            // Apply brush to this chunk on GPU.
+            // 在 GPU 上将画刷应用到此 chunk
+            await this.brushCompute.applyBrushToChunk(
+              cx, cz, tileX, tileZ, stroke, this.renderer!
+            );
+          }
+        }
+      }
+    }
+
+    // Readback updated height data for affected chunks.
+    // 回读受影响 chunk 的更新高度数据
+    for (const key of affectedChunks) {
+      const chunk = this.chunks.get(key)!;
+      const heightData = await this.heightCompute.readbackChunkHeight(
+        chunk.cx, chunk.cz, this.renderer!
+      );
+      TerrainHeightSampler.setChunkHeightData(chunk.cx, chunk.cz, heightData);
+    }
+
+    // Regenerate normals for affected chunks.
+    // 重新生成受影响 chunk 的法线
+    if (affectedChunks.size > 0) {
+      await this.normalCompute.regenerate(this.renderer!);
+    }
+  }
+
+  /**
+   * Reupload all active chunks from CPU cache to GPU.
+   * 从 CPU 缓存重新上传所有活跃 chunk 到 GPU
+   *
+   * Used after loading a map file.
+   * 加载地图文件后使用
+   */
+  async reuploadAllChunks(): Promise<void> {
+    if (!this.gpuReady || !this.renderer) return;
+
+    const chunksToUpload: Array<{ cx: number; cz: number }> = [];
+    for (const chunk of this.chunks.values()) {
+      chunksToUpload.push({ cx: chunk.cx, cz: chunk.cz });
+    }
+
+    await this.reuploadChunks(chunksToUpload);
+  }
+
+  /**
+   * Reupload specific chunks from CPU cache to GPU.
+   * 从 CPU 缓存重新上传指定 chunk 到 GPU
+   *
+   * Workflow:
+   * 1. Get height data from TerrainHeightSampler
+   * 2. Upload to GPU height texture
+   * 3. Regenerate normals
+   *
+   * 工作流程：
+   * 1. 从 TerrainHeightSampler 获取高度数据
+   * 2. 上传到 GPU 高度纹理
+   * 3. 重新生成法线
+   */
+  async reuploadChunks(chunks: Array<{ cx: number; cz: number }>): Promise<void> {
+    if (!this.gpuReady || !this.renderer || chunks.length === 0) return;
+
+    for (const { cx, cz } of chunks) {
+      const key = this.chunkKey(cx, cz);
+      if (!this.chunks.has(key)) continue;
+
+      // Get height data from CPU cache.
+      // 从 CPU 缓存获取高度数据
+      const heightData = TerrainHeightSampler.getChunkHeightData(cx, cz);
+      if (!heightData) {
+        console.warn(`[ChunkManager] No height data for chunk (${cx}, ${cz})`);
+        continue;
+      }
+
+      // Upload to GPU.
+      // 上传到 GPU
+      await this.heightCompute.uploadChunkHeight(cx, cz, heightData, this.renderer!);
+    }
+
+    // Regenerate normals after uploading.
+    // 上传后重新生成法线
+    await this.normalCompute.regenerate(this.renderer!);
   }
 
   /**
@@ -339,6 +486,7 @@ export class ChunkManager {
     // 释放计算管线
     this.heightCompute.dispose();
     this.normalCompute.dispose();
+    this.brushCompute.dispose();
 
     // Dispose shared geometries.
     // 释放共享几何体

@@ -3,3 +3,4 @@
 
 export { TerrainHeightCompute } from "./TerrainHeightCompute";
 export { TerrainNormalCompute } from "./TerrainNormalCompute";
+export { TerrainBrushCompute } from "./TerrainBrushCompute";

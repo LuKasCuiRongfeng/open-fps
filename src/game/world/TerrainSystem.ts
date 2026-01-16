@@ -7,6 +7,8 @@ import type { TerrainConfig } from "./terrain";
 import { ChunkManager } from "./ChunkManager";
 import { FloatingOrigin } from "./FloatingOrigin";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
+import type { BrushStroke } from "../editor/TerrainEditor";
+import { type MapData, createEmptyMapData, setChunkData, parseChunkKey, getChunkData, hasChunks } from "../editor/MapData";
 
 export type TerrainSystemResource = {
   root: Group;
@@ -14,6 +16,14 @@ export type TerrainSystemResource = {
   floatingOrigin: FloatingOrigin;
   initGpu: (renderer: WebGPURenderer, spawnX?: number, spawnZ?: number) => Promise<void>;
   update: (playerWorldX: number, playerWorldZ: number, camera: PerspectiveCamera) => void;
+  applyBrushStrokes: (strokes: BrushStroke[]) => Promise<void>;
+  // Map save/load API.
+  // 地图保存/加载 API
+  exportCurrentMapData: () => MapData;
+  loadMapData: (mapData: MapData) => Promise<void>;
+  resetToOriginal: () => Promise<void>;
+  applyBrushToCpuCache: (worldX: number, worldZ: number, brush: BrushStroke["brush"], dt: number) => void;
+  uploadModifiedChunks: () => Promise<void>;
   dispose: () => void;
 };
 
@@ -49,6 +59,14 @@ export function createTerrainSystem(
   const floatingOrigin = new FloatingOrigin(config);
   let chunkManager: ChunkManager | null = null;
 
+  // Track which chunks have been modified by brush (need re-upload).
+  // 跟踪哪些 chunk 被画刷修改过（需要重新上传）
+  const modifiedChunks = new Set<string>();
+
+  // Store original map data for reset functionality.
+  // 存储原始地图数据用于重置功能
+  let originalMapData: MapData | null = null;
+
   // Initialize height sampler with config.
   // 使用配置初始化高度采样器
   TerrainHeightSampler.init(config);
@@ -56,12 +74,6 @@ export function createTerrainSystem(
   /**
    * CPU-side height query (from GPU-readback cache).
    * CPU 侧高度查询（来自 GPU 回读缓存）
-   *
-   * GPU-first design: height is computed ONLY on GPU, then read back ONCE.
-   * CPU samples from this cache - NO duplicate noise implementation.
-   *
-   * GPU-first 设计：高度仅在 GPU 上计算，然后回读一次。
-   * CPU 从此缓存采样 - 无重复噪声实现。
    */
   const heightAt = (xMeters: number, zMeters: number): number => {
     return TerrainHeightSampler.heightAt(xMeters, zMeters, config);
@@ -86,8 +98,6 @@ export function createTerrainSystem(
 
     // Update chunk streaming (async but we don't await in frame loop).
     // 更新 chunk 流式加载（异步但不在帧循环中等待）
-    // The async operations are queued and processed incrementally.
-    // 异步操作被排队并增量处理
     void chunkManager.update(playerWorldX, playerWorldZ, camera);
 
     // Check for floating origin rebase.
@@ -96,10 +106,239 @@ export function createTerrainSystem(
     floatingOrigin.checkAndRebase(playerLocal.x, playerLocal.z);
   };
 
+  /**
+   * Apply brush strokes to terrain (GPU-first).
+   * 将画刷笔触应用到地形（GPU-first）
+   * @deprecated Use applyBrushToCpuCache + uploadModifiedChunks instead.
+   */
+  const applyBrushStrokes = async (strokes: BrushStroke[]): Promise<void> => {
+    if (!chunkManager) return;
+    await chunkManager.applyBrushStrokes(strokes);
+  };
+
+  /**
+   * Export current terrain as MapData (for saving).
+   * 导出当前地形为 MapData（用于保存）
+   */
+  const exportCurrentMapData = (): MapData => {
+    const mapData = createEmptyMapData(
+      config.height.seed,
+      config.gpuCompute.tileResolution,
+      config.streaming.chunkSizeMeters,
+      "Exported Map"
+    );
+
+    // Copy all cached chunk height data.
+    // 复制所有缓存的 chunk 高度数据
+    const chunkKeys = TerrainHeightSampler.getAllCachedChunkKeys();
+    for (const key of chunkKeys) {
+      const { cx, cz } = parseChunkKey(key);
+      const heightData = TerrainHeightSampler.getChunkHeightData(cx, cz);
+      if (heightData) {
+        setChunkData(mapData, cx, cz, Array.from(heightData));
+      }
+    }
+
+    return mapData;
+  };
+
+  /**
+   * Load terrain from MapData.
+   * 从 MapData 加载地形
+   */
+  const loadMapData = async (mapData: MapData): Promise<void> => {
+    if (!chunkManager) return;
+
+    // Verify config matches.
+    // 验证配置匹配
+    if (mapData.tileResolution !== config.gpuCompute.tileResolution) {
+      console.warn("[TerrainSystem] Map tile resolution mismatch, may cause issues");
+    }
+
+    // Load height data into CPU cache.
+    // 将高度数据加载到 CPU 缓存
+    if (hasChunks(mapData)) {
+      for (const key of Object.keys(mapData.chunks)) {
+        const { cx, cz } = parseChunkKey(key);
+        const chunkData = getChunkData(mapData, cx, cz);
+        if (chunkData) {
+          const heightData = new Float32Array(chunkData.heights);
+          TerrainHeightSampler.setChunkHeightData(cx, cz, heightData);
+        }
+      }
+    }
+
+    // Store original map data for reset.
+    // 存储原始地图数据用于重置
+    originalMapData = mapData;
+
+    // Re-upload all loaded chunks to GPU.
+    // 重新上传所有已加载的 chunk 到 GPU
+    await chunkManager.reuploadAllChunks();
+  };
+
+  /**
+   * Reset terrain to original loaded data (discard all edits).
+   * 重置地形为原始加载数据（丢弃所有编辑）
+   */
+  const resetToOriginal = async (): Promise<void> => {
+    if (!chunkManager || !originalMapData) {
+      console.warn("[TerrainSystem] No original map data to reset to");
+      return;
+    }
+
+    // Clear all cached height data.
+    // 清除所有缓存的高度数据
+    TerrainHeightSampler.clearCache();
+    modifiedChunks.clear();
+
+    // Reload original data.
+    // 重新加载原始数据
+    await loadMapData(originalMapData);
+  };
+
+  /**
+   * Apply brush stroke to CPU cache (simplified editing).
+   * 将画刷笔触应用到 CPU 缓存（简化编辑）
+   */
+  const applyBrushToCpuCache = (
+    worldX: number,
+    worldZ: number,
+    brush: BrushStroke["brush"],
+    dt: number
+  ): void => {
+    const chunkSize = config.streaming.chunkSizeMeters;
+    const tileRes = config.gpuCompute.tileResolution;
+    const radius = brush.radiusMeters;
+
+    // Find all affected chunks.
+    // 找到所有受影响的 chunk
+    const minCx = Math.floor((worldX - radius) / chunkSize);
+    const maxCx = Math.floor((worldX + radius) / chunkSize);
+    const minCz = Math.floor((worldZ - radius) / chunkSize);
+    const maxCz = Math.floor((worldZ + radius) / chunkSize);
+
+    for (let cx = minCx; cx <= maxCx; cx++) {
+      for (let cz = minCz; cz <= maxCz; cz++) {
+        const heightData = TerrainHeightSampler.getChunkHeightData(cx, cz);
+        if (!heightData) continue;
+
+        // Apply brush to this chunk's height data.
+        // 将画刷应用到此 chunk 的高度数据
+        const chunkOriginX = cx * chunkSize;
+        const chunkOriginZ = cz * chunkSize;
+
+        for (let pz = 0; pz < tileRes; pz++) {
+          for (let px = 0; px < tileRes; px++) {
+            // Pixel world position.
+            // 像素世界位置
+            const pixelWorldX = chunkOriginX + (px / (tileRes - 1)) * chunkSize;
+            const pixelWorldZ = chunkOriginZ + (pz / (tileRes - 1)) * chunkSize;
+
+            // Distance from brush center.
+            // 到画刷中心的距离
+            const dx = pixelWorldX - worldX;
+            const dz = pixelWorldZ - worldZ;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+
+            if (dist >= radius) continue;
+
+            // Falloff.
+            // 衰减
+            const innerRadius = radius * (1 - brush.falloff);
+            const t = Math.max(0, Math.min(1, (dist - innerRadius) / (radius - innerRadius)));
+            const falloff = 1 - t * t * (3 - 2 * t); // smoothstep
+
+            // Calculate delta.
+            // 计算增量
+            const strengthPerSecond = 50;
+            const effectStrength = brush.strength * dt * strengthPerSecond * falloff;
+
+            const idx = pz * tileRes + px;
+            const currentHeight = heightData[idx];
+
+            let delta = 0;
+            switch (brush.type) {
+              case "raise":
+                delta = effectStrength;
+                break;
+              case "lower":
+                delta = -effectStrength;
+                break;
+              case "smooth":
+                // Simple smooth: blend towards average of neighbors.
+                // 简单平滑：向邻居平均值混合
+                {
+                  let sum = 0;
+                  let count = 0;
+                  for (const [ox, oz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                    const nx = px + ox;
+                    const nz = pz + oz;
+                    if (nx >= 0 && nx < tileRes && nz >= 0 && nz < tileRes) {
+                      sum += heightData[nz * tileRes + nx];
+                      count++;
+                    }
+                  }
+                  if (count > 0) {
+                    const avg = sum / count;
+                    delta = (avg - currentHeight) * brush.strength * dt * 5 * falloff;
+                  }
+                }
+                break;
+              case "flatten":
+                // Flatten towards center height.
+                // 向中心高度平整
+                {
+                  const centerCx = Math.floor(worldX / chunkSize);
+                  const centerCz = Math.floor(worldZ / chunkSize);
+                  const centerData = TerrainHeightSampler.getChunkHeightData(centerCx, centerCz);
+                  if (centerData) {
+                    const centerLocalX = worldX - centerCx * chunkSize;
+                    const centerLocalZ = worldZ - centerCz * chunkSize;
+                    const centerPx = Math.floor((centerLocalX / chunkSize) * (tileRes - 1));
+                    const centerPz = Math.floor((centerLocalZ / chunkSize) * (tileRes - 1));
+                    const centerIdx = centerPz * tileRes + centerPx;
+                    const targetHeight = centerData[centerIdx];
+                    delta = (targetHeight - currentHeight) * brush.strength * dt * 3 * falloff;
+                  }
+                }
+                break;
+            }
+
+            heightData[idx] = currentHeight + delta;
+          }
+        }
+
+        // Mark chunk as modified.
+        // 标记 chunk 为已修改
+        modifiedChunks.add(`${cx},${cz}`);
+      }
+    }
+  };
+
+  /**
+   * Upload modified chunks to GPU.
+   * 上传修改过的 chunk 到 GPU
+   */
+  const uploadModifiedChunks = async (): Promise<void> => {
+    if (!chunkManager || modifiedChunks.size === 0) return;
+
+    const chunksToUpload: Array<{ cx: number; cz: number }> = [];
+    for (const key of modifiedChunks) {
+      const { cx, cz } = parseChunkKey(key);
+      chunksToUpload.push({ cx, cz });
+    }
+
+    await chunkManager.reuploadChunks(chunksToUpload);
+    modifiedChunks.clear();
+  };
+
   const dispose = (): void => {
     chunkManager?.dispose();
     chunkManager = null;
     TerrainHeightSampler.clearCache();
+    modifiedChunks.clear();
+    originalMapData = null;
   };
 
   return {
@@ -108,6 +347,12 @@ export function createTerrainSystem(
     floatingOrigin,
     initGpu,
     update,
+    applyBrushStrokes,
+    exportCurrentMapData,
+    loadMapData,
+    resetToOriginal,
+    applyBrushToCpuCache,
+    uploadModifiedChunks,
     dispose,
   };
 }
