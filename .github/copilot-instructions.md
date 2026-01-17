@@ -1,131 +1,80 @@
-# Copilot instructions (open-fps)
+# Copilot Instructions (open-fps)
+# Copilot 指南 (open-fps)
 
 ---
 
-## ⚠️ 金戈铁律 / IRONCLAD RULES ⚠️
+## ⚠️ IRONCLAD RULES / 金戈铁律 ⚠️
 
-> **AI 编码时必须无条件遵守以下三条铁律，不得以任何理由违反或妥协。**
 > **AI MUST unconditionally follow these three ironclad rules. No exceptions, no compromises.**
+> **AI 编码时必须无条件遵守以下三条铁律，不得以任何理由违反或妥协。**
 
-### 1️⃣ GPU-First（GPU 优先）
-- 一切能在 GPU 上做的，必须在 GPU 上做。
-- 禁止在 CPU 上实现 GPU 可以更好完成的工作。
-- 优化不得降低视觉质量。
+### 1️⃣ GPU-First / GPU 优先
 - **All work that CAN be done on GPU MUST be done on GPU.**
-- **Never implement CPU alternatives for GPU-capable workloads.**
-- **Optimization must never reduce visual quality.**
+- **一切能在 GPU 上做的，必须在 GPU 上做。**
+- **Never implement CPU alternatives** for GPU-capable workloads.
+- **禁止在 CPU 上实现** GPU 可以更好完成的工作。
+- Optimization **must never reduce visual quality**.
+- 优化**不得降低视觉质量**。
 
-### 2️⃣ Compute-Shader First（计算着色器优先）
-- 数据并行任务（地形、剔除、LOD、蒙皮、粒子、可见性、间接绘制）必须用 compute shader 实现。
-- CPU 仅限于微量引导代码、UI 和胶水逻辑；禁止 CPU 逐顶点/逐实例循环。
-- **Data-parallel work (terrain, culling, LOD, skinning, particles, visibility, indirect draw) MUST use compute shaders.**
-- **CPU is ONLY for tiny bootstrap, UI, and glue. NO per-vertex/per-instance CPU loops.**
+### 2️⃣ Compute-Shader First / 计算着色器优先
+- Data-parallel work (terrain, culling, LOD, skinning, particles, visibility, indirect draw) **MUST use compute shaders**.
+- 数据并行任务（地形、剔除、LOD、蒙皮、粒子、可见性、间接绘制）**必须用 compute shader 实现**。
+- CPU is **ONLY** for tiny bootstrap, UI, and glue. **NO per-vertex/per-instance CPU loops**.
+- CPU **仅限于**微量引导代码、UI 和胶水逻辑；**禁止 CPU 逐顶点/逐实例循环**。
 
-### 3️⃣ 业界最佳实践（Industry Best Practices from Day 1）
-- 从第一天起就按业界最推崇的方式设计（ECS、flow-field 寻路、数据导向管线等）。
-- 不要等项目"差不多"了才问是否要重构成更好的方案——一开始就用最好的方案。
-- **Design with industry best practices from day 1 (ECS, flow-field pathfinding, data-oriented pipelines).**
-- **Do NOT wait until "almost done" to ask about better approaches — use the best approach from the start.**
+### 3️⃣ Industry Best Practices from Day 1 / 业界最佳实践
+- Design with **industry best practices from day 1** (ECS, flow-field pathfinding, data-oriented pipelines).
+- **从第一天起**就按业界最推崇的方式设计（ECS、flow-field 寻路、数据导向管线等）。
+- **Do NOT wait** until "almost done" to ask about better approaches — **use the best approach from the start**.
+- **不要等**项目"差不多"了才问是否要重构成更好的方案——**一开始就用最好的方案**。
 
 ---
 
-## Repo shape (frontend vs backend)
-- Frontend lives in [src/](../src) (Vite + React + TypeScript + Tailwind).
-- Tauri/Rust backend lives in [src-tauri/](../src-tauri). The binary entrypoint is [src-tauri/src/main.rs](../src-tauri/src/main.rs) which calls `open_fps_lib::run()` from [src-tauri/src/lib.rs](../src-tauri/src/lib.rs).
-- Don’t edit build outputs like `dist/` or [src-tauri/target/](../src-tauri/target).
+## Repo Shape / 仓库结构
+- Frontend: `src/` (Vite + React + TypeScript + Tailwind) / 前端
+- Backend: `src-tauri/` (Rust/Tauri) / 后端
+- **Don't edit** build outputs (`dist/`, `src-tauri/target/`) / **不要编辑**构建输出
 
-## Core tech constraints (from README + current config)
-- Rendering is Three.js **WebGPU-only**. Prefer importing WebGPU/TSL types via the TS path mappings in [tsconfig.json](../tsconfig.json):
-  - Use `three/webgpu` for WebGPU renderer APIs.
-  - Use `three/tsl` for TSL shader authoring.
-- **Three.js import rules (important for AI)**:
-  - TSL shader functions (`float`, `vec2`, `vec3`, `vec4`, `texture`, `uv`, `uniform`, `attribute`, `varying`, `mix`, `smoothstep`, `step`, `clamp`, `sin`, `cos`, `pow`, `normalize`, `dot`, `cross`, `reflect`, `length`, `distance`, `Fn`, `If`, etc.) → import from `three/tsl`
-  - All classes (`WebGPURenderer`, `Scene`, `PerspectiveCamera`, `Mesh`, `BufferGeometry`, `NodeMaterial`, `MeshStandardNodeMaterial`, `Vector3`, `Matrix4`, `Color`, `Texture`, `Clock`, etc.) and TypeScript types → import from `three/webgpu`
-  - TSL node types (return types of TSL functions) such as `Node`, `ShaderNodeObject`, `UniformNode`, `MathNode`, `FunctionNode`, `VarNode`, `AttributeNode`, etc. → also import from `three/webgpu` (do NOT define custom types for these)
-  - **禁止自定义类型**：`three/tsl` 和 `three/webgpu` 一定会导出所有需要的类型，禁止使用 `ReturnType<typeof ...>` 或自定义 type alias 来替代 three 直接导出的类型。
-  - **No custom types**: `three/tsl` and `three/webgpu` always export all needed types. Never use `ReturnType<typeof ...>` or custom type aliases to substitute for types directly exported by three.
-  - Never import from bare `three` — always use the specific subpath.
-- Materials should be **NodeMaterial/TSL-based** (no WebGL compatibility paths).
-- **GPU-first is mandatory**: aggressively prefer GPU acceleration. If a GPU approach can improve results/perf, don’t implement a CPU alternative; optimization must not reduce visual quality.
-- **Compute-shader first (maximize compute)**: when work is data-parallel (terrain, culling, LOD selection, animation skinning, particle simulation, visibility lists, indirect draws), implement it as a **compute shader / compute-node pipeline** rather than CPU loops.
-  - Prefer compute for anything that scales with vertex/instance count or world size.
-  - CPU is acceptable only for tiny bootstrapping, UI, and glue; avoid CPU per-vertex/per-instance work.
-  - Keep a CPU fallback only if required for gameplay determinism/queries (e.g., a lightweight `heightAt(x,z)` sampler), but still render/simulate on GPU.
-  - Treat compute outputs as resources: storage buffers/textures feeding render materials/passes.
-  - Keep compute parameters config-driven (use `src/config/`), not hardcoded.
-- Only **code comments** need bilingual (中文/English) text; identifiers/UI/README and other text do not.
+## Core Tech Constraints / 核心技术约束
+- Rendering: Three.js **WebGPU-only**, NodeMaterial/TSL-based materials / 渲染：**仅 WebGPU**，NodeMaterial/TSL 材质
+- **Three.js imports / Three.js 导入规则**:
+  - TSL functions (`float`, `vec3`, `uniform`, `Fn`, `If`, etc.) → `three/tsl` / TSL 函数
+  - Classes and types → `three/webgpu` / 类和类型
+  - **Never import from bare `three`** / **禁止从 `three` 直接导入**
+  - **Never define custom types** for TSL nodes (use three's exports) / **禁止自定义** TSL 节点类型
+- Only **code comments** need bilingual text / 只有**代码注释**需要中英双语
 
-## Design principles (day 1)
-- Design gameplay/engine systems using industry best practices from day 1 (e.g., ECS, flow-field pathfinding, data-oriented pipelines) — do not wait until the project is “almost done” to ask whether we should refactor to a better approach.
-  - 一开始就按业界最推崇/最佳实践的方式设计（例如 ECS、flow-field 寻路、数据导向管线等），不要等项目差不多了才来问是否要用更好的方式重构。
-## Code cleanliness (AI must follow)
-- When improving or refactoring code, **delete dead code, unused imports, redundant logic, and meaningless comments**.
-- Do not leave behind obsolete code "just in case" — keep the codebase lean and maintainable.
-- 改进代码时必须删除无用代码、未使用的导入、冗余逻辑和无意义的注释，不要留"以防万一"的废代码，保持代码简洁。
-## Compute shader patterns (WebGPU/Three.js)
-- Prefer using Three.js WebGPU + TSL compute facilities (compute nodes, storage buffers/textures) instead of ad-hoc CPU generation.
-- Aim for these GPU workflows as the default:
-  - Terrain: compute height/normal/biome masks into storage textures; render via vertex displacement or sampled height/normal maps.
-  - World rendering: GPU frustum/occlusion culling → compact visible instance list → indirect drawing.
-  - Simulation: particles/foliage wind/ambient effects in compute; avoid CPU stepping of large sets.
-- Avoid readbacks each frame (GPU→CPU sync). If gameplay needs queries, keep a small CPU-side proxy (height sampler, broadphase grid) and accept approximate results.
+## Code Cleanliness / 代码整洁
+- **Delete** dead code, unused imports, redundant logic / **删除**无用代码、未使用的导入、冗余逻辑
+- Keep codebase **lean and maintainable** / 保持代码**简洁可维护**
 
-## Dev workflows (known-good commands)
-- Install deps: `pnpm install` (repo uses `pnpm-lock.yaml`).
-- Frontend dev server: `pnpm dev` (Vite).
-- Full Tauri dev: `pnpm tauri dev`.
-- Production build: `pnpm build` then `pnpm tauri build`.
+## Dev Workflows / 开发流程
+- Install: `pnpm install` / 安装依赖
+- Dev: `pnpm tauri dev` (full) or `pnpm dev` (frontend only) / 开发
+- Build: `pnpm build` then `pnpm tauri build` / 构建
+- **AI testing**: use `pnpm build` or `pnpm tsc --noEmit`, **NOT `pnpm dev`** / AI 测试**禁止运行 dev**
 
-## AI testing rules (for Copilot/AI agents)
-- **Do NOT run `pnpm dev`** when testing code — the dev server may already be running in another terminal, causing port conflicts.
-- To verify code compiles: run `pnpm build`.
-- To check TypeScript type errors: run `pnpm tsc --noEmit` (or `npx tsc --noEmit`).
-- 测试代码时禁止运行 `pnpm dev`（可能与用户正在运行的开发服务器冲突），应使用 `pnpm build` 验证编译，使用 `tsc` 检查类型。
+## Configuration / 配置
+- All configs in `src/config/` (terrain, camera, player, input, render, visuals) / 所有配置在 src/config/
+- **Don't hardcode** data/constants — put in config files / **不要硬编码**，放到配置文件
+- Use **real-world plausible defaults** with **SI units** (meters, seconds) / 使用**真实世界默认值**和 **SI 单位**
 
-## Local dev ports / Vite+Tauri wiring
-- Vite is configured for Tauri with a fixed port in [vite.config.ts](../vite.config.ts):
-  - `http://localhost:1420` (strict port; Tauri expects this).
-  - HMR uses port `1421` when `TAURI_DEV_HOST` is set.
-  - Vite file watching ignores `**/src-tauri/**`.
-- Tauri config [src-tauri/tauri.conf.json](../src-tauri/tauri.conf.json) runs `pnpm dev` before `tauri dev` and uses `../dist` as `frontendDist`.
+## Code Organization / 代码组织
+- Game code: `src/game/` (ecs/, systems/, world/, editor/, input/, prefabs/, settings/) / 游戏代码
+- UI: `src/ui/` / 用户界面
+- Backend APIs: `src-tauri/src/lib.rs` (map save/load commands exist) / 后端 API（已有地图存取命令）
 
-## TypeScript conventions enforced by config
-- TS runs in strict mode with `noUnusedLocals`/`noUnusedParameters` (see [tsconfig.json](../tsconfig.json)). Keep exports/imports clean.
-- Module resolution is `bundler`; prefer ESM imports.
+## Architecture Patterns / 架构模式
+- **ECS**: components are pure data, systems are stateless functions, phase order: input → gameplay → physics → render
+- **ECS**：组件是纯数据，系统是无状态函数，阶段顺序：输入 → 游戏逻辑 → 物理 → 渲染
+- **Terrain**: GPU compute for height/normal generation, streaming chunks with LOD, CPU height cache for gameplay queries
+- **地形**：GPU 计算生成高度/法线，流式 chunk + LOD，CPU 高度缓存供游戏查询
+- **Editor**: GPU brush compute (ping-pong), orbit camera, map serialization via Tauri backend
+- **编辑器**：GPU 画刷计算（乒乓），轨道相机，通过 Tauri 后端序列化地图
+- **Large world**: streaming/tiling, GPU batching, floating origin for precision
+- **大世界**：流式/分块，GPU 批处理，浮动原点保精度
 
-## Configuration (no hardcoded data)
-- Requirement: don’t hardcode data/tuning/constants in code; put them in a config file/module and load them from there (中文/English: 不要在代码里硬编码数据/常量，必须放到配置里).
-- `src/config/` is for **gameplay/system data** (tuning, rules, world params), not UI text.
-- If no config location exists yet for a gameplay/system feature, create one under `src/config/` (frontend) or `src-tauri/resources/` (static assets) and keep runtime code reading from it.
-- Default values in config must be **real-world plausible** and use **clear SI units** (e.g. meters/seconds). Don’t start from “gamey” numbers and rely on sliders later; set a realistic baseline (e.g. gravity defaults to ~9.8 m/s²).
-
-## Adding backend capabilities (Tauri)
-- There are no `tauri::command` handlers yet. If you add backend APIs, implement them in [src-tauri/src/lib.rs](../src-tauri/src/lib.rs) and register them in the `tauri::Builder` chain.
-- Frontend should call backend via `@tauri-apps/api` (already a dependency) instead of ad-hoc IPC.
-
-## Where new game code should go
-- Game/runtime code: [src/game/](../src/game).
-  - ECS core: `src/game/ecs/`
-  - Systems: `src/game/systems/`
-  - Input layer (events/pointer lock): `src/game/input/`
-  - Prefabs/factories (Three objects, entity setup): `src/game/prefabs/`
-- UI components: [src/ui/](../src/ui).
-- React entrypoints are [src/main.tsx](../src/main.tsx) and [src/App.tsx](../src/App.tsx).
-
-## Game architecture (ECS)
-- Gameplay is organized as ECS: components are plain data in `Map`s and per-frame logic lives in systems.
-- The main loop is in [src/game/GameApp.ts](../src/game/GameApp.ts): it wires `InputManager`, creates entities/components, then runs systems each frame.
-- Be proactive about **ECS normalization**: if you see non-ECS patterns or messy ownership, refactor immediately into the most standard ECS structure (entities/components/systems/prefabs/resources) without waiting for explicit approval, as long as behavior and visuals don’t regress.
-- Don’t ask for approval on routine architecture/structure choices: default to the most standard ECS approach and implement it directly; only ask when genuinely blocked or when a tradeoff would change gameplay/visual behavior.
-
-## Large world scalability
-- Prefer **streaming/tiling** for large worlds: represent terrain/props in chunks (e.g. 32–256m tiles), and only keep nearby chunks loaded/visible.
-- Prefer **GPU-friendly batching**: instancing, merged geometry, and material reuse; avoid huge counts of individual objects.
-- Use a **floating origin (origin rebasing)** strategy once the world extends to kilometers to avoid float precision issues (keep the player near (0,0,0) by shifting world transforms).
-
-## Code style (functions vs classes)
-- Prefer **flat functional systems** for gameplay logic: `fooSystem(stores, resources, dt)` in `src/game/systems/` (easy composition, low coupling).
-- Use **classes** only where lifecycle/state matters (must have a clear cleanup path like `dispose()`): input managers, GPU/asset caches, renderer wrappers.
-
-## UI style
-- UI should lean towards a **shadcn/ui** style (clean, minimal, consistent spacing/typography).
+## Code Style / 代码风格
+- Prefer flat functional systems for gameplay logic / 优先使用扁平函数式系统处理游戏逻辑
+- Classes only for lifecycle/state with clear `dispose()` cleanup / 类仅用于有生命周期/状态且需要 dispose() 的场景
+- UI: shadcn/ui style (clean, minimal) / UI 风格：shadcn/ui（简洁、极简）
