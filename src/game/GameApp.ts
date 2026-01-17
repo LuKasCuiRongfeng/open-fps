@@ -17,6 +17,7 @@ import { createWorld } from "./createWorld";
 import { GameEcs, type GameWorld } from "./ecs/GameEcs";
 import { createTimeResource, type GameResources } from "./ecs/resources";
 import { TerrainEditor } from "./editor/TerrainEditor";
+import { TextureEditor } from "./editor/TextureEditor";
 import { InputManager } from "./input/InputManager";
 import { createRawInputState } from "./input/RawInputState";
 import { createPlayer } from "./prefabs/createPlayer";
@@ -37,6 +38,7 @@ import {
   type GameSettingsPatch,
   setSettings,
 } from "./settings/GameSettings";
+import { TerrainTextures } from "./world/TerrainTextures";
 
 export type GameBootPhase =
   | "checking-webgpu"
@@ -73,6 +75,7 @@ export class GameApp {
   private readonly settings = createDefaultGameSettings();
   private readonly marker: Mesh;
   private readonly terrainEditor: TerrainEditor;
+  private readonly textureEditor: TextureEditor;
   readonly ready: Promise<void>;
   private disposed = false;
 
@@ -151,6 +154,10 @@ export class GameApp {
     // Create terrain editor.
     // 创建地形编辑器
     this.terrainEditor = new TerrainEditor(terrainConfig);
+
+    // Create texture editor.
+    // 创建纹理编辑器
+    this.textureEditor = new TextureEditor();
 
     // Connect editor mode changes to pointer lock control.
     // 连接编辑器模式变化到指针锁定控制
@@ -244,6 +251,11 @@ export class GameApp {
     await this.resources.runtime.terrain.initGpu(this.renderer, spawnX, spawnZ);
     if (this.disposed) return;
 
+    // Initialize texture editor GPU resources.
+    // 初始化纹理编辑器 GPU 资源
+    await this.textureEditor.init(this.renderer, terrainConfig.streaming.chunkSizeMeters * 10);
+    if (this.disposed) return;
+
     // Reposition marker now that terrain is initialized.
     // 地形初始化后重新定位 marker
     const markerX = spawnX + 3;
@@ -335,6 +347,10 @@ export class GameApp {
     // 释放地形系统
     this.resources.runtime.terrain.dispose();
 
+    // Dispose texture editor.
+    // 释放纹理编辑器
+    this.textureEditor.dispose();
+
     // Detach canvas.
     // 移除画布
     if (this.renderer.domElement.parentElement === this.container) {
@@ -386,6 +402,14 @@ export class GameApp {
   }
 
   /**
+   * Get texture editor instance.
+   * 获取纹理编辑器实例
+   */
+  getTextureEditor(): TextureEditor {
+    return this.textureEditor;
+  }
+
+  /**
    * Update editor brush target from mouse position.
    * 从鼠标位置更新编辑器画刷目标
    */
@@ -427,6 +451,63 @@ export class GameApp {
       chunks: {}, // Don't duplicate chunks in editor, they're in TerrainHeightSampler
       metadata: mapData.metadata,
     }));
+  }
+
+  /**
+   * Load textures from project folder.
+   * 从项目文件夹加载纹理
+   *
+   * This loads texture.json and splat map from the project,
+   * then applies them to terrain chunk materials.
+   * 从项目加载 texture.json 和 splat map，然后应用到地形 chunk 材质
+   */
+  async loadTexturesFromProject(projectPath: string): Promise<void> {
+    // Load texture editor state (texture.json + splat map).
+    // 加载纹理编辑器状态（texture.json + splat map）
+    await this.textureEditor.loadFromProject(projectPath);
+
+    // Load PBR textures based on texture definition.
+    // 根据纹理定义加载 PBR 纹理
+    const textureDef = this.textureEditor.textureDefinition;
+    const textureResult = await TerrainTextures.getInstance().loadFromDefinition(projectPath, textureDef);
+
+    // Get splat map texture from texture editor.
+    // 从纹理编辑器获取 splat map 纹理
+    const splatMapTexture = this.textureEditor.getSplatTexture();
+
+    // Apply textures to terrain materials.
+    // 将纹理应用到地形材质
+    this.resources.runtime.terrain.setTextureData(textureResult, splatMapTexture);
+
+    console.log("[GameApp] Textures loaded and applied to terrain");
+  }
+
+  /**
+   * Save texture data to project folder.
+   * 保存纹理数据到项目文件夹
+   *
+   * This saves splat map data to the project.
+   * 保存 splat map 数据到项目
+   */
+  async saveTexturesToProject(projectPath: string): Promise<void> {
+    await this.textureEditor.saveToProject(projectPath);
+    console.log("[GameApp] Textures saved to project");
+  }
+
+  /**
+   * Update texture editor brush target from mouse position.
+   * 从鼠标位置更新纹理编辑器画刷目标
+   */
+  updateTextureBrushTarget(mouseX: number, mouseY: number): void {
+    const canvas = this.renderer.domElement;
+    this.textureEditor.updateBrushTarget(
+      mouseX,
+      mouseY,
+      canvas.clientWidth,
+      canvas.clientHeight,
+      this.camera,
+      this.resources.runtime.terrain.heightAt
+    );
   }
 
   /**
@@ -645,5 +726,9 @@ export class GameApp {
     if (strokes.length > 0) {
       void this.resources.runtime.terrain.applyBrushStrokes(strokes);
     }
+
+    // Apply texture brush if active.
+    // 如果激活则应用纹理画刷
+    void this.textureEditor.applyBrush(dt);
   }
 }

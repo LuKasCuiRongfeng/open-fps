@@ -4,7 +4,8 @@
 import { useState } from "react";
 import type { GameSettings, GameSettingsPatch } from "../game/settings/GameSettings";
 import type { GameApp } from "../game/GameApp";
-import type { TerrainEditor, EditorMode, MapData } from "../game/editor";
+import type { TerrainEditor, MapData } from "../game/editor";
+import type { TextureEditor } from "../game/editor/TextureEditor";
 import {
   TabButton,
   TABS,
@@ -16,7 +17,10 @@ import {
   MovementTab,
   PhysicsTab,
   ThirdPersonTab,
-  MapEditorTab,
+  FileTab,
+  TerrainEditorTab,
+  TextureEditorTab,
+  type ActiveEditorType,
 } from "./settings";
 
 type SettingsPanelProps = {
@@ -24,10 +28,11 @@ type SettingsPanelProps = {
   settings: GameSettings;
   gameApp: GameApp | null;
   terrainEditor: TerrainEditor | null;
+  textureEditor: TextureEditor | null;
   terrainMode: "editable" | "procedural";
-  editorMode: EditorMode;
+  activeEditor: ActiveEditorType;
   currentProjectPath: string | null;
-  onEditorModeChange: (mode: EditorMode) => void;
+  onActiveEditorChange: (editor: ActiveEditorType) => void;
   onProjectPathChange: (path: string | null) => void;
   onLoadMap: (mapData: MapData) => void;
   onApplySettings: (settings: GameSettings) => void;
@@ -41,10 +46,11 @@ export default function SettingsPanel({
   settings,
   gameApp,
   terrainEditor,
+  textureEditor,
   terrainMode,
-  editorMode,
+  activeEditor,
   currentProjectPath,
-  onEditorModeChange,
+  onActiveEditorChange,
   onProjectPathChange,
   onLoadMap,
   onApplySettings,
@@ -113,17 +119,34 @@ export default function SettingsPanel({
             <div className="flex-1 overflow-auto p-4">
               {tab === "help" && <HelpTab />}
 
-              {tab === "mapEditor" && (
-                <MapEditorTab
+              {tab === "file" && (
+                <FileTab
                   gameApp={gameApp}
                   terrainEditor={terrainEditor}
                   terrainMode={terrainMode}
-                  editorMode={editorMode}
                   currentProjectPath={currentProjectPath}
-                  onEditorModeChange={onEditorModeChange}
                   onProjectPathChange={onProjectPathChange}
                   onLoadMap={onLoadMap}
                   onApplySettings={onApplySettings}
+                />
+              )}
+
+              {tab === "terrainEditor" && (
+                <TerrainEditorTab
+                  terrainEditor={terrainEditor}
+                  terrainMode={terrainMode}
+                  activeEditor={activeEditor}
+                  onActiveEditorChange={onActiveEditorChange}
+                  onClose={onClose}
+                />
+              )}
+
+              {tab === "textureEditor" && (
+                <TextureEditorTab
+                  textureEditor={textureEditor}
+                  terrainMode={terrainMode}
+                  activeEditor={activeEditor}
+                  onActiveEditorChange={onActiveEditorChange}
                   onClose={onClose}
                 />
               )}

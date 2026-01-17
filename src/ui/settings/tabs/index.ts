@@ -8,4 +8,6 @@ export { FogTab } from "./FogTab";
 export { MovementTab } from "./MovementTab";
 export { PhysicsTab } from "./PhysicsTab";
 export { ThirdPersonTab } from "./ThirdPersonTab";
-export { MapEditorTab } from "./MapEditorTab";
+export { FileTab } from "./FileTab";
+export { TerrainEditorTab, type ActiveEditorType } from "./TerrainEditorTab";
+export { TextureEditorTab } from "./TextureEditorTab";

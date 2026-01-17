@@ -1,12 +1,15 @@
 // terrainMaterial: GPU-first TSL terrain material with vertex displacement.
 // terrainMaterial：GPU-first TSL 地形材质，带顶点位移
+//
+// Uses multi-octave detail noise and advanced blending for natural-looking
+// terrain textures without visible tiling artifacts.
+// 使用多八度细节噪声和高级混合，实现无明显重复的自然地形纹理
 
 import { DoubleSide, MeshStandardNodeMaterial, type StorageTexture } from "three/webgpu";
 import {
   clamp,
   color,
   float,
-  hash,
   max,
   mix,
   mul,
@@ -16,11 +19,11 @@ import {
   oneMinus,
   smoothstep,
   add,
+  vec2,
   vec3,
   texture,
   uniform,
   positionLocal,
-  vec2,
   normalize,
 } from "three/tsl";
 import type { TerrainConfig } from "./terrain";
@@ -212,10 +215,6 @@ export function createGpuTerrainMaterial(
     float(1.0),
   );
 
-  // Mix grass and rock.
-  // 混合草地和岩石
-  const baseColor = mix(grass, rock, rockMask);
-
   // Snow on mountain peaks (natural distribution).
   // 山峰上的雪（自然分布）
   //
@@ -253,65 +252,81 @@ export function createGpuTerrainMaterial(
   // 锐化雪边缘以获得更清晰的过渡
   const snowMask = smoothstep(float(0.2), float(0.6), snowCombined);
 
-  const c = mix(baseColor, snow, snowMask);
+  // ============================================================================
+  // Optimized Color Variation (single noise sample, reuse macro noise)
+  // 优化的颜色变化（单次噪声采样，复用宏观噪声）
+  // ============================================================================
+  // Reuse the macro noise already computed for biome blending.
+  // 复用已计算的宏观噪声用于生物群落混合
 
-  // Micro-variation (cheap hash noise in world space).
-  // 微观变化（世界空间哈希噪声，成本低）
-  const n = hash(vec2(worldX, worldZ).mul(float(cfg.material.detailFrequencyPerMeter)));
-  const shade = mix(float(cfg.material.detailShadeMin), float(cfg.material.detailShadeMax), n);
-  let shaded = mul(c, shade);
+  // Use macro01 (already computed) + one additional fine detail sample.
+  // 使用已计算的 macro01 + 一个额外的细节采样
+  const fineNoise = mx_fractal_noise_float(
+    vec3(worldX, float(0.0), worldZ).mul(float(0.15)),
+    2, 2.0, 0.5, 1.0,
+  );
 
-  // Wet/muddy lowlands.
-  // 低洼湿地/泥地
-  if (cfg.material.wetness.enabled) {
-    const wetHeight = oneMinus(
-      smoothstep(
-        float(cfg.material.wetness.startHeightMeters),
-        float(cfg.material.wetness.endHeightMeters),
-        y,
-      ),
-    );
+  // Combine macro (large patches) + fine (small detail).
+  // 组合宏观（大斑块）+ 细节（小细节）
+  const combinedNoise = add(mul(macro01, float(0.6)), mul(fineNoise, float(0.4)));
 
-    const wetFlat = oneMinus(
-      smoothstep(
-        float(cfg.material.wetness.slopeStart),
-        float(cfg.material.wetness.slopeEnd),
-        slope,
-      ),
-    );
+  // Single variation factor for all materials (simpler, faster).
+  // 所有材质使用单一变化因子（更简单、更快）
+  const colorVariation = add(float(0.92), mul(combinedNoise, float(0.16)));
 
-    const macroMul = mix(
-      float(1.0 - cfg.material.wetness.macroInfluence),
-      float(1.0 + cfg.material.wetness.macroInfluence),
-      macro01,
-    );
+  // Apply variation to base colors.
+  // 将变化应用到基础颜色
+  const grassVaried = mul(grass, colorVariation);
+  const rockVaried = mul(rock, colorVariation);
+  const snowVaried = mul(snow, add(float(0.96), mul(combinedNoise, float(0.08))));
 
-    const wetMask = clamp(mul(mul(wetHeight, wetFlat), macroMul), float(0.0), float(1.0));
-    const wetBlend = clamp(
-      mul(wetMask, float(cfg.material.wetness.strength)),
-      float(0.0),
-      float(1.0),
-    );
+  // Mix materials with variation.
+  // 混合带变化的材质
+  const baseColorVaried = mix(grassVaried, rockVaried, rockMask);
+  const baseShaded = mix(baseColorVaried, snowVaried, snowMask);
 
-    const mud = color(...cfg.material.wetness.mudColorRgb);
-    shaded = mul(mix(shaded, mud, wetBlend), float(cfg.material.wetness.darken));
+  // Wet/muddy lowlands - compute wet mask first.
+  // 低洼湿地/泥地 - 先计算湿度遮罩
+  const wetHeight = oneMinus(
+    smoothstep(
+      float(cfg.material.wetness.startHeightMeters),
+      float(cfg.material.wetness.endHeightMeters),
+      y,
+    ),
+  );
 
-    mat.roughnessNode = mix(
-      float(cfg.material.roughness),
-      float(cfg.material.wetness.roughness),
-      wetBlend,
-    );
-  } else {
-    mat.roughnessNode = float(cfg.material.roughness);
-  }
+  const wetFlat = oneMinus(
+    smoothstep(
+      float(cfg.material.wetness.slopeStart),
+      float(cfg.material.wetness.slopeEnd),
+      slope,
+    ),
+  );
 
-  // Procedural detail normal (adds to sampled normal).
-  // 程序化细节法线（添加到采样法线）
+  const macroMul = mix(
+    float(1.0 - cfg.material.wetness.macroInfluence),
+    float(1.0 + cfg.material.wetness.macroInfluence),
+    macro01,
+  );
+
+  const wetMask = clamp(mul(mul(wetHeight, wetFlat), macroMul), float(0.0), float(1.0));
+  const wetBlend = cfg.material.wetness.enabled
+    ? clamp(mul(wetMask, float(cfg.material.wetness.strength)), float(0.0), float(1.0))
+    : float(0.0);
+
+  const mud = color(...cfg.material.wetness.mudColorRgb);
+  const finalShaded = mul(mix(baseShaded, mud, wetBlend), mix(float(1.0), float(cfg.material.wetness.darken), wetBlend));
+
+  mat.roughnessNode = mix(
+    float(cfg.material.roughness),
+    float(cfg.material.wetness.roughness),
+    wetBlend,
+  );
+
+  // Procedural detail normal (single sample, optimized).
+  // 程序化细节法线（单次采样，已优化）
   if (cfg.material.detailNormal.enabled) {
-    const dnPos = mul(
-      vec3(worldX, float(0.0), worldZ),
-      float(cfg.material.detailNormal.frequencyPerMeter),
-    );
+    const dnPos = vec3(worldX, float(0.0), worldZ).mul(float(cfg.material.detailNormal.frequencyPerMeter));
     const dnHeight = mx_fractal_noise_float(
       dnPos,
       cfg.material.detailNormal.octaves,
@@ -319,13 +334,17 @@ export function createGpuTerrainMaterial(
       cfg.material.detailNormal.diminish,
       cfg.material.detailNormal.amplitude,
     );
+
+    // Convert height to normal perturbation.
+    // 将高度转换为法线扰动
     const detailNormal = mx_heighttonormal(dnHeight, float(cfg.material.detailNormal.strength));
-    // Blend detail normal with sampled normal.
-    // 将细节法线与采样法线混合
-    mat.normalNode = normalize(add(sampledNormal, detailNormal.mul(0.5)));
+
+    // Blend detail normal with sampled terrain normal.
+    // 将细节法线与采样的地形法线混合
+    mat.normalNode = normalize(add(sampledNormal, mul(detailNormal, float(0.5))));
   }
 
-  mat.colorNode = shaded;
+  mat.colorNode = finalShaded;
   mat.metalnessNode = float(cfg.material.metalness);
 
   return mat;

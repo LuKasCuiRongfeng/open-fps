@@ -4,6 +4,7 @@
 export { TerrainHeightCompute } from "./TerrainHeightCompute";
 export { TerrainNormalCompute } from "./TerrainNormalCompute";
 export { TerrainBrushCompute } from "./TerrainBrushCompute";
+export { SplatMapCompute } from "./SplatMapCompute";
 export { TileAtlasAllocator } from "./TileAtlasAllocator";
 export { GpuTextureIO } from "./GpuTextureIO";
 export { createHashTexture, buildHeightComputeShader } from "./TerrainNoiseShader";

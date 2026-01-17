@@ -25,7 +25,9 @@ export function TabButton({ active, label, onClick }: TabButtonProps) {
 
 export const TABS = [
   { id: "help", label: "Help" },
-  { id: "mapEditor", label: "Map Editor" },
+  { id: "file", label: "File" },
+  { id: "terrainEditor", label: "Terrain Editor" },
+  { id: "textureEditor", label: "Texture Editor" },
   { id: "render", label: "Render" },
   { id: "camera", label: "Camera" },
   { id: "fog", label: "Fog" },

@@ -22,6 +22,11 @@ pub fn run() {
             list_recent_projects,
             add_recent_project,
             remove_recent_project,
+            // Generic file operations / 通用文件操作
+            read_text_file,
+            write_text_file,
+            read_binary_file_base64,
+            write_binary_file_base64,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

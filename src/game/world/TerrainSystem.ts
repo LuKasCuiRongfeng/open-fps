@@ -1,7 +1,7 @@
 // TerrainSystem: GPU-first facade for the streaming terrain system.
 // TerrainSystem：GPU-first 流式地形系统的门面
 
-import { Group } from "three/webgpu";
+import { Group, type Texture } from "three/webgpu";
 import type { Scene, WebGPURenderer, PerspectiveCamera } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
 import { ChunkManager } from "./ChunkManager";
@@ -9,6 +9,7 @@ import { FloatingOrigin } from "./FloatingOrigin";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
 import type { BrushStroke } from "../editor/TerrainEditor";
 import { type MapData, createEmptyMapData, setChunkData, parseChunkKey, getChunkData, hasChunks } from "../editor/MapData";
+import type { TerrainTextureResult } from "./TerrainTextures";
 
 export type TerrainSystemResource = {
   root: Group;
@@ -24,6 +25,9 @@ export type TerrainSystemResource = {
   exportCurrentMapData: () => MapData;
   loadMapData: (mapData: MapData) => Promise<void>;
   resetToOriginal: () => Promise<void>;
+  // Texture data for PBR terrain materials.
+  // PBR 地形材质的纹理数据
+  setTextureData: (textureResult: TerrainTextureResult | null, splatMapTexture: Texture | null) => void;
   dispose: () => void;
 };
 
@@ -199,6 +203,20 @@ export function createTerrainSystem(
     await loadMapData(originalMapData);
   };
 
+  /**
+   * Set texture data for PBR terrain materials.
+   * 设置 PBR 地形材质的纹理数据
+   *
+   * Rebuilds all chunk materials with the new textures.
+   * 使用新纹理重建所有 chunk 材质
+   */
+  const setTextureData = (
+    textureResult: TerrainTextureResult | null,
+    splatMapTexture: Texture | null,
+  ): void => {
+    chunkManager?.setTextureData(textureResult, splatMapTexture);
+  };
+
   const dispose = (): void => {
     chunkManager?.dispose();
     chunkManager = null;
@@ -217,6 +235,7 @@ export function createTerrainSystem(
     exportCurrentMapData,
     loadMapData,
     resetToOriginal,
+    setTextureData,
     dispose,
   };
 }

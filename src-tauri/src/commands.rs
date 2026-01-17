@@ -259,3 +259,57 @@ pub async fn remove_recent_project(app: tauri::AppHandle, project_path: String) 
 
     Ok(())
 }
+
+// --- Generic file operations / 通用文件操作 ---
+
+/// Read a text file from disk.
+/// 从磁盘读取文本文件
+#[tauri::command]
+pub async fn read_text_file(path: String) -> Result<String, String> {
+    let path = PathBuf::from(&path);
+    fs::read_to_string(&path).map_err(|e| format!("Failed to read file: {}", e))
+}
+
+/// Write a text file to disk.
+/// 将文本文件写入磁盘
+#[tauri::command]
+pub async fn write_text_file(path: String, content: String) -> Result<(), String> {
+    let path = PathBuf::from(&path);
+    // Ensure parent directory exists.
+    // 确保父目录存在
+    if let Some(parent) = path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create directory: {}", e))?;
+        }
+    }
+    fs::write(&path, content).map_err(|e| format!("Failed to write file: {}", e))
+}
+
+/// Read a binary file from disk as base64.
+/// 从磁盘读取二进制文件为 base64
+#[tauri::command]
+pub async fn read_binary_file_base64(path: String) -> Result<String, String> {
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
+    let path = PathBuf::from(&path);
+    let bytes = fs::read(&path).map_err(|e| format!("Failed to read file: {}", e))?;
+    Ok(STANDARD.encode(&bytes))
+}
+
+/// Write a binary file to disk from base64.
+/// 从 base64 写入二进制文件到磁盘
+#[tauri::command]
+pub async fn write_binary_file_base64(path: String, base64: String) -> Result<(), String> {
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
+    let path = PathBuf::from(&path);
+    // Ensure parent directory exists.
+    // 确保父目录存在
+    if let Some(parent) = path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create directory: {}", e))?;
+        }
+    }
+    let bytes = STANDARD.decode(&base64).map_err(|e| format!("Failed to decode base64: {}", e))?;
+    fs::write(&path, bytes).map_err(|e| format!("Failed to write file: {}", e))
+}

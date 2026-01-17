@@ -10,10 +10,13 @@ import {
   Uint32BufferAttribute,
   Vector3,
   type StorageTexture,
+  type Texture,
 } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
 import type { FloatingOrigin } from "./FloatingOrigin";
 import { createGpuTerrainMaterial, type TerrainMaterialParams } from "./terrainMaterial";
+import { createTexturedTerrainMaterial, type TerrainMaterialParams as TexturedMaterialParams } from "./terrainMaterialTextured";
+import type { TerrainTextureResult } from "./TerrainTextures";
 
 // Skirt depth in meters (how far down the skirt extends).
 // 裙边深度（米）（裙边向下延伸多远）
@@ -270,6 +273,11 @@ export class TerrainChunk {
   private readonly tileUvOffset: { x: number; y: number };
   private readonly tileUvScale: number;
 
+  // Store texture references for material rebuilding.
+  // 存储纹理引用用于材质重建
+  private heightTexture: StorageTexture;
+  private normalTexture: StorageTexture;
+
   constructor(
     cx: number,
     cz: number,
@@ -283,6 +291,8 @@ export class TerrainChunk {
     this.cz = cz;
     this.config = config;
     this.floatingOrigin = floatingOrigin;
+    this.heightTexture = heightTexture;
+    this.normalTexture = normalTexture;
 
     const chunkSize = config.streaming.chunkSizeMeters;
     this.worldCenterX = (cx + 0.5) * chunkSize;
@@ -296,8 +306,8 @@ export class TerrainChunk {
     const segments = config.lod.levels[0].segmentsPerSide;
     const geometry = this.createChunkGeometry(segments);
 
-    // Create GPU-displaced material.
-    // 创建 GPU 位移材质
+    // Create GPU-displaced material (textured or procedural based on config).
+    // 创建 GPU 位移材质（根据配置选择纹理或程序化）
     const materialParams: TerrainMaterialParams = {
       heightTexture,
       normalTexture,
@@ -307,7 +317,12 @@ export class TerrainChunk {
       chunkWorldZ: this.worldCenterZ,
       chunkSize,
     };
-    const material = createGpuTerrainMaterial(config, materialParams);
+
+    // Use textured material for better visuals, fallback to procedural.
+    // 使用纹理材质获得更好的视觉效果，回退到程序化
+    const material = config.material.useTextures
+      ? createTexturedTerrainMaterial(config, materialParams)
+      : createGpuTerrainMaterial(config, materialParams);
 
     this.mesh = new Mesh(geometry, material);
     this.mesh.name = `terrain-chunk-gpu-${cx}-${cz}`;
@@ -471,6 +486,44 @@ export class TerrainChunk {
       z: this.worldCenterZ,
       radius: this.getBoundingSphereRadius(),
     };
+  }
+
+  /**
+   * Rebuild material with new texture data.
+   * 使用新的纹理数据重建材质
+   *
+   * Called when textures are loaded or splat map changes.
+   * 在加载纹理或 splat map 变化时调用
+   */
+  rebuildMaterial(
+    textureResult: TerrainTextureResult | null,
+    splatMapTexture: Texture | null,
+  ): void {
+    // Dispose old material.
+    // 释放旧材质
+    if (this.mesh.material instanceof MeshStandardNodeMaterial) {
+      this.mesh.material.dispose();
+    }
+
+    const chunkSize = this.config.streaming.chunkSizeMeters;
+
+    // Create new material with texture params.
+    // 使用纹理参数创建新材质
+    const materialParams: TexturedMaterialParams = {
+      heightTexture: this.heightTexture,
+      normalTexture: this.normalTexture,
+      tileUvOffset: this.tileUvOffset,
+      tileUvScale: this.tileUvScale,
+      chunkWorldX: this.worldCenterX,
+      chunkWorldZ: this.worldCenterZ,
+      chunkSize,
+      textureResult: textureResult ?? undefined,
+      splatMap: splatMapTexture ?? undefined,
+    };
+
+    // Always use textured material when rebuilding (it handles fallback internally).
+    // 重建时总是使用纹理材质（它内部处理回退）
+    this.mesh.material = createTexturedTerrainMaterial(this.config, materialParams);
   }
 
   /**

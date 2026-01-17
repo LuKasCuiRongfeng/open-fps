@@ -65,6 +65,11 @@ export class ChunkManager {
   // GPU 初始化状态
   private gpuReady = false;
 
+  // Texture data for terrain materials (from texture.json).
+  // 地形材质的纹理数据（来自 texture.json）
+  private textureResult: import("./TerrainTextures").TerrainTextureResult | null = null;
+  private splatMapTexture: import("three/webgpu").Texture | null = null;
+
   constructor(config: TerrainConfig, scene: Scene, floatingOrigin: FloatingOrigin) {
     this.config = config;
     this.scene = scene;
@@ -576,5 +581,37 @@ export class ChunkManager {
 
     this.gpuReady = false;
     this.renderer = null;
+  }
+
+  /**
+   * Set texture data for terrain materials.
+   * 设置地形材质的纹理数据
+   *
+   * This should be called after loading texture.json from a project.
+   * 加载项目的 texture.json 后调用此方法
+   */
+  setTextureData(
+    textureResult: import("./TerrainTextures").TerrainTextureResult | null,
+    splatMapTexture: import("three/webgpu").Texture | null,
+  ): void {
+    this.textureResult = textureResult;
+    this.splatMapTexture = splatMapTexture;
+
+    // Recreate all existing chunk materials with new textures.
+    // 使用新纹理重新创建所有现有 chunk 的材质
+    if (this.gpuReady) {
+      this.rebuildAllChunkMaterials();
+    }
+  }
+
+  /**
+   * Rebuild materials for all active chunks with current texture data.
+   * 使用当前纹理数据重建所有活跃 chunk 的材质
+   */
+  private rebuildAllChunkMaterials(): void {
+    for (const chunk of this.chunks.values()) {
+      chunk.rebuildMaterial(this.textureResult, this.splatMapTexture);
+    }
+    console.log(`[ChunkManager] Rebuilt materials for ${this.chunks.size} chunks`);
   }
 }

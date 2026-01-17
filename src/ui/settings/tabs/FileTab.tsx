@@ -1,13 +1,9 @@
-// MapEditorTab: map editor settings tab.
-// MapEditorTab：地图编辑器设置标签
+// FileTab: project file operations tab.
+// FileTab：项目文件操作标签
 
 import { useState, useEffect } from "react";
 import type { GameApp } from "../../../game/GameApp";
-import type { 
-  TerrainEditor, 
-  EditorMode, 
-} from "../../../game/editor";
-import type { EditorMouseAction } from "../../../game/settings/GameSettings";
+import type { TerrainEditor } from "../../../game/editor";
 import {
   getProjectNameFromPath,
   saveProjectMap,
@@ -19,83 +15,34 @@ import {
 import type { MapData } from "../../../game/editor/MapData";
 import type { GameSettings } from "../../../game/settings/GameSettings";
 
-// Local type for mouse config (mirrors GameSettings.editor.mouseConfig).
-// 本地鼠标配置类型（镜像 GameSettings.editor.mouseConfig）
-type EditorMouseConfig = GameSettings["editor"]["mouseConfig"];
-
-type MapEditorTabProps = {
+type FileTabProps = {
   gameApp: GameApp | null;
   terrainEditor: TerrainEditor | null;
   terrainMode: "editable" | "procedural";
-  editorMode: EditorMode;
   currentProjectPath: string | null;
-  onEditorModeChange: (mode: EditorMode) => void;
   onProjectPathChange?: (path: string | null) => void;
   onLoadMap?: (mapData: MapData) => void;
   onApplySettings?: (settings: GameSettings) => void;
-  onClose?: () => void;
 };
 
-export function MapEditorTab({
+export function FileTab({
   gameApp,
   terrainEditor,
   terrainMode,
-  editorMode,
   currentProjectPath,
-  onEditorModeChange,
   onProjectPathChange,
   onLoadMap,
   onApplySettings,
-  onClose,
-}: MapEditorTabProps) {
+}: FileTabProps) {
   const [editableMapName, setEditableMapName] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [processing, setProcessing] = useState(false);
 
-  // Mouse button configuration state.
-  // 鼠标按键配置状态
-  const [mouseConfig, setMouseConfig] = useState<EditorMouseConfig>(() => ({
-    leftButton: terrainEditor?.mouseConfig.leftButton ?? "brush",
-    rightButton: terrainEditor?.mouseConfig.rightButton ?? "orbit",
-    middleButton: terrainEditor?.mouseConfig.middleButton ?? "pan",
-  }));
-
-  // Sticky drag state.
-  // 粘性拖拽状态
-  const [stickyDrag, setStickyDrag] = useState(() => terrainEditor?.stickyDrag ?? false);
-
   const canEdit = terrainMode === "editable";
-  const dirty = terrainEditor?.dirty ?? false;
+  const terrainDirty = terrainEditor?.dirty ?? false;
+  const textureDirty = gameApp?.getTextureEditor()?.dirty ?? false;
+  const dirty = terrainDirty || textureDirty;
   const hasProject = hasOpenProject();
-
-  // Sync mouse config from editor when it changes.
-  // 当编辑器配置变化时同步鼠标配置
-  useEffect(() => {
-    if (terrainEditor) {
-      setMouseConfig({
-        leftButton: terrainEditor.mouseConfig.leftButton,
-        rightButton: terrainEditor.mouseConfig.rightButton,
-        middleButton: terrainEditor.mouseConfig.middleButton,
-      });
-      setStickyDrag(terrainEditor.stickyDrag);
-    }
-  }, [terrainEditor]);
-
-  // Handle mouse config change.
-  // 处理鼠标配置变化
-  const handleMouseConfigChange = (
-    button: keyof EditorMouseConfig, action: EditorMouseAction
-  ) => {
-    setMouseConfig((prev) => ({ ...prev, [button]: action }));
-    terrainEditor?.setMouseConfig({ [button]: action });
-  };
-
-  // Handle sticky drag toggle.
-  // 处理粘性拖拽开关
-  const handleStickyDragChange = (enabled: boolean) => {
-    setStickyDrag(enabled);
-    terrainEditor?.setStickyDrag(enabled);
-  };
 
   // Sync editable map name from project path.
   // 从项目路径同步可编辑的地图名称
@@ -112,24 +59,6 @@ export function MapEditorTab({
   const handleMapNameChange = (name: string) => {
     setEditableMapName(name);
     terrainEditor?.setMapName(name);
-  };
-
-  // Toggle edit mode.
-  // 切换编辑模式
-  const handleToggleMode = () => {
-    if (!canEdit && editorMode === "play") {
-      setStatusMessage("Cannot edit: open a project first");
-      return;
-    }
-    terrainEditor?.toggleMode();
-    const newMode = terrainEditor?.mode ?? "play";
-    onEditorModeChange(newMode);
-
-    // Close settings panel when entering edit mode.
-    // 进入编辑模式时关闭设置面板
-    if (newMode === "edit") {
-      onClose?.();
-    }
   };
 
   // Handle save (to current project or save as new project).
@@ -150,7 +79,13 @@ export function MapEditorTab({
         // Save to current project (with rename if name changed).
         // 保存到当前项目（如果名称更改则重命名）
         const newPath = await saveProjectMap(mapData, settings, projectName);
+        
+        // Save texture data (splat map) to project.
+        // 保存纹理数据（splat map）到项目
+        await gameApp.saveTexturesToProject(newPath);
+        
         terrainEditor?.markClean();
+        gameApp.getTextureEditor().setOnDirtyChange(() => {}); // Clear dirty callback
         onProjectPathChange?.(newPath);
         setStatusMessage(`✓ Saved to project`);
         return true;
@@ -159,6 +94,11 @@ export function MapEditorTab({
         // 未打开项目（程序地形）- 另存为新项目
         const newPath = await saveProjectAs(mapData, projectName, settings);
         if (newPath) {
+          // Save texture data if available.
+          // 如果有纹理数据则保存
+          if (gameApp.getTextureEditor().editingEnabled) {
+            await gameApp.saveTexturesToProject(newPath);
+          }
           terrainEditor?.markClean();
           onProjectPathChange?.(newPath);
           setStatusMessage(`✓ Created project: ${getProjectNameFromPath(newPath)}`);
@@ -205,6 +145,11 @@ export function MapEditorTab({
 
       const newPath = await saveProjectAs(mapData, projectName, settings);
       if (newPath) {
+        // Save texture data if available.
+        // 如果有纹理数据则保存
+        if (gameApp.getTextureEditor().editingEnabled) {
+          await gameApp.saveTexturesToProject(newPath);
+        }
         terrainEditor?.markClean();
         onProjectPathChange?.(newPath);
         setStatusMessage(`✓ Created project: ${getProjectNameFromPath(newPath)}`);
@@ -213,33 +158,6 @@ export function MapEditorTab({
       }
     } catch (e) {
       setStatusMessage(`✗ Save failed: ${e}`);
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  // Handle reset (discard edits).
-  // 重置（丢弃编辑）
-  const handleResetMap = async () => {
-    if (!gameApp) return;
-
-    const { ask } = await import("@tauri-apps/plugin-dialog");
-    const confirmed = await ask(
-      "Discard all terrain edits and reset to original?\nThis cannot be undone.",
-      { title: "Reset Terrain", kind: "warning" }
-    );
-    if (!confirmed) {
-      return;
-    }
-
-    setProcessing(true);
-    setStatusMessage("");
-
-    try {
-      await gameApp.resetTerrain();
-      setStatusMessage("✓ Terrain reset to original");
-    } catch (e) {
-      setStatusMessage(`✗ Reset failed: ${e}`);
     } finally {
       setProcessing(false);
     }
@@ -284,9 +202,9 @@ export function MapEditorTab({
       gameApp.applySettings(settings);
       onApplySettings?.(settings);
 
-      // Update local mouse config state from loaded settings.
-      // 从加载的设置更新本地鼠标配置状态
-      setMouseConfig(settings.editor.mouseConfig);
+      // Load textures from project (texture.json + splat map).
+      // 从项目加载纹理（texture.json + splat map）
+      await gameApp.loadTexturesFromProject(projectPath);
       
       if (map) {
         // Load map into game.
@@ -307,33 +225,6 @@ export function MapEditorTab({
 
   return (
     <div className="space-y-5">
-      {/* Mode toggle */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm font-semibold">Editor Mode</div>
-          <div className="text-xs text-white/50">
-            {canEdit ? "Toggle between play and edit mode" : "Open a project to enable editing"}
-          </div>
-        </div>
-        <button
-          onClick={handleToggleMode}
-          disabled={!canEdit && editorMode === "play"}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            editorMode === "edit"
-              ? "bg-green-600 hover:bg-green-700 text-white"
-              : canEdit
-                ? "bg-blue-600 hover:bg-blue-700 text-white"
-                : "bg-gray-700 text-gray-500 cursor-not-allowed"
-          }`}
-        >
-          {editorMode === "edit"
-            ? "⬛ Stop Editing"
-            : canEdit
-              ? "✏️ Start Editing"
-              : "📁 Open Project First"}
-        </button>
-      </div>
-
       {/* Current project info */}
       <div className="rounded-md border border-white/10 p-3">
         <div className="flex items-center justify-between">
@@ -351,7 +242,7 @@ export function MapEditorTab({
           />
         </div>
         <div className="mt-2 text-xs text-white/50">
-          Mode: {terrainMode === "editable" ? "✓ Project Open (Editable)" : "⚠ Procedural (View Only)"}
+          Mode: {canEdit ? "✓ Project Open (Editable)" : "⚠ Procedural (View Only)"}
         </div>
         {currentProjectPath && (
           <div className="mt-1 text-xs text-white/40 truncate" title={currentProjectPath}>
@@ -381,16 +272,9 @@ export function MapEditorTab({
           <button
             onClick={handleSaveAs}
             disabled={processing}
-            className="px-3 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 transition-colors"
+            className="col-span-2 px-3 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 transition-colors"
           >
             📁 Save As...
-          </button>
-          <button
-            onClick={handleResetMap}
-            disabled={processing || !canEdit || !dirty}
-            className="px-3 py-2 rounded-md text-sm font-medium bg-red-600/80 hover:bg-red-600 disabled:bg-gray-800 disabled:text-gray-500 transition-colors"
-          >
-            🔄 Reset Edits
           </button>
         </div>
       </div>
@@ -404,85 +288,11 @@ export function MapEditorTab({
         </div>
       )}
 
-      {/* Mouse button configuration */}
-      <div>
-        <div className="text-sm font-semibold mb-3">Mouse Controls (Edit Mode)</div>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-sm text-white/80">Left Button</label>
-            <select
-              value={mouseConfig.leftButton}
-              onChange={(e) =>
-                handleMouseConfigChange("leftButton", e.target.value as EditorMouseAction)
-              }
-              className="rounded-md border border-white/15 bg-black/40 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30"
-            >
-              <option value="brush">🖌️ Brush (Paint)</option>
-              <option value="orbit">🔄 Orbit (Rotate)</option>
-              <option value="pan">✋ Pan (Move)</option>
-            </select>
-          </div>
-          <div className="flex items-center justify-between">
-            <label className="text-sm text-white/80">Right Button</label>
-            <select
-              value={mouseConfig.rightButton}
-              onChange={(e) =>
-                handleMouseConfigChange("rightButton", e.target.value as EditorMouseAction)
-              }
-              className="rounded-md border border-white/15 bg-black/40 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30"
-            >
-              <option value="brush">🖌️ Brush (Paint)</option>
-              <option value="orbit">🔄 Orbit (Rotate)</option>
-              <option value="pan">✋ Pan (Move)</option>
-            </select>
-          </div>
-          <div className="flex items-center justify-between">
-            <label className="text-sm text-white/80">Middle Button</label>
-            <select
-              value={mouseConfig.middleButton}
-              onChange={(e) =>
-                handleMouseConfigChange("middleButton", e.target.value as EditorMouseAction)
-              }
-              className="rounded-md border border-white/15 bg-black/40 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30"
-            >
-              <option value="brush">🖌️ Brush (Paint)</option>
-              <option value="orbit">🔄 Orbit (Rotate)</option>
-              <option value="pan">✋ Pan (Move)</option>
-            </select>
-          </div>
-        </div>
-        <div className="mt-2 text-xs text-white/50">
-          Scroll: Zoom camera • Shift+Scroll: Brush radius
-        </div>
-
-        {/* Sticky drag toggle */}
-        <div className="mt-3 flex items-center justify-between">
-          <div>
-            <div className="text-sm text-white/80">Sticky Drag</div>
-            <div className="text-xs text-white/50">
-              Continue dragging when mouse leaves window
-            </div>
-          </div>
-          <button
-            onClick={() => handleStickyDragChange(!stickyDrag)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              stickyDrag ? "bg-blue-600" : "bg-gray-700"
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
-                stickyDrag ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
-          </button>
-        </div>
-      </div>
-
       {/* Help */}
       <div className="rounded-lg bg-blue-900/30 p-3 text-xs text-blue-200">
         <strong>Tips:</strong>
         <ul className="mt-1 list-disc list-inside space-y-1">
-          <li>Open a project folder to enable terrain editing</li>
+          <li>Open a project folder to enable terrain and texture editing</li>
           <li>Use "Save as Project" to save procedural terrain for editing</li>
           <li>Projects are folders containing map data, settings, and assets</li>
         </ul>

@@ -324,22 +324,29 @@ export const terrainConfig = {
 
     // Procedural detail normal (breaks up shading at close range).
     // 程序化细节法线（近距离打散光照）
+    // Optimized for performance with single noise sample.
+    // 优化性能，使用单次噪声采样
     detailNormal: {
       enabled: true,
-      frequencyPerMeter: 0.9,
-      octaves: 2,
+      frequencyPerMeter: 0.8,        // Higher frequency for finer detail / 更高频率获得更细的细节
+      octaves: 2,                    // Reduced octaves for performance / 减少八度以提升性能
       lacunarity: 2.0,
-      diminish: 0.6,
+      diminish: 0.5,
       amplitude: 1.0,
-      strength: 0.65,
+      strength: 0.6,                 // Normal perturbation strength / 法线扰动强度
     },
 
-    // Micro-variation frequency (1/m).
-    // 微观变化频率（1/米）
+    // Texture-based rendering settings.
+    // 基于纹理的渲染设置
+    useTextures: true,               // Use texture maps instead of solid colors / 使用纹理贴图代替纯色
+    textureScale: 8.0,               // Meters per texture repeat / 每个纹理重复的米数
+
+    // Micro-variation frequency (1/m) - DEPRECATED, using multi-scale system now.
+    // 微观变化频率（1/米）- 已弃用，现在使用多尺度系统
     detailFrequencyPerMeter: 0.35,
 
-    // Micro-variation brightness range.
-    // 微观变化的明暗范围
+    // Micro-variation brightness range - DEPRECATED, using multi-scale system now.
+    // 微观变化的明暗范围 - 已弃用，现在使用多尺度系统
     detailShadeMin: 0.92,
     detailShadeMax: 1.08,
 
