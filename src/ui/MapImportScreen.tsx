@@ -60,7 +60,7 @@ export function MapImportScreen({ onComplete }: Props) {
   }, [onComplete]);
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-gradient-to-b from-slate-900 to-slate-800">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-linear-to-b from-slate-900 to-slate-800">
       <div className="w-full max-w-md rounded-xl bg-black/60 p-8 backdrop-blur-md">
         {/* Title / 标题 */}
         <h1 className="mb-2 text-center text-3xl font-bold text-white">
@@ -70,13 +70,9 @@ export function MapImportScreen({ onComplete }: Props) {
           Terrain Editor & Game
         </p>
 
-        {/* Description / 描述 */}
+        {/* Description */}
         <p className="mb-6 text-center text-sm text-gray-300">
           Open a project folder to edit terrain, or skip to explore procedural terrain.
-          <br />
-          <span className="text-gray-400">
-            打开项目文件夹编辑地形，或跳过以探索程序生成的地形。
-          </span>
         </p>
 
         {error && (
@@ -104,14 +100,11 @@ export function MapImportScreen({ onComplete }: Props) {
           </button>
         </div>
 
-        {/* Info / 说明 */}
+        {/* Info */}
         <div className="mt-6 rounded-lg bg-blue-900/30 p-3 text-xs text-blue-200">
           <strong>Note:</strong> If you skip, terrain will be procedurally generated
           and cannot be edited. You can save the procedural terrain as a new project
           from Settings to enable editing.
-          <br />
-          <strong>注意：</strong> 如果跳过，地形将是程序生成的，无法编辑。
-          您可以从设置中将程序地形保存为新项目以启用编辑功能。
         </div>
       </div>
     </div>

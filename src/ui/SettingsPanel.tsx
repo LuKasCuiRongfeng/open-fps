@@ -96,7 +96,7 @@ export default function SettingsPanel({
             </div>
           </div>
 
-          <div className="flex max-h-[78vh] min-h-[420px]">
+          <div className="flex max-h-[78vh] min-h-105">
             <div className="w-40 shrink-0 border-r border-white/10 p-3">
               <div className="space-y-1.5">
                 {TABS.map((t) => (
