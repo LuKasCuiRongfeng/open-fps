@@ -97,3 +97,4 @@
 - Prefer flat functional systems for gameplay logic / 优先使用扁平函数式系统处理游戏逻辑
 - Classes only for lifecycle/state with clear `dispose()` cleanup / 类仅用于有生命周期/状态且需要 dispose() 的场景
 - UI: shadcn/ui style (clean, minimal) / UI 风格：shadcn/ui（简洁、极简）
+- **Tailwind CSS**: use modern syntax (e.g., `bg-linear-to-r` instead of `bg-gradient-to-r`) / **Tailwind CSS**：使用现代语法（如 `bg-linear-to-r` 而非 `bg-gradient-to-r`）
