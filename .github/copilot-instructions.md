@@ -30,6 +30,22 @@
 
 ---
 
+## 🚀 Advanced Optimization / 高级优化
+
+### Rust + WebAssembly for Performance / Rust + WebAssembly 提升性能
+- **Use Rust compiled to WebAssembly** for CPU-bound hot paths that cannot run on GPU.
+- **使用 Rust 编译 WebAssembly** 来加速无法在 GPU 上运行的 CPU 热点路径。
+- Ideal for: pathfinding, physics simulation, heavy data processing, serialization.
+- 适用于：寻路、物理模拟、大量数据处理、序列化等场景。
+
+### Web Workers for Blocking Tasks / Web Workers 处理阻塞任务
+- **Use Web Workers** for tasks that would block the main thread.
+- **使用 Web Workers** 处理会阻塞主线程的任务。
+- Ideal for: heavy computation, WASM execution, large data parsing, background processing.
+- 适用于：大量计算、WASM 执行、大数据解析、后台处理等场景。
+
+---
+
 ## Repo Shape / 仓库结构
 - Frontend: `src/` (Vite + React + TypeScript + Tailwind) / 前端
 - Backend: `src-tauri/` (Rust/Tauri) / 后端
