@@ -3,6 +3,11 @@ import { playerConfig } from "../../config/player";
 import { renderConfig } from "../../config/render";
 import { visualsConfig } from "../../config/visuals";
 
+// --- Type utilities / 类型工具 ---
+
+/** DeepPartial: recursively makes all fields optional. / 递归使所有字段可选 */
+type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K] };
+
 // Editor mouse action type.
 // 编辑器鼠标动作类型
 export type EditorMouseAction = "brush" | "orbit" | "pan";
@@ -50,40 +55,8 @@ export type GameSettings = {
   };
 };
 
-export type GameSettingsPatch = {
-  player?: {
-    mouseSensitivity?: number;
-    moveSpeed?: number;
-    sprintBonus?: number;
-    jumpVelocity?: number;
-    gravity?: number;
-    maxFallSpeed?: number;
-    thirdPerson?: {
-      chase?: {
-        followDistance?: number;
-        heightOffset?: number;
-      };
-      overShoulder?: {
-        followDistance?: number;
-        heightOffset?: number;
-        shoulderOffset?: number;
-      };
-      followLerpPerSecond?: number;
-    };
-  };
-  camera?: {
-    fovDegrees?: number;
-  };
-  render?: {
-    maxPixelRatio?: number;
-  };
-  fog?: {
-    density?: number;
-  };
-  editor?: {
-    mouseConfig?: Partial<EditorMouseConfig>;
-  };
-};
+/** Partial settings patch type (all fields optional). / 部分设置补丁类型（所有字段可选） */
+export type GameSettingsPatch = DeepPartial<GameSettings>;
 
 export function createDefaultGameSettings(): GameSettings {
   return {

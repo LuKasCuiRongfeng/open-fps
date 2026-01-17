@@ -227,7 +227,7 @@ export default function GameView() {
 
   // Handle scroll wheel: camera zoom with Shift, brush radius without.
   // 处理滚轮：Shift+滚轮缩放相机，无Shift调整画刷半径
-  const handleWheel = useCallback((e: React.WheelEvent) => {
+  const handleWheel = useCallback((e: WheelEvent) => {
     if (!terrainEditor || terrainEditor.mode !== "edit") return;
 
     e.preventDefault();
@@ -245,6 +245,20 @@ export default function GameView() {
     }
   }, [terrainEditor]);
 
+  // Ref for editor overlay to attach non-passive wheel listener.
+  // 编辑器覆盖层 ref，用于附加非被动滚轮监听器
+  const editorOverlayRef = useRef<HTMLDivElement | null>(null);
+
+  // Attach wheel listener with { passive: false } to allow preventDefault.
+  // 附加 { passive: false } 的滚轮监听器以允许 preventDefault
+  useEffect(() => {
+    const overlay = editorOverlayRef.current;
+    if (!overlay || editorMode !== "edit") return;
+
+    overlay.addEventListener("wheel", handleWheel, { passive: false });
+    return () => overlay.removeEventListener("wheel", handleWheel);
+  }, [editorMode, handleWheel]);
+
   return (
     <div
       className="relative h-screen w-screen overflow-hidden bg-black text-white"
@@ -255,12 +269,12 @@ export default function GameView() {
       {/* 编辑模式覆盖层，捕获鼠标事件并防止指针锁定 */}
       {editorMode === "edit" && (
         <div
+          ref={editorOverlayRef}
           className="absolute inset-0 cursor-crosshair"
           onMouseMove={handleMouseMove}
           onMouseDown={handleMouseDown}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          onWheel={handleWheel}
         />
       )}
 

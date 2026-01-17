@@ -20,10 +20,10 @@ export function HelpTab() {
           <div>Shift: Sprint</div>
           <div>Space: Jump</div>
           <div>
-            {keyLabelFromCode(inputConfig.toggleCameraMode.code)}: Toggle 1st / 3rd person
+            {keyLabelFromCode(inputConfig.toggleCameraMode.codes[0])}: Toggle 1st / 3rd person
           </div>
           <div>
-            {keyLabelFromCode(inputConfig.toggleThirdPersonStyle.code)}: Toggle OTS / Chase
+            {keyLabelFromCode(inputConfig.toggleThirdPersonStyle.codes[0])}: Toggle OTS / Chase
           </div>
           <div>Escape: Open/Close Settings</div>
         </div>

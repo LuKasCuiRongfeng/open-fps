@@ -86,10 +86,10 @@ export class InputManager {
   private readonly onKeyDown = (e: KeyboardEvent) => {
     if (!e.repeat) {
       this.state.keysJustPressed.add(e.code);
-      if (e.code === inputConfig.toggleCameraMode.code) {
+      if (inputConfig.toggleCameraMode.codes.includes(e.code as never)) {
         this.state.toggleCameraModeRequested = true;
       }
-      if (e.code === inputConfig.toggleThirdPersonStyle.code) {
+      if (inputConfig.toggleThirdPersonStyle.codes.includes(e.code as never)) {
         this.state.toggleThirdPersonStyleRequested = true;
       }
     }
