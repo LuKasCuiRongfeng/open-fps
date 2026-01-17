@@ -11,24 +11,6 @@ const PROJECT_FILE: &str = "project.json";
 const MAP_FILE: &str = "map.json";
 const SETTINGS_FILE: &str = "settings.json";
 
-/// Get the projects directory path (for listing recent projects).
-/// 获取项目目录路径（用于列出最近项目）
-fn get_projects_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
-
-    let projects_dir = app_data_dir.join("projects");
-
-    if !projects_dir.exists() {
-        fs::create_dir_all(&projects_dir)
-            .map_err(|e| format!("Failed to create projects dir: {}", e))?;
-    }
-
-    Ok(projects_dir)
-}
-
 /// Ensure project folder exists, create if not.
 /// 确保项目文件夹存在，不存在则创建
 fn ensure_project_folder(path: &PathBuf) -> Result<(), String> {
@@ -178,19 +160,102 @@ pub async fn rename_project(old_path: String, new_name: String) -> Result<String
 /// 扫描 projects 文件夹并返回有效项目的路径
 #[tauri::command]
 pub async fn list_recent_projects(app: tauri::AppHandle) -> Result<Vec<String>, String> {
-    let projects_dir = get_projects_dir(&app)?;
-    let mut projects = Vec::new();
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+    let recent_file = app_data_dir.join("recent_projects.json");
 
-    if let Ok(entries) = fs::read_dir(&projects_dir) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            // Only include directories with valid project.json.
-            // 仅包含具有有效 project.json 的目录
-            if path.is_dir() && path.join(PROJECT_FILE).exists() {
-                projects.push(path.to_string_lossy().to_string());
-            }
-        }
+    if !recent_file.exists() {
+        return Ok(Vec::new());
     }
 
-    Ok(projects)
+    let content = fs::read_to_string(&recent_file)
+        .map_err(|e| format!("Failed to read recent projects: {}", e))?;
+    
+    let paths: Vec<String> = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse recent projects: {}", e))?;
+    
+    // Filter out invalid/deleted projects.
+    // 过滤掉无效/已删除的项目
+    let valid_paths: Vec<String> = paths
+        .into_iter()
+        .filter(|p| PathBuf::from(p).join(PROJECT_FILE).exists())
+        .collect();
+
+    Ok(valid_paths)
+}
+
+/// Add a project to the recent projects list.
+/// 将项目添加到最近项目列表
+#[tauri::command]
+pub async fn add_recent_project(app: tauri::AppHandle, project_path: String) -> Result<(), String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+    
+    if !app_data_dir.exists() {
+        fs::create_dir_all(&app_data_dir)
+            .map_err(|e| format!("Failed to create app data dir: {}", e))?;
+    }
+
+    let recent_file = app_data_dir.join("recent_projects.json");
+    
+    // Read existing list.
+    // 读取现有列表
+    let mut paths: Vec<String> = if recent_file.exists() {
+        let content = fs::read_to_string(&recent_file).unwrap_or_default();
+        serde_json::from_str(&content).unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+
+    // Remove if already exists (to move to front).
+    // 如果已存在则移除（以移动到最前面）
+    paths.retain(|p| p != &project_path);
+    
+    // Add to front.
+    // 添加到最前面
+    paths.insert(0, project_path);
+    
+    // Keep only last 10.
+    // 只保留最近的 10 个
+    paths.truncate(10);
+    
+    // Write back.
+    // 写回
+    let content = serde_json::to_string_pretty(&paths)
+        .map_err(|e| format!("Failed to serialize recent projects: {}", e))?;
+    fs::write(&recent_file, content)
+        .map_err(|e| format!("Failed to save recent projects: {}", e))?;
+
+    Ok(())
+}
+
+/// Remove a project from the recent projects list.
+/// 从最近项目列表中移除项目
+#[tauri::command]
+pub async fn remove_recent_project(app: tauri::AppHandle, project_path: String) -> Result<(), String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+    let recent_file = app_data_dir.join("recent_projects.json");
+    
+    if !recent_file.exists() {
+        return Ok(());
+    }
+
+    let content = fs::read_to_string(&recent_file).unwrap_or_default();
+    let mut paths: Vec<String> = serde_json::from_str(&content).unwrap_or_default();
+    
+    paths.retain(|p| p != &project_path);
+    
+    let content = serde_json::to_string_pretty(&paths)
+        .map_err(|e| format!("Failed to serialize recent projects: {}", e))?;
+    fs::write(&recent_file, content)
+        .map_err(|e| format!("Failed to save recent projects: {}", e))?;
+
+    Ok(())
 }

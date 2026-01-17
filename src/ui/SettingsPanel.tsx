@@ -124,6 +124,7 @@ export default function SettingsPanel({
                   onProjectPathChange={onProjectPathChange}
                   onLoadMap={onLoadMap}
                   onApplySettings={onApplySettings}
+                  onClose={onClose}
                 />
               )}
 

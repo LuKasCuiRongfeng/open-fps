@@ -253,4 +253,113 @@ export class GpuTextureIO {
     // 清理暂存缓冲区
     stagingBuffer.destroy();
   }
+
+  /**
+   * Batch upload multiple chunks without waiting between each one.
+   * 批量上传多个 chunk，不在每个之间等待
+   *
+   * Much faster than calling uploadChunkHeight() in a loop.
+   * 比循环调用 uploadChunkHeight() 快得多
+   */
+  async uploadChunksBatch(
+    chunks: Array<{ cx: number; cz: number; heightData: Float32Array }>,
+    renderer: WebGPURenderer
+  ): Promise<void> {
+    if (chunks.length === 0) return;
+
+    const tileRes = this.tileResolution;
+    const expectedSize = tileRes * tileRes;
+
+    // Access Three.js backend internals.
+    // 访问 Three.js backend 内部
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const backend = (renderer as any).backend;
+
+    const textureData = backend.get(this.heightTexture);
+    if (!textureData || !textureData.texture) {
+      console.error(`[GpuTextureIO] heightTexture not registered with backend!`);
+      return;
+    }
+
+    const textureGPU: GPUTexture = textureData.texture;
+    const device: GPUDevice = backend.device;
+
+    const bytesPerPixel = 4;
+    const bytesPerRow = Math.ceil((tileRes * bytesPerPixel) / 256) * 256;
+    const bufferSize = bytesPerRow * tileRes;
+    const floatsPerRow = bytesPerRow / 4;
+
+    // Track staging buffers for cleanup.
+    // 跟踪暂存缓冲区以便清理
+    const stagingBuffers: GPUBuffer[] = [];
+
+    // Create a single command encoder for all uploads.
+    // 为所有上传创建单个命令编码器
+    const commandEncoder = device.createCommandEncoder();
+
+    for (const { cx, cz, heightData } of chunks) {
+      if (heightData.length !== expectedSize) {
+        console.warn(`[GpuTextureIO] Invalid height data size for (${cx}, ${cz})`);
+        continue;
+      }
+
+      // Get or allocate tile.
+      // 获取或分配 tile
+      let tileIndex = this.allocator.getTileIndex(cx, cz);
+      if (tileIndex === undefined) {
+        tileIndex = this.allocator.allocate(cx, cz);
+        if (tileIndex < 0) {
+          console.warn(`[GpuTextureIO] Failed to allocate tile for (${cx}, ${cz})`);
+          continue;
+        }
+      }
+
+      const { tileX, tileZ } = this.allocator.tileIndexToCoords(tileIndex);
+      const offsetX = tileX * tileRes;
+      const offsetY = tileZ * tileRes;
+
+      // Prepare padded data.
+      // 准备填充的数据
+      const paddedData = new Float32Array(bufferSize / 4);
+      for (let row = 0; row < tileRes; row++) {
+        for (let col = 0; col < tileRes; col++) {
+          paddedData[row * floatsPerRow + col] = heightData[row * tileRes + col];
+        }
+      }
+
+      // Create staging buffer.
+      // 创建暂存缓冲区
+      const stagingBuffer = device.createBuffer({
+        size: bufferSize,
+        usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.MAP_WRITE,
+        mappedAtCreation: true,
+      });
+      stagingBuffers.push(stagingBuffer);
+
+      new Float32Array(stagingBuffer.getMappedRange()).set(paddedData);
+      stagingBuffer.unmap();
+
+      // Add copy command (no submit yet).
+      // 添加复制命令（暂不提交）
+      commandEncoder.copyBufferToTexture(
+        { buffer: stagingBuffer, bytesPerRow, rowsPerImage: tileRes },
+        { texture: textureGPU, origin: { x: offsetX, y: offsetY, z: 0 } },
+        { width: tileRes, height: tileRes, depthOrArrayLayers: 1 }
+      );
+    }
+
+    // Submit all copies at once.
+    // 一次性提交所有复制
+    device.queue.submit([commandEncoder.finish()]);
+
+    // Wait for GPU once.
+    // 等待 GPU 一次
+    await device.queue.onSubmittedWorkDone();
+
+    // Clean up all staging buffers.
+    // 清理所有暂存缓冲区
+    for (const buf of stagingBuffers) {
+      buf.destroy();
+    }
+  }
 }

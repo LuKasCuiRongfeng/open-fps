@@ -447,6 +447,10 @@ export class ChunkManager {
   async reuploadChunks(chunks: Array<{ cx: number; cz: number }>): Promise<void> {
     if (!this.gpuReady || !this.renderer || chunks.length === 0) return;
 
+    // Collect all chunks with their height data for batch upload.
+    // 收集所有 chunk 及其高度数据以进行批量上传
+    const batchData: Array<{ cx: number; cz: number; heightData: Float32Array }> = [];
+
     for (const { cx, cz } of chunks) {
       const key = this.chunkKey(cx, cz);
       if (!this.chunks.has(key)) continue;
@@ -459,10 +463,12 @@ export class ChunkManager {
         continue;
       }
 
-      // Upload to GPU.
-      // 上传到 GPU
-      await this.heightCompute.uploadChunkHeight(cx, cz, heightData, this.renderer!);
+      batchData.push({ cx, cz, heightData });
     }
+
+    // Batch upload all chunks at once.
+    // 一次性批量上传所有 chunk
+    await this.heightCompute.uploadChunksBatch(batchData, this.renderer!);
 
     // Regenerate normals after uploading.
     // 上传后重新生成法线

@@ -69,6 +69,10 @@ export class TerrainEditor {
     middleButton: "pan",
   };
 
+  // Sticky drag: when true, drag continues even if mouse leaves window.
+  // 粘性拖拽：为 true 时，鼠标离开窗口后拖拽继续
+  private _stickyDrag = false;
+
   // Callbacks.
   // 回调
   private onModeChange?: (mode: EditorMode) => void;
@@ -131,6 +135,14 @@ export class TerrainEditor {
 
   get isCameraControlActive(): boolean {
     return this.orbitCamera.isControlActive;
+  }
+
+  get stickyDrag(): boolean {
+    return this._stickyDrag;
+  }
+
+  setStickyDrag(enabled: boolean): void {
+    this._stickyDrag = enabled;
   }
 
   // --- Mouse Config / 鼠标配置 ---
@@ -260,6 +272,72 @@ export class TerrainEditor {
     } else if (action === "pan") {
       this.orbitCamera.stopPan();
     }
+  }
+
+  /**
+   * Check mouse button state and stop controls if buttons are released.
+   * Used when mouse re-enters the editor area to fix "sticky" controls.
+   * 检查鼠标按钮状态，如果按钮已释放则停止控制。
+   * 当鼠标重新进入编辑区域时使用，修复"粘性"控制问题。
+   */
+  checkAndResetControls(buttons: number): void {
+    if (this._stickyDrag) return; // Feature is enabled, don't reset. / 功能已启用，不重置
+
+    // buttons is a bitmask: 1=left, 2=right, 4=middle
+    // buttons 是位掩码：1=左键, 2=右键, 4=中键
+    const leftPressed = (buttons & 1) !== 0;
+    const rightPressed = (buttons & 2) !== 0;
+    const middlePressed = (buttons & 4) !== 0;
+
+    // Check orbit control (usually right button).
+    // 检查轨道控制（通常是右键）
+    if (this.orbitCamera.orbitActive) {
+      const orbitButton = this.getButtonForAction("orbit");
+      const shouldBeActive =
+        (orbitButton === 0 && leftPressed) ||
+        (orbitButton === 1 && middlePressed) ||
+        (orbitButton === 2 && rightPressed);
+      if (!shouldBeActive) {
+        this.orbitCamera.stopOrbit();
+      }
+    }
+
+    // Check pan control (usually middle button).
+    // 检查平移控制（通常是中键）
+    if (this.orbitCamera.panActive) {
+      const panButton = this.getButtonForAction("pan");
+      const shouldBeActive =
+        (panButton === 0 && leftPressed) ||
+        (panButton === 1 && middlePressed) ||
+        (panButton === 2 && rightPressed);
+      if (!shouldBeActive) {
+        this.orbitCamera.stopPan();
+      }
+    }
+
+    // Check brush (usually left button).
+    // 检查画刷（通常是左键）
+    if (this._brush.active) {
+      const brushButton = this.getButtonForAction("brush");
+      const shouldBeActive =
+        (brushButton === 0 && leftPressed) ||
+        (brushButton === 1 && middlePressed) ||
+        (brushButton === 2 && rightPressed);
+      if (!shouldBeActive) {
+        this._brush.end();
+      }
+    }
+  }
+
+  /**
+   * Get which button is assigned to an action.
+   * 获取分配给某个动作的按钮
+   */
+  private getButtonForAction(action: EditorMouseAction): number {
+    if (this._mouseConfig.leftButton === action) return 0;
+    if (this._mouseConfig.middleButton === action) return 1;
+    if (this._mouseConfig.rightButton === action) return 2;
+    return -1;
   }
 
   updateCameraControl(mouseX: number, mouseY: number): void {

@@ -33,6 +33,7 @@ type MapEditorTabProps = {
   onProjectPathChange?: (path: string | null) => void;
   onLoadMap?: (mapData: MapData) => void;
   onApplySettings?: (settings: GameSettings) => void;
+  onClose?: () => void;
 };
 
 export function MapEditorTab({
@@ -45,6 +46,7 @@ export function MapEditorTab({
   onProjectPathChange,
   onLoadMap,
   onApplySettings,
+  onClose,
 }: MapEditorTabProps) {
   const [editableMapName, setEditableMapName] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
@@ -57,6 +59,10 @@ export function MapEditorTab({
     rightButton: terrainEditor?.mouseConfig.rightButton ?? "orbit",
     middleButton: terrainEditor?.mouseConfig.middleButton ?? "pan",
   }));
+
+  // Sticky drag state.
+  // 粘性拖拽状态
+  const [stickyDrag, setStickyDrag] = useState(() => terrainEditor?.stickyDrag ?? false);
 
   const canEdit = terrainMode === "editable";
   const dirty = terrainEditor?.dirty ?? false;
@@ -71,6 +77,7 @@ export function MapEditorTab({
         rightButton: terrainEditor.mouseConfig.rightButton,
         middleButton: terrainEditor.mouseConfig.middleButton,
       });
+      setStickyDrag(terrainEditor.stickyDrag);
     }
   }, [terrainEditor]);
 
@@ -81,6 +88,13 @@ export function MapEditorTab({
   ) => {
     setMouseConfig((prev) => ({ ...prev, [button]: action }));
     terrainEditor?.setMouseConfig({ [button]: action });
+  };
+
+  // Handle sticky drag toggle.
+  // 处理粘性拖拽开关
+  const handleStickyDragChange = (enabled: boolean) => {
+    setStickyDrag(enabled);
+    terrainEditor?.setStickyDrag(enabled);
   };
 
   // Sync editable map name from project path.
@@ -110,6 +124,12 @@ export function MapEditorTab({
     terrainEditor?.toggleMode();
     const newMode = terrainEditor?.mode ?? "play";
     onEditorModeChange(newMode);
+
+    // Close settings panel when entering edit mode.
+    // 进入编辑模式时关闭设置面板
+    if (newMode === "edit") {
+      onClose?.();
+    }
   };
 
   // Handle save (to current project or save as new project).
@@ -433,6 +453,28 @@ export function MapEditorTab({
         </div>
         <div className="mt-2 text-xs text-white/50">
           Scroll: Zoom camera • Shift+Scroll: Brush radius
+        </div>
+
+        {/* Sticky drag toggle */}
+        <div className="mt-3 flex items-center justify-between">
+          <div>
+            <div className="text-sm text-white/80">Sticky Drag</div>
+            <div className="text-xs text-white/50">
+              Continue dragging when mouse leaves window
+            </div>
+          </div>
+          <button
+            onClick={() => handleStickyDragChange(!stickyDrag)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              stickyDrag ? "bg-blue-600" : "bg-gray-700"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
+                stickyDrag ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
         </div>
       </div>
 

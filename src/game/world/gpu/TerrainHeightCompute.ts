@@ -208,6 +208,21 @@ export class TerrainHeightCompute {
     await this.textureIO.uploadChunkHeight(cx, cz, heightData, renderer);
   }
 
+  /**
+   * Batch upload multiple chunks efficiently.
+   * 高效批量上传多个 chunk
+   */
+  async uploadChunksBatch(
+    chunks: Array<{ cx: number; cz: number; heightData: Float32Array }>,
+    renderer: WebGPURenderer
+  ): Promise<void> {
+    if (!this.textureIO) {
+      console.error(`[TerrainHeightCompute] textureIO not initialized`);
+      return;
+    }
+    await this.textureIO.uploadChunksBatch(chunks, renderer);
+  }
+
   dispose(): void {
     this.heightTexture = null;
     this.computeNode = null;

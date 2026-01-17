@@ -37,6 +37,7 @@ export default function GameView() {
     { id: "creating-renderer", label: "Creating renderer" },
     { id: "creating-world", label: "Creating world" },
     { id: "creating-ecs", label: "Creating ECS" },
+    { id: "loading-map", label: "Loading map data" },
     { id: "ready", label: "Ready" },
   ];
 
@@ -112,9 +113,13 @@ export default function GameView() {
             // If user opened a project with map data, load it.
             // 如果用户打开了带有地图数据的项目，则加载它
             if (pendingMapData) {
+              setBootPhase("loading-map");
               await app.loadMapData(pendingMapData);
             }
 
+            // All loading complete, show ready and enter game.
+            // 所有加载完成，显示 ready 并进入游戏
+            setBootPhase("ready");
             setSettings(app.getSettingsSnapshot());
             setTerrainEditor(app.getTerrainEditor());
             setLoading(false);
@@ -179,24 +184,6 @@ export default function GameView() {
 
   // Editor mouse handlers.
   // 编辑器鼠标处理器
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const app = appRef.current;
-    if (!app || !terrainEditor || terrainEditor.mode !== "edit") return;
-
-    // Update camera control (orbit/pan with right/middle drag).
-    // 更新相机控制（右键/中键拖拽进行轨道旋转/平移）
-    terrainEditor.updateCameraControl(e.clientX, e.clientY);
-
-    // Update brush target position (only if not camera controlling).
-    // 更新画刷目标位置（仅在不控制相机时）
-    if (!terrainEditor.isCameraControlActive) {
-      const rect = hostRef.current?.getBoundingClientRect();
-      if (rect) {
-        app.updateEditorBrushTarget(e.clientX - rect.left, e.clientY - rect.top);
-      }
-    }
-  };
-
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!terrainEditor || terrainEditor.mode !== "edit") return;
 
@@ -224,6 +211,53 @@ export default function GameView() {
       terrainEditor.endCameraControl(e.button);
     }
   };
+
+  // Global mousemove listener: allows drag to continue when mouse is over UI or outside window.
+  // 全局 mousemove 监听器：允许鼠标在 UI 上或窗口外时继续拖拽
+  useEffect(() => {
+    if (!terrainEditor || editorMode !== "edit") return;
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      const app = appRef.current;
+      if (!app) return;
+
+      // Update camera control (orbit/pan).
+      // 更新相机控制（轨道旋转/平移）
+      terrainEditor.updateCameraControl(e.clientX, e.clientY);
+
+      // Update brush target position (only if not camera controlling).
+      // 更新画刷目标位置（仅在不控制相机时）
+      if (!terrainEditor.isCameraControlActive) {
+        const rect = hostRef.current?.getBoundingClientRect();
+        if (rect) {
+          app.updateEditorBrushTarget(e.clientX - rect.left, e.clientY - rect.top);
+        }
+      }
+    };
+
+    window.addEventListener("mousemove", handleGlobalMouseMove);
+    return () => window.removeEventListener("mousemove", handleGlobalMouseMove);
+  }, [terrainEditor, editorMode]);
+
+  // Global mouseup listener: ensures drag ends when mouse released outside editor area.
+  // Only active when stickyDrag is OFF.
+  // 全局 mouseup 监听器：确保鼠标在编辑区域外释放时结束拖拽
+  // 仅在 stickyDrag 关闭时激活
+  useEffect(() => {
+    if (!terrainEditor || editorMode !== "edit" || terrainEditor.stickyDrag) return;
+
+    const handleGlobalMouseUp = (e: MouseEvent) => {
+      const action = terrainEditor.getActionForButton(e.button);
+      if (action === "brush") {
+        terrainEditor.endBrush();
+      } else if (action === "orbit" || action === "pan") {
+        terrainEditor.endCameraControl(e.button);
+      }
+    };
+
+    window.addEventListener("mouseup", handleGlobalMouseUp);
+    return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+  }, [terrainEditor, editorMode, terrainEditor?.stickyDrag]);
 
   // Handle scroll wheel: camera zoom with Shift, brush radius without.
   // 处理滚轮：Shift+滚轮缩放相机，无Shift调整画刷半径
@@ -271,10 +305,8 @@ export default function GameView() {
         <div
           ref={editorOverlayRef}
           className="absolute inset-0 cursor-crosshair"
-          onMouseMove={handleMouseMove}
           onMouseDown={handleMouseDown}
           onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
         />
       )}
 

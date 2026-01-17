@@ -20,6 +20,8 @@ pub fn run() {
             save_project_map,
             save_project_settings,
             list_recent_projects,
+            add_recent_project,
+            remove_recent_project,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

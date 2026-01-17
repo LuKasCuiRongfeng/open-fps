@@ -43,6 +43,7 @@ export type GameBootPhase =
   | "creating-renderer"
   | "creating-world"
   | "creating-ecs"
+  | "loading-map"
   | "ready";
 
 /**

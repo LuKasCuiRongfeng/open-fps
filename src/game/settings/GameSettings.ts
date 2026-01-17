@@ -52,6 +52,8 @@ export type GameSettings = {
   };
   editor: {
     mouseConfig: EditorMouseConfig;
+    /** When true, drag operations continue even if mouse leaves window. / 为 true 时，拖拽操作在鼠标离开窗口后继续 */
+    stickyDrag: boolean;
   };
 };
 
@@ -95,6 +97,7 @@ export function createDefaultGameSettings(): GameSettings {
         rightButton: "orbit",
         middleButton: "pan",
       },
+      stickyDrag: false,
     },
   };
 }

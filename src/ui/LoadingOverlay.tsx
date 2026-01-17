@@ -27,7 +27,7 @@ export default function LoadingOverlay({ steps, activeStepId, visible }: Loading
   const progress = (activeIndex + 1) / Math.max(1, steps.length);
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-zinc-950">
+    <div className="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950">
       <div className="flex w-80 flex-col items-center gap-6">
         {/* Title / 标题 */}
         <h1 className="text-lg font-medium tracking-tight text-zinc-50">

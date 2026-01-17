@@ -133,6 +133,16 @@ export async function loadProject(projectPath: string): Promise<{
   const settings = mergeSettingsWithDefaults(settingsJson);
 
   currentProjectPath = projectPath;
+
+  // Add to recent projects list.
+  // 添加到最近项目列表
+  try {
+    await invoke("add_recent_project", { projectPath });
+  } catch {
+    // Ignore errors adding to recent.
+    // 忽略添加到最近的错误
+  }
+
   return { metadata, map, settings };
 }
 
@@ -301,4 +311,20 @@ export function hasOpenProject(): boolean {
  */
 export async function listRecentProjects(): Promise<string[]> {
   return invoke<string[]>("list_recent_projects");
+}
+
+/**
+ * Add a project to the recent projects list.
+ * 将项目添加到最近项目列表
+ */
+export async function addRecentProject(projectPath: string): Promise<void> {
+  return invoke("add_recent_project", { projectPath });
+}
+
+/**
+ * Remove a project from the recent projects list.
+ * 从最近项目列表中移除项目
+ */
+export async function removeRecentProject(projectPath: string): Promise<void> {
+  return invoke("remove_recent_project", { projectPath });
 }
