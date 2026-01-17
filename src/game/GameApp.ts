@@ -442,9 +442,10 @@ export class GameApp {
 
     // Apply render settings immediately.
     // 立即应用渲染设置
-    this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio, this.settings.render.maxPixelRatio),
-    );
+    const effectivePixelRatio =
+      Math.min(window.devicePixelRatio, this.settings.render.maxPixelRatio) *
+      this.settings.render.renderScale;
+    this.renderer.setPixelRatio(effectivePixelRatio);
 
     // Apply camera settings immediately.
     // 立即应用相机设置
@@ -473,9 +474,10 @@ export class GameApp {
 
     // Apply render settings immediately.
     // 立即应用渲染设置
-    this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio, this.settings.render.maxPixelRatio),
-    );
+    const effectivePixelRatio =
+      Math.min(window.devicePixelRatio, this.settings.render.maxPixelRatio) *
+      this.settings.render.renderScale;
+    this.renderer.setPixelRatio(effectivePixelRatio);
 
     // Apply camera settings immediately.
     // 立即应用相机设置
@@ -498,9 +500,10 @@ export class GameApp {
 
     // Apply render settings immediately.
     // 立即应用渲染设置
-    this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio, this.settings.render.maxPixelRatio),
-    );
+    const effectivePixelRatio =
+      Math.min(window.devicePixelRatio, this.settings.render.maxPixelRatio) *
+      this.settings.render.renderScale;
+    this.renderer.setPixelRatio(effectivePixelRatio);
 
     // Apply camera settings immediately.
     // 立即应用相机设置

@@ -59,7 +59,11 @@
   - **Never import from bare `three`** / **禁止从 `three` 直接导入**
   - **Never define custom types** for TSL nodes (use three's exports) / **禁止自定义** TSL 节点类型
 - **React Compiler enabled** — **do NOT use** `useMemo`, `useCallback`, `React.memo` / **已启用 React Compiler**——**禁止使用** `useMemo`、`useCallback`、`React.memo`
-- Only **code comments** need bilingual text / 只有**代码注释**需要中英双语
+
+### ⚠️ Language Rule / 语言规则
+- **ONLY code comments** use bilingual (English + Chinese) / **仅代码注释**使用中英双语
+- **ALL other text** (UI strings, dialog messages, error messages, logs) **MUST be English ONLY** / **所有其他文本**（UI 字符串、对话框消息、错误消息、日志）**必须只用英文**
+- This file (copilot-instructions.md) and README.md are exceptions / 本文件和 README.md 例外
 
 ## Code Cleanliness / 代码整洁
 - **Delete** dead code, unused imports, redundant logic / **删除**无用代码、未使用的导入、冗余逻辑

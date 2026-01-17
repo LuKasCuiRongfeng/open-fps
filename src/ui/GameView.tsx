@@ -3,7 +3,11 @@ import { GameApp, type GameBootPhase } from "../game/GameApp";
 import type { GameSettings, GameSettingsPatch } from "../game/settings/GameSettings";
 import type { TerrainEditor } from "../game/editor";
 import type { MapData } from "../game/editor/MapData";
-import { setCurrentProjectPath } from "../game/editor/ProjectStorage";
+import {
+  setCurrentProjectPath,
+  saveProjectMap,
+  hasOpenProject,
+} from "../game/editor/ProjectStorage";
 import FpsCounter from "./FpsCounter";
 import LoadingOverlay, { type LoadingStep } from "./LoadingOverlay";
 import SettingsPanel from "./SettingsPanel";
@@ -142,6 +146,87 @@ export default function GameView() {
       appRef.current = null;
     };
   }, [showProjectScreen, pendingMapData, pendingSettings]);
+
+  // Window close confirmation: check for unsaved changes before closing.
+  // 窗口关闭确认：关闭前检查未保存的更改
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+
+    const setupCloseHandler = async () => {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const win = getCurrentWindow();
+
+      unlisten = await win.onCloseRequested(async (event) => {
+        // Only check for unsaved changes if a project is open.
+        // 只有在打开项目时才检查未保存的更改
+        if (!hasOpenProject()) {
+          // No project open (procedural mode), allow close without prompt.
+          // 未打开项目（程序生成模式），直接关闭无需提示
+          return;
+        }
+
+        // Check if there are unsaved changes.
+        // 检查是否有未保存的更改
+        const editor = appRef.current?.getTerrainEditor();
+        if (!editor?.dirty) {
+          // No unsaved changes, allow close.
+          // 没有未保存的更改，允许关闭
+          return;
+        }
+
+        // Prevent window from closing immediately.
+        // 阻止窗口立即关闭
+        event.preventDefault();
+
+        // Show save confirmation dialog.
+        // 显示保存确认对话框
+        const { ask } = await import("@tauri-apps/plugin-dialog");
+        const shouldSave = await ask(
+          "You have unsaved changes. Do you want to save before exiting?",
+          {
+            title: "Unsaved Changes",
+            kind: "warning",
+            okLabel: "Save & Exit",
+            cancelLabel: "Exit without Saving",
+          }
+        );
+
+        if (shouldSave) {
+          // Save to current project (no rename).
+          // 保存到当前项目（不重命名）
+          try {
+            const app = appRef.current;
+            if (app) {
+              const mapData = app.exportCurrentMapData();
+              const settings = app.getSettingsSnapshot();
+              await saveProjectMap(mapData, settings);
+            }
+          } catch (e) {
+            // Save failed, show error and abort close.
+            // 保存失败，显示错误并取消关闭
+            const { message } = await import("@tauri-apps/plugin-dialog");
+            await message(
+              `Save failed: ${e}\n\nPlease try again or use Save As to save to a different location.`,
+              { title: "Save Error", kind: "error" }
+            );
+            // Don't close the window, let user retry.
+            // 不关闭窗口，让用户重试
+            return;
+          }
+        }
+
+        // Close the window.
+        // 关闭窗口
+        await win.destroy();
+      });
+    };
+
+    setupCloseHandler();
+
+    return () => {
+      unlisten?.();
+    };
+  }, []);
 
   useEffect(() => {
     if (!settingsOpen) return;

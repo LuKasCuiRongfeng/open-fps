@@ -46,6 +46,8 @@ export type GameSettings = {
   };
   render: {
     maxPixelRatio: number;
+    /** Render scale (0.5-1.0). Lower = better performance, worse quality. / 渲染缩放 (0.5-1.0)。越低性能越好，画质越差 */
+    renderScale: number;
   };
   fog: {
     density: number;
@@ -87,6 +89,7 @@ export function createDefaultGameSettings(): GameSettings {
     },
     render: {
       maxPixelRatio: renderConfig.maxPixelRatio,
+      renderScale: 1.0,
     },
     fog: {
       density: visualsConfig.fog.densityPerMeter,

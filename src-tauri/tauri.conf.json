@@ -14,7 +14,8 @@
       {
         "title": "open-fps",
         "width": 1200,
-        "height": 800
+        "height": 800,
+        "closable": true
       }
     ],
     "security": {
