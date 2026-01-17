@@ -4,7 +4,7 @@
 // Mode switching, file operations moved to SettingsPanel.
 // 模式切换、文件操作已移至 SettingsPanel
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import type { TerrainEditor, BrushType } from "../game/editor";
 
 interface Props {
@@ -38,31 +38,31 @@ export function TerrainEditorPanel({ editor }: Props) {
 
   // Brush type change.
   // 画刷类型更改
-  const handleBrushTypeChange = useCallback((type: BrushType) => {
+  const handleBrushTypeChange = (type: BrushType) => {
     setBrushType(type);
     editor?.setBrushType(type);
-  }, [editor]);
+  };
 
   // Brush radius change.
   // 画刷半径更改
-  const handleRadiusChange = useCallback((value: number) => {
+  const handleRadiusChange = (value: number) => {
     setBrushRadius(value);
     editor?.setBrushRadius(value);
-  }, [editor]);
+  };
 
   // Brush strength change.
   // 画刷强度更改
-  const handleStrengthChange = useCallback((value: number) => {
+  const handleStrengthChange = (value: number) => {
     setBrushStrength(value);
     editor?.setBrushStrength(value);
-  }, [editor]);
+  };
 
   // Brush falloff change.
   // 画刷衰减更改
-  const handleFalloffChange = useCallback((value: number) => {
+  const handleFalloffChange = (value: number) => {
     setBrushFalloff(value);
     editor?.setBrushFalloff(value);
-  }, [editor]);
+  };
 
   if (!editor) return null;
 

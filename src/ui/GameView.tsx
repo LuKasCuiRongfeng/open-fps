@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GameApp, type GameBootPhase } from "../game/GameApp";
 import type { GameSettings, GameSettingsPatch } from "../game/settings/GameSettings";
 import type { TerrainEditor } from "../game/editor";
@@ -42,7 +42,7 @@ export default function GameView() {
 
   // Handle project open decision.
   // 处理项目打开决定
-  const handleProjectComplete = useCallback((
+  const handleProjectComplete = (
     mapData: MapData | null, 
     projectPath: string | null,
     projectSettings: GameSettings | null
@@ -52,31 +52,31 @@ export default function GameView() {
     setTerrainMode(projectPath ? "editable" : "procedural");
     setProjectPath(projectPath);
     setShowProjectScreen(false);
-  }, []);
+  };
 
   // Handle project path change (when saving procedural terrain as new project).
   // 处理项目路径变化（当保存程序地形为新项目时）
-  const handleProjectPathChange = useCallback((path: string | null) => {
+  const handleProjectPathChange = (path: string | null) => {
     setProjectPath(path);
     setCurrentProjectPath(path);
     if (path) {
       setTerrainMode("editable");
     }
-  }, []);
+  };
 
   // Handle loading a map from settings panel (Open Project in settings).
   // 处理从设置面板加载地图（设置中的打开项目）
-  const handleLoadMap = useCallback((_mapData: MapData) => {
+  const handleLoadMap = (_mapData: MapData) => {
     setTerrainMode("editable");
     // Map is already loaded by GameApp in MapEditorTab.handleOpenProject.
     // 地图已由 MapEditorTab.handleOpenProject 中的 GameApp 加载
-  }, []);
+  };
 
   // Handle applying settings from loaded project.
   // 处理应用加载项目的设置
-  const handleApplySettings = useCallback((newSettings: GameSettings) => {
+  const handleApplySettings = (newSettings: GameSettings) => {
     setSettings(newSettings);
-  }, []);
+  };
 
   useEffect(() => {
     // Don't start game until project decision is made.
@@ -179,7 +179,7 @@ export default function GameView() {
 
   // Editor mouse handlers.
   // 编辑器鼠标处理器
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+  const handleMouseMove = (e: React.MouseEvent) => {
     const app = appRef.current;
     if (!app || !terrainEditor || terrainEditor.mode !== "edit") return;
 
@@ -195,9 +195,9 @@ export default function GameView() {
         app.updateEditorBrushTarget(e.clientX - rect.left, e.clientY - rect.top);
       }
     }
-  }, [terrainEditor]);
+  };
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleMouseDown = (e: React.MouseEvent) => {
     if (!terrainEditor || terrainEditor.mode !== "edit") return;
 
     e.preventDefault();
@@ -212,9 +212,9 @@ export default function GameView() {
       // 相机控制操作
       terrainEditor.startCameraControl(e.button, e.clientX, e.clientY);
     }
-  }, [terrainEditor]);
+  };
 
-  const handleMouseUp = useCallback((e: React.MouseEvent) => {
+  const handleMouseUp = (e: React.MouseEvent) => {
     if (!terrainEditor) return;
 
     const action = terrainEditor.getActionForButton(e.button);
@@ -223,11 +223,11 @@ export default function GameView() {
     } else if (action === "orbit" || action === "pan") {
       terrainEditor.endCameraControl(e.button);
     }
-  }, [terrainEditor]);
+  };
 
   // Handle scroll wheel: camera zoom with Shift, brush radius without.
   // 处理滚轮：Shift+滚轮缩放相机，无Shift调整画刷半径
-  const handleWheel = useCallback((e: WheelEvent) => {
+  const handleWheel = (e: WheelEvent) => {
     if (!terrainEditor || terrainEditor.mode !== "edit") return;
 
     e.preventDefault();
@@ -243,7 +243,7 @@ export default function GameView() {
       // 滚轮：缩放相机
       terrainEditor.zoomCamera(e.deltaY);
     }
-  }, [terrainEditor]);
+  };
 
   // Ref for editor overlay to attach non-passive wheel listener.
   // 编辑器覆盖层 ref，用于附加非被动滚轮监听器

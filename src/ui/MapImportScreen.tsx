@@ -1,7 +1,7 @@
 // ProjectScreen: Pre-game screen to open project or skip to procedural terrain.
 // ProjectScreen：游戏前打开项目或跳过到程序生成地形的界面
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { 
   openProjectDialog, 
   loadProject,
@@ -32,7 +32,7 @@ export function MapImportScreen({ onComplete }: Props) {
 
   // Handle open project via folder dialog.
   // 通过文件夹对话框处理打开项目
-  const handleOpenProject = useCallback(async () => {
+  const handleOpenProject = async () => {
     setLoading(true);
     setError(null);
 
@@ -50,14 +50,14 @@ export function MapImportScreen({ onComplete }: Props) {
       setError(`Failed to open project: ${e}`);
       setLoading(false);
     }
-  }, [onComplete]);
+  };
 
   // Skip, use procedural terrain (no project).
   // 跳过，使用程序生成的地形（无项目）
-  const handleSkip = useCallback(() => {
+  const handleSkip = () => {
     setCurrentProjectPath(null);
     onComplete(null, null, null);
-  }, [onComplete]);
+  };
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-linear-to-b from-slate-900 to-slate-800">

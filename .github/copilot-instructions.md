@@ -58,6 +58,7 @@
   - Classes and types → `three/webgpu` / 类和类型
   - **Never import from bare `three`** / **禁止从 `three` 直接导入**
   - **Never define custom types** for TSL nodes (use three's exports) / **禁止自定义** TSL 节点类型
+- **React Compiler enabled** — **do NOT use** `useMemo`, `useCallback`, `React.memo` / **已启用 React Compiler**——**禁止使用** `useMemo`、`useCallback`、`React.memo`
 - Only **code comments** need bilingual text / 只有**代码注释**需要中英双语
 
 ## Code Cleanliness / 代码整洁

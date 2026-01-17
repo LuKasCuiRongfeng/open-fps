@@ -1,7 +1,7 @@
 // MapEditorTab: map editor settings tab.
 // MapEditorTab：地图编辑器设置标签
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import type { GameApp } from "../../../game/GameApp";
 import type { 
   TerrainEditor, 
@@ -76,13 +76,12 @@ export function MapEditorTab({
 
   // Handle mouse config change.
   // 处理鼠标配置变化
-  const handleMouseConfigChange = useCallback(
-    (button: keyof EditorMouseConfig, action: EditorMouseAction) => {
-      setMouseConfig((prev) => ({ ...prev, [button]: action }));
-      terrainEditor?.setMouseConfig({ [button]: action });
-    },
-    [terrainEditor]
-  );
+  const handleMouseConfigChange = (
+    button: keyof EditorMouseConfig, action: EditorMouseAction
+  ) => {
+    setMouseConfig((prev) => ({ ...prev, [button]: action }));
+    terrainEditor?.setMouseConfig({ [button]: action });
+  };
 
   // Sync editable map name from project path.
   // 从项目路径同步可编辑的地图名称
@@ -96,17 +95,14 @@ export function MapEditorTab({
 
   // Update map name in editor.
   // 更新编辑器中的地图名称
-  const handleMapNameChange = useCallback(
-    (name: string) => {
-      setEditableMapName(name);
-      terrainEditor?.setMapName(name);
-    },
-    [terrainEditor]
-  );
+  const handleMapNameChange = (name: string) => {
+    setEditableMapName(name);
+    terrainEditor?.setMapName(name);
+  };
 
   // Toggle edit mode.
   // 切换编辑模式
-  const handleToggleMode = useCallback(() => {
+  const handleToggleMode = () => {
     if (!canEdit && editorMode === "play") {
       setStatusMessage("Cannot edit: open a project first");
       return;
@@ -114,11 +110,11 @@ export function MapEditorTab({
     terrainEditor?.toggleMode();
     const newMode = terrainEditor?.mode ?? "play";
     onEditorModeChange(newMode);
-  }, [terrainEditor, canEdit, editorMode, onEditorModeChange]);
+  };
 
   // Handle save (to current project or save as new project).
   // 保存（到当前项目或另存为新项目）
-  const handleSave = useCallback(async (): Promise<boolean> => {
+  const handleSave = async (): Promise<boolean> => {
     if (!gameApp) return false;
 
     setProcessing(true);
@@ -158,11 +154,11 @@ export function MapEditorTab({
     } finally {
       setProcessing(false);
     }
-  }, [gameApp, editableMapName, hasProject, terrainEditor, onProjectPathChange]);
+  };
 
   // Handle save as (always prompts for new location).
   // 另存为（总是提示选择新位置）
-  const handleSaveAs = useCallback(async () => {
+  const handleSaveAs = async () => {
     if (!gameApp) return;
 
     // Check for unsaved changes first.
@@ -200,11 +196,11 @@ export function MapEditorTab({
     } finally {
       setProcessing(false);
     }
-  }, [gameApp, editableMapName, dirty, hasProject, handleSave, terrainEditor, onProjectPathChange]);
+  };
 
   // Handle reset (discard edits).
   // 重置（丢弃编辑）
-  const handleResetMap = useCallback(async () => {
+  const handleResetMap = async () => {
     if (!gameApp) return;
 
     const { ask } = await import("@tauri-apps/plugin-dialog");
@@ -227,11 +223,11 @@ export function MapEditorTab({
     } finally {
       setProcessing(false);
     }
-  }, [gameApp]);
+  };
 
   // Handle open project.
   // 打开项目
-  const handleOpenProject = useCallback(async () => {
+  const handleOpenProject = async () => {
     if (!gameApp) return;
 
     // Check for unsaved changes first.
@@ -287,7 +283,7 @@ export function MapEditorTab({
     } finally {
       setProcessing(false);
     }
-  }, [gameApp, dirty, handleSave, terrainEditor, onProjectPathChange, onLoadMap, onApplySettings]);
+  };
 
   return (
     <div className="space-y-5">
