@@ -3,6 +3,18 @@ import { playerConfig } from "../../config/player";
 import { renderConfig } from "../../config/render";
 import { visualsConfig } from "../../config/visuals";
 
+// Editor mouse action type.
+// 编辑器鼠标动作类型
+export type EditorMouseAction = "brush" | "orbit" | "pan";
+
+// Editor mouse button configuration.
+// 编辑器鼠标按钮配置
+export type EditorMouseConfig = {
+  leftButton: EditorMouseAction;
+  rightButton: EditorMouseAction;
+  middleButton: EditorMouseAction;
+};
+
 export type GameSettings = {
   player: {
     mouseSensitivity: number;
@@ -32,6 +44,9 @@ export type GameSettings = {
   };
   fog: {
     density: number;
+  };
+  editor: {
+    mouseConfig: EditorMouseConfig;
   };
 };
 
@@ -64,6 +79,9 @@ export type GameSettingsPatch = {
   };
   fog?: {
     density?: number;
+  };
+  editor?: {
+    mouseConfig?: Partial<EditorMouseConfig>;
   };
 };
 
@@ -98,74 +116,79 @@ export function createDefaultGameSettings(): GameSettings {
     fog: {
       density: visualsConfig.fog.densityPerMeter,
     },
+    editor: {
+      mouseConfig: {
+        leftButton: "brush",
+        rightButton: "orbit",
+        middleButton: "pan",
+      },
+    },
   };
 }
 
-export function applySettingsPatch(settings: GameSettings, patch: GameSettingsPatch) {
-  // Shallow merge with nested known sections.
-  // 浅合并 + 针对嵌套部分做最小合并
-  if (patch.player) {
-    settings.player.mouseSensitivity = patch.player.mouseSensitivity ?? settings.player.mouseSensitivity;
-    settings.player.moveSpeed = patch.player.moveSpeed ?? settings.player.moveSpeed;
-    settings.player.sprintBonus = patch.player.sprintBonus ?? settings.player.sprintBonus;
-    settings.player.jumpVelocity = patch.player.jumpVelocity ?? settings.player.jumpVelocity;
-    settings.player.gravity = patch.player.gravity ?? settings.player.gravity;
-    settings.player.maxFallSpeed = patch.player.maxFallSpeed ?? settings.player.maxFallSpeed;
+// --- Utility functions / 工具函数 ---
 
-    if (patch.player.thirdPerson) {
-      const tp = patch.player.thirdPerson;
-      if (tp.chase) {
-        settings.player.thirdPerson.chase.followDistance =
-          tp.chase.followDistance ?? settings.player.thirdPerson.chase.followDistance;
-        settings.player.thirdPerson.chase.heightOffset =
-          tp.chase.heightOffset ?? settings.player.thirdPerson.chase.heightOffset;
-      }
-      if (tp.overShoulder) {
-        settings.player.thirdPerson.overShoulder.followDistance =
-          tp.overShoulder.followDistance ?? settings.player.thirdPerson.overShoulder.followDistance;
-        settings.player.thirdPerson.overShoulder.heightOffset =
-          tp.overShoulder.heightOffset ?? settings.player.thirdPerson.overShoulder.heightOffset;
-        settings.player.thirdPerson.overShoulder.shoulderOffset =
-          tp.overShoulder.shoulderOffset ?? settings.player.thirdPerson.overShoulder.shoulderOffset;
-      }
-      settings.player.thirdPerson.followLerpPerSecond =
-        tp.followLerpPerSecond ?? settings.player.thirdPerson.followLerpPerSecond;
+/**
+ * Deep merge source into target (mutates target).
+ * 深度合并 source 到 target（修改 target）
+ */
+function deepMerge<T extends object>(target: T, source: object): T {
+  for (const key in source) {
+    const sourceVal = (source as Record<string, unknown>)[key];
+    if (sourceVal === undefined || sourceVal === null) continue;
+    
+    const targetVal = (target as Record<string, unknown>)[key];
+    if (
+      typeof sourceVal === "object" && !Array.isArray(sourceVal) &&
+      typeof targetVal === "object" && targetVal !== null && !Array.isArray(targetVal)
+    ) {
+      deepMerge(targetVal as object, sourceVal as object);
+    } else {
+      (target as Record<string, unknown>)[key] = sourceVal;
     }
   }
-
-  if (patch.camera) {
-    settings.camera.fovDegrees = patch.camera.fovDegrees ?? settings.camera.fovDegrees;
-  }
-
-  if (patch.render) {
-    settings.render.maxPixelRatio = patch.render.maxPixelRatio ?? settings.render.maxPixelRatio;
-  }
-
-  if (patch.fog) {
-    settings.fog.density = patch.fog.density ?? settings.fog.density;
-  }
+  return target;
 }
 
+/**
+ * Apply a partial settings patch to existing settings (mutates settings).
+ * 应用部分设置补丁到现有设置（修改 settings）
+ */
+export function applySettingsPatch(settings: GameSettings, patch: GameSettingsPatch): void {
+  deepMerge(settings, patch);
+}
+
+/**
+ * Clone settings (deep copy).
+ * 克隆设置（深拷贝）
+ */
 export function cloneSettings(settings: GameSettings): GameSettings {
   return structuredClone(settings);
 }
 
-export function setSettings(settings: GameSettings, next: GameSettings) {
-  settings.player.mouseSensitivity = next.player.mouseSensitivity;
-  settings.player.moveSpeed = next.player.moveSpeed;
-  settings.player.sprintBonus = next.player.sprintBonus;
-  settings.player.jumpVelocity = next.player.jumpVelocity;
-  settings.player.gravity = next.player.gravity;
-  settings.player.maxFallSpeed = next.player.maxFallSpeed;
+/**
+ * Replace all settings values (mutates target).
+ * 替换所有设置值（修改 target）
+ */
+export function setSettings(target: GameSettings, source: GameSettings): void {
+  deepMerge(target, source);
+}
 
-  settings.player.thirdPerson.chase.followDistance = next.player.thirdPerson.chase.followDistance;
-  settings.player.thirdPerson.chase.heightOffset = next.player.thirdPerson.chase.heightOffset;
-  settings.player.thirdPerson.overShoulder.followDistance = next.player.thirdPerson.overShoulder.followDistance;
-  settings.player.thirdPerson.overShoulder.heightOffset = next.player.thirdPerson.overShoulder.heightOffset;
-  settings.player.thirdPerson.overShoulder.shoulderOffset = next.player.thirdPerson.overShoulder.shoulderOffset;
-  settings.player.thirdPerson.followLerpPerSecond = next.player.thirdPerson.followLerpPerSecond;
-
-  settings.camera.fovDegrees = next.camera.fovDegrees;
-  settings.render.maxPixelRatio = next.render.maxPixelRatio;
-  settings.fog.density = next.fog.density;
+/**
+ * Merge partial settings JSON with defaults.
+ * 将部分设置 JSON 与默认设置合并
+ *
+ * @param json Settings JSON string (may be partial or malformed).
+ * @returns Complete GameSettings with defaults for missing fields.
+ */
+export function mergeSettingsWithDefaults(json: string | null): GameSettings {
+  const defaults = createDefaultGameSettings();
+  if (!json) return defaults;
+  
+  try {
+    const parsed = JSON.parse(json) as Partial<GameSettings>;
+    return deepMerge(defaults, parsed);
+  } catch {
+    return defaults;
+  }
 }

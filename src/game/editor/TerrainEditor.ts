@@ -3,6 +3,7 @@
 
 import type { PerspectiveCamera } from "three/webgpu";
 import type { TerrainConfig } from "../world/terrain";
+import type { EditorMouseAction } from "../settings/GameSettings";
 import {
   createEmptyMapData,
   deserializeMapData,
@@ -18,11 +19,9 @@ import { TerrainBrush, type BrushType, type BrushStroke, type BrushSettings } fr
  */
 export type EditorMode = "play" | "edit";
 
-/**
- * Mouse button actions in edit mode.
- * 编辑模式下的鼠标按钮操作
- */
-export type EditorMouseAction = "brush" | "orbit" | "pan";
+// Re-export mouse action type from settings.
+// 从设置重新导出鼠标操作类型
+export type { EditorMouseAction };
 
 /**
  * Editor mouse button configuration.
@@ -293,6 +292,12 @@ export class TerrainEditor {
       this._dirty = dirty;
       this.onDirtyChange?.(dirty);
     }
+  }
+
+  // Mark map as clean (saved).
+  // 标记地图为干净（已保存）
+  markClean(): void {
+    this.setDirty(false);
   }
 
   newMap(name = "Untitled Map"): void {

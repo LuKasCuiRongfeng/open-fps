@@ -1,55 +1,62 @@
-// MapImportScreen: Pre-game screen to import or skip map loading.
-// MapImportScreen：游戏前导入或跳过地图加载的界面
+// ProjectScreen: Pre-game screen to open project or skip to procedural terrain.
+// ProjectScreen：游戏前打开项目或跳过到程序生成地形的界面
 
 import { useState, useCallback } from "react";
-import { importMapWithDialog } from "../game/editor";
+import { 
+  openProjectDialog, 
+  loadProject,
+  setCurrentProjectPath,
+} from "../game/editor/ProjectStorage";
 import type { MapData } from "../game/editor/MapData";
+import type { GameSettings } from "../game/settings/GameSettings";
 
 interface Props {
-  onComplete: (mapData: MapData | null) => void;
+  onComplete: (mapData: MapData | null, projectPath: string | null, settings: GameSettings | null) => void;
 }
 
 /**
- * Map import screen shown before game starts.
- * 游戏开始前显示的地图导入界面
+ * Project screen shown before game starts.
+ * 游戏开始前显示的项目界面
  *
  * User can:
- * - Import a map file via file dialog
- * - Skip to use procedural terrain (no editing)
+ * - Open an existing project folder
+ * - Skip to use procedural terrain (no editing, no project)
  *
  * 用户可以：
- * - 通过文件对话框导入地图文件
- * - 跳过，使用程序生成的地形（不可编辑）
+ * - 打开现有项目文件夹
+ * - 跳过，使用程序生成的地形（不可编辑，无项目）
  */
 export function MapImportScreen({ onComplete }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Handle import via file dialog.
-  // 通过文件对话框处理导入
-  const handleImport = useCallback(async () => {
+  // Handle open project via folder dialog.
+  // 通过文件夹对话框处理打开项目
+  const handleOpenProject = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const mapData = await importMapWithDialog();
-      if (mapData) {
-        onComplete(mapData);
+      const projectPath = await openProjectDialog();
+      if (projectPath) {
+        const { map, settings } = await loadProject(projectPath);
+        onComplete(map, projectPath, settings);
       } else {
         // User cancelled dialog.
         // 用户取消对话框
         setLoading(false);
       }
     } catch (e) {
-      setError(`Failed to load map: ${e}`);
+      setError(`Failed to open project: ${e}`);
       setLoading(false);
     }
   }, [onComplete]);
 
-  // Skip import, use procedural terrain.
-  // 跳过导入，使用程序生成的地形
+  // Skip, use procedural terrain (no project).
+  // 跳过，使用程序生成的地形（无项目）
   const handleSkip = useCallback(() => {
-    onComplete(null);
+    setCurrentProjectPath(null);
+    onComplete(null, null, null);
   }, [onComplete]);
 
   return (
@@ -65,10 +72,10 @@ export function MapImportScreen({ onComplete }: Props) {
 
         {/* Description / 描述 */}
         <p className="mb-6 text-center text-sm text-gray-300">
-          Import a map file to edit, or skip to explore procedural terrain.
+          Open a project folder to edit terrain, or skip to explore procedural terrain.
           <br />
           <span className="text-gray-400">
-            导入地图文件进行编辑，或跳过以探索程序生成的地形。
+            打开项目文件夹编辑地形，或跳过以探索程序生成的地形。
           </span>
         </p>
 
@@ -81,11 +88,11 @@ export function MapImportScreen({ onComplete }: Props) {
         {/* Actions / 操作 */}
         <div className="flex flex-col gap-3">
           <button
-            onClick={handleImport}
+            onClick={handleOpenProject}
             disabled={loading}
             className="w-full rounded-lg bg-blue-600 py-3 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-500"
           >
-            {loading ? "Loading..." : "Import Map..."}
+            {loading ? "Loading..." : "Open Project..."}
           </button>
 
           <button
@@ -100,11 +107,11 @@ export function MapImportScreen({ onComplete }: Props) {
         {/* Info / 说明 */}
         <div className="mt-6 rounded-lg bg-blue-900/30 p-3 text-xs text-blue-200">
           <strong>Note:</strong> If you skip, terrain will be procedurally generated
-          and cannot be edited. You can export the procedural terrain from Settings
-          to create a map file for later editing.
+          and cannot be edited. You can save the procedural terrain as a new project
+          from Settings to enable editing.
           <br />
           <strong>注意：</strong> 如果跳过，地形将是程序生成的，无法编辑。
-          您可以从设置中导出程序地形以创建地图文件供以后编辑。
+          您可以从设置中将程序地形保存为新项目以启用编辑功能。
         </div>
       </div>
     </div>

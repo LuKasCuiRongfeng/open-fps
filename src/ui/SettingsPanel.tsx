@@ -4,7 +4,7 @@
 import { useState } from "react";
 import type { GameSettings, GameSettingsPatch } from "../game/settings/GameSettings";
 import type { GameApp } from "../game/GameApp";
-import type { TerrainEditor, EditorMode } from "../game/editor";
+import type { TerrainEditor, EditorMode, MapData } from "../game/editor";
 import {
   TabButton,
   TABS,
@@ -26,7 +26,11 @@ type SettingsPanelProps = {
   terrainEditor: TerrainEditor | null;
   terrainMode: "editable" | "procedural";
   editorMode: EditorMode;
+  currentProjectPath: string | null;
   onEditorModeChange: (mode: EditorMode) => void;
+  onProjectPathChange: (path: string | null) => void;
+  onLoadMap: (mapData: MapData) => void;
+  onApplySettings: (settings: GameSettings) => void;
   onPatch: (patch: GameSettingsPatch) => void;
   onReset: () => void;
   onClose: () => void;
@@ -39,7 +43,11 @@ export default function SettingsPanel({
   terrainEditor,
   terrainMode,
   editorMode,
+  currentProjectPath,
   onEditorModeChange,
+  onProjectPathChange,
+  onLoadMap,
+  onApplySettings,
   onPatch,
   onReset,
   onClose,
@@ -111,7 +119,11 @@ export default function SettingsPanel({
                   terrainEditor={terrainEditor}
                   terrainMode={terrainMode}
                   editorMode={editorMode}
+                  currentProjectPath={currentProjectPath}
                   onEditorModeChange={onEditorModeChange}
+                  onProjectPathChange={onProjectPathChange}
+                  onLoadMap={onLoadMap}
+                  onApplySettings={onApplySettings}
                 />
               )}
 

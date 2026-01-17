@@ -344,6 +344,13 @@ export class GameApp {
   }
 
   getSettingsSnapshot(): GameSettings {
+    // Sync editor mouse config from terrain editor before returning.
+    // 返回前从地形编辑器同步鼠标配置
+    const mc = this.terrainEditor.mouseConfig;
+    this.settings.editor.mouseConfig.leftButton = mc.leftButton;
+    this.settings.editor.mouseConfig.rightButton = mc.rightButton;
+    this.settings.editor.mouseConfig.middleButton = mc.middleButton;
+    
     return cloneSettings(this.settings);
   }
 
@@ -448,6 +455,41 @@ export class GameApp {
     if (this.scene.fog instanceof FogExp2) {
       this.scene.fog.density = this.settings.fog.density;
     }
+
+    // Apply editor mouse config.
+    // 应用编辑器鼠标配置
+    if (patch.editor?.mouseConfig) {
+      this.terrainEditor.setMouseConfig(this.settings.editor.mouseConfig);
+    }
+  }
+
+  /**
+   * Apply complete settings (for loading from project).
+   * 应用完整设置（用于从项目加载）
+   */
+  applySettings(newSettings: GameSettings) {
+    setSettings(this.settings, newSettings);
+
+    // Apply render settings immediately.
+    // 立即应用渲染设置
+    this.renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio, this.settings.render.maxPixelRatio),
+    );
+
+    // Apply camera settings immediately.
+    // 立即应用相机设置
+    this.camera.fov = this.settings.camera.fovDegrees;
+    this.camera.updateProjectionMatrix();
+
+    // Apply fog settings immediately.
+    // 立即应用雾设置
+    if (this.scene.fog instanceof FogExp2) {
+      this.scene.fog.density = this.settings.fog.density;
+    }
+
+    // Apply editor mouse config.
+    // 应用编辑器鼠标配置
+    this.terrainEditor.setMouseConfig(this.settings.editor.mouseConfig);
   }
 
   resetSettings() {
@@ -469,6 +511,10 @@ export class GameApp {
     if (this.scene.fog instanceof FogExp2) {
       this.scene.fog.density = this.settings.fog.density;
     }
+
+    // Reset editor mouse config.
+    // 重置编辑器鼠标配置
+    this.terrainEditor.setMouseConfig(this.settings.editor.mouseConfig);
   }
 
   private readonly onResize = () => {

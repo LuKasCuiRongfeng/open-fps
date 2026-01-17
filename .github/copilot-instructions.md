@@ -47,6 +47,8 @@
 ## Code Cleanliness / 代码整洁
 - **Delete** dead code, unused imports, redundant logic / **删除**无用代码、未使用的导入、冗余逻辑
 - Keep codebase **lean and maintainable** / 保持代码**简洁可维护**
+- **Use third-party libraries** when they simplify or optimize code / **允许使用第三方库**来简化或优化代码
+- Write **clean, elegant, concise** code — avoid verbose or repetitive patterns / 代码要**简洁优雅**，避免冗长重复
 
 ## Dev Workflows / 开发流程
 - Install: `pnpm install` / 安装依赖

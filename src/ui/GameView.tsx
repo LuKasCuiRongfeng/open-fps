@@ -3,14 +3,15 @@ import { GameApp, type GameBootPhase } from "../game/GameApp";
 import type { GameSettings, GameSettingsPatch } from "../game/settings/GameSettings";
 import type { TerrainEditor } from "../game/editor";
 import type { MapData } from "../game/editor/MapData";
+import { setCurrentProjectPath } from "../game/editor/ProjectStorage";
 import FpsCounter from "./FpsCounter";
 import LoadingOverlay, { type LoadingStep } from "./LoadingOverlay";
 import SettingsPanel from "./SettingsPanel";
 import { TerrainEditorPanel } from "./TerrainEditorPanel";
 import { MapImportScreen } from "./MapImportScreen";
 
-// Game state: whether we're in editable mode (loaded from file) or procedural mode.
-// 游戏状态：是否处于可编辑模式（从文件加载）还是程序生成模式
+// Game state: whether we're in editable mode (project open) or procedural mode.
+// 游戏状态：是否处于可编辑模式（项目已打开）还是程序生成模式
 type TerrainMode = "editable" | "procedural";
 
 export default function GameView() {
@@ -23,11 +24,13 @@ export default function GameView() {
   const [settings, setSettings] = useState<GameSettings | null>(null);
   const [terrainEditor, setTerrainEditor] = useState<TerrainEditor | null>(null);
   const [editorMode, setEditorMode] = useState<"play" | "edit">("play");
-  // Pre-game map import state.
-  // 游戏前地图导入状态
-  const [showMapImport, setShowMapImport] = useState(true);
+  // Pre-game project screen state.
+  // 游戏前项目界面状态
+  const [showProjectScreen, setShowProjectScreen] = useState(true);
   const [pendingMapData, setPendingMapData] = useState<MapData | null>(null);
+  const [pendingSettings, setPendingSettings] = useState<GameSettings | null>(null);
   const [terrainMode, setTerrainMode] = useState<TerrainMode>("procedural");
+  const [currentProjectPath, setProjectPath] = useState<string | null>(null);
 
   const loadingSteps: LoadingStep[] = [
     { id: "checking-webgpu", label: "Checking WebGPU" },
@@ -37,18 +40,48 @@ export default function GameView() {
     { id: "ready", label: "Ready" },
   ];
 
-  // Handle map import decision.
-  // 处理地图导入决定
-  const handleMapImport = useCallback((mapData: MapData | null) => {
+  // Handle project open decision.
+  // 处理项目打开决定
+  const handleProjectComplete = useCallback((
+    mapData: MapData | null, 
+    projectPath: string | null,
+    projectSettings: GameSettings | null
+  ) => {
     setPendingMapData(mapData);
-    setTerrainMode(mapData ? "editable" : "procedural");
-    setShowMapImport(false);
+    setPendingSettings(projectSettings);
+    setTerrainMode(projectPath ? "editable" : "procedural");
+    setProjectPath(projectPath);
+    setShowProjectScreen(false);
+  }, []);
+
+  // Handle project path change (when saving procedural terrain as new project).
+  // 处理项目路径变化（当保存程序地形为新项目时）
+  const handleProjectPathChange = useCallback((path: string | null) => {
+    setProjectPath(path);
+    setCurrentProjectPath(path);
+    if (path) {
+      setTerrainMode("editable");
+    }
+  }, []);
+
+  // Handle loading a map from settings panel (Open Project in settings).
+  // 处理从设置面板加载地图（设置中的打开项目）
+  const handleLoadMap = useCallback((_mapData: MapData) => {
+    setTerrainMode("editable");
+    // Map is already loaded by GameApp in MapEditorTab.handleOpenProject.
+    // 地图已由 MapEditorTab.handleOpenProject 中的 GameApp 加载
+  }, []);
+
+  // Handle applying settings from loaded project.
+  // 处理应用加载项目的设置
+  const handleApplySettings = useCallback((newSettings: GameSettings) => {
+    setSettings(newSettings);
   }, []);
 
   useEffect(() => {
-    // Don't start game until map import decision is made.
-    // 在地图导入决定做出前不启动游戏
-    if (showMapImport) return;
+    // Don't start game until project decision is made.
+    // 在项目决定做出前不启动游戏
+    if (showProjectScreen) return;
 
     const host = hostRef.current;
     if (!host) return;
@@ -70,8 +103,14 @@ export default function GameView() {
           .then(async () => {
             if (disposed) return;
 
-            // If user imported a map, load it.
-            // 如果用户导入了地图，则加载它
+            // If user opened a project with settings, apply them first.
+            // 如果用户打开了带有设置的项目，先应用设置
+            if (pendingSettings) {
+              app.applySettings(pendingSettings);
+            }
+
+            // If user opened a project with map data, load it.
+            // 如果用户打开了带有地图数据的项目，则加载它
             if (pendingMapData) {
               await app.loadMapData(pendingMapData);
             }
@@ -97,7 +136,7 @@ export default function GameView() {
       appRef.current?.dispose();
       appRef.current = null;
     };
-  }, [showMapImport, pendingMapData]);
+  }, [showProjectScreen, pendingMapData, pendingSettings]);
 
   useEffect(() => {
     if (!settingsOpen) return;
@@ -245,7 +284,11 @@ export default function GameView() {
           terrainEditor={terrainEditor}
           terrainMode={terrainMode}
           editorMode={editorMode}
+          currentProjectPath={currentProjectPath}
           onEditorModeChange={setEditorMode}
+          onProjectPathChange={handleProjectPathChange}
+          onLoadMap={handleLoadMap}
+          onApplySettings={handleApplySettings}
           onPatch={applyPatch}
           onReset={resetToDefaults}
           onClose={() => setSettingsOpen(false)}
@@ -268,9 +311,9 @@ export default function GameView() {
         </div>
       ) : null}
 
-      {/* Map Import Screen (before game starts) / 地图导入界面（游戏启动前） */}
-      {showMapImport && (
-        <MapImportScreen onComplete={handleMapImport} />
+      {/* Project Screen (before game starts) / 项目界面（游戏启动前） */}
+      {showProjectScreen && (
+        <MapImportScreen onComplete={handleProjectComplete} />
       )}
     </div>
   );

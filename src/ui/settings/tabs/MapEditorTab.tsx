@@ -6,24 +6,33 @@ import type { GameApp } from "../../../game/GameApp";
 import type { 
   TerrainEditor, 
   EditorMode, 
-  EditorMouseAction, 
-  EditorMouseConfig 
 } from "../../../game/editor";
+import type { EditorMouseAction } from "../../../game/settings/GameSettings";
 import {
-  exportMapWithDialog,
-  importMapWithDialog,
-  saveMapToCurrentFile,
-  getCurrentMapFilePath,
-  setCurrentMapFilePath,
-  getMapNameFromFilePath,
-} from "../../../game/editor";
+  getProjectNameFromPath,
+  saveProjectMap,
+  saveProjectAs,
+  hasOpenProject,
+  openProjectDialog,
+  loadProject,
+} from "../../../game/editor/ProjectStorage";
+import type { MapData } from "../../../game/editor/MapData";
+import type { GameSettings } from "../../../game/settings/GameSettings";
+
+// Local type for mouse config (mirrors GameSettings.editor.mouseConfig).
+// 本地鼠标配置类型（镜像 GameSettings.editor.mouseConfig）
+type EditorMouseConfig = GameSettings["editor"]["mouseConfig"];
 
 type MapEditorTabProps = {
   gameApp: GameApp | null;
   terrainEditor: TerrainEditor | null;
   terrainMode: "editable" | "procedural";
   editorMode: EditorMode;
+  currentProjectPath: string | null;
   onEditorModeChange: (mode: EditorMode) => void;
+  onProjectPathChange?: (path: string | null) => void;
+  onLoadMap?: (mapData: MapData) => void;
+  onApplySettings?: (settings: GameSettings) => void;
 };
 
 export function MapEditorTab({
@@ -31,13 +40,15 @@ export function MapEditorTab({
   terrainEditor,
   terrainMode,
   editorMode,
+  currentProjectPath,
   onEditorModeChange,
+  onProjectPathChange,
+  onLoadMap,
+  onApplySettings,
 }: MapEditorTabProps) {
-  const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
   const [editableMapName, setEditableMapName] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [processing, setProcessing] = useState(false);
-  const [mapLoadCounter, setMapLoadCounter] = useState(0);
 
   // Mouse button configuration state.
   // 鼠标按键配置状态
@@ -49,6 +60,7 @@ export function MapEditorTab({
 
   const canEdit = terrainMode === "editable";
   const dirty = terrainEditor?.dirty ?? false;
+  const hasProject = hasOpenProject();
 
   // Sync mouse config from editor when it changes.
   // 当编辑器配置变化时同步鼠标配置
@@ -72,13 +84,15 @@ export function MapEditorTab({
     [terrainEditor]
   );
 
-  // Sync map name and file path.
-  // 同步地图名称和文件路径
+  // Sync editable map name from project path.
+  // 从项目路径同步可编辑的地图名称
   useEffect(() => {
-    const nameFromPath = getMapNameFromFilePath();
-    setEditableMapName(nameFromPath ?? "Untitled");
-    setCurrentFilePath(getCurrentMapFilePath());
-  }, [terrainEditor, mapLoadCounter]);
+    if (currentProjectPath) {
+      setEditableMapName(getProjectNameFromPath(currentProjectPath));
+    } else {
+      setEditableMapName("Untitled");
+    }
+  }, [currentProjectPath]);
 
   // Update map name in editor.
   // 更新编辑器中的地图名称
@@ -94,7 +108,7 @@ export function MapEditorTab({
   // 切换编辑模式
   const handleToggleMode = useCallback(() => {
     if (!canEdit && editorMode === "play") {
-      setStatusMessage("Cannot edit: load a map file first");
+      setStatusMessage("Cannot edit: open a project first");
       return;
     }
     terrainEditor?.toggleMode();
@@ -102,8 +116,8 @@ export function MapEditorTab({
     onEditorModeChange(newMode);
   }, [terrainEditor, canEdit, editorMode, onEditorModeChange]);
 
-  // Handle save to current file.
-  // 保存到当前文件
+  // Handle save (to current project or save as new project).
+  // 保存（到当前项目或另存为新项目）
   const handleSave = useCallback(async (): Promise<boolean> => {
     if (!gameApp) return false;
 
@@ -112,27 +126,31 @@ export function MapEditorTab({
 
     try {
       const mapData = gameApp.exportCurrentMapData();
-      const newName = editableMapName.trim() || "my_map";
-      mapData.metadata.name = newName;
+      const settings = gameApp.getSettingsSnapshot();
+      const projectName = editableMapName.trim() || "my_project";
+      mapData.metadata.name = projectName;
 
-      if (currentFilePath) {
-        const filepath = await saveMapToCurrentFile(mapData, newName);
-        if (filepath) {
-          setCurrentFilePath(filepath);
-          setStatusMessage(`✓ Saved: ${filepath}`);
-          return true;
-        }
-      }
-
-      const filepath = await exportMapWithDialog(mapData, newName);
-      if (filepath) {
-        setCurrentFilePath(filepath);
-        setCurrentMapFilePath(filepath);
-        setStatusMessage(`✓ Saved: ${filepath}`);
+      if (hasProject) {
+        // Save to current project (with rename if name changed).
+        // 保存到当前项目（如果名称更改则重命名）
+        const newPath = await saveProjectMap(mapData, settings, projectName);
+        terrainEditor?.markClean();
+        onProjectPathChange?.(newPath);
+        setStatusMessage(`✓ Saved to project`);
         return true;
       } else {
-        setStatusMessage("Save cancelled");
-        return false;
+        // No project open (procedural terrain) - save as new project.
+        // 未打开项目（程序地形）- 另存为新项目
+        const newPath = await saveProjectAs(mapData, projectName, settings);
+        if (newPath) {
+          terrainEditor?.markClean();
+          onProjectPathChange?.(newPath);
+          setStatusMessage(`✓ Created project: ${getProjectNameFromPath(newPath)}`);
+          return true;
+        } else {
+          setStatusMessage("Save cancelled");
+          return false;
+        }
       }
     } catch (e) {
       setStatusMessage(`✗ Save failed: ${e}`);
@@ -140,80 +158,49 @@ export function MapEditorTab({
     } finally {
       setProcessing(false);
     }
-  }, [gameApp, editableMapName, currentFilePath]);
+  }, [gameApp, editableMapName, hasProject, terrainEditor, onProjectPathChange]);
 
-  // Handle map export with file dialog.
-  // 使用文件对话框处理地图导出
-  const handleExport = useCallback(async () => {
+  // Handle save as (always prompts for new location).
+  // 另存为（总是提示选择新位置）
+  const handleSaveAs = useCallback(async () => {
     if (!gameApp) return;
+
+    // Check for unsaved changes first.
+    // 先检查未保存的更改
+    if (dirty && hasProject) {
+      const { ask } = await import("@tauri-apps/plugin-dialog");
+      const shouldSave = await ask(
+        "Save changes to current project before creating a new one?",
+        { title: "Unsaved Changes", kind: "warning" }
+      );
+      if (shouldSave) {
+        await handleSave();
+      }
+    }
 
     setProcessing(true);
     setStatusMessage("");
 
     try {
       const mapData = gameApp.exportCurrentMapData();
-      mapData.metadata.name = editableMapName.trim() || "exported_map";
+      const settings = gameApp.getSettingsSnapshot();
+      const projectName = editableMapName.trim() || "my_project";
+      mapData.metadata.name = projectName;
 
-      const filepath = await exportMapWithDialog(
-        mapData,
-        editableMapName.trim() || "exported_map"
-      );
-
-      if (filepath) {
-        setCurrentFilePath(filepath);
-        setCurrentMapFilePath(filepath);
-        setStatusMessage(`✓ Exported to: ${filepath}`);
+      const newPath = await saveProjectAs(mapData, projectName, settings);
+      if (newPath) {
+        terrainEditor?.markClean();
+        onProjectPathChange?.(newPath);
+        setStatusMessage(`✓ Created project: ${getProjectNameFromPath(newPath)}`);
       } else {
-        setStatusMessage("Export cancelled");
+        setStatusMessage("Save cancelled");
       }
     } catch (e) {
-      setStatusMessage(`✗ Export failed: ${e}`);
+      setStatusMessage(`✗ Save failed: ${e}`);
     } finally {
       setProcessing(false);
     }
-  }, [gameApp, editableMapName]);
-
-  // Handle map import with file dialog.
-  // 使用文件对话框处理地图导入
-  const handleImport = useCallback(async () => {
-    if (!gameApp) return;
-
-    if (dirty) {
-      const { ask } = await import("@tauri-apps/plugin-dialog");
-      const shouldSave = await ask(
-        "You have unsaved changes. Save before importing?",
-        { title: "Unsaved Changes", kind: "warning" }
-      );
-      if (shouldSave) {
-        const saved = await handleSave();
-        if (!saved) {
-          return;
-        }
-      }
-    }
-
-    setProcessing(true);
-    setStatusMessage("");
-
-    try {
-      const mapData = await importMapWithDialog();
-      if (mapData) {
-        await gameApp.loadMapData(mapData);
-        setMapLoadCounter((c) => c + 1);
-        setStatusMessage(`✓ Imported: ${mapData.metadata.name}`);
-        if (terrainEditor?.mode !== "edit") {
-          terrainEditor?.setMode("edit");
-          onEditorModeChange("edit");
-        }
-      } else {
-        setStatusMessage("Import cancelled");
-      }
-    } catch (e) {
-      setStatusMessage(`✗ Import failed: ${e}`);
-    } finally {
-      setProcessing(false);
-    }
-  }, [gameApp, dirty, handleSave, terrainEditor, onEditorModeChange]);
+  }, [gameApp, editableMapName, dirty, hasProject, handleSave, terrainEditor, onProjectPathChange]);
 
   // Handle reset (discard edits).
   // 重置（丢弃编辑）
@@ -242,6 +229,66 @@ export function MapEditorTab({
     }
   }, [gameApp]);
 
+  // Handle open project.
+  // 打开项目
+  const handleOpenProject = useCallback(async () => {
+    if (!gameApp) return;
+
+    // Check for unsaved changes first.
+    // 先检查未保存的更改
+    if (dirty) {
+      const { ask } = await import("@tauri-apps/plugin-dialog");
+      const shouldSave = await ask(
+        "Save changes to current project before opening another?",
+        { title: "Unsaved Changes", kind: "warning" }
+      );
+      if (shouldSave) {
+        const saved = await handleSave();
+        if (!saved) {
+          return; // Save was cancelled, abort open.
+        }
+      }
+    }
+
+    setProcessing(true);
+    setStatusMessage("");
+
+    try {
+      const projectPath = await openProjectDialog();
+      if (!projectPath) {
+        setStatusMessage("Open cancelled");
+        setProcessing(false);
+        return;
+      }
+
+      const { map, settings } = await loadProject(projectPath);
+      
+      // Apply settings first.
+      // 先应用设置
+      gameApp.applySettings(settings);
+      onApplySettings?.(settings);
+
+      // Update local mouse config state from loaded settings.
+      // 从加载的设置更新本地鼠标配置状态
+      setMouseConfig(settings.editor.mouseConfig);
+      
+      if (map) {
+        // Load map into game.
+        // 加载地图到游戏
+        await gameApp.loadMapData(map);
+        onLoadMap?.(map);
+      }
+
+      terrainEditor?.markClean();
+      onProjectPathChange?.(projectPath);
+      setStatusMessage(`✓ Opened: ${getProjectNameFromPath(projectPath)}`);
+    } catch (e) {
+      setStatusMessage(`✗ Open failed: ${e}`);
+    } finally {
+      setProcessing(false);
+    }
+  }, [gameApp, dirty, handleSave, terrainEditor, onProjectPathChange, onLoadMap, onApplySettings]);
+
   return (
     <div className="space-y-5">
       {/* Mode toggle */}
@@ -249,7 +296,7 @@ export function MapEditorTab({
         <div>
           <div className="text-sm font-semibold">Editor Mode</div>
           <div className="text-xs text-white/50">
-            {canEdit ? "Toggle between play and edit mode" : "Load a map to enable editing"}
+            {canEdit ? "Toggle between play and edit mode" : "Open a project to enable editing"}
           </div>
         </div>
         <button
@@ -267,18 +314,18 @@ export function MapEditorTab({
             ? "⬛ Stop Editing"
             : canEdit
               ? "✏️ Start Editing"
-              : "📁 Load Map First"}
+              : "📁 Open Project First"}
         </button>
       </div>
 
-      {/* Current map info */}
+      {/* Current project info */}
       <div className="rounded-md border border-white/10 p-3">
         <div className="flex items-center justify-between">
-          <div className="text-xs text-white/60">Current Map</div>
+          <div className="text-xs text-white/60">Current Project</div>
           {dirty && <span className="text-xs text-yellow-400">● Unsaved changes</span>}
         </div>
         <div className="mt-2">
-          <label className="block text-xs text-white/50 mb-1">Map Name</label>
+          <label className="block text-xs text-white/50 mb-1">Project Name</label>
           <input
             type="text"
             value={editableMapName}
@@ -288,39 +335,39 @@ export function MapEditorTab({
           />
         </div>
         <div className="mt-2 text-xs text-white/50">
-          Mode: {terrainMode === "editable" ? "Editable (from file)" : "Procedural (view only)"}
+          Mode: {terrainMode === "editable" ? "✓ Project Open (Editable)" : "⚠ Procedural (View Only)"}
         </div>
-        {currentFilePath && (
-          <div className="mt-1 text-xs text-white/40 truncate" title={currentFilePath}>
-            📁 {currentFilePath}
+        {currentProjectPath && (
+          <div className="mt-1 text-xs text-white/40 truncate" title={currentProjectPath}>
+            📁 {currentProjectPath}
           </div>
         )}
       </div>
 
       {/* File operations */}
       <div>
-        <div className="text-sm font-semibold mb-3">File Operations</div>
+        <div className="text-sm font-semibold mb-3">Project Operations</div>
         <div className="grid grid-cols-2 gap-2">
           <button
-            onClick={handleImport}
+            onClick={handleOpenProject}
             disabled={processing}
-            className="px-3 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 transition-colors"
+            className="px-3 py-2 rounded-md text-sm font-medium bg-purple-600 hover:bg-purple-700 disabled:bg-gray-800 disabled:text-gray-500 transition-colors"
           >
-            📂 Import Map...
-          </button>
-          <button
-            onClick={handleExport}
-            disabled={processing}
-            className="px-3 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 transition-colors"
-          >
-            💾 Export Map...
+            📂 Open Project...
           </button>
           <button
             onClick={handleSave}
-            disabled={processing || !canEdit}
+            disabled={processing}
             className="px-3 py-2 rounded-md text-sm font-medium bg-blue-600 hover:bg-blue-700 disabled:bg-gray-800 disabled:text-gray-500 transition-colors"
           >
-            💾 Save
+            💾 {hasProject ? "Save" : "Save as Project..."}
+          </button>
+          <button
+            onClick={handleSaveAs}
+            disabled={processing}
+            className="px-3 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 transition-colors"
+          >
+            📁 Save As...
           </button>
           <button
             onClick={handleResetMap}
@@ -343,7 +390,7 @@ export function MapEditorTab({
 
       {/* Mouse button configuration */}
       <div>
-        <div className="text-sm font-semibold mb-3">Mouse Controls</div>
+        <div className="text-sm font-semibold mb-3">Mouse Controls (Edit Mode)</div>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <label className="text-sm text-white/80">Left Button</label>
@@ -397,9 +444,9 @@ export function MapEditorTab({
       <div className="rounded-lg bg-blue-900/30 p-3 text-xs text-blue-200">
         <strong>Tips:</strong>
         <ul className="mt-1 list-disc list-inside space-y-1">
-          <li>Import a map file to enable editing</li>
-          <li>Export procedural terrain to create an editable copy</li>
-          <li>Save frequently to avoid losing edits</li>
+          <li>Open a project folder to enable terrain editing</li>
+          <li>Use "Save as Project" to save procedural terrain for editing</li>
+          <li>Projects are folders containing map data, settings, and assets</li>
         </ul>
       </div>
     </div>
