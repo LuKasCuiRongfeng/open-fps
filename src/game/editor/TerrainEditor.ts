@@ -254,14 +254,14 @@ export class TerrainEditor {
     this.orbitCamera.initFromPlayer(playerX, playerY, playerZ);
   }
 
-  startCameraControl(button: number, mouseX: number, mouseY: number): void {
+  startCameraControl(button: number, mouseX: number, mouseY: number, screenWidth?: number, screenHeight?: number): void {
     if (this._mode !== "edit") return;
 
     const action = this.getActionForButton(button);
     if (action === "orbit") {
       this.orbitCamera.startOrbit(mouseX, mouseY);
     } else if (action === "pan") {
-      this.orbitCamera.startPan(mouseX, mouseY);
+      this.orbitCamera.startPan(mouseX, mouseY, screenWidth, screenHeight);
     }
   }
 
@@ -340,9 +340,9 @@ export class TerrainEditor {
     return -1;
   }
 
-  updateCameraControl(mouseX: number, mouseY: number): void {
+  updateCameraControl(mouseX: number, mouseY: number, screenWidth?: number, screenHeight?: number): void {
     if (this._mode !== "edit") return;
-    this.orbitCamera.updateFromMouse(mouseX, mouseY);
+    this.orbitCamera.updateFromMouse(mouseX, mouseY, screenWidth, screenHeight);
   }
 
   zoomCamera(delta: number): void {

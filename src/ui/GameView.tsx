@@ -282,7 +282,7 @@ export default function GameView() {
     } else if (action === "orbit" || action === "pan") {
       // Camera control action.
       // 相机控制操作
-      terrainEditor.startCameraControl(e.button, e.clientX, e.clientY);
+      terrainEditor.startCameraControl(e.button, e.clientX, e.clientY, window.innerWidth, window.innerHeight);
     }
   };
 
@@ -308,7 +308,7 @@ export default function GameView() {
 
       // Update camera control (orbit/pan).
       // 更新相机控制（轨道旋转/平移）
-      terrainEditor.updateCameraControl(e.clientX, e.clientY);
+      terrainEditor.updateCameraControl(e.clientX, e.clientY, window.innerWidth, window.innerHeight);
 
       // Update brush target position (only if not camera controlling).
       // 更新画刷目标位置（仅在不控制相机时）

@@ -28,9 +28,9 @@ import { createHashTexture, buildHeightComputeShader } from "./TerrainNoiseShade
 export class TerrainHeightCompute {
   private readonly config: TerrainConfig;
 
-  // Tile atlas allocator.
-  // Tile 图集分配器
-  private readonly allocator: TileAtlasAllocator;
+  // Tile atlas allocator (exposed for brush compute to use).
+  // Tile 图集分配器（暴露给画刷计算使用）
+  readonly allocator: TileAtlasAllocator;
 
   // GPU texture I/O handler.
   // GPU 纹理 I/O 处理器

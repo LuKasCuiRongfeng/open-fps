@@ -92,9 +92,13 @@ export class ChunkManager {
     // 使用高度纹理初始化法线计算
     await this.normalCompute.init(renderer, this.heightCompute.heightTexture!);
 
-    // Initialize brush compute with height texture.
-    // 使用高度纹理初始化画刷计算
-    await this.brushCompute.init(renderer, this.heightCompute.heightTexture!);
+    // Initialize brush compute with height texture and allocator.
+    // 使用高度纹理和分配器初始化画刷计算
+    await this.brushCompute.init(
+      renderer,
+      this.heightCompute.heightTexture!,
+      this.heightCompute.allocator
+    );
 
     this.gpuReady = true;
   }
@@ -356,41 +360,113 @@ export class ChunkManager {
    *
    * GPU-first: modifies height texture directly on GPU.
    * GPU-first：直接在 GPU 上修改高度纹理
-   * @deprecated Use CPU-based editing with reuploadChunks instead.
+   *
+   * Includes edge stitching to prevent seams between chunks.
+   * 包含边缘缝合以防止 chunk 之间的裂缝
+   *
+   * Processing order:
+   * 1. Sync secondary buffer (B = A) so all chunks read consistent data
+   * 2. Apply brush to all affected chunks (read from A, write to B)
+   * 3. Copy all results back (B -> A)
+   * 4. Stitch edges to ensure boundary consistency
+   *
+   * 处理顺序：
+   * 1. 同步次要缓冲区（B = A）使所有 chunk 读取一致的数据
+   * 2. 对所有受影响的 chunk 应用画刷（从 A 读取，写入 B）
+   * 3. 将所有结果复制回来（B -> A）
+   * 4. 缝合边缘以确保边界一致性
    */
   async applyBrushStrokes(strokes: BrushStroke[]): Promise<void> {
     if (!this.gpuReady || !this.renderer || strokes.length === 0) return;
 
     const chunkSize = this.config.streaming.chunkSizeMeters;
     const affectedChunks = new Set<string>();
+    const affectedCoords: Array<{ cx: number; cz: number; tileX: number; tileZ: number }> = [];
+
+    // Pre-compute flatten target height if needed (sample from brush center).
+    // 如果需要，预计算 flatten 目标高度（从画刷中心采样）
+    let flattenTargetHeight = 0;
+    if (strokes.length > 0 && strokes[0].brush.type === "flatten") {
+      const stroke = strokes[0];
+      flattenTargetHeight = TerrainHeightSampler.heightAt(
+        stroke.worldX,
+        stroke.worldZ,
+        this.config
+      );
+    }
+
+    // Compute bounding box of all strokes (merge ranges).
+    // 计算所有 strokes 的包围盒（合并范围）
+    let minCx = Infinity, maxCx = -Infinity;
+    let minCz = Infinity, maxCz = -Infinity;
 
     for (const stroke of strokes) {
-      // Find all chunks affected by this stroke.
-      // 找到被此笔触影响的所有 chunk
       const radius = stroke.brush.radiusMeters;
-      const minCx = Math.floor((stroke.worldX - radius) / chunkSize);
-      const maxCx = Math.floor((stroke.worldX + radius) / chunkSize);
-      const minCz = Math.floor((stroke.worldZ - radius) / chunkSize);
-      const maxCz = Math.floor((stroke.worldZ + radius) / chunkSize);
+      minCx = Math.min(minCx, Math.floor((stroke.worldX - radius) / chunkSize));
+      maxCx = Math.max(maxCx, Math.floor((stroke.worldX + radius) / chunkSize));
+      minCz = Math.min(minCz, Math.floor((stroke.worldZ - radius) / chunkSize));
+      maxCz = Math.max(maxCz, Math.floor((stroke.worldZ + radius) / chunkSize));
+    }
 
-      for (let cx = minCx; cx <= maxCx; cx++) {
-        for (let cz = minCz; cz <= maxCz; cz++) {
-          const key = this.chunkKey(cx, cz);
-          if (this.chunks.has(key)) {
-            affectedChunks.add(key);
+    // Collect affected chunks from merged bounding box (single pass).
+    // 从合并的包围盒收集受影响的 chunk（单次遍历）
+    for (let cx = minCx; cx <= maxCx; cx++) {
+      for (let cz = minCz; cz <= maxCz; cz++) {
+        const key = this.chunkKey(cx, cz);
+        if (this.chunks.has(key)) {
+          affectedChunks.add(key);
+          const tileInfo = this.heightCompute.getChunkTileUV(cx, cz);
+          const tileX = Math.round(tileInfo.uOffset * this.config.gpuCompute.atlasTilesPerSide);
+          const tileZ = Math.round(tileInfo.vOffset * this.config.gpuCompute.atlasTilesPerSide);
+          affectedCoords.push({ cx, cz, tileX, tileZ });
+        }
+      }
+    }
 
-            // Get tile coordinates from height compute.
-            // 从高度计算获取 tile 坐标
-            const tileInfo = this.heightCompute.getChunkTileUV(cx, cz);
-            const tileX = Math.round(tileInfo.uOffset * this.config.gpuCompute.atlasTilesPerSide);
-            const tileZ = Math.round(tileInfo.vOffset * this.config.gpuCompute.atlasTilesPerSide);
+    if (affectedCoords.length === 0) return;
 
-            // Apply brush to this chunk on GPU.
-            // 在 GPU 上将画刷应用到此 chunk
-            await this.brushCompute.applyBrushToChunk(
-              cx, cz, tileX, tileZ, stroke, this.renderer!
-            );
-          }
+    // Step 1: Sync secondary buffer so all chunks read from consistent state.
+    // 步骤 1：同步次要缓冲区，使所有 chunk 从一致的状态读取
+    await this.brushCompute.syncSecondaryBuffer(this.renderer!);
+
+    // Step 2: Apply brush to all chunks (read from A, write to B) WITHOUT copying back.
+    // 步骤 2：对所有 chunk 应用画刷（从 A 读取，写入 B）不复制回来
+    for (const stroke of strokes) {
+      for (const { cx, cz, tileX, tileZ } of affectedCoords) {
+        await this.brushCompute.applyBrushToChunkNoCopy(
+          cx, cz, tileX, tileZ, stroke, flattenTargetHeight, this.renderer!
+        );
+      }
+    }
+
+    // Step 3: Copy all affected tiles from B back to A.
+    // 步骤 3：将所有受影响的 tile 从 B 复制回 A
+    for (const { tileX, tileZ } of affectedCoords) {
+      await this.brushCompute.copyTileBack(tileX, tileZ, this.renderer!);
+    }
+
+    // Step 4: Stitch edges between affected chunks and their neighbors.
+    // 步骤 4：缝合受影响 chunk 与其邻居之间的边缘
+    const stitchedEdges = new Set<string>();
+    for (const { cx, cz } of affectedCoords) {
+      const neighbors = [
+        { ncx: cx + 1, ncz: cz },
+        { ncx: cx - 1, ncz: cz },
+        { ncx: cx, ncz: cz + 1 },
+        { ncx: cx, ncz: cz - 1 },
+      ];
+
+      for (const { ncx, ncz } of neighbors) {
+        const neighborKey = this.chunkKey(ncx, ncz);
+        if (!this.chunks.has(neighborKey)) continue;
+
+        const edgeKey = cx < ncx || (cx === ncx && cz < ncz)
+          ? `${cx},${cz}-${ncx},${ncz}`
+          : `${ncx},${ncz}-${cx},${cz}`;
+
+        if (!stitchedEdges.has(edgeKey)) {
+          stitchedEdges.add(edgeKey);
+          await this.brushCompute.stitchEdge(cx, cz, ncx, ncz, this.renderer!);
         }
       }
     }

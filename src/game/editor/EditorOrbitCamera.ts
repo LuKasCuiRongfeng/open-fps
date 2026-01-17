@@ -2,7 +2,7 @@
 // EditorOrbitCamera：地形编辑器的轨道相机控制
 
 import type { PerspectiveCamera } from "three/webgpu";
-import { Vector3, Spherical, MathUtils } from "three/webgpu";
+import { Vector3, Spherical, MathUtils, Raycaster, Vector2, Plane } from "three/webgpu";
 
 /**
  * Orbit camera state and controls for editor mode.
@@ -22,10 +22,17 @@ export class EditorOrbitCamera {
   private _lastMouseX = 0;
   private _lastMouseY = 0;
 
+  // Pan: world-space anchor point for "sticky" panning.
+  // 平移：用于"跟手"平移的世界空间锚点
+  private readonly panAnchor = new Vector3();
+  private readonly raycaster = new Raycaster();
+  private readonly groundPlane = new Plane(new Vector3(0, 1, 0), 0);
+  private readonly mouseNDC = new Vector2();
+  private camera: PerspectiveCamera | null = null;
+
   // Sensitivity settings.
   // 灵敏度设置
   private readonly orbitSensitivity = 0.01;
-  private readonly panSpeedFactor = 0.002;
 
   // Angle limits.
   // 角度限制
@@ -88,13 +95,35 @@ export class EditorOrbitCamera {
   }
 
   /**
-   * Start pan control.
-   * 开始平移控制
+   * Start pan control with world-space anchor.
+   * 使用世界空间锚点开始平移控制
+   *
+   * @param mouseX Screen X coordinate
+   * @param mouseY Screen Y coordinate
+   * @param screenWidth Viewport width
+   * @param screenHeight Viewport height
    */
-  startPan(mouseX: number, mouseY: number): void {
+  startPan(mouseX: number, mouseY: number, screenWidth?: number, screenHeight?: number): void {
     this._panActive = true;
     this._lastMouseX = mouseX;
     this._lastMouseY = mouseY;
+
+    // Calculate world-space anchor point under mouse.
+    // 计算鼠标下的世界空间锚点
+    if (this.camera && screenWidth && screenHeight) {
+      // Update ground plane to pass through current target Y.
+      // 更新地面平面使其通过当前目标 Y
+      this.groundPlane.constant = -this.target.y;
+
+      const hitPoint = this.raycastToGround(mouseX, mouseY, screenWidth, screenHeight);
+      if (hitPoint) {
+        this.panAnchor.copy(hitPoint);
+      } else {
+        // Fallback: use target as anchor.
+        // 后备：使用目标作为锚点
+        this.panAnchor.copy(this.target);
+      }
+    }
   }
 
   /**
@@ -108,8 +137,13 @@ export class EditorOrbitCamera {
   /**
    * Update camera from mouse movement.
    * 从鼠标移动更新相机
+   *
+   * @param mouseX Screen X coordinate
+   * @param mouseY Screen Y coordinate
+   * @param screenWidth Viewport width (needed for pan)
+   * @param screenHeight Viewport height (needed for pan)
    */
-  updateFromMouse(mouseX: number, mouseY: number): void {
+  updateFromMouse(mouseX: number, mouseY: number, screenWidth?: number, screenHeight?: number): void {
     const dx = mouseX - this._lastMouseX;
     const dy = mouseY - this._lastMouseY;
     this._lastMouseX = mouseX;
@@ -119,8 +153,8 @@ export class EditorOrbitCamera {
       this.orbit(dx, dy);
     }
 
-    if (this._panActive) {
-      this.pan(dx, dy);
+    if (this._panActive && screenWidth && screenHeight) {
+      this.pan(mouseX, mouseY, screenWidth, screenHeight);
     }
   }
 
@@ -138,28 +172,46 @@ export class EditorOrbitCamera {
   }
 
   /**
-   * Pan: move target in camera plane.
-   * 平移：在相机平面内移动目标
+   * Pan: move target so the anchor point stays under the mouse.
+   * 平移：移动目标使锚点保持在鼠标下
+   *
+   * This creates a "sticky" feel where the world point under the mouse
+   * when pan started stays under the mouse throughout the drag.
+   * 这创造了一种"跟手"的感觉，平移开始时鼠标下的世界点
+   * 在整个拖动过程中保持在鼠标下
    */
-  private pan(dx: number, dy: number): void {
-    const panSpeed = this.spherical.radius * this.panSpeedFactor;
+  private pan(mouseX: number, mouseY: number, screenWidth: number, screenHeight: number): void {
+    if (!this.camera) return;
 
-    const sinPhi = Math.sin(this.spherical.phi);
-    const sinTheta = Math.sin(this.spherical.theta);
-    const cosTheta = Math.cos(this.spherical.theta);
+    // Raycast current mouse position to ground plane.
+    // 将当前鼠标位置射线投射到地面平面
+    const currentHit = this.raycastToGround(mouseX, mouseY, screenWidth, screenHeight);
+    if (!currentHit) return;
 
-    // Right vector (perpendicular to view direction in XZ plane).
-    // 右向量（在 XZ 平面内垂直于视线方向）
-    const rightX = -cosTheta;
-    const rightZ = sinTheta;
+    // Move target so that panAnchor would be at currentHit.
+    // 移动目标使 panAnchor 位于 currentHit
+    // target_new = target_old + (panAnchor - currentHit)
+    this.target.x += this.panAnchor.x - currentHit.x;
+    this.target.z += this.panAnchor.z - currentHit.z;
+  }
 
-    // Forward vector in XZ plane.
-    // XZ 平面内的前向向量
-    const forwardX = sinTheta * sinPhi;
-    const forwardZ = cosTheta * sinPhi;
+  /**
+   * Raycast from screen position to ground plane.
+   * 从屏幕位置射线投射到地面平面
+   */
+  private raycastToGround(mouseX: number, mouseY: number, screenWidth: number, screenHeight: number): Vector3 | null {
+    if (!this.camera) return null;
 
-    this.target.x += dx * panSpeed * rightX - dy * panSpeed * forwardX;
-    this.target.z += dx * panSpeed * rightZ - dy * panSpeed * forwardZ;
+    // Convert to NDC [-1, 1].
+    // 转换为 NDC [-1, 1]
+    this.mouseNDC.x = (mouseX / screenWidth) * 2 - 1;
+    this.mouseNDC.y = -(mouseY / screenHeight) * 2 + 1;
+
+    this.raycaster.setFromCamera(this.mouseNDC, this.camera);
+
+    const hitPoint = new Vector3();
+    const hit = this.raycaster.ray.intersectPlane(this.groundPlane, hitPoint);
+    return hit ? hitPoint : null;
   }
 
   /**
@@ -181,6 +233,10 @@ export class EditorOrbitCamera {
    * 将相机状态应用到实际相机
    */
   applyToCamera(camera: PerspectiveCamera): void {
+    // Store camera reference for pan raycasting.
+    // 存储相机引用用于平移射线投射
+    this.camera = camera;
+
     this.tempVec.setFromSpherical(this.spherical);
     camera.position.copy(this.target).add(this.tempVec);
     camera.lookAt(this.target);

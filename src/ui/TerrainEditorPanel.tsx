@@ -4,8 +4,9 @@
 // Mode switching, file operations moved to SettingsPanel.
 // 模式切换、文件操作已移至 SettingsPanel
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { TerrainEditor, BrushType } from "../game/editor";
+import { terrainConfig } from "../config/terrain";
 
 interface Props {
   editor: TerrainEditor | null;
@@ -23,6 +24,35 @@ export function TerrainEditorPanel({ editor }: Props) {
   const [brushRadius, setBrushRadius] = useState(10);
   const [brushStrength, setBrushStrength] = useState(0.5);
   const [brushFalloff, setBrushFalloff] = useState(0.7);
+
+  // Debug: brush position and chunk coordinates.
+  // 调试：画刷位置和 chunk 坐标
+  const [brushX, setBrushX] = useState(0);
+  const [brushZ, setBrushZ] = useState(0);
+  const [chunkX, setChunkX] = useState(0);
+  const [chunkZ, setChunkZ] = useState(0);
+  const rafRef = useRef<number>(0);
+
+  // Update brush position and chunk coords.
+  // 更新画刷位置和 chunk 坐标
+  useEffect(() => {
+    if (!editor) return;
+
+    const chunkSize = terrainConfig.streaming.chunkSizeMeters;
+
+    const update = () => {
+      const x = editor.brushTargetX;
+      const z = editor.brushTargetZ;
+      setBrushX(x);
+      setBrushZ(z);
+      setChunkX(Math.floor(x / chunkSize));
+      setChunkZ(Math.floor(z / chunkSize));
+      rafRef.current = requestAnimationFrame(update);
+    };
+
+    rafRef.current = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [editor]);
 
   // Sync state from editor.
   // 从编辑器同步状态
@@ -74,6 +104,13 @@ export function TerrainEditorPanel({ editor }: Props) {
         <span className="px-2 py-1 rounded text-xs font-medium bg-green-600">
           EDITING
         </span>
+      </div>
+
+      {/* Debug: Chunk coordinates / 调试：Chunk 坐标 */}
+      <div className="mb-4 p-2 bg-yellow-900/50 border border-yellow-600/50 rounded text-xs font-mono">
+        <div className="text-yellow-400 mb-1">🐛 Debug</div>
+        <div>Pos: ({brushX.toFixed(1)}, {brushZ.toFixed(1)})</div>
+        <div className="text-cyan-300 font-bold">Chunk: ({chunkX}, {chunkZ})</div>
       </div>
 
       {/* Brush type / 画刷类型 */}
