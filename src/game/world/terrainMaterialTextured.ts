@@ -135,9 +135,9 @@ export function createTexturedTerrainMaterial(
     
     // Sample splat map at world position (normalized to 0-1).
     // 在世界位置采样 splat map（归一化到 0-1）
-    // Splat map covers a fixed world area centered on origin.
-    // Splat map 覆盖以原点为中心的固定世界区域
-    const worldSize = float(cfg.streaming.viewDistanceChunks * cfg.streaming.chunkSizeMeters * 2);
+    // Splat map covers entire world bounds centered on origin.
+    // Splat map 覆盖以原点为中心的整个世界边界
+    const worldSize = float(cfg.worldBounds.halfSizeMeters * 2);
     // Clamp UV to [0, 1] to prevent sampling outside texture.
     // 将 UV 钳制到 [0, 1] 以防止采样到纹理外部
     const splatU = clamp(worldX.div(worldSize).add(0.5), 0.0, 1.0);

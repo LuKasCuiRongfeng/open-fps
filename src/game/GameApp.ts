@@ -253,7 +253,10 @@ export class GameApp {
 
     // Initialize texture editor GPU resources.
     // 初始化纹理编辑器 GPU 资源
-    await this.textureEditor.init(this.renderer, terrainConfig.streaming.chunkSizeMeters * 10);
+    // Use world bounds size to cover entire playable area.
+    // 使用世界边界大小以覆盖整个可玩区域
+    const splatWorldSize = terrainConfig.worldBounds.halfSizeMeters * 2;
+    await this.textureEditor.init(this.renderer, splatWorldSize);
     if (this.disposed) return;
 
     // Reposition marker now that terrain is initialized.

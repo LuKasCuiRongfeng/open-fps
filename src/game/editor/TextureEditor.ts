@@ -104,7 +104,9 @@ export class TextureEditor {
 
     // Create splat map compute with resolution proportional to world size.
     // 创建分辨率与世界大小成比例的 splat map 计算
-    const resolution = 1024; // 1 pixel per meter at default size
+    // Target ~0.5 pixels per meter for good detail, capped at 4096 for GPU limits.
+    // 目标约 0.5 像素/米以获得良好细节，上限 4096 以适应 GPU 限制
+    const resolution = Math.min(4096, Math.max(1024, Math.ceil(worldSize / 2)));
     this.splatMapCompute = new SplatMapCompute(resolution, worldSize);
     await this.splatMapCompute.init(renderer);
 
