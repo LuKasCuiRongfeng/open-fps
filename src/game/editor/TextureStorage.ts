@@ -67,9 +67,18 @@ export class TextureStorage {
       ctx.drawImage(bitmap, 0, 0);
       const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
 
+      // Restore A channel to 0 since saveSplatMap forces A=255 to avoid PNG premultiplied alpha issues.
+      // The material normalizes all 4 channels (R+G+B+A) when blending, so A=255 would dilute colors.
+      // 恢复 A 通道为 0，因为 saveSplatMap 强制 A=255 以避免 PNG 预乘 alpha 问题。
+      // 材质在混合时会归一化所有 4 个通道，A=255 会稀释颜色。
+      const pixels = new Uint8Array(imageData.data);
+      for (let i = 3; i < pixels.length; i += 4) {
+        pixels[i] = 0;
+      }
+
       return {
         resolution: bitmap.width,
-        pixels: new Uint8Array(imageData.data),
+        pixels,
       };
     } catch {
       return null;

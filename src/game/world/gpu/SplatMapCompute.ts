@@ -450,6 +450,11 @@ export class SplatMapCompute {
     for (let i = 0; i < len; i++) {
       data[i] = pixels[i];
     }
+    // Mark texture as needing update to ensure CPU data is uploaded to GPU.
+    // This is necessary because copyTextureToTexture may not fully sync in all cases.
+    // 标记纹理需要更新以确保 CPU 数据上传到 GPU。
+    // 这是必要的，因为 copyTextureToTexture 可能在某些情况下无法完全同步。
+    this.splatTextureRead.needsUpdate = true;
 
     this.needsSync = false;
   }
