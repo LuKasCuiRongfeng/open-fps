@@ -4,7 +4,7 @@
 // Displayed only in edit mode when texture editing is enabled.
 // 仅在启用纹理编辑的编辑模式下显示
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import type { TextureEditor } from "../game/editor/TextureEditor";
 
 interface Props {
@@ -23,33 +23,12 @@ export function TextureEditorPanel({ editor, visible }: Props) {
   const [brushFalloff, setBrushFalloff] = useState(0.5);
   const [layerNames, setLayerNames] = useState<readonly string[]>([]);
 
-  // Debug: brush position.
-  // 调试：画刷位置
-  const [brushX, setBrushX] = useState(0);
-  const [brushZ, setBrushZ] = useState(0);
-  const rafRef = useRef<number>(0);
-
   // Sync layer names from editor (runs once when editor changes).
   // 从编辑器同步层名称（编辑器更改时运行一次）
   useEffect(() => {
     if (!editor) return;
     setLayerNames(editor.layerNames);
   }, [editor]);
-
-  // Update brush position.
-  // 更新画刷位置
-  useEffect(() => {
-    if (!editor || !visible) return;
-
-    const update = () => {
-      setBrushX(editor.brushTargetX);
-      setBrushZ(editor.brushTargetZ);
-      rafRef.current = requestAnimationFrame(update);
-    };
-
-    rafRef.current = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [editor, visible]);
 
   // Sync state from editor.
   // 从编辑器同步状态
@@ -101,13 +80,6 @@ export function TextureEditorPanel({ editor, visible }: Props) {
         <span className="px-2 py-1 rounded text-xs font-medium bg-purple-600">
           PAINTING
         </span>
-      </div>
-
-      {/* Debug: brush position / 调试：画刷位置 */}
-      <div className="mb-4 p-2 bg-purple-900/50 border border-purple-600/50 rounded text-xs font-mono">
-        <div className="text-purple-400 mb-1">🐛 Debug</div>
-        <div>Pos: ({brushX.toFixed(1)}, {brushZ.toFixed(1)})</div>
-        <div className="text-cyan-300">Layer: {selectedLayer || "none"}</div>
       </div>
 
       {/* Layer selection / 层选择 */}

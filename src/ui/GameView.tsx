@@ -455,8 +455,10 @@ export default function GameView() {
 
       <FpsCounter
         visible={!loading && !error}
+        isEditorMode={activeEditor !== "none"}
         getFps={() => appRef.current?.getFps() ?? 0}
         getPlayerPosition={() => appRef.current?.getPlayerPosition() ?? null}
+        getMousePosition={() => appRef.current?.getMousePosition() ?? null}
       />
 
       <LoadingOverlay

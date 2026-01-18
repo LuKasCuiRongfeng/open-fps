@@ -394,6 +394,41 @@ export class GameApp {
   }
 
   /**
+   * Get mouse world position in editor mode for debug display.
+   * 获取编辑器模式下的鼠标世界坐标用于调试显示
+   *
+   * Works with both terrain and texture editor modes.
+   * 同时支持地形和纹理编辑器模式
+   */
+  getMousePosition(): { x: number; y: number; z: number; valid: boolean } | null {
+    // Not in edit mode = no mouse position.
+    // 不在编辑模式 = 没有鼠标位置
+    if (this.terrainEditor.mode !== "edit") {
+      return null;
+    }
+    
+    // Try terrain editor brush target first.
+    // 优先尝试地形编辑器的画刷目标
+    if (this.terrainEditor.brushTargetValid) {
+      const x = this.terrainEditor.brushTargetX;
+      const z = this.terrainEditor.brushTargetZ;
+      const y = this.resources.runtime.terrain.heightAt(x, z);
+      return { x, y, z, valid: true };
+    }
+    
+    // Fall back to texture editor brush target.
+    // 回退到纹理编辑器的画刷目标
+    if (this.textureEditor.brushTargetValid) {
+      const x = this.textureEditor.brushTargetX;
+      const z = this.textureEditor.brushTargetZ;
+      const y = this.resources.runtime.terrain.heightAt(x, z);
+      return { x, y, z, valid: true };
+    }
+
+    return { x: 0, y: 0, z: 0, valid: false };
+  }
+
+  /**
    * Get terrain editor instance.
    * 获取地形编辑器实例
    */
