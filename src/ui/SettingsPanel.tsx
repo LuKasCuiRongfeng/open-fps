@@ -13,7 +13,7 @@ import {
   HelpTab,
   RenderTab,
   CameraTab,
-  FogTab,
+  SkyTab,
   MovementTab,
   PhysicsTab,
   ThirdPersonTab,
@@ -155,7 +155,7 @@ export default function SettingsPanel({
 
               {tab === "camera" && <CameraTab settings={settings} onPatch={onPatch} />}
 
-              {tab === "fog" && <FogTab settings={settings} onPatch={onPatch} />}
+              {tab === "sky" && <SkyTab settings={settings} onPatch={onPatch} />}
 
               {tab === "movement" && <MovementTab settings={settings} onPatch={onPatch} />}
 

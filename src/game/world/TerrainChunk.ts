@@ -327,6 +327,11 @@ export class TerrainChunk {
     this.mesh = new Mesh(geometry, material);
     this.mesh.name = `terrain-chunk-gpu-${cx}-${cz}`;
 
+    // Terrain receives shadows but doesn't cast them (casting causes self-shadow artifacts).
+    // 地形接收阴影但不投射阴影（投射会导致自阴影伪影）
+    this.mesh.castShadow = false;
+    this.mesh.receiveShadow = true;
+
     // Enable Three.js built-in frustum culling (GPU-optimized in WebGPU renderer).
     // 启用 Three.js 内置视锥剔除（WebGPU 渲染器中已 GPU 优化）
     this.mesh.frustumCulled = true;

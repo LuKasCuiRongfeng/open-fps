@@ -20,6 +20,24 @@ import {
 import type { TerrainConfig } from "./terrain";
 import type { TerrainTextureResult, PBRTextureSet } from "./TerrainTextures";
 
+// ============================================================================
+// Shared Global Uniforms (all terrain materials reference these)
+// 共享全局 Uniform（所有地形材质引用这些）
+// ============================================================================
+
+/** Shared uniform for normal softness (0=sharp, 1=flat). / 法线柔和度共享 uniform */
+const sharedNormalSoftness = { value: 0.4 };
+const normalSoftnessUniform = uniform(sharedNormalSoftness.value);
+
+/**
+ * Update the global normal softness value for all terrain materials.
+ * 更新所有地形材质的全局法线柔和度值
+ */
+export function setTerrainNormalSoftness(value: number): void {
+  sharedNormalSoftness.value = value;
+  normalSoftnessUniform.value = value;
+}
+
 /**
  * Parameters for terrain material.
  * 地形材质参数
@@ -99,7 +117,16 @@ export function createTexturedTerrainMaterial(
   // Sample terrain normal.
   // 采样地形法线
   const sampledNormal = normalTex.sample(atlasUv).xyz;
-  const terrainNormal = normalize(sampledNormal);
+  const rawNormal = normalize(sampledNormal);
+  
+  // Soften normal for lighting by blending toward up vector (reduces harsh front/back contrast).
+  // 将法线向上方向混合以软化光照（减少正面/背面的强烈对比）
+  // This creates a "wrapped diffuse" effect similar to Half-Lambert.
+  // 这会产生类似于 Half-Lambert 的"包裹漫反射"效果
+  const upVector = vec3(0.0, 1.0, 0.0);
+  // Use shared global uniform for normal softness.
+  // 使用共享全局 uniform 控制法线柔和度
+  const terrainNormal = normalize(mix(rawNormal, upVector, normalSoftnessUniform));
 
   // World position for texture sampling.
   // 用于纹理采样的世界位置

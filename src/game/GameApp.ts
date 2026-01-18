@@ -3,7 +3,9 @@
 
 import {
   Clock,
+  DirectionalLight,
   FogExp2,
+  HemisphereLight,
   Mesh,
   PerspectiveCamera,
   Scene,
@@ -39,6 +41,7 @@ import {
   setSettings,
 } from "./settings/GameSettings";
 import { TerrainTextures } from "./world/TerrainTextures";
+import { setTerrainNormalSoftness } from "./world/terrainMaterialTextured";
 
 export type GameBootPhase =
   | "checking-webgpu"
@@ -74,6 +77,9 @@ export class GameApp {
   private readonly resources: GameResources;
   private readonly settings = createDefaultGameSettings();
   private readonly marker: Mesh;
+  private readonly sun: DirectionalLight;
+  private readonly hemi: HemisphereLight;
+  private readonly skySystem: import("./world/SkySystem").SkySystem;
   private readonly terrainEditor: TerrainEditor;
   private readonly textureEditor: TextureEditor;
   readonly ready: Promise<void>;
@@ -105,6 +111,9 @@ export class GameApp {
 
     onBootPhase?.("creating-renderer");
     this.renderer = new WebGPURenderer({ antialias: true });
+    // Enable shadow mapping.
+    // 启用阴影贴图
+    this.renderer.shadowMap.enabled = true;
     // Make it obvious the canvas is rendering even before world content appears.
     // 设一个非纯黑的清屏色，便于判断是否在正常渲染
     this.renderer.setClearColor(0x10151f, 1);
@@ -124,6 +133,9 @@ export class GameApp {
     onBootPhase?.("creating-world");
     const world = createWorld(this.scene);
     this.marker = world.marker;
+    this.sun = world.sun;
+    this.hemi = world.hemi;
+    this.skySystem = world.skySystem;
 
     // Create raw input state as ECS resource (data-oriented).
     // 创建原始输入状态作为 ECS 资源（数据导向）
@@ -270,6 +282,10 @@ export class GameApp {
     // Create player AFTER terrain GPU init so heightAt() works correctly.
     // 在地形 GPU 初始化后创建玩家，确保 heightAt() 正确工作
     createPlayer(this.ecs, this.resources);
+
+    // Initialize sky system post-processing (bloom for sun glare).
+    // 初始化天空系统后处理（太阳光晕的泛光效果）
+    this.skySystem.initPostProcessing(this.renderer, this.scene, this.camera);
 
     // WebGPU backends may finalize internal render targets during init; re-apply sizing.
     // WebGPU 后端可能在 init 时最终确定内部渲染目标：此处重新应用尺寸
@@ -574,7 +590,13 @@ export class GameApp {
     // Apply fog settings immediately.
     // 立即应用雾设置
     if (this.scene.fog instanceof FogExp2) {
-      this.scene.fog.density = this.settings.fog.density;
+      this.scene.fog.density = this.settings.sky.fogDensity;
+    }
+
+    // Apply sky settings immediately (includes lighting).
+    // 立即应用天空设置（包含光照）
+    if (patch.sky) {
+      this.applySkySettings();
     }
 
     // Apply editor mouse config.
@@ -606,12 +628,16 @@ export class GameApp {
     // Apply fog settings immediately.
     // 立即应用雾设置
     if (this.scene.fog instanceof FogExp2) {
-      this.scene.fog.density = this.settings.fog.density;
+      this.scene.fog.density = this.settings.sky.fogDensity;
     }
 
     // Apply editor mouse config.
     // 应用编辑器鼠标配置
     this.terrainEditor.setMouseConfig(this.settings.editor.mouseConfig);
+
+    // Apply sky settings immediately (includes lighting).
+    // 立即应用天空设置（包含光照）
+    this.applySkySettings();
   }
 
   resetSettings() {
@@ -632,12 +658,44 @@ export class GameApp {
     // Apply fog settings immediately.
     // 立即应用雾设置
     if (this.scene.fog instanceof FogExp2) {
-      this.scene.fog.density = this.settings.fog.density;
+      this.scene.fog.density = this.settings.sky.fogDensity;
     }
 
     // Reset editor mouse config.
     // 重置编辑器鼠标配置
     this.terrainEditor.setMouseConfig(this.settings.editor.mouseConfig);
+
+    // Apply sky settings immediately (includes lighting).
+    // 立即应用天空设置（包含光照）
+    this.applySkySettings();
+  }
+
+  /**
+   * Apply current sky settings to sky system and scene lights.
+   * 将当前天空设置应用到天空系统和场景灯光
+   */
+  private applySkySettings(): void {
+    const sky = this.settings.sky;
+    
+    // Update sky system (atmosphere, sun position, bloom).
+    // 更新天空系统（大气、太阳位置、泛光）
+    this.skySystem.updateSettings(sky);
+    
+    // Update scene lights from sky settings.
+    // 从天空设置更新场景灯光
+    this.hemi.intensity = sky.ambientIntensity;
+    this.sun.intensity = sky.sunIntensity;
+    this.sun.castShadow = sky.shadowsEnabled;
+    
+    // Update terrain normal softness (global uniform).
+    // 更新地形法线柔和度（全局 uniform）
+    setTerrainNormalSoftness(sky.normalSoftness);
+    
+    // Update fog density.
+    // 更新雾密度
+    if (this.scene.fog instanceof FogExp2) {
+      this.scene.fog.density = sky.fogDensity;
+    }
   }
 
   private readonly onResize = () => {
@@ -705,9 +763,13 @@ export class GameApp {
     // 在帧末刷新已销毁的实体
     this.ecs.flushDestroyed();
 
-    // Render the scene.
-    // 渲染场景
-    this.renderer.render(this.scene, this.camera);
+    // Render the scene (with post-processing if enabled).
+    // 渲染场景（如果启用则带后处理）
+    if (this.skySystem.shouldUsePostProcessing()) {
+      this.skySystem.render();
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
   };
 
   /**

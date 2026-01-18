@@ -40,16 +40,20 @@ export const visualsConfig = {
       // Ground bounce: greenish brown from grass/earth.
       // 地面反射：来自草地/土壤的绿褐色
       groundColorHex: 0x3d5c3d,
-      intensity: 0.6,
+      // High intensity for soft ambient fill on all surfaces.
+      // 高强度以在所有表面提供柔和的环境光填充
+      intensity: 1.5,
     },
     sun: {
       // Sunlight: slightly warm white (6500K daylight).
       // 阳光：略带暖色的白光（6500K 日光）
       colorHex: 0xfffaf0,
-      intensity: 1.2,
-      // Sun position: high angle for midday lighting.
-      // 太阳位置：高角度模拟正午光照
-      position: [50, 80, 30] as const,
+      // Reduced intensity for balanced lighting with strong ambient.
+      // 降低强度以与强环境光平衡
+      intensity: 0.6,
+      // Sun position: high overhead angle for even lighting and less harsh side shadows.
+      // 太阳位置：高顶角以获得均匀光照和更柔和的侧面阴影
+      position: [30, 150, 20] as const,
     },
   },
 

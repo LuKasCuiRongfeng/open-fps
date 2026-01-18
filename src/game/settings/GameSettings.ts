@@ -49,8 +49,41 @@ export type GameSettings = {
     /** Render scale (0.5-1.0). Lower = better performance, worse quality. / 渲染缩放 (0.5-1.0)。越低性能越好，画质越差 */
     renderScale: number;
   };
-  fog: {
-    density: number;
+  sky: {
+    /** Sun elevation angle in degrees (0 = horizon, 90 = overhead). / 太阳仰角（度） */
+    sunElevation: number;
+    /** Sun azimuth angle in degrees (0 = north, 90 = east). / 太阳方位角（度） */
+    sunAzimuth: number;
+    /** Atmospheric turbidity (2 = clear, 10 = hazy). / 大气浊度 */
+    turbidity: number;
+    /** Rayleigh scattering coefficient. / 瑞利散射系数 */
+    rayleigh: number;
+    /** Mie scattering coefficient. / 米氏散射系数 */
+    mieCoefficient: number;
+    /** Mie scattering directional factor. / 米氏散射方向因子 */
+    mieDirectionalG: number;
+    /** Enable bloom post-processing. / 启用泛光后处理 */
+    bloomEnabled: boolean;
+    /** Bloom threshold. / 泛光阈值 */
+    bloomThreshold: number;
+    /** Bloom strength. / 泛光强度 */
+    bloomStrength: number;
+    /** Bloom radius. / 泛光半径 */
+    bloomRadius: number;
+    /** Hemisphere light intensity (ambient fill). / 半球光强度（环境填充） */
+    ambientIntensity: number;
+    /** Sun (directional) light intensity. / 太阳（方向）光强度 */
+    sunIntensity: number;
+    /** Enable shadows. / 启用阴影 */
+    shadowsEnabled: boolean;
+    /** Normal softness for terrain (0=sharp, 1=flat). / 地形法线柔和度 */
+    normalSoftness: number;
+    /** Fog density per meter. / 每米雾密度 */
+    fogDensity: number;
+    /** Enable lens flare effect. / 启用镜头光斑效果 */
+    lensflareEnabled: boolean;
+    /** Lens flare size multiplier. / 镜头光斑大小倍数 */
+    lensflareSize: number;
   };
   editor: {
     mouseConfig: EditorMouseConfig;
@@ -91,8 +124,24 @@ export function createDefaultGameSettings(): GameSettings {
       maxPixelRatio: renderConfig.maxPixelRatio,
       renderScale: 1.0,
     },
-    fog: {
-      density: visualsConfig.fog.densityPerMeter,
+    sky: {
+      sunElevation: 45,
+      sunAzimuth: 180,
+      turbidity: 10,
+      rayleigh: 2,
+      mieCoefficient: 0.005,
+      mieDirectionalG: 0.8,
+      bloomEnabled: true,
+      bloomThreshold: 0.85,
+      bloomStrength: 0.4,
+      bloomRadius: 0.3,
+      ambientIntensity: visualsConfig.lights.hemi.intensity,
+      sunIntensity: visualsConfig.lights.sun.intensity,
+      shadowsEnabled: true,
+      normalSoftness: 0.4,
+      fogDensity: visualsConfig.fog.densityPerMeter,
+      lensflareEnabled: true,
+      lensflareSize: 1.0,
     },
     editor: {
       mouseConfig: {
