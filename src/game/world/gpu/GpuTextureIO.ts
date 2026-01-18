@@ -3,6 +3,7 @@
 
 import type { StorageTexture, WebGPURenderer } from "three/webgpu";
 import type { TileAtlasAllocator } from "./TileAtlasAllocator";
+import { WebGpuBackend } from "./WebGpuBackend";
 
 /**
  * Utility class for GPU texture I/O operations (readback/upload).
@@ -60,21 +61,15 @@ export class GpuTextureIO {
     const offsetX = tileX * tileRes;
     const offsetY = tileZ * tileRes;
 
-    // Access Three.js backend internals.
-    // 访问 Three.js backend 内部
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const backend = (renderer as any).backend;
-
-    // Get texture data from backend.
-    // 从 backend 获取纹理数据
-    const textureData = backend.get(this.heightTexture);
-    if (!textureData || !textureData.texture) {
+    const backend = WebGpuBackend.from(renderer);
+    const textureGPU = backend?.getTextureGPU(this.heightTexture);
+    
+    if (!backend || !textureGPU) {
       console.error(`[GpuTextureIO] heightTexture not registered with backend!`);
       return new Float32Array(tileRes * tileRes);
     }
 
-    const textureGPU: GPUTexture = textureData.texture;
-    const device: GPUDevice = backend.device;
+    const device = backend.device;
 
     // Create staging buffer with correct alignment (256 bytes per row).
     // 创建具有正确对齐的暂存缓冲区（每行 256 字节）
@@ -180,21 +175,15 @@ export class GpuTextureIO {
     const offsetX = tileX * tileRes;
     const offsetY = tileZ * tileRes;
 
-    // Access Three.js backend internals.
-    // 访问 Three.js backend 内部
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const backend = (renderer as any).backend;
-
-    // Get texture data from backend.
-    // 从 backend 获取纹理数据
-    const textureData = backend.get(this.heightTexture);
-    if (!textureData || !textureData.texture) {
+    const backend = WebGpuBackend.from(renderer);
+    const textureGPU = backend?.getTextureGPU(this.heightTexture);
+    
+    if (!backend || !textureGPU) {
       console.error(`[GpuTextureIO] heightTexture not registered with backend!`);
       return;
     }
 
-    const textureGPU: GPUTexture = textureData.texture;
-    const device: GPUDevice = backend.device;
+    const device = backend.device;
 
     // Create staging buffer for upload (needs COPY_SRC).
     // 创建用于上传的暂存缓冲区（需要 COPY_SRC）
@@ -270,19 +259,15 @@ export class GpuTextureIO {
     const tileRes = this.tileResolution;
     const expectedSize = tileRes * tileRes;
 
-    // Access Three.js backend internals.
-    // 访问 Three.js backend 内部
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const backend = (renderer as any).backend;
+    const backend = WebGpuBackend.from(renderer);
+    const textureGPU = backend?.getTextureGPU(this.heightTexture);
 
-    const textureData = backend.get(this.heightTexture);
-    if (!textureData || !textureData.texture) {
+    if (!backend || !textureGPU) {
       console.error(`[GpuTextureIO] heightTexture not registered with backend!`);
       return;
     }
 
-    const textureGPU: GPUTexture = textureData.texture;
-    const device: GPUDevice = backend.device;
+    const device = backend.device;
 
     const bytesPerPixel = 4;
     const bytesPerRow = Math.ceil((tileRes * bytesPerPixel) / 256) * 256;

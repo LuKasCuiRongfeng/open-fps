@@ -97,8 +97,10 @@ export class TextureEditor {
    */
   async init(renderer: WebGPURenderer, worldSize: number = 1024): Promise<void> {
     this.renderer = renderer;
-    this.worldOffsetX = 0;
-    this.worldOffsetZ = 0;
+    // Splat map covers [-worldSize/2, worldSize/2] centered on origin.
+    // Splat map 覆盖以原点为中心的 [-worldSize/2, worldSize/2] 范围
+    this.worldOffsetX = -worldSize / 2;
+    this.worldOffsetZ = -worldSize / 2;
 
     // Create splat map compute with resolution proportional to world size.
     // 创建分辨率与世界大小成比例的 splat map 计算

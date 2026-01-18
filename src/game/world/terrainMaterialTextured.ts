@@ -135,22 +135,27 @@ export function createTexturedTerrainMaterial(
     
     // Sample splat map at world position (normalized to 0-1).
     // 在世界位置采样 splat map（归一化到 0-1）
-    // Assuming splat map covers the entire terrain area.
-    // 假设 splat map 覆盖整个地形区域
+    // Splat map covers a fixed world area centered on origin.
+    // Splat map 覆盖以原点为中心的固定世界区域
     const worldSize = float(cfg.streaming.viewDistanceChunks * cfg.streaming.chunkSizeMeters * 2);
-    const splatU = worldX.div(worldSize).add(0.5);
-    const splatV = worldZ.div(worldSize).add(0.5);
+    // Clamp UV to [0, 1] to prevent sampling outside texture.
+    // 将 UV 钳制到 [0, 1] 以防止采样到纹理外部
+    const splatU = clamp(worldX.div(worldSize).add(0.5), 0.0, 1.0);
+    const splatV = clamp(worldZ.div(worldSize).add(0.5), 0.0, 1.0);
     const splatUV = vec2(splatU, splatV);
     const splatWeights = splatTex.sample(splatUV);
 
     // Normalize splat weights (RGBA = layers 0-3).
     // 归一化 splat 权重（RGBA = 层 0-3）
+    // Protect against division by zero (fallback to 100% first layer).
+    // 防止除零（默认回退到 100% 第一层）
     const splatSum = add(add(add(splatWeights.r, splatWeights.g), splatWeights.b), splatWeights.a);
+    const safeSplatSum = splatSum.max(0.001);
     const normSplat = vec4(
-      splatWeights.r.div(splatSum),
-      splatWeights.g.div(splatSum),
-      splatWeights.b.div(splatSum),
-      splatWeights.a.div(splatSum),
+      splatSum.lessThan(0.001).select(float(1.0), splatWeights.r.div(safeSplatSum)),
+      splatSum.lessThan(0.001).select(float(0.0), splatWeights.g.div(safeSplatSum)),
+      splatSum.lessThan(0.001).select(float(0.0), splatWeights.b.div(safeSplatSum)),
+      splatSum.lessThan(0.001).select(float(0.0), splatWeights.a.div(safeSplatSum)),
     );
 
     // Sample each texture layer with triplanar projection and blend.

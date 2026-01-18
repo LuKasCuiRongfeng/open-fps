@@ -4,19 +4,21 @@
 // GPU-first design: All brush operations run on GPU compute shaders.
 // GPU-first 设计：所有画刷操作都在 GPU 计算着色器上运行
 //
-// Uses ping-pong (double buffer) pattern for read-write on same data:
-// - Read from source texture (textureLoad)
-// - Write to destination texture (textureStore)
-// - Copy result back to primary texture
-// 使用乒乓（双缓冲）模式处理同一数据的读写：
-// - 从源纹理读取 (textureLoad)
-// - 写入目标纹理 (textureStore)
-// - 将结果复制回主纹理
+// ARCHITECTURE:
+// WebGPU storage textures are write-only in compute shaders. To read and write:
+// - Use DataTexture (readable) as input for texture().load()
+// - Use StorageTexture (writable) as output for textureStore()
+// - After each brush pass, copy StorageTexture -> DataTexture via renderer.copyTextureToTexture()
+// 架构：
+// WebGPU 存储纹理在 compute shader 中只能写入。为了读写：
+// - 使用 DataTexture（可读）作为 texture().load() 的输入
+// - 使用 StorageTexture（可写）作为 textureStore() 的输出
+// - 每次画刷操作后，通过 renderer.copyTextureToTexture() 复制 StorageTexture -> DataTexture
 
 import {
   float,
   textureStore,
-  textureLoad,
+  texture,
   uvec2,
   ivec2,
   vec4,
@@ -27,62 +29,49 @@ import {
   int,
   mod,
   If,
+  mix,
+  select,
 } from "three/tsl";
 import {
   UnsignedByteType,
   RGBAFormat,
-  LinearFilter,
+  NearestFilter,
   StorageTexture,
+  DataTexture,
   type WebGPURenderer,
 } from "three/webgpu";
 import type { ComputeNode } from "three/webgpu";
+import { WebGpuBackend } from "./WebGpuBackend";
 
 /**
  * Brush stroke data for splat map painting.
  * Splat map 绘制的画刷笔画数据
  */
 export interface SplatBrushStroke {
-  // World position of brush center.
-  // 画刷中心的世界位置
   worldX: number;
   worldZ: number;
-  // Brush parameters.
-  // 画刷参数
   radius: number;
   strength: number;
   falloff: number;
-  // Target texture layer (0-3 = R, G, B, A channels).
-  // 目标纹理层（0-3 = R、G、B、A 通道）
-  targetLayer: number;
-  // Delta time for framerate-independent strength.
-  // 用于帧率无关强度的时间增量
+  targetLayer: number; // 0-3 = R, G, B, A channels
   dt: number;
 }
 
 /**
  * GPU compute pipeline for splat map texture painting.
  * Splat map 纹理绘制的 GPU 计算管线
- *
- * Uses ping-pong double buffering for read-write operations.
- * 使用乒乓双缓冲进行读写操作
  */
 export class SplatMapCompute {
-  // Resolution of the splat map texture.
-  // Splat map 纹理的分辨率
   private readonly resolution: number;
-
-  // World size covered by the splat map (meters).
-  // Splat map 覆盖的世界大小（米）
   private readonly worldSize: number;
 
-  // Ping-pong splat textures for double buffering.
-  // 用于双缓冲的乒乓 splat 纹理
-  // splatTextureA is the "primary" texture used for rendering.
-  // splatTextureA 是用于渲染的"主"纹理
-  private splatTextureA: StorageTexture | null = null;
-  // splatTextureB is the secondary buffer for ping-pong.
-  // splatTextureB 是乒乓的次要缓冲区
-  private splatTextureB: StorageTexture | null = null;
+  // Storage texture for writing (primary, used for rendering).
+  // 用于写入的存储纹理（主，用于渲染）
+  private splatTexture: StorageTexture | null = null;
+
+  // Readable copy for compute shader input.
+  // 用于 compute shader 输入的可读副本
+  private splatTextureRead: DataTexture | null = null;
 
   // Brush uniforms.
   // 画刷 uniform
@@ -92,31 +81,23 @@ export class SplatMapCompute {
   private brushStrength = uniform(0.5);
   private brushFalloff = uniform(0.7);
   private brushDt = uniform(0.016);
-  // Target layer: 0=R, 1=G, 2=B, 3=A.
-  // 目标层：0=R, 1=G, 2=B, 3=A
-  private targetLayer = uniform(0);
+  private targetLayer = uniform(0); // 0=R, 1=G, 2=B, 3=A
 
-  // World coordinate offset (for splat map world alignment).
-  // 世界坐标偏移（用于 splat map 世界对齐）
+  // World offset.
+  // 世界偏移
   private worldOffsetX = uniform(0);
   private worldOffsetZ = uniform(0);
 
-  // Compute nodes for brush application.
-  // 画刷应用的计算节点
-  // Read from A, write to B
-  private computeNodeAtoB: ComputeNode | null = null;
-  // Copy B back to A
-  private copyNodeBtoA: ComputeNode | null = null;
+  // Compute nodes.
+  // 计算节点
+  private brushComputeNode: ComputeNode | null = null;
 
   private initialized = false;
 
-  /**
-   * Create a new SplatMapCompute instance.
-   * 创建新的 SplatMapCompute 实例
-   *
-   * @param resolution - Resolution of the splat map texture (power of 2 recommended).
-   * @param worldSize - World size covered by the splat map in meters.
-   */
+  // Flag to track if readable texture needs sync before first brush.
+  // 跟踪是否需要在第一次画刷前同步可读纹理的标志
+  private needsSync = true;
+
   constructor(resolution: number = 1024, worldSize: number = 1024) {
     this.resolution = resolution;
     this.worldSize = worldSize;
@@ -127,107 +108,117 @@ export class SplatMapCompute {
    * 初始化 GPU 资源
    */
   async init(renderer: WebGPURenderer): Promise<void> {
-    // Create primary splat map texture (RGBA, 8-bit per channel).
-    // 创建主 splat map 纹理（RGBA，每通道 8 位）
-    this.splatTextureA = new StorageTexture(this.resolution, this.resolution);
-    this.splatTextureA.type = UnsignedByteType;
-    this.splatTextureA.format = RGBAFormat;
-    this.splatTextureA.magFilter = LinearFilter;
-    this.splatTextureA.minFilter = LinearFilter;
+    // Create primary storage texture (RGBA, 8-bit per channel).
+    // 创建主存储纹理（RGBA，每通道 8 位）
+    this.splatTexture = new StorageTexture(this.resolution, this.resolution);
+    this.splatTexture.type = UnsignedByteType;
+    this.splatTexture.format = RGBAFormat;
+    this.splatTexture.magFilter = NearestFilter;
+    this.splatTexture.minFilter = NearestFilter;
 
-    // Create secondary buffer for ping-pong.
-    // 为乒乓创建次要缓冲区
-    this.splatTextureB = new StorageTexture(this.resolution, this.resolution);
-    this.splatTextureB.type = UnsignedByteType;
-    this.splatTextureB.format = RGBAFormat;
-    this.splatTextureB.magFilter = LinearFilter;
-    this.splatTextureB.minFilter = LinearFilter;
+    // Create readable DataTexture copy.
+    // 创建可读的 DataTexture 副本
+    const data = new Uint8Array(this.resolution * this.resolution * 4);
+    // Default: 100% first texture (R=255, G=0, B=0, A=0).
+    // 默认：100% 第一个纹理（R=255, G=0, B=0, A=0）
+    for (let i = 0; i < this.resolution * this.resolution; i++) {
+      data[i * 4] = 255;     // R
+      data[i * 4 + 1] = 0;   // G
+      data[i * 4 + 2] = 0;   // B
+      data[i * 4 + 3] = 0;   // A
+    }
+    this.splatTextureRead = new DataTexture(
+      data,
+      this.resolution,
+      this.resolution,
+      RGBAFormat,
+      UnsignedByteType
+    );
+    this.splatTextureRead.magFilter = NearestFilter;
+    this.splatTextureRead.minFilter = NearestFilter;
+    this.splatTextureRead.needsUpdate = true;
 
-    // Fill with default values (255 in R channel = 100% first texture).
-    // 填充默认值（R 通道 255 = 100% 第一个纹理）
-    await this.initializeDefaultValues(renderer);
+    // Initialize storage texture with default values.
+    // 使用默认值初始化存储纹理
+    await this.initializeStorageTexture(renderer);
 
-    // Build compute shaders.
+    // Build compute shader.
     // 构建计算着色器
-    this.buildComputeShaders();
-
-    // Build copy shader for syncing back.
-    // 构建用于同步回的复制着色器
-    this.buildCopyShader();
+    this.buildBrushShader();
 
     this.initialized = true;
+    this.needsSync = false; // Just initialized, already in sync
     console.log(`[SplatMapCompute] Initialized ${this.resolution}x${this.resolution} splat map`);
   }
 
   /**
-   * Initialize splat map with default values (100% first texture).
-   * 使用默认值初始化 splat map（100% 第一个纹理）
+   * Initialize storage texture with default values.
+   * 使用默认值初始化存储纹理
+   *
+   * Uses WebGPU native API for reliable initialization.
+   * 使用 WebGPU 原生 API 进行可靠的初始化
    */
-  private async initializeDefaultValues(renderer: WebGPURenderer): Promise<void> {
+  private async initializeStorageTexture(renderer: WebGPURenderer): Promise<void> {
     const res = this.resolution;
 
-    // Create initialization shader.
-    // 创建初始化着色器
+    // Create default pixel data (100% first texture = R=255).
+    // 创建默认像素数据（100% 第一个纹理 = R=255）
+    const defaultPixels = new Uint8Array(res * res * 4);
+    for (let i = 0; i < res * res; i++) {
+      defaultPixels[i * 4] = 255;     // R
+      defaultPixels[i * 4 + 1] = 0;   // G
+      defaultPixels[i * 4 + 2] = 0;   // B
+      defaultPixels[i * 4 + 3] = 0;   // A
+    }
+
+    // First, run a dummy compute to ensure the texture is created on GPU.
+    // 首先运行一个虚拟计算以确保纹理在 GPU 上创建
+    const dstTexture = this.splatTexture!;
     const initFn = Fn(() => {
       const pixelX = mod(instanceIndex, uint(res));
       const pixelY = instanceIndex.div(uint(res));
       const coord = uvec2(pixelX, pixelY);
-
-      // Default: 100% first texture (R=255, G=0, B=0, A=0).
-      // 默认：100% 第一个纹理（R=255, G=0, B=0, A=0）
-      textureStore(this.splatTextureA!, coord, vec4(1.0, 0.0, 0.0, 0.0));
+      textureStore(dstTexture, coord, vec4(1.0, 0.0, 0.0, 0.0)).toWriteOnly();
     });
-
     const initNode = initFn().compute(res * res);
     await renderer.computeAsync(initNode);
 
-    // Copy to secondary buffer.
-    // 复制到次要缓冲区
-    const copyFn = Fn(() => {
-      const pixelX = mod(instanceIndex, uint(res));
-      const pixelY = instanceIndex.div(uint(res));
-      const readCoord = ivec2(int(pixelX), int(pixelY));
-      const writeCoord = uvec2(pixelX, pixelY);
-      const value = textureLoad(this.splatTextureA!, readCoord);
-      textureStore(this.splatTextureB!, writeCoord, value);
-    });
+    // Now the texture should be registered with backend.
+    // 现在纹理应该已注册到后端
+    const backend = WebGpuBackend.from(renderer);
+    const textureGPU = backend?.getTextureGPU(this.splatTexture!);
+    if (backend && textureGPU) {
+      // Write default data using WebGPU API for consistency.
+      // 使用 WebGPU API 写入默认数据以保持一致性
+      backend.device.queue.writeTexture(
+        { texture: textureGPU },
+        defaultPixels,
+        { bytesPerRow: res * 4 },
+        { width: res, height: res }
+      );
+    }
 
-    const copyNode = copyFn().compute(res * res);
-    await renderer.computeAsync(copyNode);
+    // Sync to readable texture.
+    // 同步到可读纹理
+    renderer.copyTextureToTexture(this.splatTexture!, this.splatTextureRead!);
   }
 
   /**
-   * Build compute shaders for brush operations.
-   * 为画刷操作构建计算着色器
+   * Build brush compute shader.
+   * 构建画刷计算着色器
    */
-  private buildComputeShaders(): void {
-    // A -> B: read from A, write to B
-    // A -> B: 从 A 读取，写入 B
-    this.computeNodeAtoB = this.buildBrushShader(
-      this.splatTextureA!,
-      this.splatTextureB!,
-    );
-  }
-
-  /**
-   * Build a brush compute shader that reads from src and writes to dst.
-   * 构建从 src 读取并写入 dst 的画刷计算着色器
-   */
-  private buildBrushShader(
-    srcTexture: StorageTexture,
-    dstTexture: StorageTexture,
-  ): ComputeNode {
+  private buildBrushShader(): void {
     const res = this.resolution;
     const worldSize = float(this.worldSize);
+    const srcTexture = this.splatTextureRead!;
+    const dstTexture = this.splatTexture!;
 
     const computeFn = Fn(() => {
-      // Compute pixel coordinates from instance index.
-      // 从实例索引计算像素坐标
       const pixelX = mod(instanceIndex, uint(res));
       const pixelY = instanceIndex.div(uint(res));
 
-      // World coordinates of this pixel.
-      // 此像素的世界坐标
+      // World coordinates.
+      // 世界坐标
       const u = float(pixelX).div(float(res - 1));
       const v = float(pixelY).div(float(res - 1));
       const worldX = this.worldOffsetX.add(u.mul(worldSize));
@@ -239,100 +230,78 @@ export class SplatMapCompute {
       const dz = worldZ.sub(this.brushCenterZ);
       const dist = dx.mul(dx).add(dz.mul(dz)).sqrt();
 
-      // Brush falloff: smoothstep from radius to radius*falloff.
-      // 画刷衰减：从 radius 到 radius*falloff 的平滑步进
+      // Brush falloff.
+      // 画刷衰减
       const innerRadius = this.brushRadius.mul(float(1).sub(this.brushFalloff));
       const outerRadius = this.brushRadius;
-
-      // t = 0 at inner edge, 1 at outer edge.
-      // t = 0 在内边缘，1 在外边缘
       const t = dist.sub(innerRadius).div(outerRadius.sub(innerRadius)).clamp(0, 1);
-      // Inverted smoothstep: 1 at center, 0 at edge.
-      // 反向平滑步进：中心为 1，边缘为 0
       const falloffMask = float(1).sub(t.mul(t).mul(float(3).sub(t.mul(2))));
 
-      // Only affect pixels inside brush radius.
-      // 只影响画刷半径内的像素
       const insideBrush = dist.lessThan(outerRadius);
 
-      // Read current splat values from SOURCE texture.
-      // 从源纹理读取当前 splat 值
+      // Read current splat values from readable texture.
+      // 从可读纹理读取当前 splat 值
       const readCoord = ivec2(int(pixelX), int(pixelY));
-      const currentSplat = textureLoad(srcTexture, readCoord);
+      const currentSplat = texture(srcTexture).load(readCoord);
 
-      // Extract channels as variables.
-      // 将通道提取为变量
       const r = currentSplat.r.toVar();
       const g = currentSplat.g.toVar();
       const b = currentSplat.b.toVar();
       const a = currentSplat.a.toVar();
 
-      // Calculate strength per frame (faster painting).
-      // 计算每帧强度（更快的绘制）
-      const effectStrength = this.brushStrength.mul(this.brushDt).mul(3.0).mul(falloffMask);
+      // Blend factor: how much to blend toward target (0-1 per frame).
+      // 混合因子：每帧向目标混合多少（0-1）
+      // High multiplier for responsive painting. At strength=1.0, center reaches 100% in ~0.5s.
+      // 高乘数实现响应式绘制。强度=1.0时，中心在约0.5秒内达到100%
+      // Use power of falloffMask to make center more dominant.
+      // 使用 falloffMask 的幂次使中心更占主导
+      const centerBoost = falloffMask.mul(falloffMask); // Square for sharper center
+      const blendFactor = this.brushStrength.mul(this.brushDt).mul(25.0).mul(centerBoost).clamp(0, 1);
 
-      // Apply brush effect only inside brush radius.
-      // 仅在画刷半径内应用画刷效果
       If(insideBrush, () => {
-        // Add to target channel, subtract from others (maintain sum = 1).
-        // 添加到目标通道，从其他通道减去（保持总和 = 1）
+        // Direct blend: lerp current channel toward 1.0, others toward 0.0
+        // 直接混合：将当前通道 lerp 向 1.0，其他通道向 0.0
+        // This gives smooth falloff at brush edges and full coverage at center.
+        // 这在画刷边缘提供平滑过渡，在中心提供完全覆盖
+        //
+        // To ensure full replacement, use a threshold: if blendFactor > 0.99, snap to target.
+        // 为确保完全替换，使用阈值：如果 blendFactor > 0.99，直接跳到目标值
+        const snapToTarget = blendFactor.greaterThan(0.95);
 
         // Layer 0 = R channel.
         // 层 0 = R 通道
         If(this.targetLayer.equal(0), () => {
-          const add = effectStrength.mul(float(1).sub(r));
-          r.addAssign(add);
-          // Redistribute from other channels proportionally.
-          // 从其他通道按比例重新分配
-          const otherSum = g.add(b).add(a);
-          If(otherSum.greaterThan(0.001), () => {
-            const scale = float(1).sub(r).div(otherSum).max(0);
-            g.mulAssign(scale);
-            b.mulAssign(scale);
-            a.mulAssign(scale);
-          });
+          r.assign(select(snapToTarget, float(1.0), mix(r, float(1.0), blendFactor)));
+          g.assign(select(snapToTarget, float(0.0), mix(g, float(0.0), blendFactor)));
+          b.assign(select(snapToTarget, float(0.0), mix(b, float(0.0), blendFactor)));
+          a.assign(select(snapToTarget, float(0.0), mix(a, float(0.0), blendFactor)));
         });
 
         // Layer 1 = G channel.
         // 层 1 = G 通道
         If(this.targetLayer.equal(1), () => {
-          const add = effectStrength.mul(float(1).sub(g));
-          g.addAssign(add);
-          const otherSum = r.add(b).add(a);
-          If(otherSum.greaterThan(0.001), () => {
-            const scale = float(1).sub(g).div(otherSum).max(0);
-            r.mulAssign(scale);
-            b.mulAssign(scale);
-            a.mulAssign(scale);
-          });
+          r.assign(select(snapToTarget, float(0.0), mix(r, float(0.0), blendFactor)));
+          g.assign(select(snapToTarget, float(1.0), mix(g, float(1.0), blendFactor)));
+          b.assign(select(snapToTarget, float(0.0), mix(b, float(0.0), blendFactor)));
+          a.assign(select(snapToTarget, float(0.0), mix(a, float(0.0), blendFactor)));
         });
 
         // Layer 2 = B channel.
         // 层 2 = B 通道
         If(this.targetLayer.equal(2), () => {
-          const add = effectStrength.mul(float(1).sub(b));
-          b.addAssign(add);
-          const otherSum = r.add(g).add(a);
-          If(otherSum.greaterThan(0.001), () => {
-            const scale = float(1).sub(b).div(otherSum).max(0);
-            r.mulAssign(scale);
-            g.mulAssign(scale);
-            a.mulAssign(scale);
-          });
+          r.assign(select(snapToTarget, float(0.0), mix(r, float(0.0), blendFactor)));
+          g.assign(select(snapToTarget, float(0.0), mix(g, float(0.0), blendFactor)));
+          b.assign(select(snapToTarget, float(1.0), mix(b, float(1.0), blendFactor)));
+          a.assign(select(snapToTarget, float(0.0), mix(a, float(0.0), blendFactor)));
         });
 
         // Layer 3 = A channel.
         // 层 3 = A 通道
         If(this.targetLayer.equal(3), () => {
-          const add = effectStrength.mul(float(1).sub(a));
-          a.addAssign(add);
-          const otherSum = r.add(g).add(b);
-          If(otherSum.greaterThan(0.001), () => {
-            const scale = float(1).sub(a).div(otherSum).max(0);
-            r.mulAssign(scale);
-            g.mulAssign(scale);
-            b.mulAssign(scale);
-          });
+          r.assign(select(snapToTarget, float(0.0), mix(r, float(0.0), blendFactor)));
+          g.assign(select(snapToTarget, float(0.0), mix(g, float(0.0), blendFactor)));
+          b.assign(select(snapToTarget, float(0.0), mix(b, float(0.0), blendFactor)));
+          a.assign(select(snapToTarget, float(1.0), mix(a, float(1.0), blendFactor)));
         });
       });
 
@@ -346,32 +315,11 @@ export class SplatMapCompute {
         a.divAssign(sum);
       });
 
-      // Write result to DESTINATION texture.
-      // 将结果写入目标纹理
       const writeCoord = uvec2(pixelX, pixelY);
-      textureStore(dstTexture, writeCoord, vec4(r, g, b, a));
+      textureStore(dstTexture, writeCoord, vec4(r, g, b, a)).toWriteOnly();
     });
 
-    return computeFn().compute(res * res);
-  }
-
-  /**
-   * Build copy shader for B -> A sync.
-   * 构建 B -> A 同步的复制着色器
-   */
-  private buildCopyShader(): void {
-    const res = this.resolution;
-
-    const copyFn = Fn(() => {
-      const pixelX = mod(instanceIndex, uint(res));
-      const pixelY = instanceIndex.div(uint(res));
-      const readCoord = ivec2(int(pixelX), int(pixelY));
-      const writeCoord = uvec2(pixelX, pixelY);
-      const value = textureLoad(this.splatTextureB!, readCoord);
-      textureStore(this.splatTextureA!, writeCoord, value);
-    });
-
-    this.copyNodeBtoA = copyFn().compute(res * res);
+    this.brushComputeNode = computeFn().compute(res * res);
   }
 
   /**
@@ -379,13 +327,17 @@ export class SplatMapCompute {
    * 将画刷笔画应用到 splat map
    */
   async applyBrush(renderer: WebGPURenderer, stroke: SplatBrushStroke): Promise<void> {
-    if (!this.initialized || !this.computeNodeAtoB || !this.copyNodeBtoA) {
+    if (!this.initialized || !this.brushComputeNode) {
       console.warn("[SplatMapCompute] Not initialized");
       return;
     }
 
-    // Update brush uniforms.
-    // 更新画刷 uniform
+    // Ensure readable texture is synced before brush operation.
+    // 确保在画刷操作前同步可读纹理
+    this.ensureSynced(renderer);
+
+    // Update uniforms.
+    // 更新 uniform
     this.brushCenterX.value = stroke.worldX;
     this.brushCenterZ.value = stroke.worldZ;
     this.brushRadius.value = stroke.radius;
@@ -394,21 +346,28 @@ export class SplatMapCompute {
     this.brushDt.value = stroke.dt;
     this.targetLayer.value = stroke.targetLayer;
 
-    // Execute A -> B brush shader.
-    // 执行 A -> B 画刷着色器
-    await renderer.computeAsync(this.computeNodeAtoB);
+    // Execute brush compute shader.
+    // 执行画刷计算着色器
+    await renderer.computeAsync(this.brushComputeNode);
 
-    // Copy B -> A.
-    // 复制 B -> A
-    await renderer.computeAsync(this.copyNodeBtoA);
+    // Sync: copy storage texture to readable texture.
+    // 同步：将存储纹理复制到可读纹理
+    renderer.copyTextureToTexture(this.splatTexture!, this.splatTextureRead!);
   }
 
   /**
    * Get the primary splat map texture for rendering.
    * 获取用于渲染的主 splat map 纹理
+   *
+   * Returns the readable DataTexture (not StorageTexture) for material sampling.
+   * 返回可读的 DataTexture（而非 StorageTexture）用于材质采样
    */
-  getSplatTexture(): StorageTexture | null {
-    return this.splatTextureA;
+  getSplatTexture(): DataTexture | null {
+    // Return the readable texture for material sampling.
+    // Materials use texture().sample() which works with DataTexture.
+    // 返回可读纹理用于材质采样
+    // 材质使用 texture().sample() 与 DataTexture 配合工作
+    return this.splatTextureRead;
   }
 
   /**
@@ -439,61 +398,247 @@ export class SplatMapCompute {
   /**
    * Load splat map data from CPU pixels (Uint8Array RGBA).
    * 从 CPU 像素（Uint8Array RGBA）加载 splat map 数据
+   *
+   * Uses WebGPU native API to directly write to StorageTexture,
+   * bypassing DataTexture needsUpdate timing issues.
+   * 使用 WebGPU 原生 API 直接写入 StorageTexture，绕过 DataTexture needsUpdate 时序问题
    */
-  async loadFromPixels(_renderer: WebGPURenderer, _pixels: Uint8Array): Promise<void> {
-    if (!this.splatTextureA || !this.splatTextureB) {
+  async loadFromPixels(renderer: WebGPURenderer, pixels: Uint8Array): Promise<void> {
+    if (!this.splatTexture || !this.splatTextureRead) {
       console.warn("[SplatMapCompute] Not initialized");
       return;
     }
 
-    // Create CPU upload texture.
-    // 创建 CPU 上传纹理
-    // For now, we'll use a compute shader to load pixel data.
-    // 目前，我们使用计算着色器加载像素数据
-    // This is a simplified approach - in production, use staging buffers.
-    // 这是简化方法 - 在生产中，使用暂存缓冲区
+    const res = this.resolution;
+    const backend = WebGpuBackend.from(renderer);
+    const textureGPU = backend?.getTextureGPU(this.splatTexture);
+    
+    if (!backend || !textureGPU) {
+      console.error("[SplatMapCompute] StorageTexture not registered with backend, falling back to DataTexture");
+      // Fallback: update DataTexture directly.
+      // 回退：直接更新 DataTexture
+      const data = this.splatTextureRead.image.data as Uint8Array;
+      const len = Math.min(pixels.length, data.length);
+      for (let i = 0; i < len; i++) {
+        data[i] = pixels[i];
+      }
+      this.splatTextureRead.needsUpdate = true;
+      return;
+    }
 
-    // TODO: Implement proper texture upload from CPU data.
-    // TODO: 实现从 CPU 数据正确上传纹理
-    console.log("[SplatMapCompute] loadFromPixels - TODO: implement texture upload");
+    // Ensure pixels is backed by a regular ArrayBuffer (not SharedArrayBuffer).
+    // 确保 pixels 由普通 ArrayBuffer 支持（而非 SharedArrayBuffer）
+    const pixelData = new Uint8Array(pixels.buffer instanceof ArrayBuffer ? pixels : new Uint8Array(pixels));
+
+    // Directly write pixels to StorageTexture using WebGPU API.
+    // 使用 WebGPU API 直接将像素写入 StorageTexture
+    backend.device.queue.writeTexture(
+      { texture: textureGPU },
+      pixelData,
+      { bytesPerRow: res * 4 },
+      { width: res, height: res }
+    );
+
+    // Sync StorageTexture to DataTexture (for material sampling).
+    // 同步 StorageTexture 到 DataTexture（用于材质采样）
+    renderer.copyTextureToTexture(this.splatTexture, this.splatTextureRead);
+
+    // Also update CPU-side data for consistency.
+    // 同时更新 CPU 端数据以保持一致性
+    const data = this.splatTextureRead.image.data as Uint8Array;
+    const len = Math.min(pixels.length, data.length);
+    for (let i = 0; i < len; i++) {
+      data[i] = pixels[i];
+    }
+
+    this.needsSync = false;
   }
 
   /**
-   * Read splat map data back to CPU (Uint8Array RGBA).
-   * 将 splat map 数据读回 CPU（Uint8Array RGBA）
+   * Read splat map data to CPU (returns Uint8Array RGBA).
+   * 读取 splat map 数据到 CPU（返回 Uint8Array RGBA）
+   *
+   * Uses a compute shader to copy texture data to a storage buffer,
+   * then reads the buffer back to CPU.
+   * 使用 compute shader 将纹理数据复制到存储缓冲区，然后回读到 CPU
    */
-  async readToPixels(_renderer: WebGPURenderer): Promise<Uint8Array> {
-    if (!this.splatTextureA) {
+  async readToPixels(renderer: WebGPURenderer): Promise<Uint8Array> {
+    if (!this.splatTexture || !this.splatTextureRead) {
       throw new Error("[SplatMapCompute] Not initialized");
     }
 
-    // TODO: Implement proper texture readback to CPU.
-    // TODO: 实现从纹理正确读回 CPU
-    console.log("[SplatMapCompute] readToPixels - TODO: implement texture readback");
+    const res = this.resolution;
+    const backend = WebGpuBackend.from(renderer);
+    const textureGPU = backend?.getTextureGPU(this.splatTexture);
 
-    // Return default data for now.
-    // 暂时返回默认数据
-    const pixels = new Uint8Array(this.resolution * this.resolution * 4);
-    for (let i = 0; i < pixels.length; i += 4) {
-      pixels[i] = 255; // R = 100% first texture
-      pixels[i + 1] = 0; // G
-      pixels[i + 2] = 0; // B
-      pixels[i + 3] = 0; // A
+    if (!backend || !textureGPU) {
+      console.error("[SplatMapCompute] StorageTexture not registered with backend!");
+      // Fallback to CPU-side data.
+      // 回退到 CPU 端数据
+      const cpuData = this.splatTextureRead.image.data as Uint8Array;
+      return new Uint8Array(cpuData);
     }
+
+    const device = backend.device;
+
+    // Wait for any pending GPU work.
+    // 等待任何待处理的 GPU 工作
+    await device.queue.onSubmittedWorkDone();
+
+    // Create a storage buffer to hold the pixel data.
+    // 创建一个存储缓冲区来保存像素数据
+    const bufferSize = res * res * 4; // RGBA8 = 4 bytes per pixel
+    const storageBuffer = device.createBuffer({
+      size: bufferSize,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+    });
+
+    // Create staging buffer for readback.
+    // 创建用于回读的暂存缓冲区
+    const stagingBuffer = device.createBuffer({
+      size: bufferSize,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    });
+
+    // Create a compute shader to copy texture to buffer.
+    // 创建一个 compute shader 将纹理复制到缓冲区
+    const shaderCode = `
+      @group(0) @binding(0) var srcTexture: texture_2d<f32>;
+      @group(0) @binding(1) var<storage, read_write> dstBuffer: array<u32>;
+
+      @compute @workgroup_size(16, 16)
+      fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+        let res = ${res}u;
+        if (gid.x >= res || gid.y >= res) {
+          return;
+        }
+        let pixel = textureLoad(srcTexture, vec2<i32>(i32(gid.x), i32(gid.y)), 0);
+        let r = u32(clamp(pixel.r * 255.0, 0.0, 255.0));
+        let g = u32(clamp(pixel.g * 255.0, 0.0, 255.0));
+        let b = u32(clamp(pixel.b * 255.0, 0.0, 255.0));
+        let a = u32(clamp(pixel.a * 255.0, 0.0, 255.0));
+        let idx = gid.y * res + gid.x;
+        dstBuffer[idx] = r | (g << 8u) | (b << 16u) | (a << 24u);
+      }
+    `;
+
+    const shaderModule = device.createShaderModule({ code: shaderCode });
+
+    const bindGroupLayout = device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.COMPUTE,
+          texture: { sampleType: "float" },
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "storage" },
+        },
+      ],
+    });
+
+
+    const pipelineLayout = device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout],
+    });
+
+    const computePipeline = device.createComputePipeline({
+      layout: pipelineLayout,
+      compute: {
+        module: shaderModule,
+        entryPoint: "main",
+      },
+    });
+
+    // Create texture view for the StorageTexture.
+    // 为 StorageTexture 创建纹理视图
+    const textureView = textureGPU.createView();
+
+    const bindGroup = device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: textureView },
+        { binding: 1, resource: { buffer: storageBuffer } },
+      ],
+    });
+
+    // Run the compute shader.
+    // 运行 compute shader
+    const commandEncoder = device.createCommandEncoder();
+    const passEncoder = commandEncoder.beginComputePass();
+    passEncoder.setPipeline(computePipeline);
+    passEncoder.setBindGroup(0, bindGroup);
+    passEncoder.dispatchWorkgroups(Math.ceil(res / 16), Math.ceil(res / 16));
+    passEncoder.end();
+
+    // Copy storage buffer to staging buffer.
+    // 将存储缓冲区复制到暂存缓冲区
+    commandEncoder.copyBufferToBuffer(storageBuffer, 0, stagingBuffer, 0, bufferSize);
+    device.queue.submit([commandEncoder.finish()]);
+
+    // Wait and read back.
+    // 等待并回读
+    await stagingBuffer.mapAsync(GPUMapMode.READ);
+    const mappedRange = stagingBuffer.getMappedRange();
+    const rawData = new Uint32Array(mappedRange);
+
+    // Convert to Uint8Array RGBA.
+    // 转换为 Uint8Array RGBA
+    const pixels = new Uint8Array(res * res * 4);
+    for (let i = 0; i < res * res; i++) {
+      const packed = rawData[i];
+      pixels[i * 4] = packed & 0xFF;           // R
+      pixels[i * 4 + 1] = (packed >> 8) & 0xFF;  // G
+      pixels[i * 4 + 2] = (packed >> 16) & 0xFF; // B
+      pixels[i * 4 + 3] = (packed >> 24) & 0xFF; // A
+    }
+
+    // Clean up.
+    // 清理
+    stagingBuffer.unmap();
+    stagingBuffer.destroy();
+    storageBuffer.destroy();
+
     return pixels;
   }
 
   /**
-   * Dispose GPU resources.
-   * 释放 GPU 资源
+   * Sync readable texture from storage texture.
+   * 从存储纹理同步可读纹理
    */
+  syncReadableTexture(renderer: WebGPURenderer): void {
+    if (this.splatTexture && this.splatTextureRead) {
+      renderer.copyTextureToTexture(this.splatTexture, this.splatTextureRead);
+    }
+  }
+
+  /**
+   * Ensure readable texture is synced before brush operations.
+   * 确保在画刷操作前同步可读纹理
+   */
+  ensureSynced(renderer: WebGPURenderer): void {
+    if (this.needsSync && this.splatTexture && this.splatTextureRead) {
+      renderer.copyTextureToTexture(this.splatTexture, this.splatTextureRead);
+      this.needsSync = false;
+    }
+  }
+
+  /**
+   * Mark that readable texture needs sync.
+   * 标记可读纹理需要同步
+   */
+  markNeedsSync(): void {
+    this.needsSync = true;
+  }
+
   dispose(): void {
-    this.splatTextureA?.dispose();
-    this.splatTextureB?.dispose();
-    this.splatTextureA = null;
-    this.splatTextureB = null;
-    this.computeNodeAtoB = null;
-    this.copyNodeBtoA = null;
+    this.splatTexture?.dispose();
+    this.splatTextureRead?.dispose();
+    this.splatTexture = null;
+    this.splatTextureRead = null;
+    this.brushComputeNode = null;
     this.initialized = false;
     console.log("[SplatMapCompute] Disposed");
   }

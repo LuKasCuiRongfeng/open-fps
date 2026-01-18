@@ -326,6 +326,12 @@ export class ChunkManager {
       tileInfo,
     );
 
+    // If we have texture data loaded, apply it to the new chunk.
+    // 如果已加载纹理数据，将其应用到新 chunk
+    if (this.textureResult || this.splatMapTexture) {
+      chunk.rebuildMaterial(this.textureResult, this.splatMapTexture);
+    }
+
     this.chunks.set(key, chunk);
     this.scene.add(chunk.mesh);
   }
@@ -430,12 +436,12 @@ export class ChunkManager {
 
     if (affectedCoords.length === 0) return;
 
-    // Step 1: Sync secondary buffer so all chunks read from consistent state.
-    // 步骤 1：同步次要缓冲区，使所有 chunk 从一致的状态读取
-    await this.brushCompute.syncSecondaryBuffer(this.renderer!);
+    // Ensure readable texture is synced before first brush operation.
+    // 确保在第一次画刷操作前同步可读纹理
+    this.brushCompute.ensureSynced(this.renderer!);
 
-    // Step 2: Apply brush to all chunks (read from A, write to B) WITHOUT copying back.
-    // 步骤 2：对所有 chunk 应用画刷（从 A 读取，写入 B）不复制回来
+    // Apply brush to all chunks without syncing between operations.
+    // 对所有 chunk 应用画刷，操作之间不同步
     for (const stroke of strokes) {
       for (const { cx, cz, tileX, tileZ } of affectedCoords) {
         await this.brushCompute.applyBrushToChunkNoCopy(
@@ -444,11 +450,9 @@ export class ChunkManager {
       }
     }
 
-    // Step 3: Copy all affected tiles from B back to A.
-    // 步骤 3：将所有受影响的 tile 从 B 复制回 A
-    for (const { tileX, tileZ } of affectedCoords) {
-      await this.brushCompute.copyTileBack(tileX, tileZ, this.renderer!);
-    }
+    // Sync readable texture after all brush operations.
+    // 所有画刷操作后同步可读纹理
+    this.brushCompute.syncReadableTexture(this.renderer!);
 
     // Step 4: Stitch edges between affected chunks and their neighbors.
     // 步骤 4：缝合受影响 chunk 与其邻居之间的边缘
@@ -550,6 +554,10 @@ export class ChunkManager {
     // Batch upload all chunks at once.
     // 一次性批量上传所有 chunk
     await this.heightCompute.uploadChunksBatch(batchData, this.renderer!);
+
+    // Mark brush compute as needing sync (terrain data changed).
+    // 标记画刷计算需要同步（地形数据已更改）
+    this.brushCompute.markNeedsSync();
 
     // Regenerate normals after uploading.
     // 上传后重新生成法线

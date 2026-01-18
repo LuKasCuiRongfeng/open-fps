@@ -14,6 +14,7 @@ import type { TerrainConfig } from "../terrain";
 import { TileAtlasAllocator } from "./TileAtlasAllocator";
 import { GpuTextureIO } from "./GpuTextureIO";
 import { createHashTexture, buildHeightComputeShader } from "./TerrainNoiseShader";
+import { WebGpuBackend } from "./WebGpuBackend";
 
 /**
  * GPU compute pipeline for terrain height generation.
@@ -156,10 +157,10 @@ export class TerrainHeightCompute {
 
     // Explicit GPU sync: wait for all submitted work to complete.
     // 显式 GPU 同步：等待所有提交的工作完成
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const backend = (renderer as any).backend;
-    const device: GPUDevice = backend.device;
-    await device.queue.onSubmittedWorkDone();
+    const backend = WebGpuBackend.from(renderer);
+    if (backend) {
+      await backend.device.queue.onSubmittedWorkDone();
+    }
 
     return tileIndex;
   }

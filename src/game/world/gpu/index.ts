@@ -7,4 +7,6 @@ export { TerrainBrushCompute } from "./TerrainBrushCompute";
 export { SplatMapCompute } from "./SplatMapCompute";
 export { TileAtlasAllocator } from "./TileAtlasAllocator";
 export { GpuTextureIO } from "./GpuTextureIO";
+export { WebGpuBackend } from "./WebGpuBackend";
+export type { WebGpuBackendHandle } from "./WebGpuBackend";
 export { createHashTexture, buildHeightComputeShader } from "./TerrainNoiseShader";

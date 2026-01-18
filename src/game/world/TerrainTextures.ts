@@ -13,6 +13,7 @@ import {
   UnsignedByteType,
   type Texture,
 } from "three/webgpu";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import type { TextureDefinition, TextureLayerDef } from "../editor/TextureData";
 
 /**
@@ -111,7 +112,9 @@ export class TerrainTextures {
     projectPath: string,
     def: TextureLayerDef,
   ): Promise<PBRTextureSet> {
-    const resolvePath = (p: string) => `${projectPath}/${p}`;
+    // Resolve local file path and convert to Tauri asset URL.
+    // 解析本地文件路径并转换为 Tauri asset URL
+    const resolvePath = (p: string) => convertFileSrc(`${projectPath}/${p}`);
 
     // Load diffuse (required).
     // 加载漫反射（必需）

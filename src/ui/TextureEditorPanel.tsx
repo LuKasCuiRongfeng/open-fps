@@ -29,15 +29,12 @@ export function TextureEditorPanel({ editor, visible }: Props) {
   const [brushZ, setBrushZ] = useState(0);
   const rafRef = useRef<number>(0);
 
-  // Sync layer names from editor.
-  // 从编辑器同步层名称
+  // Sync layer names from editor (runs once when editor changes).
+  // 从编辑器同步层名称（编辑器更改时运行一次）
   useEffect(() => {
     if (!editor) return;
     setLayerNames(editor.layerNames);
-    if (editor.layerNames.length > 0 && !selectedLayer) {
-      setSelectedLayer(editor.brushSettings.selectedLayer || editor.layerNames[0]);
-    }
-  }, [editor, editor?.layerNames, selectedLayer]);
+  }, [editor]);
 
   // Update brush position.
   // 更新画刷位置
@@ -97,7 +94,7 @@ export function TextureEditorPanel({ editor, visible }: Props) {
   if (!editor || !visible || !editor.editingEnabled) return null;
 
   return (
-    <div className="absolute top-4 left-4 w-64 bg-black/80 backdrop-blur-sm rounded-lg p-4 text-white text-sm">
+    <div className="absolute top-4 right-4 w-64 bg-black/80 backdrop-blur-sm rounded-lg p-4 text-white text-sm">
       {/* Header / 标题 */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold">🎨 Texture Brush</h2>

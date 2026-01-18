@@ -59,6 +59,8 @@
   - **Never import from bare `three`** / **禁止从 `three` 直接导入**
   - **Never define custom types** for TSL nodes (use three's exports) / **禁止自定义** TSL 节点类型
 - **React Compiler enabled** — **do NOT use** `useMemo`, `useCallback`, `React.memo` / **已启用 React Compiler**——**禁止使用** `useMemo`、`useCallback`、`React.memo`
+- **NO `(xxx as any).xxx` pattern** — never cast to `any` to access undocumented APIs. Use only official, documented APIs. If an API doesn't exist, find an alternative approach.
+- **禁止 `(xxx as any).xxx` 写法** — 不要通过 `any` 类型转换访问未文档化的 API。只使用官方文档化的 API。如果 API 不存在，寻找替代方案。
 
 ### ⚠️ Language Rule / 语言规则
 - **ONLY code comments** use bilingual (English + Chinese) / **仅代码注释**使用中英双语

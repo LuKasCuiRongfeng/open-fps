@@ -289,6 +289,10 @@ export default function GameView() {
   // 处理活动编辑器变化 - 更新 TerrainEditor 模式
   const handleActiveEditorChange = (editor: ActiveEditorType) => {
     setActiveEditor(editor);
+    // Always reset both brushes when switching editors to prevent ghost strokes.
+    // 切换编辑器时总是重置两个画刷，防止幽灵笔画
+    terrainEditor?.endBrush();
+    textureEditor?.endBrush();
     // Update terrain editor mode to match active editor state.
     // 更新地形编辑器模式以匹配活动编辑器状态
     if (terrainEditor) {

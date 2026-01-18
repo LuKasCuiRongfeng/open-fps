@@ -23,11 +23,8 @@ export class TextureStorage {
     try {
       const jsonPath = `${projectPath}/texture.json`;
       const content = await invoke<string>("read_text_file", { path: jsonPath });
-      const data = JSON.parse(content) as TextureDefinition;
-      console.log("[TextureStorage] Loaded texture.json");
-      return data;
+      return JSON.parse(content) as TextureDefinition;
     } catch {
-      console.log("[TextureStorage] No texture.json found, using procedural textures");
       return null;
     }
   }
@@ -58,26 +55,23 @@ export class TextureStorage {
       // 读取 PNG 文件为 base64 并解码
       const base64 = await invoke<string>("read_binary_file_base64", { path: pngPath });
 
-      // Decode PNG using browser APIs.
-      // 使用浏览器 API 解码 PNG
+      // Decode PNG using browser APIs with premultiplyAlpha: 'none' to preserve RGB when A=0.
+      // 使用浏览器 API 解码 PNG，设置 premultiplyAlpha: 'none' 以在 A=0 时保留 RGB
       const blob = await fetch(`data:image/png;base64,${base64}`).then((r) => r.blob());
-      const bitmap = await createImageBitmap(blob);
+      const bitmap = await createImageBitmap(blob, { premultiplyAlpha: "none" });
 
-      // Extract pixel data.
-      // 提取像素数据
+      // Extract pixel data using willReadFrequently for better performance.
+      // 使用 willReadFrequently 提取像素数据以获得更好的性能
       const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-      const ctx = canvas.getContext("2d")!;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
       ctx.drawImage(bitmap, 0, 0);
       const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
-
-      console.log(`[TextureStorage] Loaded splatmap.png (${bitmap.width}x${bitmap.height})`);
 
       return {
         resolution: bitmap.width,
         pixels: new Uint8Array(imageData.data),
       };
     } catch {
-      console.log("[TextureStorage] No splatmap.png found");
       return null;
     }
   }
@@ -85,15 +79,30 @@ export class TextureStorage {
   /**
    * Save splat map to project folder as PNG.
    * 保存 splat map 到项目文件夹为 PNG
+   *
+   * NOTE: We set A=255 for all pixels to avoid premultiplied alpha issues in PNG.
+   * When A=0, browsers will zero out RGB during PNG encoding.
+   * 注意：我们将所有像素的 A 设置为 255 以避免 PNG 中的预乘 alpha 问题。
+   * 当 A=0 时，浏览器会在 PNG 编码期间将 RGB 归零。
    */
   static async saveSplatMap(projectPath: string, splatMap: SplatMapData): Promise<void> {
     const { resolution, pixels } = splatMap;
+
+    // Create a copy with A=255 to avoid premultiplied alpha issues.
+    // 创建一个 A=255 的副本以避免预乘 alpha 问题
+    const pixelsWithAlpha = new Uint8ClampedArray(pixels.length);
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixelsWithAlpha[i] = pixels[i];       // R
+      pixelsWithAlpha[i + 1] = pixels[i + 1]; // G
+      pixelsWithAlpha[i + 2] = pixels[i + 2]; // B
+      pixelsWithAlpha[i + 3] = 255;          // A = 255 (force opaque)
+    }
 
     // Create canvas and draw pixel data.
     // 创建 canvas 并绘制像素数据
     const canvas = new OffscreenCanvas(resolution, resolution);
     const ctx = canvas.getContext("2d")!;
-    const imageData = new ImageData(new Uint8ClampedArray(pixels), resolution, resolution);
+    const imageData = new ImageData(pixelsWithAlpha, resolution, resolution);
     ctx.putImageData(imageData, 0, 0);
 
     // Convert to PNG blob.
@@ -106,8 +115,6 @@ export class TextureStorage {
     // 通过 Tauri 后端保存
     const pngPath = `${projectPath}/splatmap.png`;
     await invoke("write_binary_file_base64", { path: pngPath, base64 });
-
-    console.log(`[TextureStorage] Saved splatmap.png (${resolution}x${resolution})`);
   }
 
   /**
