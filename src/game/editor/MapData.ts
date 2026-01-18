@@ -168,7 +168,13 @@ export function serializeMapData(mapData: MapData): string {
   for (const [key, chunkData] of Object.entries(mapData.chunks)) {
     const float32 = new Float32Array(chunkData.heights);
     const uint8 = new Uint8Array(float32.buffer);
-    const base64 = btoa(String.fromCharCode(...uint8));
+    // Convert to base64 without spread operator to avoid stack overflow.
+    // 转换为 base64，不使用扩展运算符以避免栈溢出
+    let binary = "";
+    for (let i = 0; i < uint8.length; i++) {
+      binary += String.fromCharCode(uint8[i]);
+    }
+    const base64 = btoa(binary);
     serializable.chunks[key] = { heightsBase64: base64 };
   }
 

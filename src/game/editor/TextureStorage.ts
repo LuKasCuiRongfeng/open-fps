@@ -109,7 +109,15 @@ export class TextureStorage {
     // 转换为 PNG blob
     const blob = await canvas.convertToBlob({ type: "image/png" });
     const arrayBuffer = await blob.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    
+    // Convert ArrayBuffer to base64 without spread operator to avoid stack overflow.
+    // 转换 ArrayBuffer 为 base64，不使用扩展运算符以避免栈溢出
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = btoa(binary);
 
     // Save via Tauri backend.
     // 通过 Tauri 后端保存
