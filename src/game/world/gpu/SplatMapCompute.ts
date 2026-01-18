@@ -98,6 +98,10 @@ export class SplatMapCompute {
   // 跟踪是否需要在第一次画刷前同步可读纹理的标志
   private needsSync = true;
 
+  // Flag to prevent concurrent brush operations.
+  // 防止并发画刷操作的标志
+  private brushOperationInProgress = false;
+
   constructor(resolution: number = 1024, worldSize: number = 1024) {
     this.resolution = resolution;
     this.worldSize = worldSize;
@@ -332,27 +336,38 @@ export class SplatMapCompute {
       return;
     }
 
-    // Ensure readable texture is synced before brush operation.
-    // 确保在画刷操作前同步可读纹理
-    this.ensureSynced(renderer);
+    // Prevent concurrent brush operations to avoid race conditions.
+    // 防止并发画刷操作以避免竞态条件
+    if (this.brushOperationInProgress) {
+      return;
+    }
+    this.brushOperationInProgress = true;
 
-    // Update uniforms.
-    // 更新 uniform
-    this.brushCenterX.value = stroke.worldX;
-    this.brushCenterZ.value = stroke.worldZ;
-    this.brushRadius.value = stroke.radius;
-    this.brushStrength.value = stroke.strength;
-    this.brushFalloff.value = stroke.falloff;
-    this.brushDt.value = stroke.dt;
-    this.targetLayer.value = stroke.targetLayer;
+    try {
+      // Ensure readable texture is synced before brush operation.
+      // 确保在画刷操作前同步可读纹理
+      this.ensureSynced(renderer);
 
-    // Execute brush compute shader.
-    // 执行画刷计算着色器
-    await renderer.computeAsync(this.brushComputeNode);
+      // Update uniforms.
+      // 更新 uniform
+      this.brushCenterX.value = stroke.worldX;
+      this.brushCenterZ.value = stroke.worldZ;
+      this.brushRadius.value = stroke.radius;
+      this.brushStrength.value = stroke.strength;
+      this.brushFalloff.value = stroke.falloff;
+      this.brushDt.value = stroke.dt;
+      this.targetLayer.value = stroke.targetLayer;
 
-    // Sync: copy storage texture to readable texture.
-    // 同步：将存储纹理复制到可读纹理
-    renderer.copyTextureToTexture(this.splatTexture!, this.splatTextureRead!);
+      // Execute brush compute shader.
+      // 执行画刷计算着色器
+      await renderer.computeAsync(this.brushComputeNode);
+
+      // Sync: copy storage texture to readable texture.
+      // 同步：将存储纹理复制到可读纹理
+      renderer.copyTextureToTexture(this.splatTexture!, this.splatTextureRead!);
+    } finally {
+      this.brushOperationInProgress = false;
+    }
   }
 
   /**
