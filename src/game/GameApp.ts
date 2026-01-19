@@ -40,6 +40,7 @@ import {
 } from "./settings/GameSettings";
 import { TerrainTextures } from "./world/TerrainTextures";
 import { setTerrainNormalSoftness } from "./world/terrainMaterialTextured";
+import { timeToSunPosition } from "./world/SkySystem";
 
 export type GameBootPhase =
   | "checking-webgpu"
@@ -87,6 +88,10 @@ export class GameApp {
   private fpsFrameCount = 0;
   private fpsLastTime = 0;
   private fpsValue = 0;
+
+  // Callback for time updates (used by React UI to sync sundial).
+  // 时间更新回调（用于 React UI 同步日晷）
+  private onTimeUpdateCallback: ((timeOfDay: number) => void) | null = null;
 
   /**
    * System scheduler: ordered list of systems per phase.
@@ -386,6 +391,14 @@ export class GameApp {
     this.settings.editor.mouseConfig.middleButton = mc.middleButton;
     
     return cloneSettings(this.settings);
+  }
+
+  /**
+   * Set callback for time updates (used by React UI to sync sundial).
+   * 设置时间更新回调（用于 React UI 同步日晷）
+   */
+  setOnTimeUpdate(callback: ((timeOfDay: number) => void) | null): void {
+    this.onTimeUpdateCallback = callback;
   }
 
   /**
@@ -693,6 +706,56 @@ export class GameApp {
     }
   }
 
+  /**
+   * Update world time and sync sun position when time-driven.
+   * 更新世界时间，并在时间驱动时同步太阳位置
+   */
+  private updateWorldTime(dt: number): void {
+    const time = this.settings.time;
+
+    // Advance time if not paused.
+    // 如果没有暂停则推进时间
+    if (!time.timePaused && time.timeSpeed > 0) {
+      // Convert dt (seconds) to hours: dt * speed / 3600.
+      // 将 dt（秒）转换为小时：dt * speed / 3600
+      const hoursElapsed = (dt * time.timeSpeed) / 3600;
+      time.timeOfDay = (time.timeOfDay + hoursElapsed) % 24;
+
+      // Notify React UI of time change for sundial update.
+      // 通知 React UI 时间变化以更新日晷
+      this.onTimeUpdateCallback?.(time.timeOfDay);
+    }
+
+    // If sun position is driven by time, update sky settings.
+    // 如果太阳位置由时间驱动，则更新天空设置
+    if (time.timeDrivenSun) {
+      const sunPos = timeToSunPosition(time.timeOfDay);
+      
+      // Only update if significantly changed (avoid jitter).
+      // 只有在显著变化时更新（避免抖动）
+      if (
+        Math.abs(this.settings.sky.sunElevation - sunPos.elevation) > 0.1 ||
+        Math.abs(this.settings.sky.sunAzimuth - sunPos.azimuth) > 0.1
+      ) {
+        this.settings.sky.sunElevation = sunPos.elevation;
+        this.settings.sky.sunAzimuth = sunPos.azimuth;
+
+        // Adjust ambient/sun intensity based on elevation (day/night).
+        // 根据仰角调整环境光/太阳光强度（昼夜）
+        const dayFactor = Math.max(0, sunPos.elevation / 45); // 0 at horizon, 1 at 45°+
+        const nightAmbient = 0.1;
+        const dayAmbient = 0.6;
+        const nightSun = 0.0;
+        const daySun = 1.2;
+
+        this.settings.sky.ambientIntensity = nightAmbient + (dayAmbient - nightAmbient) * dayFactor;
+        this.settings.sky.sunIntensity = nightSun + (daySun - nightSun) * dayFactor;
+
+        this.applySkySettings();
+      }
+    }
+  }
+
   private readonly onResize = () => {
     if (this.disposed) return;
 
@@ -715,6 +778,10 @@ export class GameApp {
     this.resources.time.dt = dt;
     this.resources.time.elapsed += dt;
     this.resources.time.frame++;
+
+    // Update game world time (day/night cycle).
+    // 更新游戏世界时间（昼夜循环）
+    this.updateWorldTime(dt);
 
     // Update FPS counter (based on actual render loop).
     // 更新 FPS 计数器（基于实际渲染循环）
@@ -757,6 +824,10 @@ export class GameApp {
     // Flush destroyed entities at end of frame.
     // 在帧末刷新已销毁的实体
     this.ecs.flushDestroyed();
+
+    // Update sky system (god rays center tracking).
+    // 更新天空系统（上帝光线中心跟踪）
+    this.skySystem.update();
 
     // Render the scene (with post-processing if enabled).
     // 渲染场景（如果启用则带后处理）

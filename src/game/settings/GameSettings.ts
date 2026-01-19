@@ -84,11 +84,31 @@ export type GameSettings = {
     lensflareEnabled: boolean;
     /** Lens flare size multiplier. / 镜头光斑大小倍数 */
     lensflareSize: number;
+    /** Sun disc size in meters (radius at 1500m distance). / 太阳圆盘大小（米） */
+    sunSize: number;
+    /** Enable god rays (light shaft) effect. / 启用上帝光线（光束）效果 */
+    godRaysEnabled: boolean;
+    /** God rays weight/intensity (0-1). / 上帝光线权重/强度 (0-1) */
+    godRaysWeight: number;
+    /** God rays decay factor (0-1). / 上帝光线衰减因子 (0-1) */
+    godRaysDecay: number;
+    /** God rays exposure multiplier. / 上帝光线曝光倍数 */
+    godRaysExposure: number;
   };
   editor: {
     mouseConfig: EditorMouseConfig;
     /** When true, drag operations continue even if mouse leaves window. / 为 true 时，拖拽操作在鼠标离开窗口后继续 */
     stickyDrag: boolean;
+  };
+  time: {
+    /** Current time of day in hours (0-24). / 当前时间（小时，0-24） */
+    timeOfDay: number;
+    /** Time flow speed multiplier (0 = paused, 1 = realtime, 60 = 1 min/sec). / 时间流逝速度倍数 */
+    timeSpeed: number;
+    /** Whether time is paused. / 是否暂停时间 */
+    timePaused: boolean;
+    /** Whether sun position is driven by time. / 太阳位置是否由时间驱动 */
+    timeDrivenSun: boolean;
   };
 };
 
@@ -142,6 +162,11 @@ export function createDefaultGameSettings(): GameSettings {
       fogDensity: visualsConfig.fog.densityPerMeter,
       lensflareEnabled: true,
       lensflareSize: 1.0,
+      sunSize: 15,
+      godRaysEnabled: true,
+      godRaysWeight: 0.5,
+      godRaysDecay: 0.95,
+      godRaysExposure: 3.0,
     },
     editor: {
       mouseConfig: {
@@ -150,6 +175,12 @@ export function createDefaultGameSettings(): GameSettings {
         middleButton: "pan",
       },
       stickyDrag: false,
+    },
+    time: {
+      timeOfDay: 12, // Noon / 正午
+      timeSpeed: 60, // 1 game minute per real second / 每真实秒1游戏分钟
+      timePaused: false,
+      timeDrivenSun: true,
     },
   };
 }

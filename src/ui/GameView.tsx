@@ -137,6 +137,16 @@ export default function GameView() {
             setSettings(app.getSettingsSnapshot());
             setTerrainEditor(app.getTerrainEditor());
             setTextureEditor(app.getTextureEditor());
+            
+            // Set up time update callback to sync sundial UI.
+            // 设置时间更新回调以同步日晷 UI
+            app.setOnTimeUpdate((timeOfDay) => {
+              setSettings((prev) => {
+                if (!prev || Math.abs(prev.time.timeOfDay - timeOfDay) < 0.001) return prev;
+                return { ...prev, time: { ...prev.time, timeOfDay } };
+              });
+            });
+            
             setLoading(false);
           })
           .catch((e) => {
@@ -153,6 +163,7 @@ export default function GameView() {
     return () => {
       disposed = true;
       cancelAnimationFrame(raf);
+      appRef.current?.setOnTimeUpdate(null);
       appRef.current?.dispose();
       appRef.current = null;
     };

@@ -40,6 +40,14 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
             step={1}
             onChange={(v) => onPatch({ sky: { sunAzimuth: v } })}
           />
+          <RangeField
+            label="Sun Size"
+            value={settings.sky.sunSize}
+            min={5}
+            max={50}
+            step={1}
+            onChange={(v) => onPatch({ sky: { sunSize: v } })}
+          />
         </div>
         <div className="text-xs text-white/40 mt-2">
           Elevation: 0° = horizon, 90° = overhead. Azimuth: 0° = north, 90° = east, 180° = south.
@@ -202,6 +210,49 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
         </div>
         <div className="text-xs text-white/40 mt-2">
           Simulates internal lens reflections when facing the sun. Creates ghost images radiating from the light source.
+        </div>
+      </div>
+
+      {/* God Rays */}
+      <div>
+        <div className="text-xs font-medium text-white/80 mb-3">God Rays / 上帝光线</div>
+        <div className="mb-3">
+          <Toggle
+            label="Enable god rays (light shaft effect)"
+            checked={settings.sky.godRaysEnabled}
+            onChange={(v) => onPatch({ sky: { godRaysEnabled: v } })}
+          />
+        </div>
+        {settings.sky.godRaysEnabled && (
+          <div className="grid gap-4 md:grid-cols-3">
+            <RangeField
+              label="Weight"
+              value={settings.sky.godRaysWeight}
+              min={0}
+              max={1}
+              step={0.05}
+              onChange={(v) => onPatch({ sky: { godRaysWeight: v } })}
+            />
+            <RangeField
+              label="Decay"
+              value={settings.sky.godRaysDecay}
+              min={0.8}
+              max={1}
+              step={0.01}
+              onChange={(v) => onPatch({ sky: { godRaysDecay: v } })}
+            />
+            <RangeField
+              label="Exposure"
+              value={settings.sky.godRaysExposure}
+              min={0}
+              max={10}
+              step={0.1}
+              onChange={(v) => onPatch({ sky: { godRaysExposure: v } })}
+            />
+          </div>
+        )}
+        <div className="text-xs text-white/40 mt-2">
+          Simulates volumetric light scattering (crepuscular rays) radiating from the sun.
         </div>
       </div>
     </div>

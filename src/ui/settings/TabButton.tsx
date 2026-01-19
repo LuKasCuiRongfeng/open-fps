@@ -30,6 +30,7 @@ export const TABS = [
   { id: "textureEditor", label: "Texture Editor" },
   { id: "render", label: "Render" },
   { id: "camera", label: "Camera" },
+  { id: "time", label: "Time (日暀)" },
   { id: "sky", label: "Sky" },
   { id: "movement", label: "Movement" },
   { id: "physics", label: "Physics" },

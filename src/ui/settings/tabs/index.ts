@@ -5,6 +5,7 @@ export { HelpTab } from "./HelpTab";
 export { RenderTab } from "./RenderTab";
 export { CameraTab } from "./CameraTab";
 export { SkyTab } from "./SkyTab";
+export { TimeTab } from "./TimeTab";
 export { MovementTab } from "./MovementTab";
 export { PhysicsTab } from "./PhysicsTab";
 export { ThirdPersonTab } from "./ThirdPersonTab";
