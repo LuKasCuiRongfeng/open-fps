@@ -510,7 +510,6 @@ export class TerrainBrushCompute {
     if (this.needsSync && this.heightTexture && this.heightTextureRead) {
       renderer.copyTextureToTexture(this.heightTexture, this.heightTextureRead);
       this.needsSync = false;
-      console.log("[TerrainBrushCompute] Synced readable texture before first brush");
     }
   }
 

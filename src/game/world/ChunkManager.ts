@@ -620,6 +620,5 @@ export class ChunkManager {
     for (const chunk of this.chunks.values()) {
       chunk.rebuildMaterial(this.textureResult, this.splatMapTexture);
     }
-    console.log(`[ChunkManager] Rebuilt materials for ${this.chunks.size} chunks`);
   }
 }

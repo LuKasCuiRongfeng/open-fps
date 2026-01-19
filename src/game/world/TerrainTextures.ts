@@ -74,7 +74,6 @@ export class TerrainTextures {
     if (!definition) {
       // No texture.json - use procedural textures.
       // 没有 texture.json - 使用程序纹理
-      console.log("[TerrainTextures] No texture definition, using procedural textures");
       this.result = {
         useTextures: false,
         layers: new Map(),
@@ -86,13 +85,10 @@ export class TerrainTextures {
     const layerNames = Object.keys(definition).slice(0, 4); // Max 4 layers
     const layers = new Map<string, PBRTextureSet>();
 
-    console.log(`[TerrainTextures] Loading ${layerNames.length} texture layers...`);
-
     for (const name of layerNames) {
       const layerDef = definition[name];
       const textures = await this.loadLayerTextures(projectPath, layerDef);
       layers.set(name, textures);
-      console.log(`[TerrainTextures] Loaded layer: ${name}`);
     }
 
     this.result = {

@@ -152,7 +152,6 @@ export class SplatMapCompute {
 
     this.initialized = true;
     this.needsSync = false; // Just initialized, already in sync
-    console.log(`[SplatMapCompute] Initialized ${this.resolution}x${this.resolution} splat map`);
   }
 
   /**
@@ -660,6 +659,5 @@ export class SplatMapCompute {
     this.splatTextureRead = null;
     this.brushComputeNode = null;
     this.initialized = false;
-    console.log("[SplatMapCompute] Disposed");
   }
 }

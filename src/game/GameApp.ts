@@ -530,8 +530,6 @@ export class GameApp {
     // Apply textures to terrain materials.
     // 将纹理应用到地形材质
     this.resources.runtime.terrain.setTextureData(textureResult, splatMapTexture);
-
-    console.log("[GameApp] Textures loaded and applied to terrain");
   }
 
   /**
@@ -543,7 +541,6 @@ export class GameApp {
    */
   async saveTexturesToProject(projectPath: string): Promise<void> {
     await this.textureEditor.saveToProject(projectPath);
-    console.log("[GameApp] Textures saved to project");
   }
 
   /**

@@ -113,10 +113,6 @@ export class TextureEditor {
     // Set world offset.
     // 设置世界偏移
     this.splatMapCompute.setWorldOffset(this.worldOffsetX, this.worldOffsetZ);
-
-    console.log(
-      `[TextureEditor] Initialized with ${worldSize}m world, ${resolution}x${resolution} splat map`,
-    );
   }
 
   /**
@@ -150,14 +146,11 @@ export class TextureEditor {
       if (splatMapData && this.splatMapCompute && this.renderer) {
         await this.splatMapCompute.loadFromPixels(this.renderer, splatMapData.pixels);
       }
-
-      console.log("[TextureEditor] Loaded textures from project:", projectPath);
     } else {
       // No texture.json, use procedural textures.
       // 没有 texture.json，使用程序纹理
       this._editingEnabled = false;
       this._brushSettings.selectedLayer = "";
-      console.log("[TextureEditor] No texture.json, using procedural textures");
     }
 
     this._dirty = false;
@@ -189,7 +182,6 @@ export class TextureEditor {
     }
 
     this.setDirty(false);
-    console.log("[TextureEditor] Saved to project:", projectPath);
   }
 
   // --- Getters / 获取器 ---
@@ -425,6 +417,5 @@ export class TextureEditor {
     this.splatMapCompute?.dispose();
     this.splatMapCompute = null;
     this.renderer = null;
-    console.log("[TextureEditor] Disposed");
   }
 }

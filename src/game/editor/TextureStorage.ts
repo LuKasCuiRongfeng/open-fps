@@ -40,7 +40,6 @@ export class TextureStorage {
     const jsonPath = `${projectPath}/texture.json`;
     const content = JSON.stringify(definition, null, 2);
     await invoke("write_text_file", { path: jsonPath, content });
-    console.log("[TextureStorage] Saved texture.json");
   }
 
   /**
