@@ -16,6 +16,7 @@ import {
   uniform,
   positionLocal,
   normalize,
+  cameraViewMatrix,
 } from "three/tsl";
 import type { TerrainConfig } from "./terrain";
 import type { TerrainTextureResult, PBRTextureSet } from "./TerrainTextures";
@@ -220,7 +221,11 @@ export function createTexturedTerrainMaterial(
       .add(c3.mul(normSplat.a));
 
     mat.colorNode = finalColor;
-    mat.normalNode = terrainNormal;
+    // Transform world-space normal to view space using cameraViewMatrix.
+    // (cameraNormalMatrix is the INVERSE - it transforms view→world, not world→view)
+    // 使用 cameraViewMatrix 将世界空间法线变换到视图空间。
+    // （cameraNormalMatrix 是逆矩阵 - 它将视图→世界，而不是世界→视图）
+    mat.normalNode = normalize(cameraViewMatrix.transformDirection(terrainNormal));
     mat.roughnessNode = float(cfg.material.roughness);
     mat.metalnessNode = float(cfg.material.metalness);
 
@@ -274,7 +279,11 @@ export function createTexturedTerrainMaterial(
     const finalColor = mix(baseColor, snowColor, snowMask);
 
     mat.colorNode = finalColor;
-    mat.normalNode = terrainNormal;
+    // Transform world-space normal to view space using cameraViewMatrix.
+    // (cameraNormalMatrix is the INVERSE - it transforms view→world, not world→view)
+    // 使用 cameraViewMatrix 将世界空间法线变换到视图空间。
+    // （cameraNormalMatrix 是逆矩阵 - 它将视图→世界，而不是世界→视图）
+    mat.normalNode = normalize(cameraViewMatrix.transformDirection(terrainNormal));
     mat.roughnessNode = float(cfg.material.roughness);
     mat.metalnessNode = float(cfg.material.metalness);
   }

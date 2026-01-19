@@ -6,14 +6,12 @@ import {
   DirectionalLight,
   FogExp2,
   HemisphereLight,
-  Mesh,
   PerspectiveCamera,
   Scene,
   WebGPURenderer,
 } from "three/webgpu";
 import { cameraConfig } from "../config/camera";
 import { renderConfig } from "../config/render";
-import { visualsConfig } from "../config/visuals";
 import { terrainConfig } from "../config/terrain";
 import { createWorld } from "./createWorld";
 import { GameEcs, type GameWorld } from "./ecs/GameEcs";
@@ -76,7 +74,6 @@ export class GameApp {
   private readonly inputManager: InputManager;
   private readonly resources: GameResources;
   private readonly settings = createDefaultGameSettings();
-  private readonly marker: Mesh;
   private readonly sun: DirectionalLight;
   private readonly hemi: HemisphereLight;
   private readonly skySystem: import("./world/SkySystem").SkySystem;
@@ -132,7 +129,6 @@ export class GameApp {
 
     onBootPhase?.("creating-world");
     const world = createWorld(this.scene);
-    this.marker = world.marker;
     this.sun = world.sun;
     this.hemi = world.hemi;
     this.skySystem = world.skySystem;
@@ -271,14 +267,6 @@ export class GameApp {
     await this.textureEditor.init(this.renderer, splatWorldSize);
     if (this.disposed) return;
 
-    // Reposition marker now that terrain is initialized.
-    // 地形初始化后重新定位 marker
-    const markerX = spawnX + 3;
-    const markerZ = spawnZ;
-    const markerY = this.resources.runtime.terrain.heightAt(markerX, markerZ);
-    const markerSize = visualsConfig.debug.originMarkerSizeMeters;
-    this.marker.position.set(markerX, markerY + markerSize * 0.5, markerZ);
-
     // Create player AFTER terrain GPU init so heightAt() works correctly.
     // 在地形 GPU 初始化后创建玩家，确保 heightAt() 正确工作
     createPlayer(this.ecs, this.resources);
@@ -293,9 +281,19 @@ export class GameApp {
 
     // Warm up shaders by rendering multiple frames from different angles.
     // This compiles all shader variants to prevent stutter on first camera rotation.
+    // Suppress harmless TSL warning about missing normal attribute (SkyMesh uses custom shader).
     // 通过从不同角度渲染多帧来预热着色器
     // 编译所有着色器变体，防止首次旋转相机时卡顿
+    // 抑制 TSL 关于缺少 normal 属性的无害警告（SkyMesh 使用自定义着色器）
+    const originalWarn = console.warn;
+    console.warn = (...args: unknown[]) => {
+      if (typeof args[0] === "string" && args[0].includes('Vertex attribute "normal" not found')) {
+        return; // Suppress this specific warning / 抑制此特定警告
+      }
+      originalWarn.apply(console, args);
+    };
     await this.warmUpShaders();
+    console.warn = originalWarn;
 
     // Use renderer animation loop for consistent pacing.
     // 使用 renderer 的动画循环，保证节奏稳定

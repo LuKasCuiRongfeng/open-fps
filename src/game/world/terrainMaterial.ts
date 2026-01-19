@@ -25,6 +25,7 @@ import {
   uniform,
   positionLocal,
   normalize,
+  cameraViewMatrix,
 } from "three/tsl";
 import type { TerrainConfig } from "./terrain";
 
@@ -138,9 +139,16 @@ export function createGpuTerrainMaterial(
   // 从预计算纹理采样法线
   const sampledNormal = normalTex.sample(atlasUv).xyz;
 
-  // Use sampled normal for lighting.
-  // 使用采样的法线进行光照
-  mat.normalNode = normalize(sampledNormal);
+  // The normal from texture is in WORLD space (not object space).
+  // Use cameraViewMatrix.transformDirection() to transform world-space normal to view-space.
+  // (cameraNormalMatrix is the INVERSE - it transforms view→world, not world→view)
+  // 纹理中的法线是世界空间的（不是对象空间）。
+  // 使用 cameraViewMatrix.transformDirection() 将世界空间法线变换到视图空间。
+  // （cameraNormalMatrix 是逆矩阵 - 它将视图→世界，而不是世界→视图）
+  const worldNormal = normalize(sampledNormal);
+  const viewNormal = normalize(cameraViewMatrix.transformDirection(worldNormal));
+
+  mat.normalNode = viewNormal;
 
   // Compute world position for material blending (after displacement).
   // 计算世界位置用于材质混合（位移后）
@@ -339,9 +347,12 @@ export function createGpuTerrainMaterial(
     // 将高度转换为法线扰动
     const detailNormal = mx_heighttonormal(dnHeight, float(cfg.material.detailNormal.strength));
 
-    // Blend detail normal with sampled terrain normal.
-    // 将细节法线与采样的地形法线混合
-    mat.normalNode = normalize(add(sampledNormal, mul(detailNormal, float(0.5))));
+    // Blend detail normal with world normal, then transform to view space.
+    // Use cameraViewMatrix.transformDirection() for world→view transformation.
+    // 将细节法线与世界空间法线混合，然后转换到视图空间
+    // 使用 cameraViewMatrix.transformDirection() 进行世界→视图变换
+    const blendedWorldNormal = normalize(add(worldNormal, mul(detailNormal, float(0.5))));
+    mat.normalNode = normalize(cameraViewMatrix.transformDirection(blendedWorldNormal));
   }
 
   mat.colorNode = finalShaded;
