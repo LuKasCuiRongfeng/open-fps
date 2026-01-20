@@ -3,7 +3,7 @@
 
 import { RangeField } from "../RangeField";
 import { Toggle } from "../Toggle";
-import { visualsConfig } from "@config/visuals";
+import { fogConfig } from "@config/fog";
 import type { GameSettings, GameSettingsPatch } from "@game/settings/GameSettings";
 
 type SkyTabProps = {
@@ -105,8 +105,8 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
         <RangeField
           label="Fog Density"
           value={settings.sky.fogDensity}
-          min={visualsConfig.fog.minDensity}
-          max={visualsConfig.fog.maxDensity}
+          min={fogConfig.minDensity}
+          max={fogConfig.maxDensity}
           step={0.00001}
           onChange={(v) => onPatch({ sky: { fogDensity: v } })}
         />

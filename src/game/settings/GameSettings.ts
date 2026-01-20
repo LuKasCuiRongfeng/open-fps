@@ -1,7 +1,7 @@
 import { cameraConfig } from "../../config/camera";
 import { playerConfig } from "../../config/player";
 import { renderConfig } from "../../config/render";
-import { visualsConfig } from "../../config/visuals";
+import { skyConfig } from "../../config/sky";
 
 // --- Type utilities / 类型工具 ---
 
@@ -149,30 +149,30 @@ export function createDefaultGameSettings(): GameSettings {
       renderScale: 1.0,
     },
     sky: {
-      sunElevation: 45,
-      sunAzimuth: 180,
-      turbidity: 10,
-      rayleigh: 2,
-      mieCoefficient: 0.005,
-      mieDirectionalG: 0.8,
-      bloomEnabled: true,
-      bloomThreshold: 0.85,
-      bloomStrength: 0.4,
-      bloomRadius: 0.3,
-      ambientIntensity: visualsConfig.lights.hemi.intensity,
-      sunIntensity: visualsConfig.lights.sun.intensity,
-      shadowsEnabled: true,
-      normalSoftness: 0.4,
-      fogDensity: visualsConfig.fog.densityPerMeter,
-      lensflareEnabled: true,
-      lensflareSize: 1.0,
-      sunSize: 15,
-      godRaysEnabled: true,
-      godRaysWeight: 0.5,
-      godRaysDecay: 0.95,
-      godRaysExposure: 3.0,
-      starBrightness: 1.2,
-      milkyWayBrightness: 0.8,
+      sunElevation: skyConfig.atmosphere.sunElevation,
+      sunAzimuth: skyConfig.atmosphere.sunAzimuth,
+      turbidity: skyConfig.atmosphere.turbidity,
+      rayleigh: skyConfig.atmosphere.rayleigh,
+      mieCoefficient: skyConfig.atmosphere.mieCoefficient,
+      mieDirectionalG: skyConfig.atmosphere.mieDirectionalG,
+      bloomEnabled: skyConfig.bloom.enabled,
+      bloomThreshold: skyConfig.bloom.threshold,
+      bloomStrength: skyConfig.bloom.strength,
+      bloomRadius: skyConfig.bloom.radius,
+      ambientIntensity: skyConfig.lighting.ambientIntensity,
+      sunIntensity: skyConfig.lighting.sunIntensity,
+      shadowsEnabled: skyConfig.lighting.shadowsEnabled,
+      normalSoftness: skyConfig.terrain.normalSoftness,
+      fogDensity: skyConfig.atmosphere.fogDensity,
+      lensflareEnabled: skyConfig.effects.lensflare.enabled,
+      lensflareSize: skyConfig.effects.lensflare.size,
+      sunSize: skyConfig.effects.sunSize,
+      godRaysEnabled: skyConfig.effects.godRays.enabled,
+      godRaysWeight: skyConfig.effects.godRays.weight,
+      godRaysDecay: skyConfig.effects.godRays.decay,
+      godRaysExposure: skyConfig.effects.godRays.exposure,
+      starBrightness: skyConfig.effects.stars.brightness,
+      milkyWayBrightness: skyConfig.effects.milkyWay.brightness,
     },
     editor: {
       mouseConfig: {

@@ -5,19 +5,18 @@ import {
   Scene,
 } from "three/webgpu";
 import { terrainConfig } from "../config/terrain";
-import { visualsConfig } from "../config/visuals";
+import { fogConfig } from "../config/fog";
+import { skyConfig } from "../config/sky";
 import { createTerrainSystem } from "./world/terrain/terrain";
 import { SkySystem, createDefaultSkySettings } from "./world/sky/SkySystem";
 
 export function createWorld(scene: Scene) {
-  const visuals = visualsConfig;
-
   // Physical sky system (replaces solid color background).
   // 物理天空系统（替代纯色背景）
   const skySettings = createDefaultSkySettings();
-  // Sync initial sun position with visuals config.
-  // 将初始太阳位置与视觉配置同步
-  const sunPos = visuals.lights.sun.position;
+  // Sync initial sun position with sky config.
+  // 将初始太阳位置与天空配置同步
+  const sunPos = skyConfig.lights.sun.position;
   // Convert XYZ position to elevation/azimuth.
   // 将 XYZ 位置转换为仰角/方位角
   const sunDist = Math.sqrt(sunPos[0] ** 2 + sunPos[1] ** 2 + sunPos[2] ** 2);
@@ -28,7 +27,7 @@ export function createWorld(scene: Scene) {
 
   // Fog for atmosphere (density reduced since sky provides atmosphere).
   // 雾用于大气效果（密度降低，因为天空已提供大气效果）
-  scene.fog = new FogExp2(visuals.fog.colorHex, visuals.fog.densityPerMeter);
+  scene.fog = new FogExp2(fogConfig.colorHex, fogConfig.densityPerMeter);
 
   // Streaming terrain system.
   // 流式地形系统
@@ -38,14 +37,14 @@ export function createWorld(scene: Scene) {
   // Basic lighting.
   // 基础光照
   const hemi = new HemisphereLight(
-    visuals.lights.hemi.skyColorHex,
-    visuals.lights.hemi.groundColorHex,
-    visuals.lights.hemi.intensity,
+    skyConfig.lights.hemi.skyColorHex,
+    skyConfig.lights.hemi.groundColorHex,
+    skyConfig.lighting.ambientIntensity,
   );
   scene.add(hemi);
 
-  const sun = new DirectionalLight(visuals.lights.sun.colorHex, visuals.lights.sun.intensity);
-  sun.position.set(...visuals.lights.sun.position);
+  const sun = new DirectionalLight(skyConfig.lights.sun.colorHex, skyConfig.lighting.sunIntensity);
+  sun.position.set(...skyConfig.lights.sun.position);
   sun.castShadow = true;
 
   // Configure shadow map for large terrain.
