@@ -3,8 +3,8 @@
 
 import { RangeField } from "../RangeField";
 import { Toggle } from "../Toggle";
-import { visualsConfig } from "../../../config/visuals";
-import type { GameSettings, GameSettingsPatch } from "../../../game/settings/GameSettings";
+import { visualsConfig } from "@config/visuals";
+import type { GameSettings, GameSettingsPatch } from "@game/settings/GameSettings";
 
 type SkyTabProps = {
   settings: GameSettings;

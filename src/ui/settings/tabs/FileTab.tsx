@@ -2,8 +2,8 @@
 // FileTab：项目文件操作标签
 
 import { useState, useEffect } from "react";
-import type { GameApp } from "../../../game/GameApp";
-import type { TerrainEditor } from "../../../game/editor";
+import type { GameApp } from "@game/GameApp";
+import type { TerrainEditor } from "@game/editor";
 import {
   getProjectNameFromPath,
   saveProjectMap,
@@ -11,9 +11,9 @@ import {
   hasOpenProject,
   openProjectDialog,
   loadProject,
-} from "../../../game/editor/ProjectStorage";
-import type { MapData } from "../../../game/editor/MapData";
-import type { GameSettings } from "../../../game/settings/GameSettings";
+} from "@game/editor/ProjectStorage";
+import type { MapData } from "@game/editor/MapData";
+import type { GameSettings } from "@game/settings/GameSettings";
 
 type FileTabProps = {
   gameApp: GameApp | null;

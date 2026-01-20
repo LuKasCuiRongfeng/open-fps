@@ -2,10 +2,10 @@
 // SettingsPanel：带标签导航的设置面板外壳
 
 import { useState } from "react";
-import type { GameSettings, GameSettingsPatch } from "../game/settings/GameSettings";
-import type { GameApp } from "../game/GameApp";
-import type { TerrainEditor, MapData } from "../game/editor";
-import type { TextureEditor } from "../game/editor/TextureEditor";
+import type { GameSettings, GameSettingsPatch } from "@game/settings/GameSettings";
+import type { GameApp } from "@game/GameApp";
+import type { TerrainEditor, MapData } from "@game/editor";
+import type { TextureEditor } from "@game/editor/TextureEditor";
 import {
   TabButton,
   TABS,

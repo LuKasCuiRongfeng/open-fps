@@ -2,8 +2,8 @@
 // TerrainEditorTab：地形编辑器设置标签
 
 import { useState, useEffect } from "react";
-import type { TerrainEditor, BrushType } from "../../../game/editor";
-import type { EditorMouseAction, GameSettings } from "../../../game/settings/GameSettings";
+import type { TerrainEditor, BrushType } from "@game/editor";
+import type { EditorMouseAction, GameSettings } from "@game/settings/GameSettings";
 
 // Local type for mouse config (mirrors GameSettings.editor.mouseConfig).
 // 本地鼠标配置类型（镜像 GameSettings.editor.mouseConfig）

@@ -9,9 +9,9 @@ import {
   listRecentProjects,
   removeRecentProject,
   getProjectNameFromPath,
-} from "../game/editor/ProjectStorage";
-import type { MapData } from "../game/editor/MapData";
-import type { GameSettings } from "../game/settings/GameSettings";
+} from "@game/editor/ProjectStorage";
+import type { MapData } from "@game/editor/MapData";
+import type { GameSettings } from "@game/settings/GameSettings";
 
 interface Props {
   onComplete: (

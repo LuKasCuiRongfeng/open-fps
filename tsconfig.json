@@ -2,6 +2,10 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
+      "@/*": ["src/*"],
+      "@game/*": ["src/game/*"],
+      "@ui/*": ["src/ui/*"],
+      "@config/*": ["src/config/*"],
       "three/webgpu": ["node_modules/@types/three/build/three.webgpu.d.ts"],
       "three/tsl": ["node_modules/@types/three/build/three.tsl.d.ts"]
     },

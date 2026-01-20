@@ -2,7 +2,7 @@
 // TextureEditorTab：带有开始/停止编辑的纹理编辑器设置标签
 
 import { useState, useEffect } from "react";
-import type { TextureEditor } from "../../../game/editor/TextureEditor";
+import type { TextureEditor } from "@game/editor/TextureEditor";
 import type { ActiveEditorType } from "./TerrainEditorTab";
 
 type TextureEditorTabProps = {

@@ -2,7 +2,7 @@
 // TimeTab：中国古代日晷风格的时间设置，可拖拽晷针阴影
 
 import { useRef, useState } from "react";
-import type { GameSettings, GameSettingsPatch } from "../../../game/settings/GameSettings";
+import type { GameSettings, GameSettingsPatch } from "@game/settings/GameSettings";
 import { Toggle } from "../Toggle";
 import { RangeField } from "../RangeField";
 

@@ -2,7 +2,7 @@
 // ThirdPersonTab：第三人称相机设置标签
 
 import { RangeField } from "../RangeField";
-import type { GameSettings, GameSettingsPatch } from "../../../game/settings/GameSettings";
+import type { GameSettings, GameSettingsPatch } from "@game/settings/GameSettings";
 
 type ThirdPersonTabProps = {
   settings: GameSettings;

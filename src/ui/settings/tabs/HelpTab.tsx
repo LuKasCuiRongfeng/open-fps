@@ -1,7 +1,7 @@
 // HelpTab: help and controls information tab.
 // HelpTab：帮助和控制信息标签
 
-import { inputConfig } from "../../../config/input";
+import { inputConfig } from "@config/input";
 
 function keyLabelFromCode(code: string) {
   if (code.startsWith("Key") && code.length === 4) return code.slice(3);

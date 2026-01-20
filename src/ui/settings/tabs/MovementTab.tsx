@@ -2,7 +2,7 @@
 // MovementTab：移动设置标签
 
 import { RangeField } from "../RangeField";
-import type { GameSettings, GameSettingsPatch } from "../../../game/settings/GameSettings";
+import type { GameSettings, GameSettingsPatch } from "@game/settings/GameSettings";
 
 type MovementTabProps = {
   settings: GameSettings;

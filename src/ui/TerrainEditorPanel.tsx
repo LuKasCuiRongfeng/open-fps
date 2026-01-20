@@ -5,7 +5,7 @@
 // 模式切换、文件操作已移至 SettingsPanel
 
 import { useState, useEffect } from "react";
-import type { TerrainEditor, BrushType } from "../game/editor";
+import type { TerrainEditor, BrushType } from "@game/editor";
 
 interface Props {
   editor: TerrainEditor | null;
