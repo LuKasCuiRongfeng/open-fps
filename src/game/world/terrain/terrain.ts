@@ -1,7 +1,7 @@
 // Terrain module - exports GPU-first streaming terrain system.
 // 地形模块 - 导出 GPU-first 流式地形系统
 
-import type { terrainConfig } from "../../config/terrain";
+import type { terrainConfig } from "@config/terrain";
 
 export type TerrainConfig = typeof terrainConfig;
 
@@ -9,10 +9,10 @@ export type TerrainConfig = typeof terrainConfig;
 // 导出 GPU-first 系统组件
 export { createTerrainSystem, type TerrainSystemResource } from "./TerrainSystem";
 export { ChunkManager } from "./ChunkManager";
-export { FloatingOrigin } from "./FloatingOrigin";
+export { FloatingOrigin } from "../FloatingOrigin";
 export { TerrainChunk } from "./TerrainChunk";
 export { TerrainHeightSampler } from "./TerrainHeightSampler";
-export { createGpuTerrainMaterial } from "./terrainMaterial";
+export { createGpuTerrainMaterial } from "./material/terrainMaterial";
 
 // Export GPU compute modules.
 // 导出 GPU 计算模块

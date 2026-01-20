@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { GameApp, type GameBootPhase } from "@game/GameApp";
 import type { GameSettings, GameSettingsPatch } from "@game/settings/GameSettings";
 import type { TerrainEditor } from "@game/editor";
-import type { TextureEditor } from "@game/editor/TextureEditor";
-import type { MapData } from "@game/editor/MapData";
+import type { TextureEditor } from "@game/editor/texture/TextureEditor";
+import type { MapData } from "@project/MapData";
 import type { ActiveEditorType } from "./settings/tabs/TerrainEditorTab";
 import {
   setCurrentProjectPath,
   saveProjectMap,
   hasOpenProject,
-} from "@game/editor/ProjectStorage";
+} from "@project/ProjectStorage";
 import FpsCounter from "./FpsCounter";
 import LoadingOverlay, { type LoadingStep } from "./LoadingOverlay";
 import SettingsPanel from "./SettingsPanel";

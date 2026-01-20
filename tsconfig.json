@@ -4,6 +4,7 @@
     "paths": {
       "@/*": ["src/*"],
       "@game/*": ["src/game/*"],
+      "@project/*": ["src/game/project/*"],
       "@ui/*": ["src/ui/*"],
       "@config/*": ["src/config/*"],
       "three/webgpu": ["node_modules/@types/three/build/three.webgpu.d.ts"],

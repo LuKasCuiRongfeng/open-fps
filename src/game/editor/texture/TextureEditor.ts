@@ -4,7 +4,7 @@
 import type { PerspectiveCamera } from "three/webgpu";
 import type { WebGPURenderer } from "three/webgpu";
 import { Raycaster, Plane, Vector3, Vector2 } from "three/webgpu";
-import { SplatMapCompute, type SplatBrushStroke } from "../world/gpu/SplatMapCompute";
+import { SplatMapCompute, type SplatBrushStroke } from "../../world/terrain/gpu/SplatMapCompute";
 import {
   type TextureDefinition,
   type SplatMapData,

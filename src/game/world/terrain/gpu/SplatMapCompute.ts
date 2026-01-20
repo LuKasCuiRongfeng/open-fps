@@ -41,7 +41,7 @@ import {
   type WebGPURenderer,
 } from "three/webgpu";
 import type { ComputeNode } from "three/webgpu";
-import { WebGpuBackend } from "./WebGpuBackend";
+import { WebGpuBackend } from "../../gpu/WebGpuBackend";
 
 /**
  * Brush stroke data for splat map painting.

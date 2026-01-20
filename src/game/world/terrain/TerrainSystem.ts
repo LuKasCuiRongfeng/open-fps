@@ -5,10 +5,10 @@ import { Group, type Texture } from "three/webgpu";
 import type { Scene, WebGPURenderer, PerspectiveCamera } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
 import { ChunkManager } from "./ChunkManager";
-import { FloatingOrigin } from "./FloatingOrigin";
+import { FloatingOrigin } from "../FloatingOrigin";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
-import type { BrushStroke } from "../editor/TerrainEditor";
-import { type MapData, createEmptyMapData, setChunkData, parseChunkKey, getChunkData, hasChunks } from "../editor/MapData";
+import type { BrushStroke } from "../../editor/terrain/TerrainEditor";
+import { type MapData, createEmptyMapData, setChunkData, parseChunkKey, getChunkData, hasChunks } from "../../project/MapData";
 import type { TerrainTextureResult } from "./TerrainTextures";
 
 export type TerrainSystemResource = {

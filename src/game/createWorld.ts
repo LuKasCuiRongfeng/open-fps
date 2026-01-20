@@ -6,8 +6,8 @@ import {
 } from "three/webgpu";
 import { terrainConfig } from "../config/terrain";
 import { visualsConfig } from "../config/visuals";
-import { createTerrainSystem } from "./world/terrain";
-import { SkySystem, createDefaultSkySettings } from "./world/SkySystem";
+import { createTerrainSystem } from "./world/terrain/terrain";
+import { SkySystem, createDefaultSkySettings } from "./world/sky/SkySystem";
 
 export function createWorld(scene: Scene) {
   const visuals = visualsConfig;

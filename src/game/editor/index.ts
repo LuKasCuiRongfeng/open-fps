@@ -1,12 +1,20 @@
 // Editor exports.
 // 编辑器导出
 
-export * from "./MapData";
-export * from "./ProjectData";
-export * from "./ProjectStorage";
-export * from "./TerrainEditor";
-export * from "./EditorOrbitCamera";
-export * from "./TerrainBrush";
-export * from "./TextureData";
-export * from "./TextureStorage";
-export * from "./TextureEditor";
+// Re-export from project/ (now at top level).
+// 从 project/ 重新导出（现在在顶层）
+export * from "../project/MapData";
+export * from "../project/ProjectData";
+export * from "../project/ProjectStorage";
+
+// Terrain editing.
+// 地形编辑
+export * from "./terrain/TerrainEditor";
+export * from "./terrain/EditorOrbitCamera";
+export * from "./terrain/TerrainBrush";
+
+// Texture editing.
+// 纹理编辑
+export * from "./texture/TextureData";
+export * from "./texture/TextureStorage";
+export * from "./texture/TextureEditor";

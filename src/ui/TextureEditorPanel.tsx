@@ -5,7 +5,7 @@
 // 仅在启用纹理编辑的编辑模式下显示
 
 import { useState, useEffect } from "react";
-import type { TextureEditor } from "@game/editor/TextureEditor";
+import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 
 interface Props {
   editor: TextureEditor | null;

@@ -14,7 +14,7 @@ import {
   type Texture,
 } from "three/webgpu";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import type { TextureDefinition, TextureLayerDef } from "../editor/TextureData";
+import type { TextureDefinition, TextureLayerDef } from "../../editor/texture/TextureData";
 
 /**
  * Loaded PBR textures for a single layer.

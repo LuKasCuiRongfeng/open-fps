@@ -20,6 +20,7 @@ export default defineConfig(async () => ({
         alias: {
             "@": path.resolve(__dirname, "src"),
             "@game": path.resolve(__dirname, "src/game"),
+            "@project": path.resolve(__dirname, "src/game/project"),
             "@ui": path.resolve(__dirname, "src/ui"),
             "@config": path.resolve(__dirname, "src/config"),
         },

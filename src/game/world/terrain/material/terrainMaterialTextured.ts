@@ -18,8 +18,8 @@ import {
   normalize,
   cameraViewMatrix,
 } from "three/tsl";
-import type { TerrainConfig } from "./terrain";
-import type { TerrainTextureResult, PBRTextureSet } from "./TerrainTextures";
+import type { TerrainConfig } from "../terrain";
+import type { TerrainTextureResult, PBRTextureSet } from "../TerrainTextures";
 
 // ============================================================================
 // Shared Global Uniforms (all terrain materials reference these)

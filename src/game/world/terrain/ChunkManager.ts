@@ -1,13 +1,14 @@
 // ChunkManager: GPU-first streaming chunk management.
 // ChunkManager：GPU-first 流式分块管理
 
-import type { Scene, WebGPURenderer, PerspectiveCamera } from "three/webgpu";
+import type { Scene, WebGPURenderer, PerspectiveCamera, Texture } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
-import { FloatingOrigin } from "./FloatingOrigin";
+import type { TerrainTextureResult } from "./TerrainTextures";
+import { FloatingOrigin } from "../FloatingOrigin";
 import { TerrainChunk, disposeSharedGeometries } from "./TerrainChunk";
 import { TerrainHeightCompute, TerrainNormalCompute, TerrainBrushCompute } from "./gpu";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
-import type { BrushStroke } from "../editor/TerrainEditor";
+import type { BrushStroke } from "../../editor/terrain/TerrainEditor";
 
 export type ChunkCoord = { cx: number; cz: number };
 
@@ -67,8 +68,8 @@ export class ChunkManager {
 
   // Texture data for terrain materials (from texture.json).
   // 地形材质的纹理数据（来自 texture.json）
-  private textureResult: import("./TerrainTextures").TerrainTextureResult | null = null;
-  private splatMapTexture: import("three/webgpu").Texture | null = null;
+  private textureResult: TerrainTextureResult | null = null;
+  private splatMapTexture: Texture | null = null;
 
   constructor(config: TerrainConfig, scene: Scene, floatingOrigin: FloatingOrigin) {
     this.config = config;
@@ -599,8 +600,8 @@ export class ChunkManager {
    * 加载项目的 texture.json 后调用此方法
    */
   setTextureData(
-    textureResult: import("./TerrainTextures").TerrainTextureResult | null,
-    splatMapTexture: import("three/webgpu").Texture | null,
+    textureResult: TerrainTextureResult | null,
+    splatMapTexture: Texture | null,
   ): void {
     this.textureResult = textureResult;
     this.splatMapTexture = splatMapTexture;

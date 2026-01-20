@@ -16,8 +16,8 @@ import { terrainConfig } from "../config/terrain";
 import { createWorld } from "./createWorld";
 import { GameEcs, type GameWorld } from "./ecs/GameEcs";
 import { createTimeResource, type GameResources } from "./ecs/resources";
-import { TerrainEditor } from "./editor/TerrainEditor";
-import { TextureEditor } from "./editor/TextureEditor";
+import { TerrainEditor } from "./editor/terrain/TerrainEditor";
+import { TextureEditor } from "./editor/texture/TextureEditor";
 import { InputManager } from "./input/InputManager";
 import { createRawInputState } from "./input/RawInputState";
 import { createPlayer } from "./prefabs/createPlayer";
@@ -38,9 +38,10 @@ import {
   type GameSettingsPatch,
   setSettings,
 } from "./settings/GameSettings";
-import { TerrainTextures } from "./world/TerrainTextures";
-import { setTerrainNormalSoftness } from "./world/terrainMaterialTextured";
-import { timeToSunPosition } from "./world/SkySystem";
+import { TerrainTextures } from "./world/terrain/TerrainTextures";
+import { setTerrainNormalSoftness } from "./world/terrain/material/terrainMaterialTextured";
+import { timeToSunPosition, type SkySystem } from "./world/sky/SkySystem";
+import type { MapData } from "./project/MapData";
 
 export type GameBootPhase =
   | "checking-webgpu"
@@ -77,7 +78,7 @@ export class GameApp {
   private readonly settings = createDefaultGameSettings();
   private readonly sun: DirectionalLight;
   private readonly hemi: HemisphereLight;
-  private readonly skySystem: import("./world/SkySystem").SkySystem;
+  private readonly skySystem: SkySystem;
   private readonly terrainEditor: TerrainEditor;
   private readonly textureEditor: TextureEditor;
   readonly ready: Promise<void>;
@@ -500,7 +501,7 @@ export class GameApp {
    * Export current terrain as map data (for saving).
    * 导出当前地形为地图数据（用于保存）
    */
-  exportCurrentMapData(): import("./editor/MapData").MapData {
+  exportCurrentMapData(): MapData {
     return this.resources.runtime.terrain.exportCurrentMapData();
   }
 
@@ -508,7 +509,7 @@ export class GameApp {
    * Load terrain from map data.
    * 从地图数据加载地形
    */
-  async loadMapData(mapData: import("./editor/MapData").MapData): Promise<void> {
+  async loadMapData(mapData: MapData): Promise<void> {
     await this.resources.runtime.terrain.loadMapData(mapData);
     // Update editor's map data reference.
     // 更新编辑器的地图数据引用

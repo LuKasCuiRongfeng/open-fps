@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { GameSettings, GameSettingsPatch } from "@game/settings/GameSettings";
 import type { GameApp } from "@game/GameApp";
 import type { TerrainEditor, MapData } from "@game/editor";
-import type { TextureEditor } from "@game/editor/TextureEditor";
+import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 import {
   TabButton,
   TABS,

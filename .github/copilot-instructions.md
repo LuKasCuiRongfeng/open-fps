@@ -85,9 +85,20 @@
 - Use **real-world plausible defaults** with **SI units** (meters, seconds) / 使用**真实世界默认值**和 **SI 单位**
 
 ## Code Organization / 代码组织
-- Game code: `src/game/` (ecs/, systems/, world/, editor/, input/, prefabs/, settings/) / 游戏代码
+- Game code: `src/game/` / 游戏代码
+  - `project/` - Project/map storage (MapData, ProjectStorage) / 项目/地图存储
+  - `ecs/` - ECS components and resources / ECS 组件和资源
+  - `systems/` - ECS systems / ECS 系统
+  - `editor/terrain/` - Terrain editing (TerrainEditor, TerrainBrush) / 地形编辑
+  - `editor/texture/` - Texture editing (TextureEditor) / 纹理编辑
+  - `world/terrain/` - Terrain system (chunks, materials, GPU compute) / 地形系统
+  - `world/sky/` - Sky system (SkySystem, SkyShader) / 天空系统
+  - `world/gpu/` - Shared GPU utilities (GpuTextureIO, WebGpuBackend) / 共享 GPU 工具
+  - `input/`, `prefabs/`, `settings/` / 输入、预制体、设置
 - UI: `src/ui/` / 用户界面
 - Backend APIs: `src-tauri/src/lib.rs` (map save/load commands exist) / 后端 API（已有地图存取命令）
+- **Path aliases / 路径别名**: Use `@game/*`, `@project/*`, `@ui/*`, `@config/*` instead of long relative paths
+- **路径别名**：使用 `@game/*`、`@project/*`、`@ui/*`、`@config/*` 代替长相对路径
 
 ## Architecture Patterns / 架构模式
 - **ECS**: components are pure data, systems are stateless functions, phase order: input → gameplay → physics → render

@@ -13,9 +13,9 @@ import {
   type Texture,
 } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
-import type { FloatingOrigin } from "./FloatingOrigin";
-import { createGpuTerrainMaterial, type TerrainMaterialParams } from "./terrainMaterial";
-import { createTexturedTerrainMaterial, type TerrainMaterialParams as TexturedMaterialParams } from "./terrainMaterialTextured";
+import type { FloatingOrigin } from "../FloatingOrigin";
+import { createGpuTerrainMaterial, type TerrainMaterialParams } from "./material/terrainMaterial";
+import { createTexturedTerrainMaterial, type TerrainMaterialParams as TexturedMaterialParams } from "./material/terrainMaterialTextured";
 import type { TerrainTextureResult } from "./TerrainTextures";
 
 // Skirt depth in meters (how far down the skirt extends).

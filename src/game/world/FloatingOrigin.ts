@@ -2,7 +2,7 @@
 // FloatingOrigin：大世界精度的浮动原点系统
 
 import { Vector3 } from "three/webgpu";
-import type { TerrainConfig } from "./terrain";
+import type { TerrainConfig } from "./terrain/terrain";
 
 /**
  * Manages floating origin to prevent precision issues in large worlds.

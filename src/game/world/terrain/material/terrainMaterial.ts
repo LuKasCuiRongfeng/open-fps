@@ -27,7 +27,7 @@ import {
   normalize,
   cameraViewMatrix,
 } from "three/tsl";
-import type { TerrainConfig } from "./terrain";
+import type { TerrainConfig } from "../terrain";
 
 /**
  * Parameters for GPU-displaced terrain material.
