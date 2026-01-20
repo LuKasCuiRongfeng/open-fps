@@ -27,19 +27,18 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
           <RangeField
             label="Elevation (height)"
             value={settings.sky.sunElevation}
-            min={0}
+            min={-30}
             max={90}
             step={1}
             onChange={(v) => onPatch({ sky: { sunElevation: v } })}
           />
-          <RangeField
-            label="Azimuth (direction)"
-            value={settings.sky.sunAzimuth}
-            min={0}
-            max={360}
-            step={1}
-            onChange={(v) => onPatch({ sky: { sunAzimuth: v } })}
-          />
+          <div className="space-y-1">
+            <label className="block text-xs text-white/70">Azimuth (direction)</label>
+            <div className="flex items-center h-8 px-3 bg-white/5 rounded text-sm text-white/60">
+              {Math.round(settings.sky.sunAzimuth)}°
+            </div>
+            <div className="text-xs text-white/40">Driven by time. Adjust via Time settings.</div>
+          </div>
           <RangeField
             label="Sun Size"
             value={settings.sky.sunSize}
@@ -50,7 +49,7 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
           />
         </div>
         <div className="text-xs text-white/40 mt-2">
-          Elevation: 0° = horizon, 90° = overhead. Azimuth: 0° = north, 90° = east, 180° = south.
+          Elevation: -30° to 0° = night/twilight, 0° = horizon, 90° = overhead.
         </div>
       </div>
 
@@ -253,6 +252,32 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
         )}
         <div className="text-xs text-white/40 mt-2">
           Simulates volumetric light scattering (crepuscular rays) radiating from the sun.
+        </div>
+      </div>
+
+      {/* Night Sky */}
+      <div>
+        <div className="text-xs font-medium text-white/80 mb-3">Night Sky / 夜空</div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <RangeField
+            label="Star Brightness"
+            value={settings.sky.starBrightness}
+            min={0}
+            max={2}
+            step={0.1}
+            onChange={(v) => onPatch({ sky: { starBrightness: v } })}
+          />
+          <RangeField
+            label="Milky Way Brightness"
+            value={settings.sky.milkyWayBrightness}
+            min={0}
+            max={2}
+            step={0.1}
+            onChange={(v) => onPatch({ sky: { milkyWayBrightness: v } })}
+          />
+        </div>
+        <div className="text-xs text-white/40 mt-2">
+          Adjust the visibility of stars and the Milky Way in the night sky. Set sun elevation to 0° to see the night sky.
         </div>
       </div>
     </div>

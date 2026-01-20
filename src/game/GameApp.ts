@@ -280,6 +280,10 @@ export class GameApp {
     // 初始化天空系统后处理（太阳光晕的泛光效果）
     this.skySystem.initPostProcessing(this.renderer, this.scene, this.camera);
 
+    // Link directional light to sky system for day/night cycle.
+    // 链接方向光到天空系统以支持昼夜循环
+    this.skySystem.setDirectionalLight(this.sun);
+
     // WebGPU backends may finalize internal render targets during init; re-apply sizing.
     // WebGPU 后端可能在 init 时最终确定内部渲染目标：此处重新应用尺寸
     this.onResize();
@@ -543,6 +547,10 @@ export class GameApp {
     // Apply textures to terrain materials.
     // 将纹理应用到地形材质
     this.resources.runtime.terrain.setTextureData(textureResult, splatMapTexture);
+    
+    // Load star texture for night sky.
+    // 加载夜空星空纹理
+    await this.skySystem.loadStarTexture(projectPath);
   }
 
   /**
@@ -604,6 +612,11 @@ export class GameApp {
     // Apply sky settings immediately (includes lighting).
     // 立即应用天空设置（包含光照）
     if (patch.sky) {
+      // If user manually changes sun position, disable time-driven mode.
+      // 如果用户手动修改太阳位置，则关闭时间驱动模式
+      if (patch.sky.sunElevation !== undefined || patch.sky.sunAzimuth !== undefined) {
+        this.settings.time.timeDrivenSun = false;
+      }
       this.applySkySettings();
     }
 

@@ -94,6 +94,10 @@ export type GameSettings = {
     godRaysDecay: number;
     /** God rays exposure multiplier. / 上帝光线曝光倍数 */
     godRaysExposure: number;
+    /** Star brightness (0-2). / 星星亮度 (0-2) */
+    starBrightness: number;
+    /** Milky Way brightness (0-2). / 银河亮度 (0-2) */
+    milkyWayBrightness: number;
   };
   editor: {
     mouseConfig: EditorMouseConfig;
@@ -167,6 +171,8 @@ export function createDefaultGameSettings(): GameSettings {
       godRaysWeight: 0.5,
       godRaysDecay: 0.95,
       godRaysExposure: 3.0,
+      starBrightness: 1.2,
+      milkyWayBrightness: 0.8,
     },
     editor: {
       mouseConfig: {
