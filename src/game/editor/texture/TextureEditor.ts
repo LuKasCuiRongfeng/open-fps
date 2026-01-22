@@ -1,81 +1,45 @@
-// TextureEditor: texture painting state and brush management.
-// TextureEditor：纹理绘制状态和画刷管理
+// TextureEditor: texture painting coordinator for terrain splat maps.
+// TextureEditor：地形 splat map 纹理绘制协调器
 
-import type { PerspectiveCamera } from "three/webgpu";
-import type { WebGPURenderer } from "three/webgpu";
-import { Raycaster, Plane, Vector3, Vector2 } from "three/webgpu";
-import { SplatMapCompute, type SplatBrushStroke } from "../../world/terrain/gpu/SplatMapCompute";
+import type { PerspectiveCamera, WebGPURenderer } from "three/webgpu";
+import { SplatMapCompute } from "@game/world/terrain/gpu/SplatMapCompute";
 import {
   type TextureDefinition,
   type SplatMapData,
-  getChannelForLayer,
-  getLayerNames,
 } from "./TextureData";
 import { TextureStorage } from "./TextureStorage";
+import { TextureBrush, type TextureBrushSettings } from "./TextureBrush";
 
 /**
- * Texture brush settings.
- * 纹理画刷设置
- */
-export interface TextureBrushSettings {
-  // Brush radius in meters.
-  // 画刷半径（米）
-  radius: number;
-  // Brush strength (0-1).
-  // 画刷强度（0-1）
-  strength: number;
-  // Brush falloff (0-1, 0 = hard edge, 1 = soft edge).
-  // 画刷衰减（0-1，0=硬边缘，1=软边缘）
-  falloff: number;
-  // Selected texture layer name.
-  // 选中的纹理层名称
-  selectedLayer: string;
-}
-
-/**
- * TextureEditor: manages texture painting state on terrain.
- * TextureEditor：管理地形上的纹理绘制状态
+ * TextureEditor: coordinates texture painting on terrain splat maps.
+ * TextureEditor：协调地形 splat map 上的纹理绘制
+ *
+ * Delegates brush operations to TextureBrush (mirrors TerrainEditor pattern).
+ * 将画刷操作委托给 TextureBrush（与 TerrainEditor 模式一致）
  */
 export class TextureEditor {
   // Splat map GPU compute.
   // Splat map GPU 计算
   private splatMapCompute: SplatMapCompute | null = null;
 
-  // Texture definition loaded from project (null = procedural textures, editing disabled).
-  // 从项目加载的纹理定义（null = 程序纹理，禁用编辑）
+  // Texture brush (delegated).
+  // 纹理画刷（委托）
+  private readonly brush = new TextureBrush();
+
+  // Texture definition loaded from project.
+  // 从项目加载的纹理定义
   private _textureDefinition: TextureDefinition | null = null;
 
-  // Whether texture editing is enabled (requires texture.json).
-  // 纹理编辑是否启用（需要 texture.json）
+  // Whether texture editing is enabled.
+  // 纹理编辑是否启用
   private _editingEnabled = false;
 
-  // Brush settings.
-  // 画刷设置
-  private _brushSettings: TextureBrushSettings = {
-    radius: 20,
-    strength: 0.5,
-    falloff: 0.5,
-    selectedLayer: "",
-  };
-
-  // Brush target state.
-  // 画刷目标状态
-  private _brushActive = false;
-  private _brushTargetValid = false;
-  private _brushTargetX = 0;
-  private _brushTargetZ = 0;
-
-  // Raycasting for brush positioning.
-  // 用于画刷定位的射线投射
-  private readonly raycaster = new Raycaster();
-  private readonly groundPlane = new Plane(new Vector3(0, 1, 0), 0);
-
-  // Dirty flag: splat map has unsaved changes.
-  // 脏标志：splat map 有未保存的更改
+  // Dirty flag.
+  // 脏标志
   private _dirty = false;
 
-  // World size and offset for splat map alignment.
-  // 用于 splat map 对齐的世界大小和偏移
+  // World offset for splat map alignment.
+  // 用于 splat map 对齐的世界偏移
   private worldOffsetX = 0;
   private worldOffsetZ = 0;
 
@@ -95,23 +59,14 @@ export class TextureEditor {
    * Initialize GPU resources for splat map painting.
    * 初始化 splat map 绘制的 GPU 资源
    */
-  async init(renderer: WebGPURenderer, worldSize: number = 1024): Promise<void> {
+  async init(renderer: WebGPURenderer, worldSize = 1024): Promise<void> {
     this.renderer = renderer;
-    // Splat map covers [-worldSize/2, worldSize/2] centered on origin.
-    // Splat map 覆盖以原点为中心的 [-worldSize/2, worldSize/2] 范围
     this.worldOffsetX = -worldSize / 2;
     this.worldOffsetZ = -worldSize / 2;
 
-    // Create splat map compute with resolution proportional to world size.
-    // 创建分辨率与世界大小成比例的 splat map 计算
-    // Target ~0.5 pixels per meter for good detail, capped at 4096 for GPU limits.
-    // 目标约 0.5 像素/米以获得良好细节，上限 4096 以适应 GPU 限制
     const resolution = Math.min(4096, Math.max(1024, Math.ceil(worldSize / 2)));
     this.splatMapCompute = new SplatMapCompute(resolution, worldSize);
     await this.splatMapCompute.init(renderer);
-
-    // Set world offset.
-    // 设置世界偏移
     this.splatMapCompute.setWorldOffset(this.worldOffsetX, this.worldOffsetZ);
   }
 
@@ -120,37 +75,21 @@ export class TextureEditor {
    * 从项目加载纹理定义和 splat map
    */
   async loadFromProject(projectPath: string): Promise<void> {
-    // Load texture definition (null if doesn't exist).
-    // 加载纹理定义（不存在则为 null）
     this._textureDefinition = await TextureStorage.loadTextureDefinition(projectPath);
 
     if (this._textureDefinition) {
-      // Texture editing enabled.
-      // 启用纹理编辑
       this._editingEnabled = true;
+      this.brush.setTextureDefinition(this._textureDefinition);
 
-      // Set default selected layer to first one.
-      // 将默认选中的层设置为第一个
-      const names = getLayerNames(this._textureDefinition);
-      if (names.length > 0) {
-        this._brushSettings.selectedLayer = names[0];
-      }
-
-      // Ensure splat map exists.
-      // 确保 splat map 存在
       await TextureStorage.ensureSplatMap(projectPath);
 
-      // Load splat map.
-      // 加载 splat map
       const splatMapData = await TextureStorage.loadSplatMap(projectPath);
       if (splatMapData && this.splatMapCompute && this.renderer) {
         await this.splatMapCompute.loadFromPixels(this.renderer, splatMapData.pixels);
       }
     } else {
-      // No texture.json, use procedural textures.
-      // 没有 texture.json，使用程序纹理
       this._editingEnabled = false;
-      this._brushSettings.selectedLayer = "";
+      this.brush.setTextureDefinition(null);
     }
 
     this._dirty = false;
@@ -166,12 +105,8 @@ export class TextureEditor {
       return;
     }
 
-    // Save texture definition.
-    // 保存纹理定义
     await TextureStorage.saveTextureDefinition(projectPath, this._textureDefinition);
 
-    // Save splat map.
-    // 保存 splat map
     if (this.splatMapCompute && this.renderer) {
       const pixels = await this.splatMapCompute.readToPixels(this.renderer);
       const splatMapData: SplatMapData = {
@@ -190,45 +125,36 @@ export class TextureEditor {
     return this._textureDefinition;
   }
 
-  /**
-   * Whether texture editing is enabled (texture.json exists).
-   * 纹理编辑是否启用（texture.json 存在）
-   */
   get editingEnabled(): boolean {
     return this._editingEnabled;
   }
 
   get brushSettings(): Readonly<TextureBrushSettings> {
-    return this._brushSettings;
+    return this.brush.settings;
   }
 
   get brushActive(): boolean {
-    return this._brushActive;
+    return this.brush.active;
   }
 
   get brushTargetValid(): boolean {
-    return this._brushTargetValid;
+    return this.brush.targetValid;
   }
 
   get brushTargetX(): number {
-    return this._brushTargetX;
+    return this.brush.targetX;
   }
 
   get brushTargetZ(): number {
-    return this._brushTargetZ;
+    return this.brush.targetZ;
   }
 
   get dirty(): boolean {
     return this._dirty;
   }
 
-  /**
-   * Get available texture layer names.
-   * 获取可用的纹理层名称
-   */
   get layerNames(): readonly string[] {
-    if (!this._textureDefinition) return [];
-    return getLayerNames(this._textureDefinition);
+    return this.brush.layerNames;
   }
 
   /**
@@ -252,97 +178,47 @@ export class TextureEditor {
     this.onDirtyChange = callback;
   }
 
-  // --- Brush Settings / 画刷设置 ---
+  // --- Brush Settings (delegated) / 画刷设置（委托） ---
 
   setSelectedLayer(layerName: string): void {
-    if (!this._textureDefinition) return;
-    if (getLayerNames(this._textureDefinition).includes(layerName)) {
-      this._brushSettings.selectedLayer = layerName;
-    }
+    this.brush.selectedLayer = layerName;
   }
 
   setBrushRadius(radius: number): void {
-    this._brushSettings.radius = Math.max(1, Math.min(200, radius));
+    this.brush.radius = radius;
   }
 
   setBrushStrength(strength: number): void {
-    this._brushSettings.strength = Math.max(0, Math.min(1, strength));
+    this.brush.strength = strength;
   }
 
   setBrushFalloff(falloff: number): void {
-    this._brushSettings.falloff = Math.max(0, Math.min(1, falloff));
+    this.brush.falloff = falloff;
   }
 
-  // --- Brush Input / 画刷输入 ---
+  // --- Brush Input (delegated) / 画刷输入（委托） ---
 
-  /**
-   * Update brush target position from mouse position.
-   * 从鼠标位置更新画刷目标位置
-   */
   updateBrushTarget(
     mouseX: number,
     mouseY: number,
     canvasWidth: number,
     canvasHeight: number,
     camera: PerspectiveCamera,
-    heightAt: (x: number, z: number) => number,
+    heightAt: (x: number, z: number) => number
   ): void {
-    // Convert mouse to normalized device coordinates.
-    // 将鼠标转换为标准化设备坐标
-    const ndc = new Vector2(
-      (mouseX / canvasWidth) * 2 - 1,
-      -(mouseY / canvasHeight) * 2 + 1,
-    );
-
-    this.raycaster.setFromCamera(ndc, camera);
-
-    // Intersect with ground plane at y=0.
-    // 与 y=0 的地面平面相交
-    const intersection = new Vector3();
-    if (this.raycaster.ray.intersectPlane(this.groundPlane, intersection)) {
-      this._brushTargetX = intersection.x;
-      this._brushTargetZ = intersection.z;
-
-      // Adjust plane height to actual terrain height.
-      // 将平面高度调整为实际地形高度
-      const terrainY = heightAt(intersection.x, intersection.z);
-      this.groundPlane.constant = -terrainY;
-
-      // Re-intersect with adjusted plane.
-      // 与调整后的平面重新相交
-      if (this.raycaster.ray.intersectPlane(this.groundPlane, intersection)) {
-        this._brushTargetX = intersection.x;
-        this._brushTargetZ = intersection.z;
-      }
-
-      this._brushTargetValid = true;
-    } else {
-      this._brushTargetValid = false;
-    }
+    this.brush.updateTarget(mouseX, mouseY, canvasWidth, canvasHeight, camera, heightAt);
   }
 
-  /**
-   * Invalidate brush target (e.g., when not in edit mode).
-   * 使画刷目标无效（例如，不在编辑模式时）
-   */
   invalidateBrushTarget(): void {
-    this._brushTargetValid = false;
+    this.brush.invalidateTarget();
   }
 
-  /**
-   * Start brush painting.
-   * 开始画刷绘制
-   */
   startBrush(): void {
-    this._brushActive = true;
+    this.brush.start();
   }
 
-  /**
-   * Stop brush painting.
-   * 停止画刷绘制
-   */
   endBrush(): void {
-    this._brushActive = false;
+    this.brush.stop();
   }
 
   /**
@@ -350,61 +226,26 @@ export class TextureEditor {
    * 将画刷笔画应用到 splat map
    */
   async applyBrush(dt: number): Promise<void> {
-    if (!this._editingEnabled || !this._textureDefinition) return;
-    if (!this._brushActive || !this._brushTargetValid || !this.splatMapCompute || !this.renderer) {
+    if (!this._editingEnabled || !this.splatMapCompute || !this.renderer) {
       return;
     }
 
-    // Get channel index for selected layer.
-    // 获取选中层的通道索引
-    const channel = getChannelForLayer(
-      this._brushSettings.selectedLayer,
-      this._textureDefinition,
-    );
-    if (channel === -1) {
-      console.warn(`[TextureEditor] Invalid layer: ${this._brushSettings.selectedLayer}`);
-      return;
-    }
+    const stroke = this.brush.generateStroke(dt);
+    if (!stroke) return;
 
-    // Create brush stroke.
-    // 创建画刷笔画
-    const stroke: SplatBrushStroke = {
-      worldX: this._brushTargetX,
-      worldZ: this._brushTargetZ,
-      radius: this._brushSettings.radius,
-      strength: this._brushSettings.strength,
-      falloff: this._brushSettings.falloff,
-      targetLayer: channel,
-      dt,
-    };
-
-    // Apply to splat map.
-    // 应用到 splat map
     await this.splatMapCompute.applyBrush(this.renderer, stroke);
-
-    // Mark as dirty.
-    // 标记为脏
     this.setDirty(true);
   }
 
-  /**
-   * Reset brush state.
-   * 重置画刷状态
-   */
   reset(): void {
-    this._brushActive = false;
-    this._brushTargetValid = false;
+    this.brush.reset();
   }
 
   // --- Texture Definition Editing / 纹理定义编辑 ---
 
-  /**
-   * Update a texture layer definition.
-   * 更新纹理层定义
-   */
   updateLayerDefinition(
     layerName: string,
-    updates: Partial<TextureDefinition[string]>,
+    updates: Partial<TextureDefinition[string]>
   ): void {
     if (!this._textureDefinition || !this._textureDefinition[layerName]) return;
     Object.assign(this._textureDefinition[layerName], updates);

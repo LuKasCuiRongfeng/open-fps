@@ -1,47 +1,48 @@
-// GameApp: main game application with system scheduler.
-// GameApp：主游戏应用，带系统调度器
+// GameApp: main game application coordinator.
+// GameApp：主游戏应用协调器
 
 import {
-  Clock,
   DirectionalLight,
   FogExp2,
   HemisphereLight,
-  PerspectiveCamera,
-  Scene,
-  WebGPURenderer,
+  type PerspectiveCamera,
+  type Scene,
+  type WebGPURenderer,
 } from "three/webgpu";
-import { cameraConfig } from "../config/camera";
-import { renderConfig } from "../config/render";
-import { terrainConfig } from "../config/terrain";
+import { terrainConfig } from "@config/terrain";
 import { createWorld } from "./createWorld";
-import { GameEcs, type GameWorld } from "./ecs/GameEcs";
+import { FpsCounter, GameRenderer, SystemScheduler } from "./core";
+import { GameEcs } from "./ecs/GameEcs";
 import { createTimeResource, type GameResources } from "./ecs/resources";
 import { TerrainEditor } from "./editor/terrain/TerrainEditor";
 import { TextureEditor } from "./editor/texture/TextureEditor";
 import { InputManager } from "./input/InputManager";
 import { createRawInputState } from "./input/RawInputState";
 import { createPlayer } from "./prefabs/createPlayer";
-import { avatarSystem } from "./systems/avatarSystem";
-import { cameraSystem } from "./systems/cameraSystem";
-import { cameraModeSystem } from "./systems/cameraModeSystem";
-import { inputSystem } from "./systems/inputSystem";
-import { lookSystem } from "./systems/lookSystem";
-import { movementSystem } from "./systems/movementSystem";
-import { jumpSystem } from "./systems/jumpSystem";
-import { physicsSystem } from "./systems/physicsSystem";
-import { worldBoundsSystem } from "./systems/worldBoundsSystem";
 import {
-  applySettingsPatch,
+  avatarSystem,
+  cameraModeSystem,
+  cameraSystem,
+  inputSystem,
+  jumpSystem,
+  lookSystem,
+  movementSystem,
+  physicsSystem,
+  worldBoundsSystem,
+} from "./systems";
+import {
   cloneSettings,
   createDefaultGameSettings,
+  setSettings,
+  applySettingsPatch,
   type GameSettings,
   type GameSettingsPatch,
-  setSettings,
 } from "./settings/GameSettings";
 import { TerrainTextures } from "./world/terrain/TerrainTextures";
 import { setTerrainNormalSoftness } from "./world/terrain/material/terrainMaterialTextured";
 import { timeToSunPosition, type SkySystem } from "./world/sky/SkySystem";
 import type { MapData } from "./project/MapData";
+import { renderConfig } from "@config/render";
 
 export type GameBootPhase =
   | "checking-webgpu"
@@ -52,30 +53,17 @@ export type GameBootPhase =
   | "ready";
 
 /**
- * System execution phases for explicit dependency management.
- * 系统执行阶段，用于显式依赖管理
- *
- * Industry best practice: organize systems into phases.
- * 业界最佳实践：将系统组织成阶段
+ * GameApp: coordinates game systems and lifecycle.
+ * GameApp：协调游戏系统和生命周期
  */
-type SystemPhase = "input" | "gameplay" | "physics" | "render";
-
-type SystemEntry = {
-  name: string;
-  phase: SystemPhase;
-  fn: (world: GameWorld, res: GameResources) => void;
-};
-
 export class GameApp {
-  private readonly container: HTMLElement;
-  private readonly renderer: WebGPURenderer;
-  private readonly scene: Scene;
-  private readonly camera: PerspectiveCamera;
-  private readonly clock = new Clock();
+  private readonly gameRenderer: GameRenderer;
   private readonly ecs = new GameEcs();
+  private readonly scheduler = new SystemScheduler();
   private readonly inputManager: InputManager;
   private readonly resources: GameResources;
   private readonly settings = createDefaultGameSettings();
+  private readonly fpsCounter = new FpsCounter();
   private readonly sun: DirectionalLight;
   private readonly hemi: HemisphereLight;
   private readonly skySystem: SkySystem;
@@ -84,79 +72,38 @@ export class GameApp {
   readonly ready: Promise<void>;
   private disposed = false;
 
-  // FPS tracking (based on actual render loop).
-  // FPS 追踪（基于实际渲染循环）
-  private fpsFrameCount = 0;
-  private fpsLastTime = 0;
-  private fpsValue = 0;
-
-  // Callback for time updates (used by React UI to sync sundial).
-  // 时间更新回调（用于 React UI 同步日晷）
+  // Callback for time updates.
+  // 时间更新回调
   private onTimeUpdateCallback: ((timeOfDay: number) => void) | null = null;
 
-  /**
-   * System scheduler: ordered list of systems per phase.
-   * 系统调度器：按阶段排序的系统列表
-   */
-  private readonly systems: SystemEntry[] = [];
-
   constructor(container: HTMLElement, onBootPhase?: (phase: GameBootPhase) => void) {
-    this.container = container;
-
     onBootPhase?.("checking-webgpu");
-
-    // WebGPU-only by design (no WebGL fallback).
-    // 本项目只支持 WebGPU（不做 WebGL 兼容/降级）
-    const gpu = (navigator as Navigator & { gpu?: unknown }).gpu;
-    if (!gpu) {
-      throw new Error("WebGPU is not available in this environment.");
-    }
-
     onBootPhase?.("creating-renderer");
-    this.renderer = new WebGPURenderer({ antialias: true });
-    // Enable shadow mapping.
-    // 启用阴影贴图
-    this.renderer.shadowMap.enabled = true;
-    // Make it obvious the canvas is rendering even before world content appears.
-    // 设一个非纯黑的清屏色，便于判断是否在正常渲染
-    this.renderer.setClearColor(0x10151f, 1);
-    this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio, renderConfig.maxPixelRatio),
-    );
 
-    this.scene = new Scene();
-
-    this.camera = new PerspectiveCamera(
-      cameraConfig.fovDegrees,
-      1,
-      cameraConfig.nearMeters,
-      cameraConfig.farMeters,
-    );
+    this.gameRenderer = new GameRenderer(container);
 
     onBootPhase?.("creating-world");
-    const world = createWorld(this.scene);
+    const world = createWorld(this.gameRenderer.scene);
     this.sun = world.sun;
     this.hemi = world.hemi;
     this.skySystem = world.skySystem;
 
-    // Create raw input state as ECS resource (data-oriented).
-    // 创建原始输入状态作为 ECS 资源（数据导向）
+    // Create raw input state and manager.
+    // 创建原始输入状态和管理器
     const rawInputState = createRawInputState();
-    this.inputManager = new InputManager(this.renderer.domElement, rawInputState);
+    this.inputManager = new InputManager(this.gameRenderer.domElement, rawInputState);
 
-    // Initialize resources with new structure.
-    // 使用新结构初始化资源
+    // Initialize resources.
+    // 初始化资源
     this.resources = {
       time: createTimeResource(),
       singletons: {
-        scene: this.scene,
-        camera: this.camera,
-        renderer: this.renderer,
+        scene: this.gameRenderer.scene,
+        camera: this.gameRenderer.camera,
+        renderer: this.gameRenderer.renderer,
         inputManager: this.inputManager,
       },
-      input: {
-        raw: rawInputState,
-      },
+      input: { raw: rawInputState },
       runtime: {
         terrain: world.terrain,
         settings: this.settings,
@@ -165,23 +112,15 @@ export class GameApp {
 
     onBootPhase?.("creating-ecs");
 
-    // Create terrain editor.
-    // 创建地形编辑器
+    // Create editors.
+    // 创建编辑器
     this.terrainEditor = new TerrainEditor(terrainConfig);
-
-    // Create texture editor.
-    // 创建纹理编辑器
     this.textureEditor = new TextureEditor();
 
-    // Connect editor mode changes to pointer lock control.
-    // 连接编辑器模式变化到指针锁定控制
+    // Connect editor mode to pointer lock.
+    // 连接编辑器模式到指针锁定
     this.terrainEditor.setOnModeChange((mode) => {
-      // Disable pointer lock in edit mode, enable in play mode.
-      // 编辑模式禁用指针锁定，游戏模式启用
       this.inputManager.setPointerLockEnabled(mode === "play");
-
-      // Initialize editor camera when entering edit mode.
-      // 进入编辑模式时初始化编辑器相机
       if (mode === "edit") {
         const pos = this.getPlayerPosition();
         if (pos) {
@@ -190,226 +129,155 @@ export class GameApp {
       }
     });
 
-    // Register systems in execution order.
-    // 按执行顺序注册系统
+    // Register systems.
+    // 注册系统
     this.registerSystems();
 
-    // Register cleanup callback for avatar objects.
-    // 注册 avatar 对象的清理回调
+    // Register avatar cleanup.
+    // 注册 avatar 清理
     this.ecs.world.onDestroy((entityId) => {
       const avatar = this.ecs.world.get(entityId, "avatar");
       if (avatar) {
-        this.scene.remove(avatar.object);
-        // Dispose geometry/materials if needed.
-        // 如需要可释放几何体/材质
+        this.gameRenderer.scene.remove(avatar.object);
       }
     });
 
-    // NOTE: Player creation moved to initRendererAndStart() after terrain.initGpu()
-    // to ensure heightAt() returns correct spawn height.
-    // 注意：玩家创建移动到 initRendererAndStart()，在 terrain.initGpu() 之后，
-    // 以确保 heightAt() 返回正确的生成高度
-
-    this.container.appendChild(this.renderer.domElement);
-    this.onResize();
-
-    window.addEventListener("resize", this.onResize);
-
-    // WebGPU renderer requires async initialization; start the loop only after init.
-    // WebGPU 渲染器需要异步初始化：init 完成后再启动主循环
     this.ready = this.initRendererAndStart(onBootPhase);
   }
 
-  /**
-   * Register all systems in their execution phases.
-   * 按执行阶段注册所有系统
-   *
-   * Phase order: input -> gameplay -> physics -> render
-   * 阶段顺序：input -> gameplay -> physics -> render
-   */
   private registerSystems(): void {
-    // Input phase: read raw input, write to components.
-    // Input 阶段：读取原始输入，写入组件
-    this.systems.push({ name: "input", phase: "input", fn: inputSystem });
+    // Input phase.
+    // 输入阶段
+    this.scheduler.register("input", "input", inputSystem);
 
-    // Gameplay phase: process input, apply game logic.
-    // Gameplay 阶段：处理输入，应用游戏逻辑
-    this.systems.push({ name: "cameraMode", phase: "gameplay", fn: cameraModeSystem });
-    this.systems.push({ name: "look", phase: "gameplay", fn: lookSystem });
-    this.systems.push({ name: "movement", phase: "gameplay", fn: movementSystem });
-    this.systems.push({ name: "jump", phase: "gameplay", fn: jumpSystem });
+    // Gameplay phase.
+    // 游戏逻辑阶段
+    this.scheduler.register("cameraMode", "gameplay", cameraModeSystem);
+    this.scheduler.register("look", "gameplay", lookSystem);
+    this.scheduler.register("movement", "gameplay", movementSystem);
+    this.scheduler.register("jump", "gameplay", jumpSystem);
 
-    // Physics phase: integrate velocity, handle collisions.
-    // Physics 阶段：积分速度，处理碰撞
-    this.systems.push({ name: "physics", phase: "physics", fn: physicsSystem });
-    this.systems.push({ name: "worldBounds", phase: "physics", fn: worldBoundsSystem });
+    // Physics phase.
+    // 物理阶段
+    this.scheduler.register("physics", "physics", physicsSystem);
+    this.scheduler.register("worldBounds", "physics", worldBoundsSystem);
 
-    // Render phase: sync scene objects, update camera.
-    // Render 阶段：同步场景对象，更新相机
-    this.systems.push({ name: "camera", phase: "render", fn: cameraSystem });
-    this.systems.push({ name: "avatar", phase: "render", fn: avatarSystem });
+    // Render phase.
+    // 渲染阶段
+    this.scheduler.register("camera", "render", cameraSystem);
+    this.scheduler.register("avatar", "render", avatarSystem);
   }
 
   private async initRendererAndStart(onBootPhase?: (phase: GameBootPhase) => void) {
-    await this.renderer.init();
+    await this.gameRenderer.init();
     if (this.disposed) return;
 
-    // Get spawn position from player config.
-    // 从玩家配置获取出生位置
-    const { spawn } = await import("../config/player").then((m) => m.playerConfig);
-    const spawnX = spawn.xMeters;
-    const spawnZ = spawn.zMeters;
-
-    // Initialize streaming terrain system with spawn position.
-    // 使用出生位置初始化流式地形系统
-    await this.resources.runtime.terrain.initGpu(this.renderer, spawnX, spawnZ);
+    const { spawn } = await import("@config/player").then((m) => m.playerConfig);
+    await this.resources.runtime.terrain.initGpu(
+      this.gameRenderer.renderer,
+      spawn.xMeters,
+      spawn.zMeters
+    );
     if (this.disposed) return;
 
-    // Initialize texture editor GPU resources.
-    // 初始化纹理编辑器 GPU 资源
-    // Use world bounds size to cover entire playable area.
-    // 使用世界边界大小以覆盖整个可玩区域
     const splatWorldSize = terrainConfig.worldBounds.halfSizeMeters * 2;
-    await this.textureEditor.init(this.renderer, splatWorldSize);
+    await this.textureEditor.init(this.gameRenderer.renderer, splatWorldSize);
     if (this.disposed) return;
 
-    // Create player AFTER terrain GPU init so heightAt() works correctly.
-    // 在地形 GPU 初始化后创建玩家，确保 heightAt() 正确工作
+    // Create player after terrain init.
+    // 在地形初始化后创建玩家
     createPlayer(this.ecs, this.resources);
 
-    // Initialize sky system post-processing (bloom for sun glare).
-    // 初始化天空系统后处理（太阳光晕的泛光效果）
-    this.skySystem.initPostProcessing(this.renderer, this.scene, this.camera);
-
-    // Link directional light to sky system for day/night cycle.
-    // 链接方向光到天空系统以支持昼夜循环
+    // Initialize sky post-processing.
+    // 初始化天空后处理
+    this.skySystem.initPostProcessing(
+      this.gameRenderer.renderer,
+      this.gameRenderer.scene,
+      this.gameRenderer.camera
+    );
     this.skySystem.setDirectionalLight(this.sun);
 
-    // WebGPU backends may finalize internal render targets during init; re-apply sizing.
-    // WebGPU 后端可能在 init 时最终确定内部渲染目标：此处重新应用尺寸
-    this.onResize();
+    this.gameRenderer.updateSize();
 
-    // Warm up shaders by rendering multiple frames from different angles.
-    // This compiles all shader variants to prevent stutter on first camera rotation.
-    // Suppress harmless TSL warning about missing normal attribute (SkyMesh uses custom shader).
-    // 通过从不同角度渲染多帧来预热着色器
-    // 编译所有着色器变体，防止首次旋转相机时卡顿
-    // 抑制 TSL 关于缺少 normal 属性的无害警告（SkyMesh 使用自定义着色器）
+    // Warm up shaders.
+    // 预热着色器
     const originalWarn = console.warn;
     console.warn = (...args: unknown[]) => {
       if (typeof args[0] === "string" && args[0].includes('Vertex attribute "normal" not found')) {
-        return; // Suppress this specific warning / 抑制此特定警告
+        return;
       }
       originalWarn.apply(console, args);
     };
     await this.warmUpShaders();
     console.warn = originalWarn;
 
-    // Use renderer animation loop for consistent pacing.
-    // 使用 renderer 的动画循环，保证节奏稳定
-    this.clock.start();
-    this.renderer.setAnimationLoop(this.onFrame);
+    // Start render loop.
+    // 启动渲染循环
+    this.gameRenderer.startLoop(this.onFrame);
 
     onBootPhase?.("ready");
   }
 
-  /**
-   * Warm up GPU shaders by rendering from multiple camera angles.
-   * 通过从多个相机角度渲染来预热 GPU 着色器
-   *
-   * WebGPU compiles shader variants on first use. By rendering from many angles,
-   * we force compilation of all variants during loading instead of gameplay.
-   * WebGPU 在首次使用时编译着色器变体。通过从多个角度渲染，
-   * 我们强制在加载期间而非游戏过程中编译所有变体。
-   */
   private async warmUpShaders(): Promise<void> {
     const { Euler } = await import("three/webgpu");
-
     this.resources.time.dt = 0;
 
-    // Save original camera state.
-    // 保存原始相机状态
-    const originalPos = this.camera.position.clone();
-    const originalQuat = this.camera.quaternion.clone();
+    const originalPos = this.gameRenderer.camera.position.clone();
+    const originalQuat = this.gameRenderer.camera.quaternion.clone();
 
-    // Render from multiple yaw angles and pitch angles.
-    // 从多个水平角和俯仰角渲染
     const yawAngles = [0, Math.PI / 4, Math.PI / 2, Math.PI * 3 / 4, Math.PI, -Math.PI * 3 / 4, -Math.PI / 2, -Math.PI / 4];
-    const pitchAngles = [-0.5, 0, 0.5]; // Look down, straight, up
+    const pitchAngles = [-0.5, 0, 0.5];
 
     for (const pitch of pitchAngles) {
       for (const yaw of yawAngles) {
-        // Update camera to look in different directions.
-        // 更新相机朝向不同方向
-        this.camera.quaternion.setFromEuler(new Euler(pitch, yaw, 0, "YXZ"));
-
-        // Render frame to compile shaders.
-        // 渲染帧以编译着色器
-        this.renderer.render(this.scene, this.camera);
+        this.gameRenderer.camera.quaternion.setFromEuler(new Euler(pitch, yaw, 0, "YXZ"));
+        this.gameRenderer.renderer.render(this.gameRenderer.scene, this.gameRenderer.camera);
       }
     }
 
-    // Restore original camera state.
-    // 恢复原始相机状态
-    this.camera.position.copy(originalPos);
-    this.camera.quaternion.copy(originalQuat);
-
-    // Update systems and final render.
-    // 更新系统并最终渲染
+    this.gameRenderer.camera.position.copy(originalPos);
+    this.gameRenderer.camera.quaternion.copy(originalQuat);
     cameraSystem(this.ecs.world, this.resources);
     avatarSystem(this.ecs.world);
-    this.renderer.render(this.scene, this.camera);
+    this.gameRenderer.renderer.render(this.gameRenderer.scene, this.gameRenderer.camera);
   }
 
-  dispose() {
+  dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
 
-    window.removeEventListener("resize", this.onResize);
-    this.renderer.setAnimationLoop(null);
-
     this.inputManager.dispose();
-
-    // Dispose terrain system.
-    // 释放地形系统
     this.resources.runtime.terrain.dispose();
-
-    // Dispose texture editor.
-    // 释放纹理编辑器
     this.textureEditor.dispose();
+    this.gameRenderer.dispose();
+  }
 
-    // Detach canvas.
-    // 移除画布
-    if (this.renderer.domElement.parentElement === this.container) {
-      this.container.removeChild(this.renderer.domElement);
-    }
+  // --- Public API / 公共 API ---
 
-    this.renderer.dispose();
+  get renderer(): WebGPURenderer {
+    return this.gameRenderer.renderer;
+  }
+
+  get scene(): Scene {
+    return this.gameRenderer.scene;
+  }
+
+  get camera(): PerspectiveCamera {
+    return this.gameRenderer.camera;
   }
 
   getSettingsSnapshot(): GameSettings {
-    // Sync editor mouse config from terrain editor before returning.
-    // 返回前从地形编辑器同步鼠标配置
     const mc = this.terrainEditor.mouseConfig;
     this.settings.editor.mouseConfig.leftButton = mc.leftButton;
     this.settings.editor.mouseConfig.rightButton = mc.rightButton;
     this.settings.editor.mouseConfig.middleButton = mc.middleButton;
-    
     return cloneSettings(this.settings);
   }
 
-  /**
-   * Set callback for time updates (used by React UI to sync sundial).
-   * 设置时间更新回调（用于 React UI 同步日晷）
-   */
   setOnTimeUpdate(callback: ((timeOfDay: number) => void) | null): void {
     this.onTimeUpdateCallback = callback;
   }
 
-  /**
-   * Get player position for debug display.
-   * 获取玩家位置用于调试显示
-   */
   getPlayerPosition(): { x: number; y: number; z: number } | null {
     for (const [entityId] of this.ecs.world.query("transform", "player")) {
       const transform = this.ecs.world.get(entityId, "transform");
@@ -420,39 +288,20 @@ export class GameApp {
     return null;
   }
 
-  /**
-   * Get current FPS based on actual render loop.
-   * 获取基于实际渲染循环的当前 FPS
-   */
   getFps(): number {
-    return this.fpsValue;
+    return this.fpsCounter.fps;
   }
 
-  /**
-   * Get mouse world position in editor mode for debug display.
-   * 获取编辑器模式下的鼠标世界坐标用于调试显示
-   *
-   * Works with both terrain and texture editor modes.
-   * 同时支持地形和纹理编辑器模式
-   */
   getMousePosition(): { x: number; y: number; z: number; valid: boolean } | null {
-    // Not in edit mode = no mouse position.
-    // 不在编辑模式 = 没有鼠标位置
-    if (this.terrainEditor.mode !== "edit") {
-      return null;
-    }
-    
-    // Try terrain editor brush target first.
-    // 优先尝试地形编辑器的画刷目标
+    if (this.terrainEditor.mode !== "edit") return null;
+
     if (this.terrainEditor.brushTargetValid) {
       const x = this.terrainEditor.brushTargetX;
       const z = this.terrainEditor.brushTargetZ;
       const y = this.resources.runtime.terrain.heightAt(x, z);
       return { x, y, z, valid: true };
     }
-    
-    // Fall back to texture editor brush target.
-    // 回退到纹理编辑器的画刷目标
+
     if (this.textureEditor.brushTargetValid) {
       const x = this.textureEditor.brushTargetX;
       const z = this.textureEditor.brushTargetZ;
@@ -463,290 +312,192 @@ export class GameApp {
     return { x: 0, y: 0, z: 0, valid: false };
   }
 
-  /**
-   * Get terrain editor instance.
-   * 获取地形编辑器实例
-   */
   getTerrainEditor(): TerrainEditor {
     return this.terrainEditor;
   }
 
-  /**
-   * Get texture editor instance.
-   * 获取纹理编辑器实例
-   */
   getTextureEditor(): TextureEditor {
     return this.textureEditor;
   }
 
-  /**
-   * Update editor brush target from mouse position.
-   * 从鼠标位置更新编辑器画刷目标
-   */
   updateEditorBrushTarget(mouseX: number, mouseY: number): void {
-    const canvas = this.renderer.domElement;
+    const canvas = this.gameRenderer.domElement;
     this.terrainEditor.updateBrushTarget(
       mouseX,
       mouseY,
       canvas.clientWidth,
       canvas.clientHeight,
-      this.camera,
+      this.gameRenderer.camera,
       this.resources.runtime.terrain.heightAt
     );
   }
 
   // --- Map Save/Load API / 地图保存/加载 API ---
 
-  /**
-   * Export current terrain as map data (for saving).
-   * 导出当前地形为地图数据（用于保存）
-   */
   exportCurrentMapData(): MapData {
     return this.resources.runtime.terrain.exportCurrentMapData();
   }
 
-  /**
-   * Load terrain from map data.
-   * 从地图数据加载地形
-   */
   async loadMapData(mapData: MapData): Promise<void> {
     await this.resources.runtime.terrain.loadMapData(mapData);
-    // Update editor's map data reference.
-    // 更新编辑器的地图数据引用
     this.terrainEditor.loadMap(JSON.stringify({
       version: mapData.version,
       seed: mapData.seed,
       tileResolution: mapData.tileResolution,
       chunkSizeMeters: mapData.chunkSizeMeters,
-      chunks: {}, // Don't duplicate chunks in editor, they're in TerrainHeightSampler
+      chunks: {},
       metadata: mapData.metadata,
     }));
   }
 
-  /**
-   * Load textures from project folder.
-   * 从项目文件夹加载纹理
-   *
-   * This loads texture.json and splat map from the project,
-   * then applies them to terrain chunk materials.
-   * 从项目加载 texture.json 和 splat map，然后应用到地形 chunk 材质
-   */
   async loadTexturesFromProject(projectPath: string): Promise<void> {
-    // Load texture editor state (texture.json + splat map).
-    // 加载纹理编辑器状态（texture.json + splat map）
     await this.textureEditor.loadFromProject(projectPath);
-
-    // Load PBR textures based on texture definition.
-    // 根据纹理定义加载 PBR 纹理
     const textureDef = this.textureEditor.textureDefinition;
     const textureResult = await TerrainTextures.getInstance().loadFromDefinition(projectPath, textureDef);
-
-    // Get splat map texture from texture editor.
-    // 从纹理编辑器获取 splat map 纹理
     const splatMapTexture = this.textureEditor.getSplatTexture();
-
-    // Apply textures to terrain materials.
-    // 将纹理应用到地形材质
     this.resources.runtime.terrain.setTextureData(textureResult, splatMapTexture);
-    
-    // Load star texture for night sky.
-    // 加载夜空星空纹理
     await this.skySystem.loadStarTexture(projectPath);
   }
 
-  /**
-   * Save texture data to project folder.
-   * 保存纹理数据到项目文件夹
-   *
-   * This saves splat map data to the project.
-   * 保存 splat map 数据到项目
-   */
   async saveTexturesToProject(projectPath: string): Promise<void> {
     await this.textureEditor.saveToProject(projectPath);
   }
 
-  /**
-   * Update texture editor brush target from mouse position.
-   * 从鼠标位置更新纹理编辑器画刷目标
-   */
   updateTextureBrushTarget(mouseX: number, mouseY: number): void {
-    const canvas = this.renderer.domElement;
+    const canvas = this.gameRenderer.domElement;
     this.textureEditor.updateBrushTarget(
       mouseX,
       mouseY,
       canvas.clientWidth,
       canvas.clientHeight,
-      this.camera,
+      this.gameRenderer.camera,
       this.resources.runtime.terrain.heightAt
     );
   }
 
-  /**
-   * Reset terrain to original loaded data (discard all edits).
-   * 重置地形为原始加载数据（丢弃所有编辑）
-   */
   async resetTerrain(): Promise<void> {
     await this.resources.runtime.terrain.resetToOriginal();
   }
 
-  updateSettings(patch: GameSettingsPatch) {
-    applySettingsPatch(this.settings, patch);
+  // --- Settings / 设置 ---
 
-    // Apply render settings immediately.
-    // 立即应用渲染设置
+  updateSettings(patch: GameSettingsPatch): void {
+    applySettingsPatch(this.settings, patch);
+    this.applySettingsChanges(patch);
+  }
+
+  applySettings(newSettings: GameSettings): void {
+    setSettings(this.settings, newSettings);
+    this.applyAllSettings();
+  }
+
+  resetSettings(): void {
+    setSettings(this.settings, createDefaultGameSettings());
+    this.applyAllSettings();
+  }
+
+  private applySettingsChanges(patch: GameSettingsPatch): void {
     const effectivePixelRatio =
       Math.min(window.devicePixelRatio, this.settings.render.maxPixelRatio) *
       this.settings.render.renderScale;
-    this.renderer.setPixelRatio(effectivePixelRatio);
+    this.gameRenderer.renderer.setPixelRatio(effectivePixelRatio);
+    this.gameRenderer.setFov(this.settings.camera.fovDegrees);
 
-    // Apply camera settings immediately.
-    // 立即应用相机设置
-    this.camera.fov = this.settings.camera.fovDegrees;
-    this.camera.updateProjectionMatrix();
-
-    // Apply fog settings immediately.
-    // 立即应用雾设置
-    if (this.scene.fog instanceof FogExp2) {
-      this.scene.fog.density = this.settings.sky.fogDensity;
+    if (this.gameRenderer.scene.fog instanceof FogExp2) {
+      this.gameRenderer.scene.fog.density = this.settings.sky.fogDensity;
     }
 
-    // Apply sky settings immediately (includes lighting).
-    // 立即应用天空设置（包含光照）
     if (patch.sky) {
-      // If user manually changes sun position, disable time-driven mode.
-      // 如果用户手动修改太阳位置，则关闭时间驱动模式
       if (patch.sky.sunElevation !== undefined || patch.sky.sunAzimuth !== undefined) {
         this.settings.time.timeDrivenSun = false;
       }
       this.applySkySettings();
     }
 
-    // Apply editor mouse config.
-    // 应用编辑器鼠标配置
     if (patch.editor?.mouseConfig) {
       this.terrainEditor.setMouseConfig(this.settings.editor.mouseConfig);
     }
   }
 
-  /**
-   * Apply complete settings (for loading from project).
-   * 应用完整设置（用于从项目加载）
-   */
-  applySettings(newSettings: GameSettings) {
-    setSettings(this.settings, newSettings);
-
-    // Apply render settings immediately.
-    // 立即应用渲染设置
+  private applyAllSettings(): void {
     const effectivePixelRatio =
       Math.min(window.devicePixelRatio, this.settings.render.maxPixelRatio) *
       this.settings.render.renderScale;
-    this.renderer.setPixelRatio(effectivePixelRatio);
+    this.gameRenderer.renderer.setPixelRatio(effectivePixelRatio);
+    this.gameRenderer.setFov(this.settings.camera.fovDegrees);
 
-    // Apply camera settings immediately.
-    // 立即应用相机设置
-    this.camera.fov = this.settings.camera.fovDegrees;
-    this.camera.updateProjectionMatrix();
-
-    // Apply fog settings immediately.
-    // 立即应用雾设置
-    if (this.scene.fog instanceof FogExp2) {
-      this.scene.fog.density = this.settings.sky.fogDensity;
+    if (this.gameRenderer.scene.fog instanceof FogExp2) {
+      this.gameRenderer.scene.fog.density = this.settings.sky.fogDensity;
     }
 
-    // Apply editor mouse config.
-    // 应用编辑器鼠标配置
     this.terrainEditor.setMouseConfig(this.settings.editor.mouseConfig);
-
-    // Apply sky settings immediately (includes lighting).
-    // 立即应用天空设置（包含光照）
     this.applySkySettings();
   }
 
-  resetSettings() {
-    setSettings(this.settings, createDefaultGameSettings());
-
-    // Apply render settings immediately.
-    // 立即应用渲染设置
-    const effectivePixelRatio =
-      Math.min(window.devicePixelRatio, this.settings.render.maxPixelRatio) *
-      this.settings.render.renderScale;
-    this.renderer.setPixelRatio(effectivePixelRatio);
-
-    // Apply camera settings immediately.
-    // 立即应用相机设置
-    this.camera.fov = this.settings.camera.fovDegrees;
-    this.camera.updateProjectionMatrix();
-
-    // Apply fog settings immediately.
-    // 立即应用雾设置
-    if (this.scene.fog instanceof FogExp2) {
-      this.scene.fog.density = this.settings.sky.fogDensity;
-    }
-
-    // Reset editor mouse config.
-    // 重置编辑器鼠标配置
-    this.terrainEditor.setMouseConfig(this.settings.editor.mouseConfig);
-
-    // Apply sky settings immediately (includes lighting).
-    // 立即应用天空设置（包含光照）
-    this.applySkySettings();
-  }
-
-  /**
-   * Apply current sky settings to sky system and scene lights.
-   * 将当前天空设置应用到天空系统和场景灯光
-   */
   private applySkySettings(): void {
     const sky = this.settings.sky;
-    
-    // Update sky system (atmosphere, sun position, bloom).
-    // 更新天空系统（大气、太阳位置、泛光）
     this.skySystem.updateSettings(sky);
-    
-    // Update scene lights from sky settings.
-    // 从天空设置更新场景灯光
     this.hemi.intensity = sky.ambientIntensity;
     this.sun.intensity = sky.sunIntensity;
     this.sun.castShadow = sky.shadowsEnabled;
-    
-    // Update terrain normal softness (global uniform).
-    // 更新地形法线柔和度（全局 uniform）
     setTerrainNormalSoftness(sky.normalSoftness);
-    
-    // Update fog density.
-    // 更新雾密度
-    if (this.scene.fog instanceof FogExp2) {
-      this.scene.fog.density = sky.fogDensity;
+
+    if (this.gameRenderer.scene.fog instanceof FogExp2) {
+      this.gameRenderer.scene.fog.density = sky.fogDensity;
     }
   }
 
-  /**
-   * Update world time and sync sun position when time-driven.
-   * 更新世界时间，并在时间驱动时同步太阳位置
-   */
+  // --- Frame Loop / 帧循环 ---
+
+  private readonly onFrame = (): void => {
+    if (this.disposed) return;
+
+    // Update time.
+    // 更新时间
+    const rawDt = this.gameRenderer.clock.getDelta();
+    const dt = Math.min(renderConfig.maxDeltaSeconds, rawDt);
+    this.resources.time.dt = dt;
+    this.resources.time.elapsed += dt;
+    this.resources.time.frame++;
+
+    this.updateWorldTime(dt);
+    this.fpsCounter.tick();
+    this.gameRenderer.setFov(this.settings.camera.fovDegrees);
+
+    // Run systems in play mode.
+    // 游戏模式运行系统
+    if (this.terrainEditor.mode === "play") {
+      this.scheduler.execute(this.ecs.world, this.resources);
+    } else {
+      this.terrainEditor.applyCameraState(this.gameRenderer.camera);
+    }
+
+    this.updateTerrainStreaming();
+    this.updateTerrainEditor(dt);
+    this.ecs.flushDestroyed();
+    this.skySystem.update();
+
+    // Render.
+    // 渲染
+    if (this.skySystem.shouldUsePostProcessing()) {
+      this.skySystem.render();
+    } else {
+      this.gameRenderer.renderer.render(this.gameRenderer.scene, this.gameRenderer.camera);
+    }
+  };
+
   private updateWorldTime(dt: number): void {
     const time = this.settings.time;
 
-    // Advance time if not paused.
-    // 如果没有暂停则推进时间
     if (!time.timePaused && time.timeSpeed > 0) {
-      // Convert dt (seconds) to hours: dt * speed / 3600.
-      // 将 dt（秒）转换为小时：dt * speed / 3600
       const hoursElapsed = (dt * time.timeSpeed) / 3600;
       time.timeOfDay = (time.timeOfDay + hoursElapsed) % 24;
-
-      // Notify React UI of time change for sundial update.
-      // 通知 React UI 时间变化以更新日晷
       this.onTimeUpdateCallback?.(time.timeOfDay);
     }
 
-    // If sun position is driven by time, update sky settings.
-    // 如果太阳位置由时间驱动，则更新天空设置
     if (time.timeDrivenSun) {
       const sunPos = timeToSunPosition(time.timeOfDay);
-      
-      // Only update if significantly changed (avoid jitter).
-      // 只有在显著变化时更新（避免抖动）
+
       if (
         Math.abs(this.settings.sky.sunElevation - sunPos.elevation) > 0.1 ||
         Math.abs(this.settings.sky.sunAzimuth - sunPos.azimuth) > 0.1
@@ -754,161 +505,39 @@ export class GameApp {
         this.settings.sky.sunElevation = sunPos.elevation;
         this.settings.sky.sunAzimuth = sunPos.azimuth;
 
-        // Adjust ambient/sun intensity based on elevation (day/night).
-        // 根据仰角调整环境光/太阳光强度（昼夜）
-        const dayFactor = Math.max(0, sunPos.elevation / 45); // 0 at horizon, 1 at 45°+
-        const nightAmbient = 0.1;
-        const dayAmbient = 0.6;
-        const nightSun = 0.0;
-        const daySun = 1.2;
-
-        this.settings.sky.ambientIntensity = nightAmbient + (dayAmbient - nightAmbient) * dayFactor;
-        this.settings.sky.sunIntensity = nightSun + (daySun - nightSun) * dayFactor;
+        const dayFactor = Math.max(0, sunPos.elevation / 45);
+        this.settings.sky.ambientIntensity = 0.1 + 0.5 * dayFactor;
+        this.settings.sky.sunIntensity = 1.2 * dayFactor;
 
         this.applySkySettings();
       }
     }
   }
 
-  private readonly onResize = () => {
-    if (this.disposed) return;
-
-    const width = Math.max(1, this.container.clientWidth);
-    const height = Math.max(1, this.container.clientHeight);
-
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
-
-    this.renderer.setSize(width, height);
-  };
-
-  private readonly onFrame = () => {
-    if (this.disposed) return;
-
-    // Update time resource.
-    // 更新时间资源
-    const rawDt = this.clock.getDelta();
-    const dt = Math.min(renderConfig.maxDeltaSeconds, rawDt);
-    this.resources.time.dt = dt;
-    this.resources.time.elapsed += dt;
-    this.resources.time.frame++;
-
-    // Update game world time (day/night cycle).
-    // 更新游戏世界时间（昼夜循环）
-    this.updateWorldTime(dt);
-
-    // Update FPS counter (based on actual render loop).
-    // 更新 FPS 计数器（基于实际渲染循环）
-    this.fpsFrameCount++;
-    const now = performance.now();
-    const fpsDelta = now - this.fpsLastTime;
-    if (fpsDelta >= 500) {
-      this.fpsValue = Math.round((this.fpsFrameCount * 1000) / fpsDelta);
-      this.fpsFrameCount = 0;
-      this.fpsLastTime = now;
-    }
-
-    // Keep camera fov synced even if settings change without calling updateSettings.
-    // 即使 UI 没走 updateSettings，也保持 fov 同步
-    if (this.camera.fov !== this.settings.camera.fovDegrees) {
-      this.camera.fov = this.settings.camera.fovDegrees;
-      this.camera.updateProjectionMatrix();
-    }
-
-    // Run all systems in order (only in play mode).
-    // 按顺序运行所有系统（仅在游戏模式）
-    if (this.terrainEditor.mode === "play") {
-      for (const system of this.systems) {
-        system.fn(this.ecs.world, this.resources);
-      }
-    } else {
-      // In edit mode: apply editor camera state.
-      // 编辑模式：应用编辑器相机状态
-      this.terrainEditor.applyCameraState(this.camera);
-    }
-
-    // Update terrain streaming system (chunk loading/unloading, LOD, culling).
-    // 更新地形流式系统（chunk 加载/卸载、LOD、剔除）
-    this.updateTerrainStreaming();
-
-    // Process terrain editor brush strokes.
-    // 处理地形编辑器画刷笔触
-    this.updateTerrainEditor(dt);
-
-    // Flush destroyed entities at end of frame.
-    // 在帧末刷新已销毁的实体
-    this.ecs.flushDestroyed();
-
-    // Update sky system (god rays center tracking).
-    // 更新天空系统（上帝光线中心跟踪）
-    this.skySystem.update();
-
-    // Render the scene (with post-processing if enabled).
-    // 渲染场景（如果启用则带后处理）
-    if (this.skySystem.shouldUsePostProcessing()) {
-      this.skySystem.render();
-    } else {
-      this.renderer.render(this.scene, this.camera);
-    }
-  };
-
-  /**
-   * Update terrain streaming based on player/camera position.
-   * 根据玩家/相机位置更新地形流式加载
-   */
   private updateTerrainStreaming(): void {
     const terrain = this.resources.runtime.terrain;
 
-    // In edit mode, stream terrain around camera target.
-    // 编辑模式下，围绕相机目标流式加载地形
     if (this.terrainEditor.mode === "edit") {
       const target = this.terrainEditor.getCameraTarget();
-      terrain.update(target.x, target.z, this.camera);
+      terrain.update(target.x, target.z, this.gameRenderer.camera);
       return;
     }
 
-    // In play mode, stream around player position.
-    // 游戏模式下，围绕玩家位置流式加载
     for (const [entityId] of this.ecs.world.query("transform", "player")) {
       const transform = this.ecs.world.get(entityId, "transform");
       if (transform) {
-        terrain.update(transform.x, transform.z, this.camera);
-        break; // Only need first player. / 只需第一个玩家
+        terrain.update(transform.x, transform.z, this.gameRenderer.camera);
+        break;
       }
     }
   }
 
-  /**
-   * Update terrain editor: apply pending brush strokes using GPU compute shaders.
-   * 更新地形编辑器：使用 GPU 计算着色器应用待处理的画刷笔触
-   *
-   * GPU-first workflow:
-   * 1. TerrainEditor collects brush strokes
-   * 2. TerrainBrushCompute applies them via ping-pong compute shader
-   * 3. TerrainNormalCompute regenerates normals on GPU
-   *
-   * GPU-first 工作流程：
-   * 1. TerrainEditor 收集画刷笔触
-   * 2. TerrainBrushCompute 通过乒乓计算着色器应用它们
-   * 3. TerrainNormalCompute 在 GPU 上重新生成法线
-   */
   private updateTerrainEditor(dt: number): void {
-    // Generate brush stroke if brush is active this frame.
-    // 如果本帧画刷激活，则生成画刷笔触
     this.terrainEditor.applyBrush(dt);
-
-    // Collect pending strokes from editor.
-    // 从编辑器收集待处理的笔触
     const strokes = this.terrainEditor.consumePendingStrokes();
-
-    // Apply strokes on GPU (async, non-blocking).
-    // 在 GPU 上应用笔触（异步，非阻塞）
     if (strokes.length > 0) {
       void this.resources.runtime.terrain.applyBrushStrokes(strokes);
     }
-
-    // Apply texture brush if active.
-    // 如果激活则应用纹理画刷
     void this.textureEditor.applyBrush(dt);
   }
 }
