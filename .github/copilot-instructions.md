@@ -5,8 +5,8 @@
 
 ## ⚠️ IRONCLAD RULES / 金戈铁律 ⚠️
 
-> **AI MUST unconditionally follow these three ironclad rules. No exceptions, no compromises.**
-> **AI 编码时必须无条件遵守以下三条铁律，不得以任何理由违反或妥协。**
+> **AI MUST unconditionally follow these five ironclad rules. No exceptions, no compromises.**
+> **AI 编码时必须无条件遵守以下五条铁律，不得以任何理由违反或妥协。**
 
 ### 1️⃣ GPU-First / GPU 优先
 - **All work that CAN be done on GPU MUST be done on GPU.**
@@ -27,6 +27,30 @@
 - **从第一天起**就按业界最推崇的方式设计（ECS、flow-field 寻路、数据导向管线等）。
 - **Do NOT wait** until "almost done" to ask about better approaches — **use the best approach from the start**.
 - **不要等**项目"差不多"了才问是否要重构成更好的方案——**一开始就用最好的方案**。
+- **AI must proactively suggest the best industry practices** — explain WHY it's the best approach and HOW it works in detail before implementation.
+- **AI 必须主动提供业界最佳实践** — 在实现前需详细说明为什么这是最佳方案、以及其工作原理。
+
+### 4️⃣ Single Responsibility & Decoupling / 单一职责与解耦
+- **Each file should handle ONE responsibility** — do NOT cram multiple unrelated features into a single file.
+- **每个文件只负责单一职责** — 不要把多个不相关的功能杂糅在一起。
+- **Keep files small and focused** — split large files into smaller, focused modules.
+- **保持文件小而专注** — 大文件应拆分为更小、更专注的模块。
+- **Group related files in folders** — organize by feature/domain, not by file type.
+- **相关文件放在同一文件夹** — 按功能/领域组织，而非按文件类型。
+- **Loose coupling, high cohesion** — modules should be independent and communicate through clear interfaces.
+- **低耦合、高内聚** — 模块应独立，通过清晰的接口通信。
+
+### 5️⃣ Three.js Import Rules / Three.js 导入规则
+- **TSL functions** (`float`, `vec3`, `uniform`, `Fn`, `If`, etc.) → import from `three/tsl`
+- **TSL 函数**（`float`、`vec3`、`uniform`、`Fn`、`If` 等）→ 从 `three/tsl` 导入
+- **Classes and types** → import from `three/webgpu`
+- **类和类型** → 从 `three/webgpu` 导入
+- **NEVER import from bare `three`** — always use `three/webgpu` or `three/tsl`
+- **禁止从 `three` 直接导入** — 必须使用 `three/webgpu` 或 `three/tsl`
+- **NEVER define custom types** for TSL nodes — use Three.js exports
+- **禁止自定义 TSL 节点类型** — 使用 Three.js 导出的类型
+- ⚠️ **Types FIRST from `three/webgpu`** — ALL types including TSL return types (e.g., `ShaderNodeObject`, `Node`, `UniformNode`, etc.) are exported from `three/webgpu`. **ONLY use `ReturnType<>` as a last resort** when a type truly doesn't exist.
+- ⚠️ **类型优先从 `three/webgpu` 导入** — 所有类型包括 TSL 函数返回值类型（如 `ShaderNodeObject`、`Node`、`UniformNode` 等）都从 `three/webgpu` 导出。**只有在类型确实不存在时才用 `ReturnType<>`**。
 
 ---
 
@@ -53,11 +77,7 @@
 
 ## Core Tech Constraints / 核心技术约束
 - Rendering: Three.js **WebGPU-only**, NodeMaterial/TSL-based materials / 渲染：**仅 WebGPU**，NodeMaterial/TSL 材质
-- **Three.js imports / Three.js 导入规则**:
-  - TSL functions (`float`, `vec3`, `uniform`, `Fn`, `If`, etc.) → `three/tsl` / TSL 函数
-  - Classes and types → `three/webgpu` / 类和类型
-  - **Never import from bare `three`** / **禁止从 `three` 直接导入**
-  - **Never define custom types** for TSL nodes (use three's exports) / **禁止自定义** TSL 节点类型
+- **Three.js imports**: See **Ironclad Rule 5️⃣** above / **Three.js 导入**：见上方**铁律第五条**
 - **React Compiler enabled** — **do NOT use** `useMemo`, `useCallback`, `React.memo` / **已启用 React Compiler**——**禁止使用** `useMemo`、`useCallback`、`React.memo`
 - **NO `(xxx as any).xxx` pattern** — never cast to `any` to access undocumented APIs. Use only official, documented APIs. If an API doesn't exist, find an alternative approach.
 - **禁止 `(xxx as any).xxx` 写法** — 不要通过 `any` 类型转换访问未文档化的 API。只使用官方文档化的 API。如果 API 不存在，寻找替代方案。
