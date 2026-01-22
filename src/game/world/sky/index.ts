@@ -11,8 +11,4 @@ export {
 export { SkyDome } from "./SkyShader";
 export { SkyPostProcessing, type PostProcessingSettings } from "./SkyPostProcessing";
 export { SunRenderer } from "./SunRenderer";
-export {
-  SkySystem,
-  createDefaultSkySettings,
-  type SkySettings,
-} from "./SkySystem";
+export { SkySystem } from "./SkySystem";

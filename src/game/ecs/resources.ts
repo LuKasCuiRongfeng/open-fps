@@ -4,7 +4,7 @@
 import type { PerspectiveCamera, Scene, WebGPURenderer } from "three/webgpu";
 import type { InputManager } from "../input/InputManager";
 import type { RawInputState } from "../input/RawInputState";
-import type { GameSettings } from "../settings/GameSettings";
+import type { GameSettings } from "../settings";
 import type { TerrainSystemResource } from "../world/terrain/terrain";
 
 // --- Time Resource / 时间资源 ---

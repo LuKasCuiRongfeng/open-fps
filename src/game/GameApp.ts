@@ -37,12 +37,13 @@ import {
   applySettingsPatch,
   type GameSettings,
   type GameSettingsPatch,
-} from "./settings/GameSettings";
+} from "./settings";
 import { TerrainTextures } from "./world/terrain/TerrainTextures";
 import { setTerrainNormalSoftness } from "./world/terrain/material/terrainMaterialTextured";
 import { timeToSunPosition, type SkySystem } from "./world/sky/SkySystem";
 import type { MapData } from "./project/MapData";
-import { renderConfig } from "@config/render";
+import { renderStaticConfig } from "@config/render";
+import { playerStaticConfig } from "@config/player";
 
 export type GameBootPhase =
   | "checking-webgpu"
@@ -172,11 +173,10 @@ export class GameApp {
     await this.gameRenderer.init();
     if (this.disposed) return;
 
-    const { spawn } = await import("@config/player").then((m) => m.playerConfig);
     await this.resources.runtime.terrain.initGpu(
       this.gameRenderer.renderer,
-      spawn.xMeters,
-      spawn.zMeters
+      playerStaticConfig.spawnX,
+      playerStaticConfig.spawnZ
     );
     if (this.disposed) return;
 
@@ -268,9 +268,9 @@ export class GameApp {
 
   getSettingsSnapshot(): GameSettings {
     const mc = this.terrainEditor.mouseConfig;
-    this.settings.editor.mouseConfig.leftButton = mc.leftButton;
-    this.settings.editor.mouseConfig.rightButton = mc.rightButton;
-    this.settings.editor.mouseConfig.middleButton = mc.middleButton;
+    this.settings.editor.leftButton = mc.leftButton;
+    this.settings.editor.rightButton = mc.rightButton;
+    this.settings.editor.middleButton = mc.middleButton;
     return cloneSettings(this.settings);
   }
 
@@ -414,8 +414,12 @@ export class GameApp {
       this.applySkySettings();
     }
 
-    if (patch.editor?.mouseConfig) {
-      this.terrainEditor.setMouseConfig(this.settings.editor.mouseConfig);
+    if (patch.editor?.leftButton !== undefined || patch.editor?.rightButton !== undefined || patch.editor?.middleButton !== undefined) {
+      this.terrainEditor.setMouseConfig({
+        leftButton: this.settings.editor.leftButton,
+        rightButton: this.settings.editor.rightButton,
+        middleButton: this.settings.editor.middleButton,
+      });
     }
   }
 
@@ -430,7 +434,11 @@ export class GameApp {
       this.gameRenderer.scene.fog.density = this.settings.sky.fogDensity;
     }
 
-    this.terrainEditor.setMouseConfig(this.settings.editor.mouseConfig);
+    this.terrainEditor.setMouseConfig({
+      leftButton: this.settings.editor.leftButton,
+      rightButton: this.settings.editor.rightButton,
+      middleButton: this.settings.editor.middleButton,
+    });
     this.applySkySettings();
   }
 
@@ -455,7 +463,7 @@ export class GameApp {
     // Update time.
     // 更新时间
     const rawDt = this.gameRenderer.clock.getDelta();
-    const dt = Math.min(renderConfig.maxDeltaSeconds, rawDt);
+    const dt = Math.min(renderStaticConfig.maxDeltaSeconds, rawDt);
     this.resources.time.dt = dt;
     this.resources.time.elapsed += dt;
     this.resources.time.frame++;

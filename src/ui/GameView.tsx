@@ -5,7 +5,7 @@
 // 协调游戏生命周期、编辑器面板和设置 UI
 
 import { useEffect, useState } from "react";
-import type { GameSettings, GameSettingsPatch } from "@game/settings/GameSettings";
+import type { GameSettings, GameSettingsPatch } from "@game/settings";
 import type { MapData } from "@project/MapData";
 import type { ActiveEditorType } from "./settings/tabs/TerrainEditorTab";
 import { setCurrentProjectPath } from "@project/ProjectStorage";

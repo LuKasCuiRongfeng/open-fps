@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { GameApp, type GameBootPhase } from "@game/GameApp";
-import type { GameSettings } from "@game/settings/GameSettings";
+import type { GameSettings } from "@game/settings";
 import type { TerrainEditor } from "@game/editor";
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 import type { MapData } from "@project/MapData";

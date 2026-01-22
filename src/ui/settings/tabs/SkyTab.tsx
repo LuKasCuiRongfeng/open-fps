@@ -3,8 +3,8 @@
 
 import { RangeField } from "../RangeField";
 import { Toggle } from "../Toggle";
-import { fogConfig } from "@config/fog";
-import type { GameSettings, GameSettingsPatch } from "@game/settings/GameSettings";
+import { fogStaticConfig } from "@config/fog";
+import type { GameSettings, GameSettingsPatch } from "@game/settings";
 
 type SkyTabProps = {
   settings: GameSettings;
@@ -105,55 +105,13 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
         <RangeField
           label="Fog Density"
           value={settings.sky.fogDensity}
-          min={fogConfig.minDensity}
-          max={fogConfig.maxDensity}
+          min={fogStaticConfig.minDensity}
+          max={fogStaticConfig.maxDensity}
           step={0.00001}
           onChange={(v) => onPatch({ sky: { fogDensity: v } })}
         />
         <div className="text-xs text-white/40 mt-2">
           Visibility ≈ {Math.round(3.912 / settings.sky.fogDensity)}m
-        </div>
-      </div>
-
-      {/* Atmosphere */}
-      <div>
-        <div className="text-xs font-medium text-white/80 mb-3">Atmosphere / 大气</div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <RangeField
-            label="Turbidity"
-            value={settings.sky.turbidity}
-            min={1}
-            max={20}
-            step={0.5}
-            onChange={(v) => onPatch({ sky: { turbidity: v } })}
-          />
-          <RangeField
-            label="Rayleigh"
-            value={settings.sky.rayleigh}
-            min={0}
-            max={4}
-            step={0.1}
-            onChange={(v) => onPatch({ sky: { rayleigh: v } })}
-          />
-          <RangeField
-            label="Mie Coefficient"
-            value={settings.sky.mieCoefficient}
-            min={0}
-            max={0.1}
-            step={0.001}
-            onChange={(v) => onPatch({ sky: { mieCoefficient: v } })}
-          />
-          <RangeField
-            label="Mie Directional G"
-            value={settings.sky.mieDirectionalG}
-            min={0}
-            max={1}
-            step={0.01}
-            onChange={(v) => onPatch({ sky: { mieDirectionalG: v } })}
-          />
-        </div>
-        <div className="text-xs text-white/40 mt-2">
-          Turbidity: 2 = clear, 10 = hazy. Rayleigh affects sky blue color. Mie affects sun halo.
         </div>
       </div>
 
@@ -258,26 +216,16 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
       {/* Night Sky */}
       <div>
         <div className="text-xs font-medium text-white/80 mb-3">Night Sky / 夜空</div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <RangeField
-            label="Star Brightness"
-            value={settings.sky.starBrightness}
-            min={0}
-            max={2}
-            step={0.1}
-            onChange={(v) => onPatch({ sky: { starBrightness: v } })}
-          />
-          <RangeField
-            label="Milky Way Brightness"
-            value={settings.sky.milkyWayBrightness}
-            min={0}
-            max={2}
-            step={0.1}
-            onChange={(v) => onPatch({ sky: { milkyWayBrightness: v } })}
-          />
-        </div>
+        <RangeField
+          label="Star Brightness"
+          value={settings.sky.starBrightness}
+          min={0}
+          max={2}
+          step={0.1}
+          onChange={(v) => onPatch({ sky: { starBrightness: v } })}
+        />
         <div className="text-xs text-white/40 mt-2">
-          Adjust the visibility of stars and the Milky Way in the night sky. Set sun elevation to 0° to see the night sky.
+          Adjust the visibility of stars in the night sky. Set sun elevation below 0° to see the night sky.
         </div>
       </div>
     </div>

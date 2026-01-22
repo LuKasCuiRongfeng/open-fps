@@ -43,7 +43,7 @@ export * from "./project/ProjectStorage";
 
 // Settings.
 // 设置
-export * from "./settings/GameSettings";
+export * from "./settings";
 
 // World.
 // 世界

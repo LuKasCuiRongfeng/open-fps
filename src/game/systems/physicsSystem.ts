@@ -1,7 +1,7 @@
 // Physics System: gravity, velocity integration, and ground collision.
 // 物理系统：重力、速度积分和地面碰撞
 
-import { playerConfig } from "../../config/player";
+import { playerStaticConfig } from "../../config/player";
 import type { GameWorld } from "../ecs/GameEcs";
 import type { GameResources } from "../ecs/resources";
 
@@ -21,7 +21,6 @@ export function physicsSystem(world: GameWorld, res: GameResources): void {
 
   const gravity = settings.player.gravity;
   const maxFall = settings.player.maxFallSpeed;
-  const groundFriction = playerConfig.physics.groundFriction;
 
   // Max height above terrain to still be considered "grounded" (for slopes/small bumps).
   // 仍被视为"着地"的地形以上最大高度（用于坡度/小凸起）
@@ -78,7 +77,7 @@ export function physicsSystem(world: GameWorld, res: GameResources): void {
       if (!hasInput) {
         // Apply friction deceleration.
         // 应用摩擦减速
-        const decel = groundFriction.decelerationMetersPerSecond2;
+        const decel = playerStaticConfig.groundFrictionDeceleration;
         const currentSpeed = Math.sqrt(velocity.vx * velocity.vx + velocity.vz * velocity.vz);
 
         if (currentSpeed > 0.001) {

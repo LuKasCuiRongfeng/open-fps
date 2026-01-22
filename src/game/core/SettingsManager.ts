@@ -9,8 +9,9 @@ import {
   setSettings,
   type GameSettings,
   type GameSettingsPatch,
-} from "@game/settings/GameSettings";
-import type { SkySettings, SkySystem } from "@game/world/sky/SkySystem";
+  type SkySettings,
+} from "@game/settings";
+import type { SkySystem } from "@game/world/sky/SkySystem";
 import { setTerrainNormalSoftness } from "@game/world/terrain/material/terrainMaterialTextured";
 import type { TerrainEditor } from "@game/editor/terrain/TerrainEditor";
 import type { GameRenderer } from "./GameRenderer";
@@ -54,9 +55,9 @@ export class SettingsManager {
     // Sync editor mouse config from terrain editor before returning.
     // 返回前从地形编辑器同步鼠标配置
     const mc = this.terrainEditor.mouseConfig;
-    this.settings.editor.mouseConfig.leftButton = mc.leftButton;
-    this.settings.editor.mouseConfig.rightButton = mc.rightButton;
-    this.settings.editor.mouseConfig.middleButton = mc.middleButton;
+    this.settings.editor.leftButton = mc.leftButton;
+    this.settings.editor.rightButton = mc.rightButton;
+    this.settings.editor.middleButton = mc.middleButton;
 
     return cloneSettings(this.settings);
   }
@@ -191,8 +192,12 @@ export class SettingsManager {
 
     // Apply editor mouse config.
     // 应用编辑器鼠标配置
-    if (patch.editor?.mouseConfig) {
-      this.terrainEditor.setMouseConfig(this.settings.editor.mouseConfig);
+    if (patch.editor?.leftButton !== undefined || patch.editor?.rightButton !== undefined || patch.editor?.middleButton !== undefined) {
+      this.terrainEditor.setMouseConfig({
+        leftButton: this.settings.editor.leftButton,
+        rightButton: this.settings.editor.rightButton,
+        middleButton: this.settings.editor.middleButton,
+      });
     }
   }
 
@@ -204,7 +209,11 @@ export class SettingsManager {
       this.scene.fog.density = this.settings.sky.fogDensity;
     }
 
-    this.terrainEditor.setMouseConfig(this.settings.editor.mouseConfig);
+    this.terrainEditor.setMouseConfig({
+      leftButton: this.settings.editor.leftButton,
+      rightButton: this.settings.editor.rightButton,
+      middleButton: this.settings.editor.middleButton,
+    });
     this.applySkySettings();
   }
 

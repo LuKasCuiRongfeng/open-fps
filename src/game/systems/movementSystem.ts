@@ -1,7 +1,7 @@
 // Movement System: converts movement input into velocity.
 // 移动系统：将移动输入转换为速度
 
-import { playerConfig } from "../../config/player";
+import { playerStaticConfig } from "../../config/player";
 import type { GameWorld } from "../ecs/GameEcs";
 import type { GameResources } from "../ecs/resources";
 
@@ -21,7 +21,6 @@ import type { GameResources } from "../ecs/resources";
 export function movementSystem(world: GameWorld, res: GameResources): void {
   const dt = res.time.dt;
   const settings = res.runtime.settings;
-  const airControl = playerConfig.physics.airControl;
 
   for (const [, transform, velocity, playerInput, physics] of world.query(
     "transform",
@@ -61,8 +60,8 @@ export function movementSystem(world: GameWorld, res: GameResources): void {
       // Airborne: acceleration-based air control (preserves momentum).
       // 空中：基于加速度的空中控制（保持惯性）
       if (hasInput) {
-        const accel = airControl.accelerationMetersPerSecond2;
-        const maxAirSpeed = airControl.maxSpeedMetersPerSecond;
+        const accel = playerStaticConfig.airControlAcceleration;
+        const maxAirSpeed = playerStaticConfig.airControlMaxSpeed;
 
         // Only accelerate if below max air speed or decelerating.
         // 只有在低于最大空中速度或减速时才加速
@@ -93,7 +92,7 @@ export function movementSystem(world: GameWorld, res: GameResources): void {
 
       // Apply air drag.
       // 应用空气阻力
-      const drag = airControl.dragPerSecond;
+      const drag = playerStaticConfig.airControlDrag;
       const dragFactor = Math.max(0, 1 - drag * dt);
       velocity.vx *= dragFactor;
       velocity.vz *= dragFactor;

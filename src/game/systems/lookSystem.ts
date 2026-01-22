@@ -1,7 +1,7 @@
 // Look System: applies look input to transform orientation with smoothing.
 // 视角系统：将视角输入应用到变换朝向，带平滑处理
 
-import { playerConfig } from "../../config/player";
+import { playerStaticConfig } from "../../config/player";
 import type { GameWorld } from "../ecs/GameEcs";
 import type { GameResources } from "../ecs/resources";
 
@@ -29,7 +29,7 @@ export function lookSystem(world: GameWorld, res: GameResources): void {
   }
 
   const dt = res.time.dt;
-  const smoothFactor = playerConfig.look.smoothingFactor;
+  const smoothFactor = playerStaticConfig.lookSmoothingFactor;
 
   // Calculate interpolation factor using exponential smoothing.
   // 使用指数平滑计算插值因子

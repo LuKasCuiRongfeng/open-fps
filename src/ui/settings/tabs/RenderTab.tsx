@@ -2,7 +2,7 @@
 // RenderTab：渲染设置标签
 
 import { RangeField } from "../RangeField";
-import type { GameSettings, GameSettingsPatch } from "@game/settings/GameSettings";
+import type { GameSettings, GameSettingsPatch } from "@game/settings";
 
 type RenderTabProps = {
   settings: GameSettings;

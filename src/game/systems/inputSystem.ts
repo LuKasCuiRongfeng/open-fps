@@ -2,7 +2,7 @@
 // 输入系统：将原始输入转换为 PlayerInput 组件
 
 import { inputConfig, isKeyDown, isKeyJustPressed } from "../../config/input";
-import { playerConfig } from "../../config/player";
+import { playerStaticConfig } from "../../config/player";
 import type { GameWorld } from "../ecs/GameEcs";
 import type { GameResources } from "../ecs/resources";
 import { clearFrameInputState } from "../input/RawInputState";
@@ -46,7 +46,7 @@ export function inputSystem(world: GameWorld, res: GameResources): void {
 
     // Look delta from mouse.
     // 鼠标视角增量
-    const radiansPerPixel = playerConfig.look.radiansPerPixel * settings.player.mouseSensitivity;
+    const radiansPerPixel = playerStaticConfig.radiansPerPixel * settings.player.mouseSensitivity;
     lookDeltaYaw = -rawInput.mouseDeltaX * radiansPerPixel;
     lookDeltaPitch = -rawInput.mouseDeltaY * radiansPerPixel;
   }

@@ -7,8 +7,8 @@ import {
   Scene,
   WebGPURenderer,
 } from "three/webgpu";
-import { cameraConfig } from "@config/camera";
-import { renderConfig } from "@config/render";
+import { cameraRuntimeConfig, cameraStaticConfig } from "@config/camera";
+import { renderRuntimeConfig } from "@config/render";
 
 /**
  * Encapsulates WebGPU renderer creation and lifecycle.
@@ -36,16 +36,16 @@ export class GameRenderer {
     this.renderer.shadowMap.enabled = true;
     this.renderer.setClearColor(0x10151f, 1);
     this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio, renderConfig.maxPixelRatio)
+      Math.min(window.devicePixelRatio, renderRuntimeConfig.maxPixelRatio)
     );
 
     this.scene = new Scene();
 
     this.camera = new PerspectiveCamera(
-      cameraConfig.fovDegrees,
+      cameraRuntimeConfig.fovDegrees,
       1,
-      cameraConfig.nearMeters,
-      cameraConfig.farMeters
+      cameraStaticConfig.nearMeters,
+      cameraStaticConfig.farMeters
     );
 
     this.clock = new Clock();
@@ -84,7 +84,7 @@ export class GameRenderer {
    * 根据设置更新像素比
    */
   setPixelRatio(ratio: number): void {
-    const effectiveRatio = Math.min(window.devicePixelRatio, renderConfig.maxPixelRatio) * ratio;
+    const effectiveRatio = Math.min(window.devicePixelRatio, renderRuntimeConfig.maxPixelRatio) * ratio;
     this.renderer.setPixelRatio(effectiveRatio);
   }
 

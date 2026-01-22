@@ -3,7 +3,7 @@
 
 import type { PerspectiveCamera } from "three/webgpu";
 import type { TerrainConfig } from "../../world/terrain/terrain";
-import type { EditorMouseAction } from "../../settings/GameSettings";
+import type { EditorMouseAction } from "../../settings";
 import {
   createEmptyMapData,
   deserializeMapData,

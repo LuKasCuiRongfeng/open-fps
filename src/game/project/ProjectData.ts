@@ -2,7 +2,7 @@
 // ProjectData：项目文件夹结构和序列化
 
 import type { MapData } from "./MapData";
-import type { GameSettings } from "../settings/GameSettings";
+import type { GameSettings } from "../settings";
 
 /**
  * Project metadata.

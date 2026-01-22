@@ -2,8 +2,8 @@
 // 相机系统：根据玩家状态定位和朝向相机
 
 import { Quaternion, Vector3 } from "three/webgpu";
-import { cameraConfig } from "../../config/camera";
-import { playerConfig } from "../../config/player";
+import { cameraStaticConfig } from "../../config/camera";
+import { playerStaticConfig } from "../../config/player";
 import type { GameWorld } from "../ecs/GameEcs";
 import type { GameResources } from "../ecs/resources";
 
@@ -41,7 +41,7 @@ export function cameraSystem(world: GameWorld, res: GameResources): void {
 
   const [, transform, player] = result;
 
-  const eyeY = transform.y + playerConfig.eyeHeightMeters;
+  const eyeY = transform.y + playerStaticConfig.eyeHeightMeters;
   vTarget.set(transform.x, eyeY, transform.z);
 
   const yaw = transform.yawRadians;
@@ -59,17 +59,17 @@ export function cameraSystem(world: GameWorld, res: GameResources): void {
 
   // Third person camera.
   // 第三人称相机
-  const follow = settings.player.thirdPerson;
-  const followLerp = dampFactorPerSecond(follow.followLerpPerSecond, dt);
+  const p = settings.player;
+  const followLerp = dampFactorPerSecond(p.followLerpPerSecond, dt);
 
-  let distance: number = follow.chase.followDistance;
-  let height: number = follow.chase.heightOffset;
+  let distance: number = p.chaseFollowDistance;
+  let height: number = p.chaseHeightOffset;
   let shoulder: number = 0;
 
   if (player.thirdPersonStyle === "overShoulder") {
-    distance = follow.overShoulder.followDistance;
-    height = follow.overShoulder.heightOffset;
-    shoulder = follow.overShoulder.shoulderOffset;
+    distance = p.overShoulderFollowDistance;
+    height = p.overShoulderHeightOffset;
+    shoulder = p.overShoulderOffset;
   }
 
   // Offset in rig-local space: x = shoulder, y = height, z = behind.
@@ -86,7 +86,7 @@ export function cameraSystem(world: GameWorld, res: GameResources): void {
   // Prevent camera below ground.
   // 防止相机低于地面
   const groundY = terrain.heightAt(vDesiredCam.x, vDesiredCam.z);
-  vDesiredCam.y = Math.max(vDesiredCam.y, groundY + cameraConfig.nearMeters * 2);
+  vDesiredCam.y = Math.max(vDesiredCam.y, groundY + cameraStaticConfig.nearMeters * 2);
 
   camera.position.set(
     lerp(camera.position.x, vDesiredCam.x, followLerp),

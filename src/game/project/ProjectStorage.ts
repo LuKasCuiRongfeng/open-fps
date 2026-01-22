@@ -11,8 +11,8 @@ import {
   deserializeProjectMetadata,
   createProjectMetadata,
 } from "./ProjectData";
-import type { GameSettings } from "../settings/GameSettings";
-import { mergeSettingsWithDefaults } from "../settings/GameSettings";
+import type { GameSettings } from "../settings";
+import { mergeSettingsWithDefaults } from "../settings";
 
 // Current project path (null = no project open, using procedural terrain).
 // 当前项目路径（null = 未打开项目，使用程序生成地形）

@@ -13,7 +13,7 @@ import {
   loadProject,
 } from "@project/ProjectStorage";
 import type { MapData } from "@project/MapData";
-import type { GameSettings } from "@game/settings/GameSettings";
+import type { GameSettings } from "@game/settings";
 
 type FileTabProps = {
   gameApp: GameApp | null;

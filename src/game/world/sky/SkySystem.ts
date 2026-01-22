@@ -19,60 +19,12 @@ import {
   calculateLightSettings,
   sunPositionToDirection,
 } from "./DayNightCycle";
+import type { SkySettings } from "../../settings";
+import { createDefaultGameSettings } from "../../settings";
 
 // Re-export for external use.
 // 重新导出供外部使用
 export { timeToSunPosition } from "./DayNightCycle";
-
-/**
- * Sky system settings for runtime adjustment.
- * 天空系统运行时调整设置
- */
-export interface SkySettings {
-  sunElevation: number;
-  sunAzimuth: number;
-  mieCoefficient: number;
-  mieDirectionalG: number;
-  bloomThreshold: number;
-  bloomStrength: number;
-  bloomRadius: number;
-  bloomEnabled: boolean;
-  lensflareEnabled: boolean;
-  lensflareSize: number;
-  sunSize: number;
-  godRaysEnabled: boolean;
-  godRaysWeight: number;
-  godRaysDecay: number;
-  godRaysExposure: number;
-  starBrightness: number;
-  nightLightIntensity: number;
-}
-
-/**
- * Default sky settings for a clear midday sky.
- * 晴朗正午天空的默认设置
- */
-export function createDefaultSkySettings(): SkySettings {
-  return {
-    sunElevation: 45,
-    sunAzimuth: 180,
-    mieCoefficient: 0.005,
-    mieDirectionalG: 0.8,
-    bloomThreshold: 0.85,
-    bloomStrength: 0.4,
-    bloomRadius: 0.3,
-    bloomEnabled: true,
-    lensflareEnabled: true,
-    lensflareSize: 1.0,
-    sunSize: 15,
-    godRaysEnabled: true,
-    godRaysWeight: 0.5,
-    godRaysDecay: 0.95,
-    godRaysExposure: 3.0,
-    starBrightness: 1.2,
-    nightLightIntensity: 1.0,
-  };
-}
 
 /**
  * SkySystem: coordinates sky rendering components.
@@ -91,7 +43,8 @@ export class SkySystem {
   private camera: PerspectiveCamera | null = null;
 
   constructor(scene: Scene, settings?: Partial<SkySettings>) {
-    this.settings = { ...createDefaultSkySettings(), ...settings };
+    const defaults = createDefaultGameSettings().sky;
+    this.settings = { ...defaults, ...settings };
     this.scene = scene;
 
     // Create cool-toned night light.

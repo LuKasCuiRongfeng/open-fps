@@ -3,11 +3,11 @@
 
 import { useState, useEffect } from "react";
 import type { TerrainEditor, BrushType } from "@game/editor";
-import type { EditorMouseAction, GameSettings } from "@game/settings/GameSettings";
+import type { EditorMouseAction, GameSettings } from "@game/settings";
 
-// Local type for mouse config (mirrors GameSettings.editor.mouseConfig).
-// 本地鼠标配置类型（镜像 GameSettings.editor.mouseConfig）
-type EditorMouseConfig = GameSettings["editor"]["mouseConfig"];
+// Local type for mouse config (subset of EditorSettings).
+// 本地鼠标配置类型（EditorSettings 的子集）
+type EditorMouseConfig = Pick<GameSettings["editor"], "leftButton" | "rightButton" | "middleButton">;
 
 // Active editor type - for mutual exclusion.
 // 活跃编辑器类型 - 用于互斥
