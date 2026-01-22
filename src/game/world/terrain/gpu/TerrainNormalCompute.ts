@@ -20,6 +20,7 @@ import {
   LinearFilter,
   RGBAFormat,
   StorageTexture,
+  type Node,
   type WebGPURenderer,
 } from "three/webgpu";
 import type { ComputeNode } from "three/webgpu";
@@ -111,10 +112,7 @@ export class TerrainNormalCompute {
 
     // Sample height at atlas UV.
     // 在图集 UV 处采样高度
-    const sampleHeight = Fn(([u, v]: [
-      ReturnType<typeof float>,
-      ReturnType<typeof float>
-    ]) => {
+    const sampleHeight = Fn(([u, v]: [Node, Node]) => {
       const clampedU = u.clamp(0, 1);
       const clampedV = v.clamp(0, 1);
       return heightTex.sample(vec2(clampedU, clampedV)).r;

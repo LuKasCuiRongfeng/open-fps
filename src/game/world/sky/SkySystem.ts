@@ -13,6 +13,7 @@ import {
   TextureLoader,
   Vector3,
   LinearFilter,
+  type Node,
   type PerspectiveCamera,
   type Scene,
   type WebGPURenderer,
@@ -21,6 +22,7 @@ import {
 import { EXRLoader } from "three/addons/loaders/EXRLoader.js";
 import { pass, uniform, vec3, vec2, float } from "three/tsl";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
+import type BloomNode from "three/addons/tsl/display/BloomNode.js";
 import { radialBlur } from "three/addons/tsl/display/radialBlur.js";
 import { LensflareMesh, LensflareElement } from "three/addons/objects/LensflareMesh.js";
 import { SkyDome } from "./SkyShader";
@@ -297,7 +299,7 @@ export class SkySystem {
   private sunColorUniform = uniform(new Color(1.0, 0.95, 0.8));
   private sunBrightnessUniform = uniform(1.0);
   private postProcessing: PostProcessing | null = null;
-  private bloomPass: ReturnType<typeof bloom> | null = null;
+  private bloomPass: BloomNode | null = null;
   private sunPosition = new Vector3();
   private settings: SkySettings;
   private directionalLight: DirectionalLight | null = null;
@@ -312,7 +314,7 @@ export class SkySystem {
   private godRaysDecayUniform = uniform(0.95);
   private godRaysExposureUniform = uniform(3.0);
   private godRaysEnabledUniform = uniform(1.0);
-  private godRaysPass: ReturnType<typeof radialBlur> | null = null;
+  private godRaysPass: Node | null = null;
 
   constructor(scene: Scene, settings?: Partial<SkySettings>) {
     this.settings = { ...createDefaultSkySettings(), ...settings };

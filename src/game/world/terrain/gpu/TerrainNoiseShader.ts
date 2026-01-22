@@ -24,13 +24,14 @@ import {
   NearestFilter,
   RepeatWrapping,
   StorageTexture,
+  type Node,
 } from "three/webgpu";
 import type { ComputeNode, UniformNode } from "three/webgpu";
 import type { TerrainConfig } from "../terrain";
 
-// Type alias for TSL float node.
-// TSL float 节点类型别名
-type FloatNode = ReturnType<typeof float>;
+// Type alias for TSL float node (returns Node from float() TSL function).
+// TSL float 节点类型别名（float() TSL 函数返回 Node）
+type FloatNode = Node;
 
 /**
  * Creates hash texture for deterministic noise.

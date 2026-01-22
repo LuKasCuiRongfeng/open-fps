@@ -45,6 +45,9 @@
 - **TSL 函数**（`float`、`vec3`、`uniform`、`Fn`、`If` 等）→ 从 `three/tsl` 导入
 - **Classes and types** → import from `three/webgpu`
 - **类和类型** → 从 `three/webgpu` 导入
+- **Addons** (loaders, post-processing, helpers, etc.) → import from `three/addons/*`
+- **附加功能**（加载器、后处理、辅助工具等）→ 从 `three/addons/*` 导入
+  - e.g., `three/addons/loaders/EXRLoader.js`, `three/addons/tsl/display/BloomNode.js`
 - **NEVER import from bare `three`** — always use `three/webgpu` or `three/tsl`
 - **禁止从 `three` 直接导入** — 必须使用 `three/webgpu` 或 `three/tsl`
 - **NEVER define custom types** for TSL nodes — use Three.js exports
