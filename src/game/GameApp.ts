@@ -16,6 +16,7 @@ import { GameEcs } from "./ecs/GameEcs";
 import { createTimeResource, type GameResources } from "./ecs/resources";
 import { TerrainEditor } from "./editor/terrain/TerrainEditor";
 import { TextureEditor } from "./editor/texture/TextureEditor";
+import { VegetationEditor } from "./editor/vegetation/VegetationEditor";
 import { InputManager } from "./input/InputManager";
 import { createRawInputState } from "./input/RawInputState";
 import { createPlayer } from "./prefabs/createPlayer";
@@ -41,6 +42,7 @@ import {
 import { TerrainTextures } from "./world/terrain/TerrainTextures";
 import { setTerrainNormalSoftness } from "./world/terrain/material/terrainMaterialTextured";
 import { timeToSunPosition, type SkySystem } from "./world/sky/SkySystem";
+import { VegetationSystem } from "./world/vegetation/VegetationSystem";
 import type { MapData } from "./project/MapData";
 import { renderStaticConfig } from "@config/render";
 import { playerStaticConfig } from "@config/player";
@@ -70,6 +72,8 @@ export class GameApp {
   private readonly skySystem: SkySystem;
   private readonly terrainEditor: TerrainEditor;
   private readonly textureEditor: TextureEditor;
+  private readonly vegetationEditor: VegetationEditor;
+  private readonly vegetationSystem: VegetationSystem;
   readonly ready: Promise<void>;
   private disposed = false;
 
@@ -117,6 +121,8 @@ export class GameApp {
     // 创建编辑器
     this.terrainEditor = new TerrainEditor(terrainConfig);
     this.textureEditor = new TextureEditor();
+    this.vegetationEditor = new VegetationEditor();
+    this.vegetationSystem = new VegetationSystem();
 
     // Connect editor mode to pointer lock.
     // 连接编辑器模式到指针锁定
@@ -184,6 +190,28 @@ export class GameApp {
     await this.textureEditor.init(this.gameRenderer.renderer, splatWorldSize);
     if (this.disposed) return;
 
+    await this.vegetationEditor.init(this.gameRenderer.renderer, splatWorldSize);
+    if (this.disposed) return;
+
+    // Initialize vegetation rendering system with GPU-based spawning.
+    // 初始化带 GPU 生成的植被渲染系统
+    // Note: heightTexture can be passed for GPU terrain sampling if available.
+    // 注意：如果可用，可以传入 heightTexture 用于 GPU 地形采样
+    await this.vegetationSystem.init(
+      this.gameRenderer.renderer,
+      this.gameRenderer.scene,
+      splatWorldSize,
+      null, // TODO: Pass height texture for GPU terrain sampling / TODO: 传入高度纹理用于 GPU 地形采样
+      100   // Height scale / 高度缩放
+    );
+    if (this.disposed) return;
+
+    // Connect vegetation editor to system for live updates.
+    // 连接植被编辑器到系统以实时更新
+    this.vegetationEditor.setOnDirtyChange(() => {
+      this.vegetationSystem.markDirty();
+    });
+
     // Create player after terrain init.
     // 在地形初始化后创建玩家
     createPlayer(this.ecs, this.resources);
@@ -249,6 +277,8 @@ export class GameApp {
     this.inputManager.dispose();
     this.resources.runtime.terrain.dispose();
     this.textureEditor.dispose();
+    this.vegetationEditor.dispose();
+    this.vegetationSystem.dispose();
     this.gameRenderer.dispose();
   }
 
@@ -309,6 +339,13 @@ export class GameApp {
       return { x, y, z, valid: true };
     }
 
+    if (this.vegetationEditor.brushTargetValid) {
+      const x = this.vegetationEditor.brushTargetX;
+      const z = this.vegetationEditor.brushTargetZ;
+      const y = this.resources.runtime.terrain.heightAt(x, z);
+      return { x, y, z, valid: true };
+    }
+
     return { x: 0, y: 0, z: 0, valid: false };
   }
 
@@ -318,6 +355,10 @@ export class GameApp {
 
   getTextureEditor(): TextureEditor {
     return this.textureEditor;
+  }
+
+  getVegetationEditor(): VegetationEditor {
+    return this.vegetationEditor;
   }
 
   updateEditorBrushTarget(mouseX: number, mouseY: number): void {
@@ -361,6 +402,34 @@ export class GameApp {
 
   async saveTexturesToProject(projectPath: string): Promise<void> {
     await this.textureEditor.saveToProject(projectPath);
+  }
+
+  async loadVegetationFromProject(projectPath: string): Promise<void> {
+    await this.vegetationEditor.loadFromProject(projectPath);
+
+    // Update vegetation system with definition and density texture.
+    // 使用定义和密度纹理更新植被系统
+    this.vegetationSystem.setVegetationData(
+      this.vegetationEditor.vegetationDefinition,
+      this.vegetationEditor.getDensityTexture(),
+      projectPath
+    );
+  }
+
+  async saveVegetationToProject(projectPath: string): Promise<void> {
+    await this.vegetationEditor.saveToProject(projectPath);
+  }
+
+  updateVegetationBrushTarget(mouseX: number, mouseY: number): void {
+    const canvas = this.gameRenderer.domElement;
+    this.vegetationEditor.updateBrushTarget(
+      mouseX,
+      mouseY,
+      canvas.clientWidth,
+      canvas.clientHeight,
+      this.gameRenderer.camera,
+      this.resources.runtime.terrain.heightAt
+    );
   }
 
   updateTextureBrushTarget(mouseX: number, mouseY: number): void {
@@ -482,6 +551,7 @@ export class GameApp {
 
     this.updateTerrainStreaming();
     this.updateTerrainEditor(dt);
+    this.updateVegetation(dt);
     this.ecs.flushDestroyed();
     this.skySystem.update();
 
@@ -547,5 +617,22 @@ export class GameApp {
       void this.resources.runtime.terrain.applyBrushStrokes(strokes);
     }
     void this.textureEditor.applyBrush(dt);
+    void this.vegetationEditor.applyBrush(dt);
+  }
+
+  private updateVegetation(dt: number): void {
+    // Update vegetation system each frame.
+    // 每帧更新植被系统
+    this.vegetationSystem.update(dt, this.gameRenderer.camera);
+
+    // Sync density texture changes from editor to system.
+    // 将编辑器的密度纹理更改同步到系统
+    if (this.vegetationEditor.needsCpuSync) {
+      void this.vegetationEditor.syncDensityToCpu().then(() => {
+        this.vegetationSystem.updateDensityTexture(
+          this.vegetationEditor.getDensityTexture()
+        );
+      });
+    }
   }
 }

@@ -6,6 +6,7 @@ import { GameApp, type GameBootPhase } from "@game/GameApp";
 import type { GameSettings } from "@game/settings";
 import type { TerrainEditor } from "@game/editor";
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
+import type { VegetationEditor } from "@game/editor/vegetation/VegetationEditor";
 import type { MapData } from "@project/MapData";
 
 interface UseGameAppOptions {
@@ -32,6 +33,7 @@ interface UseGameAppReturn {
   settings: GameSettings | null;
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;
+  vegetationEditor: VegetationEditor | null;
   setSettings: React.Dispatch<React.SetStateAction<GameSettings | null>>;
 }
 
@@ -53,6 +55,7 @@ export function useGameApp({
   const [settings, setSettings] = useState<GameSettings | null>(null);
   const [terrainEditor, setTerrainEditor] = useState<TerrainEditor | null>(null);
   const [textureEditor, setTextureEditor] = useState<TextureEditor | null>(null);
+  const [vegetationEditor, setVegetationEditor] = useState<VegetationEditor | null>(null);
 
   useEffect(() => {
     // Don't start game until enabled (project decision is made).
@@ -89,6 +92,7 @@ export function useGameApp({
             // 如果用户打开了项目，加载纹理
             if (currentProjectPath) {
               await app.loadTexturesFromProject(currentProjectPath);
+              await app.loadVegetationFromProject(currentProjectPath);
             }
 
             // If user opened a project with map data, load it.
@@ -104,6 +108,7 @@ export function useGameApp({
             setSettings(app.getSettingsSnapshot());
             setTerrainEditor(app.getTerrainEditor());
             setTextureEditor(app.getTextureEditor());
+            setVegetationEditor(app.getVegetationEditor());
 
             // Set up time update callback to sync sundial UI.
             // 设置时间更新回调以同步日晷 UI
@@ -145,6 +150,7 @@ export function useGameApp({
     settings,
     terrainEditor,
     textureEditor,
+    vegetationEditor,
     setSettings,
   };
 }

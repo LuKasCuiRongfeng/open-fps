@@ -5,8 +5,8 @@
 
 ## ⚠️ IRONCLAD RULES / 金戈铁律 ⚠️
 
-> **AI MUST unconditionally follow these five ironclad rules. No exceptions, no compromises.**
-> **AI 编码时必须无条件遵守以下五条铁律，不得以任何理由违反或妥协。**
+> **AI MUST unconditionally follow these six ironclad rules. No exceptions, no compromises.**
+> **AI 编码时必须无条件遵守以下六条铁律，不得以任何理由违反或妥协。**
 
 ### 1️⃣ GPU-First / GPU 优先
 - **All work that CAN be done on GPU MUST be done on GPU.**
@@ -54,6 +54,16 @@
 - **禁止自定义 TSL 节点类型** — 使用 Three.js 导出的类型
 - ⚠️ **Types FIRST from `three/webgpu`** — ALL types including TSL return types (e.g., `ShaderNodeObject`, `Node`, `UniformNode`, etc.) are exported from `three/webgpu`. **ONLY use `ReturnType<>` as a last resort** when a type truly doesn't exist.
 - ⚠️ **类型优先从 `three/webgpu` 导入** — 所有类型包括 TSL 函数返回值类型（如 `ShaderNodeObject`、`Node`、`UniformNode` 等）都从 `three/webgpu` 导出。**只有在类型确实不存在时才用 `ReturnType<>`**。
+
+### 6️⃣ No Fallback Without Approval / 禁止擅自回退
+- **NEVER fall back to CPU** or inferior approaches without explicit user approval.
+- **未经用户明确同意，禁止回退到 CPU** 或次优方案。
+- When encountering difficulties, **FIRST search official docs** (Three.js GitHub, TSL wiki, examples) before assuming something is impossible.
+- 遇到困难时，**首先查阅官方文档**（Three.js GitHub、TSL wiki、示例）再判断是否不可行。
+- Three.js WebGPU/TSL is **mature and feature-complete** — most "limitations" are outdated knowledge.
+- Three.js WebGPU/TSL **已非常成熟完善** — 大多数"限制"只是过时的认知。
+- If a GPU solution seems blocked, **ask the user** before implementing any CPU fallback.
+- 如果 GPU 方案似乎受阻，**先询问用户**再实现任何 CPU 回退。
 
 ---
 

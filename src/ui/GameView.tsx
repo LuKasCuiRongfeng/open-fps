@@ -14,6 +14,7 @@ import LoadingOverlay, { type LoadingStep } from "./LoadingOverlay";
 import SettingsPanel from "./SettingsPanel";
 import { TerrainEditorPanel } from "./TerrainEditorPanel";
 import { TextureEditorPanel } from "./TextureEditorPanel";
+import { VegetationEditorPanel } from "./VegetationEditorPanel";
 import { MapImportScreen } from "./MapImportScreen";
 import { useCloseConfirmation, useEditorInput, useGameApp } from "./hooks";
 
@@ -55,6 +56,7 @@ export default function GameView() {
     settings,
     terrainEditor,
     textureEditor,
+    vegetationEditor,
     setSettings,
   } = useGameApp({
     enabled: !showProjectScreen,
@@ -74,6 +76,7 @@ export default function GameView() {
     hostRef,
     terrainEditor,
     textureEditor,
+    vegetationEditor,
     activeEditor,
   });
 
@@ -159,10 +162,11 @@ export default function GameView() {
   // 处理活动编辑器变化
   const handleActiveEditorChange = (editor: ActiveEditorType) => {
     setActiveEditor(editor);
-    // Reset both brushes when switching editors to prevent ghost strokes.
-    // 切换编辑器时重置两个画刷，防止幽灵笔画
+    // Reset all brushes when switching editors to prevent ghost strokes.
+    // 切换编辑器时重置所有画笔，防止幽灵笔画
     terrainEditor?.endBrush();
     textureEditor?.endBrush();
+    vegetationEditor?.endBrush();
     // Update terrain editor mode.
     // 更新地形编辑器模式
     if (terrainEditor) {
@@ -206,6 +210,7 @@ export default function GameView() {
           gameApp={appRef.current}
           terrainEditor={terrainEditor}
           textureEditor={appRef.current?.getTextureEditor?.() ?? null}
+          vegetationEditor={appRef.current?.getVegetationEditor?.() ?? null}
           terrainMode={terrainMode}
           activeEditor={activeEditor}
           currentProjectPath={currentProjectPath}
@@ -229,6 +234,12 @@ export default function GameView() {
       {/* 纹理编辑器面板 */}
       {!loading && !error && activeEditor === "texture" && textureEditor?.editingEnabled && (
         <TextureEditorPanel editor={textureEditor} visible={true} />
+      )}
+
+      {/* Vegetation Editor Panel. */}
+      {/* 植被编辑器面板 */}
+      {!loading && !error && activeEditor === "vegetation" && vegetationEditor?.editingEnabled && (
+        <VegetationEditorPanel editor={vegetationEditor} visible={true} />
       )}
 
       {/* Error display. */}

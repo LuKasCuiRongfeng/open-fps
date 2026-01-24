@@ -24,7 +24,7 @@
 //     // ... use backend.device for WebGPU operations
 //   }
 
-import type { WebGPURenderer, Texture } from "three/webgpu";
+import type { WebGPURenderer, Texture, BufferAttribute } from "three/webgpu";
 
 /**
  * Type-safe interface for Three.js WebGPU backend internals.
@@ -41,6 +41,14 @@ export interface WebGpuBackendHandle {
    * @returns GPUTexture if registered, undefined otherwise.
    */
   getTextureGPU(texture: Texture): GPUTexture | undefined;
+
+  /**
+   * Get the native GPUBuffer from a Three.js buffer attribute.
+   * 从 Three.js 缓冲区属性获取原生 GPUBuffer
+   * 
+   * @returns GPUBuffer if registered, undefined otherwise.
+   */
+  getBufferGPU(attribute: BufferAttribute): GPUBuffer | undefined;
 }
 
 /**
@@ -49,7 +57,7 @@ export interface WebGpuBackendHandle {
  */
 interface ThreeBackend {
   device: GPUDevice;
-  get(texture: Texture): { texture?: GPUTexture } | undefined;
+  get(resource: Texture | BufferAttribute): { texture?: GPUTexture; buffer?: GPUBuffer } | undefined;
 }
 
 /**
@@ -81,6 +89,10 @@ export const WebGpuBackend = {
       getTextureGPU(texture: Texture): GPUTexture | undefined {
         const textureData = backend.get(texture);
         return textureData?.texture;
+      },
+      getBufferGPU(attribute: BufferAttribute): GPUBuffer | undefined {
+        const bufferData = backend.get(attribute);
+        return bufferData?.buffer;
       },
     };
   },
