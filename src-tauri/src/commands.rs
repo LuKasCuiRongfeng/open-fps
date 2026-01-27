@@ -313,3 +313,139 @@ pub async fn write_binary_file_base64(path: String, base64: String) -> Result<()
     let bytes = STANDARD.decode(&base64).map_err(|e| format!("Failed to decode base64: {}", e))?;
     fs::write(&path, bytes).map_err(|e| format!("Failed to write file: {}", e))
 }
+
+/// Read a PNG file and return raw RGBA pixels as base64 + dimensions.
+/// 读取 PNG 文件并返回原始 RGBA 像素（base64）+ 尺寸
+/// This bypasses browser's premultiplied alpha issue.
+/// 这绕过了浏览器的预乘 alpha 问题
+#[tauri::command]
+pub async fn read_png_rgba(path: String) -> Result<(String, u32, u32), String> {
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
+    use png::Decoder;
+    use std::io::BufReader;
+    
+    let path = PathBuf::from(&path);
+    let file = std::fs::File::open(&path)
+        .map_err(|e| format!("Failed to open PNG: {}", e))?;
+    let decoder = Decoder::new(BufReader::new(file));
+    let mut reader = decoder.read_info()
+        .map_err(|e| format!("Failed to read PNG info: {}", e))?;
+    
+    let mut buf = vec![0; reader.output_buffer_size()];
+    let info = reader.next_frame(&mut buf)
+        .map_err(|e| format!("Failed to decode PNG frame: {}", e))?;
+    
+    let width = info.width;
+    let height = info.height;
+    
+    // Convert to RGBA if needed.
+    // 如有需要，转换为 RGBA
+    let rgba_pixels = match info.color_type {
+        png::ColorType::Rgba => buf[..info.buffer_size()].to_vec(),
+        png::ColorType::Rgb => {
+            // Convert RGB to RGBA (add A=255).
+            // 将 RGB 转换为 RGBA（添加 A=255）
+            let rgb = &buf[..info.buffer_size()];
+            let mut rgba = Vec::with_capacity((width * height * 4) as usize);
+            for chunk in rgb.chunks(3) {
+                rgba.push(chunk[0]);
+                rgba.push(chunk[1]);
+                rgba.push(chunk[2]);
+                rgba.push(255);
+            }
+            rgba
+        }
+        png::ColorType::GrayscaleAlpha => {
+            // Convert GA to RGBA.
+            // 将 GA 转换为 RGBA
+            let ga = &buf[..info.buffer_size()];
+            let mut rgba = Vec::with_capacity((width * height * 4) as usize);
+            for chunk in ga.chunks(2) {
+                let gray = chunk[0];
+                let alpha = chunk[1];
+                rgba.push(gray);
+                rgba.push(gray);
+                rgba.push(gray);
+                rgba.push(alpha);
+            }
+            rgba
+        }
+        png::ColorType::Grayscale => {
+            // Convert G to RGBA.
+            // 将 G 转换为 RGBA
+            let g = &buf[..info.buffer_size()];
+            let mut rgba = Vec::with_capacity((width * height * 4) as usize);
+            for &gray in g {
+                rgba.push(gray);
+                rgba.push(gray);
+                rgba.push(gray);
+                rgba.push(255);
+            }
+            rgba
+        }
+        _ => return Err(format!("Unsupported PNG color type: {:?}", info.color_type)),
+    };
+    
+    Ok((STANDARD.encode(&rgba_pixels), width, height))
+}
+
+/// Write raw RGBA pixels to a PNG file.
+/// 将原始 RGBA 像素写入 PNG 文件
+/// This bypasses browser's premultiplied alpha issue.
+/// 这绕过了浏览器的预乘 alpha 问题
+#[tauri::command]
+pub async fn write_png_rgba(
+    path: String,
+    base64_pixels: String,
+    width: u32,
+    height: u32,
+) -> Result<(), String> {
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
+    use png::{BitDepth, ColorType, Encoder};
+    use std::io::BufWriter;
+    
+    let path = PathBuf::from(&path);
+    
+    // Ensure parent directory exists.
+    // 确保父目录存在
+    if let Some(parent) = path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create directory: {}", e))?;
+        }
+    }
+    
+    let pixels = STANDARD.decode(&base64_pixels)
+        .map_err(|e| format!("Failed to decode base64: {}", e))?;
+    
+    let expected_len = (width * height * 4) as usize;
+    if pixels.len() != expected_len {
+        return Err(format!(
+            "Pixel data length mismatch: expected {}, got {}",
+            expected_len,
+            pixels.len()
+        ));
+    }
+    
+    let file = std::fs::File::create(&path)
+        .map_err(|e| format!("Failed to create PNG file: {}", e))?;
+    let w = BufWriter::new(file);
+    
+    let mut encoder = Encoder::new(w, width, height);
+    encoder.set_color(ColorType::Rgba);
+    encoder.set_depth(BitDepth::Eight);
+    // Use fast compression for better save speed.
+    // 使用快速压缩以提高保存速度
+    encoder.set_compression(png::Compression::Fast);
+    // Disable filtering for splat maps (random-ish data, filtering doesn't help).
+    // 禁用过滤（splat map 是随机数据，过滤无帮助）
+    encoder.set_filter(png::FilterType::NoFilter);
+    
+    let mut writer = encoder.write_header()
+        .map_err(|e| format!("Failed to write PNG header: {}", e))?;
+    
+    writer.write_image_data(&pixels)
+        .map_err(|e| format!("Failed to write PNG data: {}", e))?;
+    
+    Ok(())
+}

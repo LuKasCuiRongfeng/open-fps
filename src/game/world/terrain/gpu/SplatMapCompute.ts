@@ -14,6 +14,15 @@
 // - 使用 DataTexture（可读）作为 texture().load() 的输入
 // - 使用 StorageTexture（可写）作为 textureStore() 的输出
 // - 每次画刷操作后，通过 renderer.copyTextureToTexture() 复制 StorageTexture -> DataTexture
+//
+// MULTI-SPLAT-MAP SUPPORT:
+// - Uses SplatMapSet to manage multiple splat maps for >4 texture layers
+// - Each splat map handles 4 channels (RGBA) = 4 texture layers
+// - Brush strokes are routed to the correct splat map based on target layer
+// 多 SPLAT MAP 支持：
+// - 使用 SplatMapSet 管理多个 splat map 以支持 >4 个纹理层
+// - 每个 splat map 处理 4 个通道 (RGBA) = 4 个纹理层
+// - 画刷笔画根据目标层路由到正确的 splat map
 
 import {
   float,
@@ -42,6 +51,7 @@ import {
 } from "three/webgpu";
 import type { ComputeNode } from "three/webgpu";
 import { WebGpuBackend } from "../../gpu/WebGpuBackend";
+import { MAX_SPLAT_MAPS, LAYERS_PER_SPLAT_MAP } from "../../../editor/texture/TextureData";
 
 /**
  * Brush stroke data for splat map painting.
@@ -53,7 +63,8 @@ export interface SplatBrushStroke {
   radius: number;
   strength: number;
   falloff: number;
-  targetLayer: number; // 0-3 = R, G, B, A channels
+  /** Global layer index (0-15 for 4 splat maps) / 全局层索引（4 个 splat map 时为 0-15） */
+  targetLayer: number;
   dt: number;
 }
 
@@ -102,6 +113,9 @@ export class SplatMapCompute {
   // 防止并发画刷操作的标志
   private brushOperationInProgress = false;
 
+  /** Index of this splat map (0=first, has R=255 default; others have all zeros) */
+  private splatMapIndex = 0;
+
   constructor(resolution: number = 1024, worldSize: number = 1024) {
     this.resolution = resolution;
     this.worldSize = worldSize;
@@ -110,8 +124,12 @@ export class SplatMapCompute {
   /**
    * Initialize GPU resources.
    * 初始化 GPU 资源
+   *
+   * @param splatMapIndex Index of this splat map (0 = first, others = secondary)
    */
-  async init(renderer: WebGPURenderer): Promise<void> {
+  async init(renderer: WebGPURenderer, splatMapIndex: number = 0): Promise<void> {
+    this.splatMapIndex = splatMapIndex;
+
     // Create primary storage texture (RGBA, 8-bit per channel).
     // 创建主存储纹理（RGBA，每通道 8 位）
     this.splatTexture = new StorageTexture(this.resolution, this.resolution);
@@ -123,14 +141,20 @@ export class SplatMapCompute {
     // Create readable DataTexture copy.
     // 创建可读的 DataTexture 副本
     const data = new Uint8Array(this.resolution * this.resolution * 4);
-    // Default: 100% first texture (R=255, G=0, B=0, A=0).
-    // 默认：100% 第一个纹理（R=255, G=0, B=0, A=0）
-    for (let i = 0; i < this.resolution * this.resolution; i++) {
-      data[i * 4] = 255;     // R
-      data[i * 4 + 1] = 0;   // G
-      data[i * 4 + 2] = 0;   // B
-      data[i * 4 + 3] = 0;   // A
+
+    // Only the FIRST splat map (index 0) has R=255 (100% first texture).
+    // Other splat maps default to all zeros (no contribution).
+    // 只有第一个 splat map（索引 0）有 R=255（100% 第一个纹理）
+    // 其他 splat map 默认全零（无贡献）
+    if (splatMapIndex === 0) {
+      for (let i = 0; i < this.resolution * this.resolution; i++) {
+        data[i * 4] = 255;     // R = layer 0 (100%)
+        data[i * 4 + 1] = 0;   // G = layer 1 (0%)
+        data[i * 4 + 2] = 0;   // B = layer 2 (0%)
+        data[i * 4 + 3] = 0;   // A = layer 3 (0%)
+      }
     }
+    // For splatMapIndex > 0, data is already all zeros (Uint8Array default)
     this.splatTextureRead = new DataTexture(
       data,
       this.resolution,
@@ -163,25 +187,32 @@ export class SplatMapCompute {
    */
   private async initializeStorageTexture(renderer: WebGPURenderer): Promise<void> {
     const res = this.resolution;
+    const isFirstSplatMap = this.splatMapIndex === 0;
 
-    // Create default pixel data (100% first texture = R=255).
-    // 创建默认像素数据（100% 第一个纹理 = R=255）
+    // Create default pixel data.
+    // Only the FIRST splat map has R=255 (100% first texture).
+    // 创建默认像素数据
+    // 只有第一个 splat map 有 R=255（100% 第一个纹理）
     const defaultPixels = new Uint8Array(res * res * 4);
-    for (let i = 0; i < res * res; i++) {
-      defaultPixels[i * 4] = 255;     // R
-      defaultPixels[i * 4 + 1] = 0;   // G
-      defaultPixels[i * 4 + 2] = 0;   // B
-      defaultPixels[i * 4 + 3] = 0;   // A
+    if (isFirstSplatMap) {
+      for (let i = 0; i < res * res; i++) {
+        defaultPixels[i * 4] = 255;     // R = layer 0 (100%)
+        defaultPixels[i * 4 + 1] = 0;   // G
+        defaultPixels[i * 4 + 2] = 0;   // B
+        defaultPixels[i * 4 + 3] = 0;   // A
+      }
     }
+    // For secondary splat maps, defaultPixels is already all zeros
 
     // First, run a dummy compute to ensure the texture is created on GPU.
     // 首先运行一个虚拟计算以确保纹理在 GPU 上创建
     const dstTexture = this.splatTexture!;
+    const defaultR = isFirstSplatMap ? 1.0 : 0.0;
     const initFn = Fn(() => {
       const pixelX = mod(instanceIndex, uint(res));
       const pixelY = instanceIndex.div(uint(res));
       const coord = uvec2(pixelX, pixelY);
-      textureStore(dstTexture, coord, vec4(1.0, 0.0, 0.0, 0.0)).toWriteOnly();
+      textureStore(dstTexture, coord, vec4(float(defaultR), 0.0, 0.0, 0.0)).toWriteOnly();
     });
     const initNode = initFn().compute(res * res);
     await renderer.computeAsync(initNode);
@@ -659,5 +690,221 @@ export class SplatMapCompute {
     this.splatTextureRead = null;
     this.brushComputeNode = null;
     this.initialized = false;
+  }
+}
+
+// ============================================================================
+// SplatMapSet: Manages multiple splat maps for >4 texture layers
+// SplatMapSet：管理多个 splat map 以支持 >4 个纹理层
+// ============================================================================
+
+/**
+ * Manages multiple splat maps to support more than 4 texture layers.
+ * 管理多个 splat map 以支持超过 4 个纹理层
+ *
+ * Each splat map supports 4 layers (RGBA channels).
+ * Multiple splat maps enable 8, 12, 16+ texture layers.
+ * 每个 splat map 支持 4 层（RGBA 通道）
+ * 多个 splat map 可支持 8、12、16+ 纹理层
+ */
+export class SplatMapSet {
+  private readonly splatMaps: SplatMapCompute[] = [];
+  private readonly resolution: number;
+  private readonly worldSize: number;
+  private splatMapCount = 1;
+
+  constructor(resolution: number = 1024, worldSize: number = 1024) {
+    this.resolution = resolution;
+    this.worldSize = worldSize;
+  }
+
+  /**
+   * Initialize with specified number of splat maps.
+   * 使用指定数量的 splat map 初始化
+   *
+   * @param count Number of splat maps (1-4, each supports 4 layers)
+   */
+  async init(renderer: WebGPURenderer, count: number = 1): Promise<void> {
+    // Clamp to valid range.
+    // 限制到有效范围
+    this.splatMapCount = Math.max(1, Math.min(count, MAX_SPLAT_MAPS));
+
+    // Dispose existing splat maps.
+    // 释放现有 splat map
+    this.dispose();
+
+    // Create new splat maps.
+    // 创建新的 splat map
+    for (let i = 0; i < this.splatMapCount; i++) {
+      const splatMap = new SplatMapCompute(this.resolution, this.worldSize);
+      await splatMap.init(renderer, i); // Pass index for correct default values
+      this.splatMaps.push(splatMap);
+    }
+
+    console.log(`[SplatMapSet] Initialized ${this.splatMapCount} splat map(s)`);
+  }
+
+  /**
+   * Resize to different number of splat maps.
+   * 调整为不同数量的 splat map
+   */
+  async resize(renderer: WebGPURenderer, newCount: number): Promise<void> {
+    const targetCount = Math.max(1, Math.min(newCount, MAX_SPLAT_MAPS));
+
+    if (targetCount === this.splatMapCount) return;
+
+    if (targetCount > this.splatMapCount) {
+      // Add more splat maps.
+      // 添加更多 splat map
+      for (let i = this.splatMapCount; i < targetCount; i++) {
+        const splatMap = new SplatMapCompute(this.resolution, this.worldSize);
+        await splatMap.init(renderer, i); // Pass index for correct default values
+        // Copy world offset from first splat map.
+        // 从第一个 splat map 复制世界偏移
+        if (this.splatMaps[0]) {
+          splatMap.setWorldOffset(
+            (this.splatMaps[0] as unknown as { worldOffsetX: { value: number } }).worldOffsetX?.value ?? 0,
+            (this.splatMaps[0] as unknown as { worldOffsetZ: { value: number } }).worldOffsetZ?.value ?? 0,
+          );
+        }
+        this.splatMaps.push(splatMap);
+      }
+    } else {
+      // Remove excess splat maps.
+      // 移除多余的 splat map
+      while (this.splatMaps.length > targetCount) {
+        const removed = this.splatMaps.pop();
+        removed?.dispose();
+      }
+    }
+
+    this.splatMapCount = targetCount;
+    console.log(`[SplatMapSet] Resized to ${this.splatMapCount} splat map(s)`);
+  }
+
+  /**
+   * Apply brush stroke to the appropriate splat map.
+   * 将画刷笔画应用到适当的 splat map
+   *
+   * Routes the stroke to the correct splat map based on target layer.
+   * 根据目标层将笔画路由到正确的 splat map
+   */
+  async applyBrush(renderer: WebGPURenderer, stroke: SplatBrushStroke): Promise<void> {
+    // Determine which splat map this layer belongs to.
+    // 确定此层属于哪个 splat map
+    const splatMapIndex = Math.floor(stroke.targetLayer / LAYERS_PER_SPLAT_MAP);
+    const channel = stroke.targetLayer % LAYERS_PER_SPLAT_MAP;
+
+    if (splatMapIndex >= this.splatMaps.length) {
+      console.warn(`[SplatMapSet] Layer ${stroke.targetLayer} exceeds available splat maps`);
+      return;
+    }
+
+    // Create internal stroke with channel instead of global layer.
+    // 使用通道而非全局层创建内部笔画
+    const internalStroke: SplatBrushStroke = {
+      ...stroke,
+      targetLayer: channel,
+    };
+
+    await this.splatMaps[splatMapIndex].applyBrush(renderer, internalStroke);
+  }
+
+  /**
+   * Get splat map texture by index.
+   * 通过索引获取 splat map 纹理
+   */
+  getSplatTexture(index: number = 0): DataTexture | null {
+    return this.splatMaps[index]?.getSplatTexture() ?? null;
+  }
+
+  /**
+   * Get all splat map textures.
+   * 获取所有 splat map 纹理
+   */
+  getAllSplatTextures(): (DataTexture | null)[] {
+    return this.splatMaps.map(sm => sm.getSplatTexture());
+  }
+
+  /**
+   * Get number of splat maps.
+   * 获取 splat map 数量
+   */
+  getCount(): number {
+    return this.splatMapCount;
+  }
+
+  /**
+   * Set world offset for all splat maps.
+   * 设置所有 splat map 的世界偏移
+   */
+  setWorldOffset(offsetX: number, offsetZ: number): void {
+    for (const splatMap of this.splatMaps) {
+      splatMap.setWorldOffset(offsetX, offsetZ);
+    }
+  }
+
+  /**
+   * Get resolution of splat maps.
+   * 获取 splat map 的分辨率
+   */
+  getResolution(): number {
+    return this.resolution;
+  }
+
+  /**
+   * Get world size covered by splat maps.
+   * 获取 splat map 覆盖的世界大小
+   */
+  getWorldSize(): number {
+    return this.worldSize;
+  }
+
+  /**
+   * Load splat map data for a specific index.
+   * 加载特定索引的 splat map 数据
+   */
+  async loadFromPixels(
+    renderer: WebGPURenderer,
+    pixels: Uint8Array,
+    splatMapIndex: number = 0,
+  ): Promise<void> {
+    if (splatMapIndex >= this.splatMaps.length) {
+      console.warn(`[SplatMapSet] Index ${splatMapIndex} out of range`);
+      return;
+    }
+    await this.splatMaps[splatMapIndex].loadFromPixels(renderer, pixels);
+  }
+
+  /**
+   * Read splat map data for a specific index.
+   * 读取特定索引的 splat map 数据
+   */
+  async readToPixels(renderer: WebGPURenderer, splatMapIndex: number = 0): Promise<Uint8Array> {
+    if (splatMapIndex >= this.splatMaps.length) {
+      throw new Error(`[SplatMapSet] Index ${splatMapIndex} out of range`);
+    }
+    return this.splatMaps[splatMapIndex].readToPixels(renderer);
+  }
+
+  /**
+   * Sync all readable textures.
+   * 同步所有可读纹理
+   */
+  syncReadableTextures(renderer: WebGPURenderer): void {
+    for (const splatMap of this.splatMaps) {
+      splatMap.syncReadableTexture(renderer);
+    }
+  }
+
+  /**
+   * Dispose all splat maps.
+   * 释放所有 splat map
+   */
+  dispose(): void {
+    for (const splatMap of this.splatMaps) {
+      splatMap.dispose();
+    }
+    this.splatMaps.length = 0;
   }
 }

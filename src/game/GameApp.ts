@@ -39,8 +39,8 @@ import {
   type GameSettings,
   type GameSettingsPatch,
 } from "./settings";
-import { TerrainTextures } from "./world/terrain/TerrainTextures";
-import { setTerrainNormalSoftness } from "./world/terrain/material/terrainMaterialTextured";
+import { TerrainTextureArrays } from "./world/terrain/TerrainTextureArrays";
+import { setTerrainNormalSoftness } from "./world/terrain/material/terrainMaterialTexturedArray";
 import { timeToSunPosition, type SkySystem } from "./world/sky/SkySystem";
 import { VegetationSystem } from "./world/vegetation/VegetationSystem";
 import type { MapData } from "./project/MapData";
@@ -394,9 +394,9 @@ export class GameApp {
   async loadTexturesFromProject(projectPath: string): Promise<void> {
     await this.textureEditor.loadFromProject(projectPath);
     const textureDef = this.textureEditor.textureDefinition;
-    const textureResult = await TerrainTextures.getInstance().loadFromDefinition(projectPath, textureDef);
-    const splatMapTexture = this.textureEditor.getSplatTexture();
-    this.resources.runtime.terrain.setTextureData(textureResult, splatMapTexture);
+    const textureArrays = await TerrainTextureArrays.getInstance().loadFromDefinition(projectPath, textureDef);
+    const splatMapTextures = this.textureEditor.getAllSplatTextures();
+    this.resources.runtime.terrain.setTextureData(textureArrays, splatMapTextures);
     await this.skySystem.loadStarTexture(projectPath);
   }
 

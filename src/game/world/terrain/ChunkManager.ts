@@ -3,7 +3,7 @@
 
 import type { Scene, WebGPURenderer, PerspectiveCamera, Texture } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
-import type { TerrainTextureResult } from "./TerrainTextures";
+import type { TerrainTextureArrayResult } from "./TerrainTextureArrays";
 import { FloatingOrigin } from "../FloatingOrigin";
 import { TerrainChunk, disposeSharedGeometries } from "./TerrainChunk";
 import { TerrainHeightCompute, TerrainNormalCompute, TerrainBrushCompute } from "./gpu";
@@ -66,10 +66,10 @@ export class ChunkManager {
   // GPU 初始化状态
   private gpuReady = false;
 
-  // Texture data for terrain materials (from texture.json).
-  // 地形材质的纹理数据（来自 texture.json）
-  private textureResult: TerrainTextureResult | null = null;
-  private splatMapTexture: Texture | null = null;
+  // Texture array data for terrain materials (from texture.json).
+  // 地形材质的纹理数组数据（来自 texture.json）
+  private textureArrays: TerrainTextureArrayResult | null = null;
+  private splatMapTextures: (Texture | null)[] = [];
 
   constructor(config: TerrainConfig, scene: Scene, floatingOrigin: FloatingOrigin) {
     this.config = config;
@@ -327,10 +327,10 @@ export class ChunkManager {
       tileInfo,
     );
 
-    // If we have texture data loaded, apply it to the new chunk.
-    // 如果已加载纹理数据，将其应用到新 chunk
-    if (this.textureResult || this.splatMapTexture) {
-      chunk.rebuildMaterial(this.textureResult, this.splatMapTexture);
+    // If we have texture array data loaded, apply it to the new chunk.
+    // 如果已加载纹理数组数据，将其应用到新 chunk
+    if (this.textureArrays || this.splatMapTextures.length > 0) {
+      chunk.rebuildMaterial(this.textureArrays, this.splatMapTextures);
     }
 
     this.chunks.set(key, chunk);
@@ -600,14 +600,14 @@ export class ChunkManager {
    * 加载项目的 texture.json 后调用此方法
    */
   setTextureData(
-    textureResult: TerrainTextureResult | null,
-    splatMapTexture: Texture | null,
+    textureArrays: TerrainTextureArrayResult | null,
+    splatMapTextures: (Texture | null)[],
   ): void {
-    this.textureResult = textureResult;
-    this.splatMapTexture = splatMapTexture;
+    this.textureArrays = textureArrays;
+    this.splatMapTextures = splatMapTextures;
 
-    // Recreate all existing chunk materials with new textures.
-    // 使用新纹理重新创建所有现有 chunk 的材质
+    // Recreate all existing chunk materials with new texture arrays.
+    // 使用新纹理数组重新创建所有现有 chunk 的材质
     if (this.gpuReady) {
       this.rebuildAllChunkMaterials();
     }
@@ -619,7 +619,7 @@ export class ChunkManager {
    */
   private rebuildAllChunkMaterials(): void {
     for (const chunk of this.chunks.values()) {
-      chunk.rebuildMaterial(this.textureResult, this.splatMapTexture);
+      chunk.rebuildMaterial(this.textureArrays, this.splatMapTextures);
     }
   }
 }

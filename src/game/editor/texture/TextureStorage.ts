@@ -9,8 +9,47 @@ import {
 } from "./TextureData";
 
 /**
- * Texture storage manager for loading/saving texture.json and splatmap.png.
- * 纹理存储管理器，用于加载/保存 texture.json 和 splatmap.png
+ * Get splat map filename for a given index.
+ * 获取给定索引的 splat map 文件名
+ */
+function getSplatMapFilename(index: number): string {
+  return index === 0 ? "splatmap.png" : `splatmap_${index}.png`;
+}
+
+/**
+ * Convert Uint8Array to base64 string (without stack overflow for large arrays).
+ * 将 Uint8Array 转换为 base64 字符串（大数组不会栈溢出）
+ */
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+/**
+ * Convert base64 string to Uint8Array.
+ * 将 base64 字符串转换为 Uint8Array
+ */
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+/**
+ * Texture storage manager for loading/saving texture.json and splatmap files.
+ * 纹理存储管理器，用于加载/保存 texture.json 和 splatmap 文件
+ *
+ * Supports multiple splat maps: splatmap.png, splatmap_1.png, splatmap_2.png, etc.
+ * 支持多个 splat map：splatmap.png、splatmap_1.png、splatmap_2.png 等
+ *
+ * Uses native Tauri PNG read/write to bypass browser's premultiplied alpha issue.
+ * 使用原生 Tauri PNG 读写来绕过浏览器的预乘 alpha 问题
  */
 export class TextureStorage {
   /**
@@ -43,41 +82,53 @@ export class TextureStorage {
   }
 
   /**
-   * Load splat map from project folder.
-   * 从项目文件夹加载 splat map
+   * Load splat map from project folder using native PNG decoder.
+   * 使用原生 PNG 解码器从项目文件夹加载 splat map
+   *
+   * Uses Tauri backend to read PNG, bypassing browser's premultiplied alpha issue.
+   * 使用 Tauri 后端读取 PNG，绕过浏览器的预乘 alpha 问题
+   *
+   * @param splatMapIndex Which splat map to load (0 = splatmap.png, 1 = splatmap_1.png, etc.)
    */
-  static async loadSplatMap(projectPath: string): Promise<SplatMapData | null> {
+  static async loadSplatMap(
+    projectPath: string,
+    splatMapIndex: number = 0,
+  ): Promise<SplatMapData | null> {
     try {
-      const pngPath = `${projectPath}/splatmap.png`;
+      const filename = getSplatMapFilename(splatMapIndex);
+      const pngPath = `${projectPath}/${filename}`;
 
-      // Read PNG file as base64 and decode.
-      // 读取 PNG 文件为 base64 并解码
-      const base64 = await invoke<string>("read_binary_file_base64", { path: pngPath });
+      // Use native Tauri PNG decoder to get raw RGBA pixels.
+      // 使用原生 Tauri PNG 解码器获取原始 RGBA 像素
+      const [base64Pixels, width, _height] = await invoke<[string, number, number]>(
+        "read_png_rgba",
+        { path: pngPath }
+      );
 
-      // Decode PNG using browser APIs with premultiplyAlpha: 'none' to preserve RGB when A=0.
-      // 使用浏览器 API 解码 PNG，设置 premultiplyAlpha: 'none' 以在 A=0 时保留 RGB
-      const blob = await fetch(`data:image/png;base64,${base64}`).then((r) => r.blob());
-      const bitmap = await createImageBitmap(blob, { premultiplyAlpha: "none" });
+      const pixels = base64ToUint8Array(base64Pixels);
 
-      // Extract pixel data using willReadFrequently for better performance.
-      // 使用 willReadFrequently 提取像素数据以获得更好的性能
-      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-      const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
-      ctx.drawImage(bitmap, 0, 0);
-      const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
-
-      // Restore A channel to 0 since saveSplatMap forces A=255 to avoid PNG premultiplied alpha issues.
-      // The material normalizes all 4 channels (R+G+B+A) when blending, so A=255 would dilute colors.
-      // 恢复 A 通道为 0，因为 saveSplatMap 强制 A=255 以避免 PNG 预乘 alpha 问题。
-      // 材质在混合时会归一化所有 4 个通道，A=255 会稀释颜色。
-      const pixels = new Uint8Array(imageData.data);
+      // Migrate old format: if ALL pixels have A=255, convert to A=0.
+      // This handles splatmaps saved with the old code that set A=255 as placeholder.
+      // 迁移旧格式：如果所有像素的 A=255，转换为 A=0
+      // 这处理旧代码保存的 splatmap（使用 A=255 作为占位符）
+      let allAlpha255 = true;
       for (let i = 3; i < pixels.length; i += 4) {
-        pixels[i] = 0;
+        if (pixels[i] !== 255) {
+          allAlpha255 = false;
+          break;
+        }
+      }
+      if (allAlpha255 && splatMapIndex === 0) {
+        console.log(`[TextureStorage] Migrating old splatmap format (A=255 → A=0)`);
+        for (let i = 3; i < pixels.length; i += 4) {
+          pixels[i] = 0;
+        }
       }
 
       return {
-        resolution: bitmap.width,
+        resolution: width,
         pixels,
+        splatMapIndex,
       };
     } catch {
       return null;
@@ -85,64 +136,58 @@ export class TextureStorage {
   }
 
   /**
-   * Save splat map to project folder as PNG.
-   * 保存 splat map 到项目文件夹为 PNG
+   * Save splat map to project folder as PNG using native encoder.
+   * 使用原生编码器保存 splat map 到项目文件夹为 PNG
    *
-   * NOTE: We set A=255 for all pixels to avoid premultiplied alpha issues in PNG.
-   * When A=0, browsers will zero out RGB during PNG encoding.
-   * 注意：我们将所有像素的 A 设置为 255 以避免 PNG 中的预乘 alpha 问题。
-   * 当 A=0 时，浏览器会在 PNG 编码期间将 RGB 归零。
+   * Uses Tauri backend to write PNG, bypassing browser's premultiplied alpha issue.
+   * This preserves all 4 RGBA channels correctly (including A channel for 4th texture).
+   * 使用 Tauri 后端写入 PNG，绕过浏览器的预乘 alpha 问题
+   * 这样可以正确保存所有 4 个 RGBA 通道（包括第 4 种纹理的 A 通道）
+   *
+   * @param splatMapIndex Which splat map to save (0 = splatmap.png, 1 = splatmap_1.png, etc.)
    */
-  static async saveSplatMap(projectPath: string, splatMap: SplatMapData): Promise<void> {
+  static async saveSplatMap(
+    projectPath: string,
+    splatMap: SplatMapData,
+    splatMapIndex: number = 0,
+  ): Promise<void> {
     const { resolution, pixels } = splatMap;
+    const filename = getSplatMapFilename(splatMapIndex);
+    const pngPath = `${projectPath}/${filename}`;
 
-    // Create a copy with A=255 to avoid premultiplied alpha issues.
-    // 创建一个 A=255 的副本以避免预乘 alpha 问题
-    const pixelsWithAlpha = new Uint8ClampedArray(pixels.length);
-    for (let i = 0; i < pixels.length; i += 4) {
-      pixelsWithAlpha[i] = pixels[i];       // R
-      pixelsWithAlpha[i + 1] = pixels[i + 1]; // G
-      pixelsWithAlpha[i + 2] = pixels[i + 2]; // B
-      pixelsWithAlpha[i + 3] = 255;          // A = 255 (force opaque)
-    }
+    // Use native Tauri PNG encoder to save raw RGBA pixels.
+    // 使用原生 Tauri PNG 编码器保存原始 RGBA 像素
+    const base64Pixels = uint8ArrayToBase64(pixels);
 
-    // Create canvas and draw pixel data.
-    // 创建 canvas 并绘制像素数据
-    const canvas = new OffscreenCanvas(resolution, resolution);
-    const ctx = canvas.getContext("2d")!;
-    const imageData = new ImageData(pixelsWithAlpha, resolution, resolution);
-    ctx.putImageData(imageData, 0, 0);
-
-    // Convert to PNG blob.
-    // 转换为 PNG blob
-    const blob = await canvas.convertToBlob({ type: "image/png" });
-    const arrayBuffer = await blob.arrayBuffer();
-    
-    // Convert ArrayBuffer to base64 without spread operator to avoid stack overflow.
-    // 转换 ArrayBuffer 为 base64，不使用扩展运算符以避免栈溢出
-    const bytes = new Uint8Array(arrayBuffer);
-    let binary = "";
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    const base64 = btoa(binary);
-
-    // Save via Tauri backend.
-    // 通过 Tauri 后端保存
-    const pngPath = `${projectPath}/splatmap.png`;
-    await invoke("write_binary_file_base64", { path: pngPath, base64 });
+    await invoke("write_png_rgba", {
+      path: pngPath,
+      base64Pixels,
+      width: resolution,
+      height: resolution,
+    });
   }
 
   /**
    * Create default splat map for a project (if texture.json exists but splatmap.png doesn't).
    * 为项目创建默认 splat map（如果 texture.json 存在但 splatmap.png 不存在）
+   *
+   * @param splatMapIndex Which splat map to ensure (0 = splatmap.png, 1 = splatmap_1.png, etc.)
    */
-  static async ensureSplatMap(projectPath: string, resolution: number = 1024): Promise<void> {
+  static async ensureSplatMap(
+    projectPath: string,
+    splatMapIndex: number = 0,
+    resolution: number = 1024,
+  ): Promise<void> {
+    const filename = getSplatMapFilename(splatMapIndex);
     try {
-      await invoke<string>("read_binary_file_base64", { path: `${projectPath}/splatmap.png` });
+      // Check if file exists by trying to read it.
+      // 尝试读取文件来检查是否存在
+      await invoke<[string, number, number]>("read_png_rgba", {
+        path: `${projectPath}/${filename}`,
+      });
     } catch {
-      const defaultSplatMap = createDefaultSplatMap(resolution);
-      await this.saveSplatMap(projectPath, defaultSplatMap);
+      const defaultSplatMap = createDefaultSplatMap(resolution, splatMapIndex);
+      await this.saveSplatMap(projectPath, defaultSplatMap, splatMapIndex);
     }
   }
 }

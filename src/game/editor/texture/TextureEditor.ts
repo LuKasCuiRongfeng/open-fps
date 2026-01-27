@@ -1,11 +1,12 @@
 // TextureEditor: texture painting coordinator for terrain splat maps.
 // TextureEditor：地形 splat map 纹理绘制协调器
 
-import type { PerspectiveCamera, WebGPURenderer } from "three/webgpu";
-import { SplatMapCompute } from "@game/world/terrain/gpu/SplatMapCompute";
+import type { DataTexture, PerspectiveCamera, WebGPURenderer } from "three/webgpu";
+import { SplatMapSet } from "@game/world/terrain/gpu/SplatMapCompute";
 import {
   type TextureDefinition,
   type SplatMapData,
+  getSplatMapCount,
 } from "./TextureData";
 import { TextureStorage } from "./TextureStorage";
 import { TextureBrush, type TextureBrushSettings } from "./TextureBrush";
@@ -14,13 +15,16 @@ import { TextureBrush, type TextureBrushSettings } from "./TextureBrush";
  * TextureEditor: coordinates texture painting on terrain splat maps.
  * TextureEditor：协调地形 splat map 上的纹理绘制
  *
+ * Supports multiple splat maps for >4 texture layers.
+ * 支持多个 splat map 以支持 >4 个纹理层
+ *
  * Delegates brush operations to TextureBrush (mirrors TerrainEditor pattern).
  * 将画刷操作委托给 TextureBrush（与 TerrainEditor 模式一致）
  */
 export class TextureEditor {
-  // Splat map GPU compute.
-  // Splat map GPU 计算
-  private splatMapCompute: SplatMapCompute | null = null;
+  // Splat map set (manages multiple splat maps).
+  // Splat map 集合（管理多个 splat map）
+  private splatMapSet: SplatMapSet | null = null;
 
   // Texture brush (delegated).
   // 纹理画刷（委托）
@@ -47,6 +51,10 @@ export class TextureEditor {
   // 渲染器引用
   private renderer: WebGPURenderer | null = null;
 
+  // Resolution for splat maps.
+  // Splat map 分辨率
+  private resolution = 1024;
+
   // Callbacks.
   // 回调
   private onDirtyChange?: (dirty: boolean) => void;
@@ -64,10 +72,12 @@ export class TextureEditor {
     this.worldOffsetX = -worldSize / 2;
     this.worldOffsetZ = -worldSize / 2;
 
-    const resolution = Math.min(4096, Math.max(1024, Math.ceil(worldSize / 2)));
-    this.splatMapCompute = new SplatMapCompute(resolution, worldSize);
-    await this.splatMapCompute.init(renderer);
-    this.splatMapCompute.setWorldOffset(this.worldOffsetX, this.worldOffsetZ);
+    this.resolution = Math.min(4096, Math.max(1024, Math.ceil(worldSize / 2)));
+    this.splatMapSet = new SplatMapSet(this.resolution, worldSize);
+    // Start with 1 splat map, will resize when texture def is loaded.
+    // 从 1 个 splat map 开始，加载纹理定义时会调整大小
+    await this.splatMapSet.init(renderer, 1);
+    this.splatMapSet.setWorldOffset(this.worldOffsetX, this.worldOffsetZ);
   }
 
   /**
@@ -77,15 +87,23 @@ export class TextureEditor {
   async loadFromProject(projectPath: string): Promise<void> {
     this._textureDefinition = await TextureStorage.loadTextureDefinition(projectPath);
 
-    if (this._textureDefinition) {
+    if (this._textureDefinition && this.splatMapSet && this.renderer) {
       this._editingEnabled = true;
       this.brush.setTextureDefinition(this._textureDefinition);
 
-      await TextureStorage.ensureSplatMap(projectPath);
+      // Resize splat map set to match number needed.
+      // 调整 splat map 集合大小以匹配需要的数量
+      const splatMapCount = getSplatMapCount(this._textureDefinition);
+      await this.splatMapSet.resize(this.renderer, splatMapCount);
 
-      const splatMapData = await TextureStorage.loadSplatMap(projectPath);
-      if (splatMapData && this.splatMapCompute && this.renderer) {
-        await this.splatMapCompute.loadFromPixels(this.renderer, splatMapData.pixels);
+      // Load all splat maps.
+      // 加载所有 splat map
+      for (let i = 0; i < splatMapCount; i++) {
+        await TextureStorage.ensureSplatMap(projectPath, i);
+        const splatMapData = await TextureStorage.loadSplatMap(projectPath, i);
+        if (splatMapData) {
+          await this.splatMapSet.loadFromPixels(this.renderer, splatMapData.pixels, i);
+        }
       }
     } else {
       this._editingEnabled = false;
@@ -107,13 +125,17 @@ export class TextureEditor {
 
     await TextureStorage.saveTextureDefinition(projectPath, this._textureDefinition);
 
-    if (this.splatMapCompute && this.renderer) {
-      const pixels = await this.splatMapCompute.readToPixels(this.renderer);
-      const splatMapData: SplatMapData = {
-        resolution: this.splatMapCompute.getResolution(),
-        pixels,
-      };
-      await TextureStorage.saveSplatMap(projectPath, splatMapData);
+    if (this.splatMapSet && this.renderer) {
+      const splatMapCount = this.splatMapSet.getCount();
+      for (let i = 0; i < splatMapCount; i++) {
+        const pixels = await this.splatMapSet.readToPixels(this.renderer, i);
+        const splatMapData: SplatMapData = {
+          resolution: this.splatMapSet.getResolution(),
+          pixels,
+          splatMapIndex: i,
+        };
+        await TextureStorage.saveSplatMap(projectPath, splatMapData, i);
+      }
     }
 
     this.setDirty(false);
@@ -158,11 +180,27 @@ export class TextureEditor {
   }
 
   /**
-   * Get the splat map texture for material rendering.
-   * 获取用于材质渲染的 splat map 纹理
+   * Get the primary splat map texture for material rendering.
+   * 获取用于材质渲染的主 splat map 纹理
    */
-  getSplatTexture() {
-    return this.splatMapCompute?.getSplatTexture() ?? null;
+  getSplatTexture(): DataTexture | null {
+    return this.splatMapSet?.getSplatTexture(0) ?? null;
+  }
+
+  /**
+   * Get all splat map textures for material rendering.
+   * 获取用于材质渲染的所有 splat map 纹理
+   */
+  getAllSplatTextures(): (DataTexture | null)[] {
+    return this.splatMapSet?.getAllSplatTextures() ?? [];
+  }
+
+  /**
+   * Get number of splat maps.
+   * 获取 splat map 数量
+   */
+  getSplatMapCount(): number {
+    return this.splatMapSet?.getCount() ?? 1;
   }
 
   // --- Dirty State / 脏状态 ---
@@ -226,14 +264,14 @@ export class TextureEditor {
    * 将画刷笔画应用到 splat map
    */
   async applyBrush(dt: number): Promise<void> {
-    if (!this._editingEnabled || !this.splatMapCompute || !this.renderer) {
+    if (!this._editingEnabled || !this.splatMapSet || !this.renderer) {
       return;
     }
 
     const stroke = this.brush.generateStroke(dt);
     if (!stroke) return;
 
-    await this.splatMapCompute.applyBrush(this.renderer, stroke);
+    await this.splatMapSet.applyBrush(this.renderer, stroke);
     this.setDirty(true);
   }
 
@@ -255,8 +293,8 @@ export class TextureEditor {
   // --- Disposal / 清理 ---
 
   dispose(): void {
-    this.splatMapCompute?.dispose();
-    this.splatMapCompute = null;
+    this.splatMapSet?.dispose();
+    this.splatMapSet = null;
     this.renderer = null;
   }
 }

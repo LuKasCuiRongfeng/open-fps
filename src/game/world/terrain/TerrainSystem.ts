@@ -9,7 +9,7 @@ import { FloatingOrigin } from "../FloatingOrigin";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
 import type { BrushStroke } from "../../editor/terrain/TerrainEditor";
 import { type MapData, createEmptyMapData, setChunkData, parseChunkKey, getChunkData, hasChunks } from "../../project/MapData";
-import type { TerrainTextureResult } from "./TerrainTextures";
+import type { TerrainTextureArrayResult } from "./TerrainTextureArrays";
 
 export type TerrainSystemResource = {
   root: Group;
@@ -25,9 +25,9 @@ export type TerrainSystemResource = {
   exportCurrentMapData: () => MapData;
   loadMapData: (mapData: MapData) => Promise<void>;
   resetToOriginal: () => Promise<void>;
-  // Texture data for PBR terrain materials.
-  // PBR 地形材质的纹理数据
-  setTextureData: (textureResult: TerrainTextureResult | null, splatMapTexture: Texture | null) => void;
+  // Texture array data for PBR terrain materials.
+  // PBR 地形材质的纹理数组数据
+  setTextureData: (textureArrays: TerrainTextureArrayResult | null, splatMapTextures: (Texture | null)[]) => void;
   dispose: () => void;
 };
 
@@ -204,17 +204,17 @@ export function createTerrainSystem(
   };
 
   /**
-   * Set texture data for PBR terrain materials.
-   * 设置 PBR 地形材质的纹理数据
+   * Set texture array data for PBR terrain materials.
+   * 设置 PBR 地形材质的纹理数组数据
    *
-   * Rebuilds all chunk materials with the new textures.
-   * 使用新纹理重建所有 chunk 材质
+   * Rebuilds all chunk materials with the new texture arrays.
+   * 使用新纹理数组重建所有 chunk 材质
    */
   const setTextureData = (
-    textureResult: TerrainTextureResult | null,
-    splatMapTexture: Texture | null,
+    textureArrays: TerrainTextureArrayResult | null,
+    splatMapTextures: (Texture | null)[],
   ): void => {
-    chunkManager?.setTextureData(textureResult, splatMapTexture);
+    chunkManager?.setTextureData(textureArrays, splatMapTextures);
   };
 
   const dispose = (): void => {

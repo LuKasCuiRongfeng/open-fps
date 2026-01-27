@@ -15,8 +15,8 @@ import {
 import type { TerrainConfig } from "./terrain";
 import type { FloatingOrigin } from "../FloatingOrigin";
 import { createGpuTerrainMaterial, type TerrainMaterialParams } from "./material/terrainMaterial";
-import { createTexturedTerrainMaterial, type TerrainMaterialParams as TexturedMaterialParams } from "./material/terrainMaterialTextured";
-import type { TerrainTextureResult } from "./TerrainTextures";
+import { createTexturedArrayTerrainMaterial, type TerrainMaterialArrayParams } from "./material/terrainMaterialTexturedArray";
+import type { TerrainTextureArrayResult } from "./TerrainTextureArrays";
 
 // Skirt depth in meters (how far down the skirt extends).
 // 裙边深度（米）（裙边向下延伸多远）
@@ -318,10 +318,10 @@ export class TerrainChunk {
       chunkSize,
     };
 
-    // Use textured material for better visuals, fallback to procedural.
-    // 使用纹理材质获得更好的视觉效果，回退到程序化
+    // Use textured array material for better visuals, fallback to procedural.
+    // 使用纹理数组材质获得更好的视觉效果，回退到程序化
     const material = config.material.useTextures
-      ? createTexturedTerrainMaterial(config, materialParams)
+      ? createTexturedArrayTerrainMaterial(config, materialParams)
       : createGpuTerrainMaterial(config, materialParams);
 
     this.mesh = new Mesh(geometry, material);
@@ -501,8 +501,8 @@ export class TerrainChunk {
    * 在加载纹理或 splat map 变化时调用
    */
   rebuildMaterial(
-    textureResult: TerrainTextureResult | null,
-    splatMapTexture: Texture | null,
+    textureArrays: TerrainTextureArrayResult | null,
+    splatMapTextures: (Texture | null)[],
   ): void {
     // Dispose old material.
     // 释放旧材质
@@ -512,9 +512,9 @@ export class TerrainChunk {
 
     const chunkSize = this.config.streaming.chunkSizeMeters;
 
-    // Create new material with texture params.
-    // 使用纹理参数创建新材质
-    const materialParams: TexturedMaterialParams = {
+    // Create new material with texture array params.
+    // 使用纹理数组参数创建新材质
+    const materialParams: TerrainMaterialArrayParams = {
       heightTexture: this.heightTexture,
       normalTexture: this.normalTexture,
       tileUvOffset: this.tileUvOffset,
@@ -522,13 +522,13 @@ export class TerrainChunk {
       chunkWorldX: this.worldCenterX,
       chunkWorldZ: this.worldCenterZ,
       chunkSize,
-      textureResult: textureResult ?? undefined,
-      splatMap: splatMapTexture ?? undefined,
+      textureArrays: textureArrays ?? undefined,
+      splatMaps: splatMapTextures,
     };
 
-    // Always use textured material when rebuilding (it handles fallback internally).
-    // 重建时总是使用纹理材质（它内部处理回退）
-    this.mesh.material = createTexturedTerrainMaterial(this.config, materialParams);
+    // Always use textured array material when rebuilding (it handles fallback internally).
+    // 重建时总是使用纹理数组材质（它内部处理回退）
+    this.mesh.material = createTexturedArrayTerrainMaterial(this.config, materialParams);
   }
 
   /**

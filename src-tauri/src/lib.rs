@@ -27,6 +27,9 @@ pub fn run() {
             write_text_file,
             read_binary_file_base64,
             write_binary_file_base64,
+            // PNG operations (bypass browser premultiplied alpha) / PNG 操作（绕过浏览器预乘 alpha）
+            read_png_rgba,
+            write_png_rgba,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
