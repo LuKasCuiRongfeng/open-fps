@@ -40,9 +40,15 @@ export interface TextureLayerDef {
 
   // Optional PBR maps / 可选 PBR 贴图
   normal?: string;       // Normal map / 法线贴图
+  displacement?: string; // Displacement/height map / 位移/高度贴图
+
+  // Packed ARM texture (preferred) / 打包的 ARM 纹理（推荐）
+  // R = AO, G = Roughness, B = Metallic
+  arm?: string;
+
+  // Separate maps (fallback if no ARM) / 分开的贴图（无 ARM 时使用）
   ao?: string;           // Ambient occlusion / 环境光遮蔽
   roughness?: string;    // Roughness map / 粗糙度贴图
-  displacement?: string; // Displacement/height map / 位移/高度贴图
   metallic?: string;     // Metallic map / 金属度贴图
 
   // Texture tiling scale in meters (default: 4) / 纹理平铺缩放（米，默认4）

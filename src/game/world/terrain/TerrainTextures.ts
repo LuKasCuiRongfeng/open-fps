@@ -19,13 +19,25 @@ import type { TextureDefinition, TextureLayerDef } from "../../editor/texture/Te
 /**
  * Loaded PBR textures for a single layer.
  * 单个层的已加载 PBR 纹理
+ *
+ * Supports two modes:
+ * 1. ARM packed texture (preferred): arm contains AO(R), Roughness(G), Metallic(B)
+ * 2. Separate textures (fallback): ao, roughness, metallic as individual maps
+ *
+ * 支持两种模式：
+ * 1. ARM 打包纹理（推荐）：arm 包含 AO(R)、Roughness(G)、Metallic(B)
+ * 2. 分开的纹理（后备）：ao、roughness、metallic 作为单独贴图
  */
 export interface PBRTextureSet {
   diffuse: Texture;
   normal?: Texture;
+  displacement?: Texture;
+  // ARM packed: AO(R) + Roughness(G) + Metallic(B) / ARM 打包：AO(R) + Roughness(G) + Metallic(B)
+  arm?: Texture;
+  // Separate maps (only used if no ARM) / 分开的贴图（仅在无 ARM 时使用）
   ao?: Texture;
   roughness?: Texture;
-  displacement?: Texture;
+  metallic?: Texture;
   scale: number;
 }
 
@@ -116,21 +128,40 @@ export class TerrainTextures {
     // 加载漫反射（必需）
     const diffuse = await this.loadTexture(resolvePath(def.diffuse), true);
 
-    // Load optional PBR maps.
-    // 加载可选 PBR 贴图
+    // Load normal and displacement.
+    // 加载法线和位移贴图
     const normal = def.normal ? await this.loadTexture(resolvePath(def.normal), false) : undefined;
-    const ao = def.ao ? await this.loadTexture(resolvePath(def.ao), false) : undefined;
-    const roughness = def.roughness ? await this.loadTexture(resolvePath(def.roughness), false) : undefined;
     const displacement = def.displacement ? await this.loadTexture(resolvePath(def.displacement), false) : undefined;
 
-    return {
-      diffuse,
-      normal,
-      ao,
-      roughness,
-      displacement,
-      scale: def.scale ?? 4,
-    };
+    // Load ARM packed texture OR separate maps.
+    // 加载 ARM 打包纹理或分开的贴图
+    if (def.arm) {
+      // ARM mode: single texture with AO(R), Roughness(G), Metallic(B).
+      // ARM 模式：单张纹理包含 AO(R)、Roughness(G)、Metallic(B)
+      const arm = await this.loadTexture(resolvePath(def.arm), false);
+      return {
+        diffuse,
+        normal,
+        displacement,
+        arm,
+        scale: def.scale ?? 4,
+      };
+    } else {
+      // Separate maps mode (fallback).
+      // 分开贴图模式（后备）
+      const ao = def.ao ? await this.loadTexture(resolvePath(def.ao), false) : undefined;
+      const roughness = def.roughness ? await this.loadTexture(resolvePath(def.roughness), false) : undefined;
+      const metallic = def.metallic ? await this.loadTexture(resolvePath(def.metallic), false) : undefined;
+      return {
+        diffuse,
+        normal,
+        displacement,
+        ao,
+        roughness,
+        metallic,
+        scale: def.scale ?? 4,
+      };
+    }
   }
 
   /**
@@ -252,9 +283,12 @@ export class TerrainTextures {
       for (const layer of this.result.layers.values()) {
         layer.diffuse.dispose();
         layer.normal?.dispose();
+        layer.displacement?.dispose();
+        // ARM or separate maps / ARM 或分开的贴图
+        layer.arm?.dispose();
         layer.ao?.dispose();
         layer.roughness?.dispose();
-        layer.displacement?.dispose();
+        layer.metallic?.dispose();
       }
       this.result = null;
     }
