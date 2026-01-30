@@ -1,10 +1,10 @@
 // VegetationBrush: vegetation density painting brush state and stroke generation.
 // VegetationBrush：植被密度绘制画刷状态和笔画生成
 
-import { Raycaster, Plane, Vector3, Vector2 } from "three/webgpu";
 import type { PerspectiveCamera } from "three/webgpu";
 import type { VegetationDefinition } from "./VegetationData";
 import { getVegetationLayerNames } from "./VegetationData";
+import { BrushRaycaster } from "../common/BrushRaycaster";
 
 /**
  * Vegetation brush mode.
@@ -76,8 +76,7 @@ export class VegetationBrush {
 
   // Raycasting for brush positioning.
   // 用于画刷定位的射线投射
-  private readonly raycaster = new Raycaster();
-  private readonly groundPlane = new Plane(new Vector3(0, 1, 0), 0);
+  private readonly brushRaycaster = new BrushRaycaster();
 
   // Vegetation definition reference (for layer validation).
   // 植被定义引用（用于层验证）
@@ -227,37 +226,19 @@ export class VegetationBrush {
     camera: PerspectiveCamera,
     heightAt: (x: number, z: number) => number
   ): void {
-    // Convert mouse to normalized device coordinates.
-    // 将鼠标转换为标准化设备坐标
-    const ndc = new Vector2(
-      (mouseX / canvasWidth) * 2 - 1,
-      -(mouseY / canvasHeight) * 2 + 1
+    const result = this.brushRaycaster.cast(
+      mouseX,
+      mouseY,
+      canvasWidth,
+      canvasHeight,
+      camera,
+      heightAt
     );
 
-    this.raycaster.setFromCamera(ndc, camera);
-
-    // Intersect with ground plane at y=0.
-    // 与 y=0 的地面平面相交
-    const intersection = new Vector3();
-    if (this.raycaster.ray.intersectPlane(this.groundPlane, intersection)) {
-      this._targetX = intersection.x;
-      this._targetZ = intersection.z;
-
-      // Adjust plane height to actual terrain height.
-      // 将平面高度调整为实际地形高度
-      const terrainY = heightAt(intersection.x, intersection.z);
-      this.groundPlane.constant = -terrainY;
-
-      // Re-intersect with adjusted plane for precision.
-      // 与调整后的平面重新相交以提高精度
-      if (this.raycaster.ray.intersectPlane(this.groundPlane, intersection)) {
-        this._targetX = intersection.x;
-        this._targetZ = intersection.z;
-      }
-
-      this._targetValid = true;
-    } else {
-      this._targetValid = false;
+    this._targetValid = result.valid;
+    if (result.valid) {
+      this._targetX = result.x;
+      this._targetZ = result.z;
     }
   }
 

@@ -14,6 +14,7 @@ import { createWorld } from "./createWorld";
 import { FpsCounter, GameRenderer, SystemScheduler } from "./core";
 import { GameEcs } from "./ecs/GameEcs";
 import { createTimeResource, type GameResources } from "./ecs/resources";
+import { BrushIndicatorSystem, type EditorBrushInfo, type ActiveEditorType } from "./editor/common";
 import { TerrainEditor } from "./editor/terrain/TerrainEditor";
 import { TextureEditor } from "./editor/texture/TextureEditor";
 import { VegetationEditor } from "./editor/vegetation/VegetationEditor";
@@ -74,6 +75,8 @@ export class GameApp {
   private readonly textureEditor: TextureEditor;
   private readonly vegetationEditor: VegetationEditor;
   private readonly vegetationSystem: VegetationSystem;
+  private readonly brushIndicator: BrushIndicatorSystem;
+  private activeEditorType: ActiveEditorType = null;
   readonly ready: Promise<void>;
   private disposed = false;
 
@@ -123,6 +126,11 @@ export class GameApp {
     this.textureEditor = new TextureEditor();
     this.vegetationEditor = new VegetationEditor();
     this.vegetationSystem = new VegetationSystem();
+
+    // Create brush indicator system.
+    // 创建笔刷指示器系统
+    this.brushIndicator = new BrushIndicatorSystem();
+    this.brushIndicator.attach(this.gameRenderer.scene);
 
     // Connect editor mode to pointer lock.
     // 连接编辑器模式到指针锁定
@@ -279,6 +287,7 @@ export class GameApp {
     this.textureEditor.dispose();
     this.vegetationEditor.dispose();
     this.vegetationSystem.dispose();
+    this.brushIndicator.dispose();
     this.gameRenderer.dispose();
   }
 
@@ -359,6 +368,25 @@ export class GameApp {
 
   getVegetationEditor(): VegetationEditor {
     return this.vegetationEditor;
+  }
+
+  /**
+   * Set the active editor type for brush indicator styling.
+   * 设置活动编辑器类型以控制笔刷指示器样式
+   */
+  setActiveEditorType(type: ActiveEditorType): void {
+    this.activeEditorType = type;
+    if (type) {
+      this.brushIndicator.setActiveEditor(type);
+    }
+  }
+
+  /**
+   * Get the current active editor type.
+   * 获取当前活动的编辑器类型
+   */
+  getActiveEditorType(): ActiveEditorType {
+    return this.activeEditorType;
   }
 
   updateEditorBrushTarget(mouseX: number, mouseY: number): void {
@@ -618,6 +646,68 @@ export class GameApp {
     }
     void this.textureEditor.applyBrush(dt);
     void this.vegetationEditor.applyBrush(dt);
+
+    // Update brush indicator based on active editor.
+    // 根据活动编辑器更新笔刷指示器
+    this.updateBrushIndicator();
+  }
+
+  private updateBrushIndicator(): void {
+    // Only show in edit mode.
+    // 仅在编辑模式下显示
+    if (this.terrainEditor.mode !== "edit" || !this.activeEditorType) {
+      this.brushIndicator.hide();
+      return;
+    }
+
+    const heightAt = this.resources.runtime.terrain.heightAt;
+    let brushInfo: EditorBrushInfo | null = null;
+
+    switch (this.activeEditorType) {
+      case "terrain":
+        if (this.terrainEditor.brushTargetValid) {
+          brushInfo = {
+            targetValid: true,
+            targetX: this.terrainEditor.brushTargetX,
+            targetZ: this.terrainEditor.brushTargetZ,
+            radius: this.terrainEditor.brushSettings.radiusMeters,
+            falloff: this.terrainEditor.brushSettings.falloff,
+            strength: this.terrainEditor.brushSettings.strength,
+            active: this.terrainEditor.brushActive,
+          };
+        }
+        break;
+
+      case "texture":
+        if (this.textureEditor.brushTargetValid) {
+          brushInfo = {
+            targetValid: true,
+            targetX: this.textureEditor.brushTargetX,
+            targetZ: this.textureEditor.brushTargetZ,
+            radius: this.textureEditor.brushSettings.radius,
+            falloff: this.textureEditor.brushSettings.falloff,
+            strength: this.textureEditor.brushSettings.strength,
+            active: this.textureEditor.brushActive,
+          };
+        }
+        break;
+
+      case "vegetation":
+        if (this.vegetationEditor.brushTargetValid) {
+          brushInfo = {
+            targetValid: true,
+            targetX: this.vegetationEditor.brushTargetX,
+            targetZ: this.vegetationEditor.brushTargetZ,
+            radius: this.vegetationEditor.brushSettings.radius,
+            falloff: this.vegetationEditor.brushSettings.falloff,
+            strength: this.vegetationEditor.brushSettings.strength,
+            active: this.vegetationEditor.brushActive,
+          };
+        }
+        break;
+    }
+
+    this.brushIndicator.update(brushInfo, heightAt);
   }
 
   private updateVegetation(dt: number): void {

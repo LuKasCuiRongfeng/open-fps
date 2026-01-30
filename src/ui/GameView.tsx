@@ -172,6 +172,12 @@ export default function GameView() {
     if (terrainEditor) {
       terrainEditor.setMode(editor !== "none" ? "edit" : "play");
     }
+    // Update brush indicator active editor type.
+    // 更新笔刷指示器的活动编辑器类型
+    const app = appRef.current;
+    if (app) {
+      app.setActiveEditorType(editor === "none" ? null : editor);
+    }
   };
 
   return (

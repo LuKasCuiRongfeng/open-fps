@@ -1,6 +1,10 @@
 // Editor exports.
 // 编辑器导出
 
+// Common brush indicator system.
+// 通用笔刷指示器系统
+export * from "./common";
+
 // Re-export from project/ (now at top level).
 // 从 project/ 重新导出（现在在顶层）
 export * from "../project/MapData";

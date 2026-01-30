@@ -110,6 +110,9 @@ export class TerrainBrush {
   /**
    * Update brush target from mouse position.
    * 从鼠标位置更新画刷目标
+   *
+   * Uses adaptive step ray marching for accurate terrain intersection.
+   * 使用自适应步长射线行进来精确地形交点
    */
   updateTarget(
     mouseX: number,
@@ -132,48 +135,74 @@ export class TerrainBrush {
     const origin = ray.origin;
     const direction = ray.direction;
 
-    // Start from camera, step along ray until we hit terrain.
-    // 从相机开始，沿射线步进直到碰到地形
-    let t = 0;
-    const maxDist = 500;
-    const step = 2;
+    // Adaptive step ray marching for terrain intersection.
+    // 自适应步长射线行进以检测地形交点
+    const maxDist = 1000;
+    const minStep = 0.5; // Minimum step size for accuracy / 最小步长以保证精度
+    const maxStep = 5.0; // Maximum step size for performance / 最大步长以保证性能
 
+    let t = 0;
+    let prevT = 0;
+    let prevAboveGround = true;
     let hitX = 0;
     let hitZ = 0;
     let found = false;
 
-    for (t = 0; t < maxDist; t += step) {
+    // Initial sample to check if we're above ground.
+    // 初始采样检查是否在地面上方
+    {
       const x = origin.x + direction.x * t;
       const y = origin.y + direction.y * t;
       const z = origin.z + direction.z * t;
-
       const terrainY = heightAt(x, z);
+      prevAboveGround = y > terrainY;
+    }
 
-      if (y <= terrainY) {
-        // Found intersection, refine with binary search.
-        // 找到相交，用二分搜索细化
-        let lo = Math.max(0, t - step);
+    while (t < maxDist) {
+      // Adaptive step: smaller near camera, larger far away.
+      // 自适应步长：靠近相机时较小，远离时较大
+      const step = Math.min(maxStep, Math.max(minStep, t * 0.02 + minStep));
+      t += step;
+
+      const x = origin.x + direction.x * t;
+      const y = origin.y + direction.y * t;
+      const z = origin.z + direction.z * t;
+      const terrainY = heightAt(x, z);
+      const aboveGround = y > terrainY;
+
+      // Detect crossing from above to below ground (first intersection).
+      // 检测从地面上方到下方的穿越（第一个交点）
+      if (prevAboveGround && !aboveGround) {
+        // Binary search to refine intersection point.
+        // 二分搜索细化交点
+        let lo = prevT;
         let hi = t;
 
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 12; i++) {
           const mid = (lo + hi) * 0.5;
           const mx = origin.x + direction.x * mid;
           const my = origin.y + direction.y * mid;
           const mz = origin.z + direction.z * mid;
           const mTerrainY = heightAt(mx, mz);
 
-          if (my <= mTerrainY) {
-            hi = mid;
-          } else {
+          if (my > mTerrainY) {
             lo = mid;
+          } else {
+            hi = mid;
           }
         }
 
-        hitX = origin.x + direction.x * hi;
-        hitZ = origin.z + direction.z * hi;
+        // Use the point just above the terrain.
+        // 使用刚好在地形上方的点
+        const finalT = (lo + hi) * 0.5;
+        hitX = origin.x + direction.x * finalT;
+        hitZ = origin.z + direction.z * finalT;
         found = true;
         break;
       }
+
+      prevT = t - step;
+      prevAboveGround = aboveGround;
     }
 
     this._targetValid = found;
