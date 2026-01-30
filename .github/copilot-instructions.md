@@ -5,8 +5,8 @@
 
 ## ⚠️ IRONCLAD RULES / 金戈铁律 ⚠️
 
-> **AI MUST unconditionally follow these six ironclad rules. No exceptions, no compromises.**
-> **AI 编码时必须无条件遵守以下六条铁律，不得以任何理由违反或妥协。**
+> **AI MUST unconditionally follow these seven ironclad rules. No exceptions, no compromises.**
+> **AI 编码时必须无条件遵守以下七条铁律，不得以任何理由违反或妥协。**
 
 ### 1️⃣ GPU-First / GPU 优先
 - **All work that CAN be done on GPU MUST be done on GPU.**
@@ -58,12 +58,22 @@
 ### 6️⃣ No Fallback Without Approval / 禁止擅自回退
 - **NEVER fall back to CPU** or inferior approaches without explicit user approval.
 - **未经用户明确同意，禁止回退到 CPU** 或次优方案。
-- When encountering difficulties, **FIRST search official docs** (Three.js GitHub, TSL wiki, examples) before assuming something is impossible.
-- 遇到困难时，**首先查阅官方文档**（Three.js GitHub、TSL wiki、示例）再判断是否不可行。
 - Three.js WebGPU/TSL is **mature and feature-complete** — most "limitations" are outdated knowledge.
 - Three.js WebGPU/TSL **已非常成熟完善** — 大多数"限制"只是过时的认知。
 - If a GPU solution seems blocked, **ask the user** before implementing any CPU fallback.
 - 如果 GPU 方案似乎受阻，**先询问用户**再实现任何 CPU 回退。
+
+### 7️⃣ Official Docs First / 官方文档优先
+- When encountering difficulties or uncertainty, **MUST consult Three.js official documentation FIRST**.
+- 遇到困难或拿不准时，**必须首先查阅 Three.js 官方文档**。
+- **Always use the most official, up-to-date syntax** for TSL and WebGPU — no guessing, no outdated patterns.
+- **始终使用最官方、最新的语法**编写 TSL 和 WebGPU — 不猜测、不用过时写法。
+- Official sources (in priority order): Three.js GitHub repo, TSL wiki, official examples, release notes.
+- 官方来源（按优先级）：Three.js GitHub 仓库、TSL wiki、官方示例、发布说明。
+- **Do NOT assume something is impossible** — search the docs thoroughly before concluding.
+- **不要假设某事不可行** — 在得出结论前彻底搜索文档。
+- If the docs are unclear, **test with minimal code** to verify behavior before implementing.
+- 如果文档不清楚，**用最小代码测试**验证行为后再实现。
 
 ---
 
