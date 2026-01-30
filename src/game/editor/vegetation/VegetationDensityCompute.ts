@@ -41,7 +41,7 @@ import {
   type WebGPURenderer,
   type ComputeNode,
 } from "three/webgpu";
-import { WebGpuBackend } from "@game/world/gpu/WebGpuBackend";
+import { WebGpuBackend } from "@game/core/gpu";
 import type { VegetationBrushStroke } from "./VegetationBrush";
 
 /**
@@ -409,9 +409,6 @@ export class VegetationDensityCompute {
     // 如果分辨率不匹配则调整大小
     let pixelData: Uint8Array<ArrayBuffer>;
     if (srcRes !== res) {
-      console.log(
-        `[VegetationDensityCompute] Resizing density map from ${srcRes}x${srcRes} to ${res}x${res}`
-      );
       pixelData = this.resizePixels(pixels, srcRes, res);
     } else {
       // Ensure we have a proper ArrayBuffer (not SharedArrayBuffer).

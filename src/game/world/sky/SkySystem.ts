@@ -210,7 +210,6 @@ export class SkySystem {
           tex.minFilter = LinearFilter;
           tex.magFilter = LinearFilter;
           this.skyDome.setStarTexture(tex);
-          console.log("Star texture loaded:", texturePath);
           resolve();
         },
         undefined,

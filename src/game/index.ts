@@ -49,7 +49,7 @@ export * from "./settings";
 // 世界
 export * from "./world/terrain/terrain";
 export * from "./world/sky";
-export { FloatingOrigin } from "./world/FloatingOrigin";
+export { FloatingOrigin } from "./world/common/FloatingOrigin";
 
 // Main app.
 // 主应用

@@ -50,7 +50,7 @@ import {
   type WebGPURenderer,
 } from "three/webgpu";
 import type { ComputeNode } from "three/webgpu";
-import { WebGpuBackend } from "../../gpu/WebGpuBackend";
+import { WebGpuBackend } from "@game/core/gpu";
 import { MAX_SPLAT_MAPS, LAYERS_PER_SPLAT_MAP } from "../../../editor/texture/TextureData";
 
 /**
@@ -740,8 +740,6 @@ export class SplatMapSet {
       await splatMap.init(renderer, i); // Pass index for correct default values
       this.splatMaps.push(splatMap);
     }
-
-    console.log(`[SplatMapSet] Initialized ${this.splatMapCount} splat map(s)`);
   }
 
   /**
@@ -779,7 +777,6 @@ export class SplatMapSet {
     }
 
     this.splatMapCount = targetCount;
-    console.log(`[SplatMapSet] Resized to ${this.splatMapCount} splat map(s)`);
   }
 
   /**

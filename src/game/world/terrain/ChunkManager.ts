@@ -4,7 +4,7 @@
 import type { Scene, WebGPURenderer, PerspectiveCamera, Texture } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
 import type { TerrainTextureArrayResult } from "./TerrainTextureArrays";
-import { FloatingOrigin } from "../FloatingOrigin";
+import { FloatingOrigin } from "../common/FloatingOrigin";
 import { TerrainChunk, disposeSharedGeometries } from "./TerrainChunk";
 import { TerrainHeightCompute, TerrainNormalCompute, TerrainBrushCompute } from "./gpu";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";

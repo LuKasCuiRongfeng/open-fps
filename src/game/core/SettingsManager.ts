@@ -14,7 +14,7 @@ import {
 import type { SkySystem } from "@game/world/sky/SkySystem";
 import { setTerrainNormalSoftness } from "@game/world/terrain/material/terrainMaterialTextured";
 import type { TerrainEditor } from "@game/editor/terrain/TerrainEditor";
-import type { GameRenderer } from "./GameRenderer";
+import type { GameRenderer } from "./rendering/GameRenderer";
 
 export type SettingsChangeCallback = (settings: GameSettings, patch: Partial<GameSettingsPatch>) => void;
 

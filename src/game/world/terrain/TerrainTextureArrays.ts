@@ -201,10 +201,6 @@ export class TerrainTextureArrays {
       splatMapCount,
     };
 
-    console.log(
-      `[TerrainTextureArrays] Loaded ${layerCount} layers into texture arrays, ` +
-      `using ${splatMapCount} splat map(s)`
-    );
     return this.result;
   }
 

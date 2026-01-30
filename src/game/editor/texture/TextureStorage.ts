@@ -119,7 +119,6 @@ export class TextureStorage {
         }
       }
       if (allAlpha255 && splatMapIndex === 0) {
-        console.log(`[TextureStorage] Migrating old splatmap format (A=255 → A=0)`);
         for (let i = 3; i < pixels.length; i += 4) {
           pixels[i] = 0;
         }

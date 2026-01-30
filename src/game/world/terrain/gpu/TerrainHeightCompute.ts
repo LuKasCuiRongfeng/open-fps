@@ -11,10 +11,8 @@ import {
 } from "three/webgpu";
 import type { ComputeNode } from "three/webgpu";
 import type { TerrainConfig } from "../terrain";
-import { TileAtlasAllocator } from "../../gpu/TileAtlasAllocator";
-import { GpuTextureIO } from "../../gpu/GpuTextureIO";
+import { TileAtlasAllocator, GpuTextureIO, WebGpuBackend } from "@game/core/gpu";
 import { createHashTexture, buildHeightComputeShader } from "./TerrainNoiseShader";
-import { WebGpuBackend } from "../../gpu/WebGpuBackend";
 
 /**
  * GPU compute pipeline for terrain height generation.

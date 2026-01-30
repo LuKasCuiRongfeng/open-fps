@@ -276,8 +276,6 @@ export class VegetationSystem {
       // Construct model path.
       // 构建模型路径
       const modelPath = await this.resolveModelPath(layer.def.model);
-
-      console.log(`[VegetationSystem] Loading model from: ${modelPath}`);
       const gltf = await this.gltfLoader.loadAsync(modelPath);
 
       // Find the first mesh in the loaded model.
@@ -316,7 +314,6 @@ export class VegetationSystem {
         // 模型单位错误（可能是导出时的毫米或厘米）
         // 存储缩放因子以在实例矩阵中应用
         layer.modelScale = targetRadius / radius;
-        console.log(`[VegetationSystem] Model ${layer.name} needs scale: ${layer.modelScale.toExponential(2)} (radius: ${radius.toFixed(0)}m -> target: ${targetRadius}m)`);
       } else {
         layer.modelScale = 1.0;
       }
@@ -395,8 +392,6 @@ export class VegetationSystem {
       layer.loading = false;
 
       this.root.add(instancedMesh);
-
-      console.log(`[VegetationSystem] Loaded model for layer: ${layer.name}, geometry vertices: ${geometry.attributes.position?.count ?? 0}, boundingSphere radius: ${geometry.boundingSphere?.radius.toFixed(2) ?? 'null'}`);
     } catch (error) {
       console.error(`[VegetationSystem] Failed to load model for layer ${layer.name}:`, error);
       layer.loading = false;

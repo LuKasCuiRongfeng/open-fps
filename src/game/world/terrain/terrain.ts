@@ -9,7 +9,7 @@ export type TerrainConfig = typeof terrainConfig;
 // 导出 GPU-first 系统组件
 export { createTerrainSystem, type TerrainSystemResource } from "./TerrainSystem";
 export { ChunkManager } from "./ChunkManager";
-export { FloatingOrigin } from "../FloatingOrigin";
+export { FloatingOrigin } from "../common/FloatingOrigin";
 export { TerrainChunk } from "./TerrainChunk";
 export { TerrainHeightSampler } from "./TerrainHeightSampler";
 export { createGpuTerrainMaterial } from "./material/terrainMaterial";

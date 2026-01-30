@@ -13,7 +13,7 @@ import {
   type Texture,
 } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
-import type { FloatingOrigin } from "../FloatingOrigin";
+import type { FloatingOrigin } from "../common/FloatingOrigin";
 import { createGpuTerrainMaterial, type TerrainMaterialParams } from "./material/terrainMaterial";
 import { createTexturedArrayTerrainMaterial, type TerrainMaterialArrayParams } from "./material/terrainMaterialTexturedArray";
 import type { TerrainTextureArrayResult } from "./TerrainTextureArrays";

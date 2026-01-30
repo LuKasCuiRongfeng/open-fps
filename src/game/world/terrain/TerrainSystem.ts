@@ -5,7 +5,7 @@ import { Group, type Texture } from "three/webgpu";
 import type { Scene, WebGPURenderer, PerspectiveCamera } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
 import { ChunkManager } from "./ChunkManager";
-import { FloatingOrigin } from "../FloatingOrigin";
+import { FloatingOrigin } from "../common/FloatingOrigin";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
 import type { BrushStroke } from "../../editor/terrain/TerrainEditor";
 import { type MapData, createEmptyMapData, setChunkData, parseChunkKey, getChunkData, hasChunks } from "../../project/MapData";
