@@ -12,7 +12,7 @@ import {
  * Editor type that uses brush indicators.
  * 使用笔刷指示器的编辑器类型
  */
-export type ActiveEditorType = "terrain" | "texture" | "vegetation" | null;
+export type ActiveEditorType = "terrain" | "texture" | null;
 
 /**
  * Brush info from an editor.

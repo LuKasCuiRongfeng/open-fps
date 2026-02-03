@@ -11,7 +11,7 @@ type EditorMouseConfig = Pick<GameSettings["editor"], "leftButton" | "rightButto
 
 // Active editor type - for mutual exclusion.
 // 活跃编辑器类型 - 用于互斥
-export type ActiveEditorType = "none" | "terrain" | "texture" | "vegetation";
+export type ActiveEditorType = "none" | "terrain" | "texture";
 
 type TerrainEditorTabProps = {
   terrainEditor: TerrainEditor | null;

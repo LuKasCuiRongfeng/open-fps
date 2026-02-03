@@ -28,7 +28,6 @@ export const TABS = [
   { id: "file", label: "File" },
   { id: "terrainEditor", label: "Terrain Editor" },
   { id: "textureEditor", label: "Texture Editor" },
-  { id: "vegetationEditor", label: "Vegetation Editor" },
   { id: "render", label: "Render" },
   { id: "camera", label: "Camera" },
   { id: "time", label: "Time (日暀)" },

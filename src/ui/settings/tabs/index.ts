@@ -12,4 +12,3 @@ export { ThirdPersonTab } from "./ThirdPersonTab";
 export { FileTab } from "./FileTab";
 export { TerrainEditorTab, type ActiveEditorType } from "./TerrainEditorTab";
 export { TextureEditorTab } from "./TextureEditorTab";
-export { VegetationEditorTab } from "./VegetationEditorTab";

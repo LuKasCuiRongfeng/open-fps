@@ -5,7 +5,6 @@ import { useEffect, useRef, type RefObject } from "react";
 import type { GameApp } from "@game/GameApp";
 import type { TerrainEditor } from "@game/editor";
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
-import type { VegetationEditor } from "@game/editor/vegetation/VegetationEditor";
 import type { ActiveEditorType } from "../settings/tabs/TerrainEditorTab";
 
 interface UseEditorInputOptions {
@@ -13,7 +12,6 @@ interface UseEditorInputOptions {
   hostRef: RefObject<HTMLDivElement | null>;
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;
-  vegetationEditor: VegetationEditor | null;
   activeEditor: ActiveEditorType;
 }
 
@@ -32,7 +30,6 @@ export function useEditorInput({
   hostRef,
   terrainEditor,
   textureEditor,
-  vegetationEditor,
   activeEditor,
 }: UseEditorInputOptions): EditorInputHandlers {
   const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -51,8 +48,8 @@ export function useEditorInput({
       if (activeEditor === "terrain") {
         terrainEditor.startBrush();
       } else if (activeEditor === "texture" && textureEditor?.editingEnabled) {
-        textureEditor.startBrush();      } else if (activeEditor === "vegetation" && vegetationEditor?.editingEnabled) {
-        vegetationEditor.startBrush();      }
+        textureEditor.startBrush();
+      }
     } else if (action === "orbit" || action === "pan") {
       // Camera control action.
       // 相机控制操作
@@ -77,8 +74,6 @@ export function useEditorInput({
         terrainEditor.endBrush();
       } else if (activeEditor === "texture") {
         textureEditor?.endBrush();
-      } else if (activeEditor === "vegetation") {
-        vegetationEditor?.endBrush();
       }
     } else if (action === "orbit" || action === "pan") {
       terrainEditor.endCameraControl(e.button);
@@ -116,8 +111,6 @@ export function useEditorInput({
             app.updateEditorBrushTarget(mouseX, mouseY);
           } else if (activeEditor === "texture") {
             app.updateTextureBrushTarget(mouseX, mouseY);
-          } else if (activeEditor === "vegetation") {
-            app.updateVegetationBrushTarget(mouseX, mouseY);
           }
         }
       }
@@ -141,8 +134,6 @@ export function useEditorInput({
           terrainEditor.endBrush();
         } else if (activeEditor === "texture") {
           textureEditor?.endBrush();
-        } else if (activeEditor === "vegetation") {
-          vegetationEditor?.endBrush();
         }
       } else if (action === "orbit" || action === "pan") {
         terrainEditor.endCameraControl(e.button);
@@ -151,7 +142,7 @@ export function useEditorInput({
 
     window.addEventListener("mouseup", handleGlobalMouseUp);
     return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
-  }, [terrainEditor, textureEditor, vegetationEditor, activeEditor]);
+  }, [terrainEditor, textureEditor, activeEditor]);
 
   // Handle scroll wheel: camera zoom with Shift, brush radius without.
   // 处理滚轮：Shift+滚轮缩放相机，无Shift调整画刷半径
@@ -172,9 +163,6 @@ export function useEditorInput({
         } else if (activeEditor === "texture" && textureEditor) {
           const newRadius = textureEditor.brushSettings.radius + delta;
           textureEditor.setBrushRadius(newRadius);
-        } else if (activeEditor === "vegetation" && vegetationEditor) {
-          const newRadius = vegetationEditor.brushSettings.radius + delta;
-          vegetationEditor.setBrushRadius(newRadius);
         }
       } else {
         // Wheel: zoom camera.
@@ -185,7 +173,7 @@ export function useEditorInput({
 
     overlay.addEventListener("wheel", handleWheel, { passive: false });
     return () => overlay.removeEventListener("wheel", handleWheel);
-  }, [terrainEditor, textureEditor, vegetationEditor, activeEditor]);
+  }, [terrainEditor, textureEditor, activeEditor]);
 
   return {
     overlayRef,

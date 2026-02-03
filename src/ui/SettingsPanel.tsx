@@ -6,7 +6,6 @@ import type { GameSettings, GameSettingsPatch } from "@game/settings";
 import type { GameApp } from "@game/GameApp";
 import type { TerrainEditor, MapData } from "@game/editor";
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
-import type { VegetationEditor } from "@game/editor/vegetation/VegetationEditor";
 import {
   TabButton,
   TABS,
@@ -22,7 +21,6 @@ import {
   FileTab,
   TerrainEditorTab,
   TextureEditorTab,
-  VegetationEditorTab,
   type ActiveEditorType,
 } from "./settings";
 
@@ -32,7 +30,6 @@ type SettingsPanelProps = {
   gameApp: GameApp | null;
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;
-  vegetationEditor: VegetationEditor | null;
   terrainMode: "editable" | "procedural";
   activeEditor: ActiveEditorType;
   currentProjectPath: string | null;
@@ -51,7 +48,6 @@ export default function SettingsPanel({
   gameApp,
   terrainEditor,
   textureEditor,
-  vegetationEditor,
   terrainMode,
   activeEditor,
   currentProjectPath,
@@ -149,16 +145,6 @@ export default function SettingsPanel({
               {tab === "textureEditor" && (
                 <TextureEditorTab
                   textureEditor={textureEditor}
-                  terrainMode={terrainMode}
-                  activeEditor={activeEditor}
-                  onActiveEditorChange={onActiveEditorChange}
-                  onClose={onClose}
-                />
-              )}
-
-              {tab === "vegetationEditor" && (
-                <VegetationEditorTab
-                  vegetationEditor={vegetationEditor}
                   terrainMode={terrainMode}
                   activeEditor={activeEditor}
                   onActiveEditorChange={onActiveEditorChange}
