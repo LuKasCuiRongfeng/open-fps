@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { getPlatformBridge } from "@/platform";
-import type { GameApp } from "@game/GameApp";
+import type { GameApp } from "@game/app/GameApp";
 import type { TerrainEditor } from "@game/editor";
 import { getProjectNameFromPath } from "@project/ProjectStorage";
 import type { MapData } from "@project/MapData";

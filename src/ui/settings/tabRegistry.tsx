@@ -1,6 +1,6 @@
 import type { AppTarget } from "@/app/appTarget";
 import type { ReactNode } from "react";
-import type { GameApp } from "@game/GameApp";
+import type { GameApp } from "@game/app/GameApp";
 import type { TerrainEditor, MapData } from "@game/editor";
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 import type { GameSettings, GameSettingsPatch } from "@game/settings";

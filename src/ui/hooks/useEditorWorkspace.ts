@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { GameApp } from "@game/GameApp";
+import type { GameApp } from "@game/app/GameApp";
 import type { TerrainEditor } from "@game/editor";
 import type { GameSettings } from "@game/settings";
 import type { MapData } from "@project/MapData";

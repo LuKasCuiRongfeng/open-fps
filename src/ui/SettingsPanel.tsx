@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import type { AppTarget } from "@/app/appTarget";
 import type { GameSettings, GameSettingsPatch } from "@game/settings";
-import type { GameApp } from "@game/GameApp";
+import type { GameApp } from "@game/app/GameApp";
 import type { TerrainEditor, MapData } from "@game/editor";
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 import type { EditorWorkspaceController } from "@ui/hooks";

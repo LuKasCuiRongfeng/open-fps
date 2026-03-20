@@ -3,7 +3,7 @@
 
 import { useEffect } from "react";
 import { getPlatformBridge } from "@/platform";
-import type { GameApp } from "@game/GameApp";
+import type { GameApp } from "@game/app/GameApp";
 
 const platform = getPlatformBridge();
 
