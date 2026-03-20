@@ -11,7 +11,7 @@ import {
 } from "three/webgpu";
 import type { ComputeNode } from "three/webgpu";
 import type { TerrainConfig } from "../terrain";
-import { TileAtlasAllocator, GpuTextureIO, WebGpuBackend } from "@game/core/gpu";
+import { TileAtlasAllocator, GpuTextureIO, WebGpuBackend } from "@game/gpu";
 import { createHashTexture, buildHeightComputeShader } from "./TerrainNoiseShader";
 
 /**

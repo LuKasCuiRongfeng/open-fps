@@ -1,4 +1,4 @@
-// Core scheduler utilities index.
-// 核心调度器工具模块索引
+// Legacy scheduler compatibility index.
+// 旧调度兼容索引
 
-export { SystemScheduler, type SystemEntry, type SystemFn, type SystemPhase } from "./SystemScheduler";
+export { SystemScheduler, type SystemEntry, type SystemFn, type SystemPhase } from "../../scheduling/SystemScheduler";

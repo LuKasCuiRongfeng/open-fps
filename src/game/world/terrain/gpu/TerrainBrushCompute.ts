@@ -42,7 +42,7 @@ import {
 import type { ComputeNode } from "three/webgpu";
 import type { TerrainConfig } from "../terrain";
 import type { BrushStroke } from "../../../editor/terrain/TerrainEditor";
-import type { TileAtlasAllocator } from "@game/core/gpu";
+import type { TileAtlasAllocator } from "@game/gpu";
 
 /**
  * GPU compute pipeline for terrain brush editing.

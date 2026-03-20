@@ -1,5 +1,5 @@
-// Core rendering utilities index.
-// 核心渲染工具模块索引
+// Legacy rendering compatibility index.
+// 旧渲染兼容索引
 
-export { FpsCounter } from "./FpsCounter";
-export { GameRenderer } from "./GameRenderer";
+export { FpsCounter } from "../../rendering/FpsCounter";
+export { GameRenderer } from "../../rendering/GameRenderer";

@@ -1,7 +1,7 @@
-// Shared GPU utilities index.
-// 共享 GPU 工具模块索引
+// Legacy GPU compatibility index.
+// 旧 GPU 兼容索引
 
-export { TileAtlasAllocator } from "./TileAtlasAllocator";
-export { GpuTextureIO } from "./GpuTextureIO";
-export { WebGpuBackend } from "./WebGpuBackend";
-export type { WebGpuBackendHandle } from "./WebGpuBackend";
+export { TileAtlasAllocator } from "../../gpu/TileAtlasAllocator";
+export { GpuTextureIO } from "../../gpu/GpuTextureIO";
+export { WebGpuBackend } from "../../gpu/WebGpuBackend";
+export type { WebGpuBackendHandle } from "../../gpu/WebGpuBackend";

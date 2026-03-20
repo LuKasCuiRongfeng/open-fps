@@ -1,7 +1,7 @@
 ---
 description: "Use when editing Three.js WebGPU, TSL, NodeMaterial, post-processing, sky, terrain rendering, editor rendering, GPU buffers, or compute pipelines. Covers imports, typing, official API usage, and fallback rules."
 name: "Three.js WebGPU And TSL"
-applyTo: "src/game/world/**/*.ts, src/game/editor/**/*.ts, src/game/core/gpu/**/*.ts, src/game/core/rendering/**/*.ts, src/game/prefabs/**/*.ts"
+applyTo: "src/game/world/**/*.ts, src/game/editor/**/*.ts, src/game/gpu/**/*.ts, src/game/rendering/**/*.ts, src/game/core/gpu/**/*.ts, src/game/core/rendering/**/*.ts, src/game/prefabs/**/*.ts"
 ---
 # Three.js WebGPU And TSL
 

@@ -5,8 +5,14 @@
 // 应用装配
 export * from "./app";
 
-// Core infrastructure.
-// 核心基础设施
+// Infrastructure domains.
+// 基础设施域
+export * from "./gpu";
+export * from "./rendering";
+export * from "./scheduling";
+
+// Legacy core compatibility.
+// 旧 core 兼容层
 export * from "./core";
 
 // Gameplay runtime.

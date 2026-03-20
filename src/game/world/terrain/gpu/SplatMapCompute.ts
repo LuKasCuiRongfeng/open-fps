@@ -50,7 +50,7 @@ import {
   type WebGPURenderer,
 } from "three/webgpu";
 import type { ComputeNode } from "three/webgpu";
-import { WebGpuBackend } from "@game/core/gpu";
+import { WebGpuBackend } from "@game/gpu";
 import { MAX_SPLAT_MAPS, LAYERS_PER_SPLAT_MAP } from "../../../editor/texture/TextureData";
 
 /**
