@@ -2,6 +2,7 @@
 // FileTab：项目文件操作标签
 
 import { useState, useEffect } from "react";
+import { getPlatformBridge } from "@/platform";
 import type { GameApp } from "@game/GameApp";
 import type { TerrainEditor } from "@game/editor";
 import {
@@ -14,6 +15,8 @@ import {
 } from "@project/ProjectStorage";
 import type { MapData } from "@project/MapData";
 import type { GameSettings } from "@game/settings";
+
+const platform = getPlatformBridge();
 
 type FileTabProps = {
   gameApp: GameApp | null;
@@ -124,8 +127,7 @@ export function FileTab({
     // Check for unsaved changes first.
     // 先检查未保存的更改
     if (dirty && hasProject) {
-      const { ask } = await import("@tauri-apps/plugin-dialog");
-      const shouldSave = await ask(
+      const shouldSave = await platform.ask(
         "Save changes to current project before creating a new one?",
         { title: "Unsaved Changes", kind: "warning" }
       );
@@ -171,8 +173,7 @@ export function FileTab({
     // Check for unsaved changes first.
     // 先检查未保存的更改
     if (dirty) {
-      const { ask } = await import("@tauri-apps/plugin-dialog");
-      const shouldSave = await ask(
+      const shouldSave = await platform.ask(
         "Save changes to current project before opening another?",
         { title: "Unsaved Changes", kind: "warning" }
       );

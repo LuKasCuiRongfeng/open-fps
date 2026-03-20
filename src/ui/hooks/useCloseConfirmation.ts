@@ -2,8 +2,11 @@
 // useCloseConfirmation：带有未保存更改检查的窗口关闭确认
 
 import { useEffect } from "react";
+import { getPlatformBridge } from "@/platform";
 import type { GameApp } from "@game/GameApp";
 import { hasOpenProject, saveProjectMap } from "@project/ProjectStorage";
+
+const platform = getPlatformBridge();
 
 /**
  * Hook to handle window close confirmation when there are unsaved changes.
@@ -14,10 +17,7 @@ export function useCloseConfirmation(appRef: React.RefObject<GameApp | null>) {
     let unlisten: (() => void) | undefined;
 
     const setupCloseHandler = async () => {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      const win = getCurrentWindow();
-
-      unlisten = await win.onCloseRequested(async (event) => {
+      unlisten = await platform.onCloseRequested(async (event) => {
         // Only check for unsaved changes if a project is open.
         // 只有在打开项目时才检查未保存的更改
         if (!hasOpenProject()) {
@@ -42,8 +42,7 @@ export function useCloseConfirmation(appRef: React.RefObject<GameApp | null>) {
 
         // Show save confirmation dialog.
         // 显示保存确认对话框
-        const { ask, message } = await import("@tauri-apps/plugin-dialog");
-        const shouldSave = await ask(
+        const shouldSave = await platform.ask(
           "You have unsaved changes. Do you want to save before exiting?",
           {
             title: "Unsaved Changes",
@@ -72,7 +71,7 @@ export function useCloseConfirmation(appRef: React.RefObject<GameApp | null>) {
           } catch (e) {
             // Save failed, show error and abort close.
             // 保存失败，显示错误并取消关闭
-            await message(
+            await platform.message(
               `Save failed: ${e}\n\nPlease try again or use Save As to save to a different location.`,
               { title: "Save Error", kind: "error" }
             );
@@ -84,7 +83,7 @@ export function useCloseConfirmation(appRef: React.RefObject<GameApp | null>) {
 
         // Close the window.
         // 关闭窗口
-        await win.destroy();
+        await platform.closeWindow();
       });
     };
 

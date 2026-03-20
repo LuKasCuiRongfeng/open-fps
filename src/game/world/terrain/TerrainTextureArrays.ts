@@ -11,13 +11,15 @@ import {
   RGBAFormat,
   UnsignedByteType,
 } from "three/webgpu";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { getPlatformBridge } from "@/platform";
 import {
   type TextureDefinition,
   type LayerAssignment,
   computeLayerAssignments,
   getSplatMapCount,
 } from "../../editor/texture/TextureData";
+
+const platform = getPlatformBridge();
 
 /**
  * Texture array result - all PBR maps packed into texture arrays.
@@ -213,7 +215,7 @@ export class TerrainTextureArrays {
     relativePath: string,
     isSRGB: boolean,
   ): Promise<Uint8Array> {
-    const url = convertFileSrc(`${projectPath}/${relativePath}`);
+    const url = await platform.resolveAssetUrl(`${projectPath}/${relativePath}`);
 
     try {
       const response = await fetch(url);

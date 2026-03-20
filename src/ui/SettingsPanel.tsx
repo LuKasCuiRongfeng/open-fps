@@ -1,14 +1,15 @@
 // SettingsPanel: settings panel shell with tab navigation.
 // SettingsPanel：带标签导航的设置面板外壳
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { AppTarget } from "@/app/appTarget";
 import type { GameSettings, GameSettingsPatch } from "@game/settings";
 import type { GameApp } from "@game/GameApp";
 import type { TerrainEditor, MapData } from "@game/editor";
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 import {
   TabButton,
-  SETTINGS_TABS,
+  getSettingsTabs,
   renderSettingsTab,
   type SettingsTabId,
   type ActiveEditorType,
@@ -16,6 +17,7 @@ import {
 
 type SettingsPanelProps = {
   open: boolean;
+  appTarget: AppTarget;
   settings: GameSettings;
   gameApp: GameApp | null;
   terrainEditor: TerrainEditor | null;
@@ -34,6 +36,7 @@ type SettingsPanelProps = {
 
 export default function SettingsPanel({
   open,
+  appTarget,
   settings,
   gameApp,
   terrainEditor,
@@ -50,6 +53,15 @@ export default function SettingsPanel({
   onClose,
 }: SettingsPanelProps) {
   const [tab, setTab] = useState<SettingsTabId>("help");
+  const tabs = getSettingsTabs(appTarget);
+
+  useEffect(() => {
+    if (tabs.some((entry) => entry.id === tab)) {
+      return;
+    }
+
+    setTab(tabs[0]?.id ?? "help");
+  }, [tab, tabs]);
 
   if (!open) return null;
 
@@ -96,7 +108,7 @@ export default function SettingsPanel({
           <div className="flex max-h-[78vh] min-h-105">
             <div className="w-40 shrink-0 border-r border-white/10 p-3">
               <div className="space-y-1.5">
-                {SETTINGS_TABS.map((t) => (
+                {tabs.map((t) => (
                   <TabButton
                     key={t.id}
                     active={tab === t.id}

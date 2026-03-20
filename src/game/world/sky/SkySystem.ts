@@ -198,9 +198,8 @@ export class SkySystem {
    */
   async loadStarTexture(projectPath: string): Promise<void> {
     const texturePath = `${projectPath}/assets/textures/starry_4k.exr`;
-
-    const { convertFileSrc } = await import("@tauri-apps/api/core");
-    const fileUrl = convertFileSrc(texturePath);
+    const { getPlatformBridge } = await import("@/platform");
+    const fileUrl = await getPlatformBridge().resolveAssetUrl(texturePath);
 
     return new Promise((resolve) => {
       const loader = new EXRLoader();

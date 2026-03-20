@@ -1,3 +1,4 @@
+import type { AppTarget } from "@/app/appTarget";
 import type { ReactNode } from "react";
 import type { GameApp } from "@game/GameApp";
 import type { TerrainEditor, MapData } from "@game/editor";
@@ -19,17 +20,17 @@ import {
 } from "./tabs";
 
 export const SETTINGS_TABS = [
-  { id: "help", label: "Help" },
-  { id: "file", label: "File" },
-  { id: "terrainEditor", label: "Terrain Editor" },
-  { id: "textureEditor", label: "Texture Editor" },
-  { id: "render", label: "Render" },
-  { id: "camera", label: "Camera" },
-  { id: "time", label: "Time (日晷)" },
-  { id: "sky", label: "Sky" },
-  { id: "movement", label: "Movement" },
-  { id: "physics", label: "Physics" },
-  { id: "thirdPerson", label: "3rd Person" },
+  { id: "help", label: "Help", targets: ["editor", "game"] },
+  { id: "file", label: "File", targets: ["editor"] },
+  { id: "terrainEditor", label: "Terrain Editor", targets: ["editor"] },
+  { id: "textureEditor", label: "Texture Editor", targets: ["editor"] },
+  { id: "render", label: "Render", targets: ["editor", "game"] },
+  { id: "camera", label: "Camera", targets: ["editor", "game"] },
+  { id: "time", label: "Time (日晷)", targets: ["editor", "game"] },
+  { id: "sky", label: "Sky", targets: ["editor", "game"] },
+  { id: "movement", label: "Movement", targets: ["editor", "game"] },
+  { id: "physics", label: "Physics", targets: ["editor", "game"] },
+  { id: "thirdPerson", label: "3rd Person", targets: ["editor", "game"] },
 ] as const;
 
 export type SettingsTabId = (typeof SETTINGS_TABS)[number]["id"];
@@ -53,6 +54,7 @@ export type SettingsTabRenderProps = {
 type SettingsTabDescriptor = {
   id: SettingsTabId;
   label: string;
+  targets: readonly AppTarget[];
   render: (props: SettingsTabRenderProps) => ReactNode;
 };
 
@@ -60,11 +62,13 @@ export const SETTINGS_TAB_REGISTRY: Record<SettingsTabId, SettingsTabDescriptor>
   help: {
     id: "help",
     label: "Help",
+    targets: ["editor", "game"],
     render: () => <HelpTab />,
   },
   file: {
     id: "file",
     label: "File",
+    targets: ["editor"],
     render: (props) => (
       <FileTab
         gameApp={props.gameApp}
@@ -80,6 +84,7 @@ export const SETTINGS_TAB_REGISTRY: Record<SettingsTabId, SettingsTabDescriptor>
   terrainEditor: {
     id: "terrainEditor",
     label: "Terrain Editor",
+    targets: ["editor"],
     render: (props) => (
       <TerrainEditorTab
         terrainEditor={props.terrainEditor}
@@ -93,6 +98,7 @@ export const SETTINGS_TAB_REGISTRY: Record<SettingsTabId, SettingsTabDescriptor>
   textureEditor: {
     id: "textureEditor",
     label: "Texture Editor",
+    targets: ["editor"],
     render: (props) => (
       <TextureEditorTab
         textureEditor={props.textureEditor}
@@ -106,39 +112,50 @@ export const SETTINGS_TAB_REGISTRY: Record<SettingsTabId, SettingsTabDescriptor>
   render: {
     id: "render",
     label: "Render",
+    targets: ["editor", "game"],
     render: (props) => <RenderTab settings={props.settings} onPatch={props.onPatch} />,
   },
   camera: {
     id: "camera",
     label: "Camera",
+    targets: ["editor", "game"],
     render: (props) => <CameraTab settings={props.settings} onPatch={props.onPatch} />,
   },
   time: {
     id: "time",
     label: "Time (日晷)",
+    targets: ["editor", "game"],
     render: (props) => <TimeTab settings={props.settings} onPatch={props.onPatch} />,
   },
   sky: {
     id: "sky",
     label: "Sky",
+    targets: ["editor", "game"],
     render: (props) => <SkyTab settings={props.settings} onPatch={props.onPatch} />,
   },
   movement: {
     id: "movement",
     label: "Movement",
+    targets: ["editor", "game"],
     render: (props) => <MovementTab settings={props.settings} onPatch={props.onPatch} />,
   },
   physics: {
     id: "physics",
     label: "Physics",
+    targets: ["editor", "game"],
     render: (props) => <PhysicsTab settings={props.settings} onPatch={props.onPatch} />,
   },
   thirdPerson: {
     id: "thirdPerson",
     label: "3rd Person",
+    targets: ["editor", "game"],
     render: (props) => <ThirdPersonTab settings={props.settings} onPatch={props.onPatch} />,
   },
 };
+
+export function getSettingsTabs(appTarget: AppTarget) {
+  return SETTINGS_TABS.filter((tab) => tab.targets.some((target) => target === appTarget));
+}
 
 export function renderSettingsTab(
   tab: SettingsTabId,

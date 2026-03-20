@@ -1,10 +1,11 @@
 // MapStorage: Tauri backend API for map save/load.
 // MapStorage：Tauri 后端 API，用于地图保存/加载
 
-import { invoke } from "@tauri-apps/api/core";
-import { save } from "@tauri-apps/plugin-dialog";
+import { getPlatformBridge } from "@/platform";
 import type { MapData } from "./MapData";
 import { serializeMapData, deserializeMapData } from "./MapData";
+
+const platform = getPlatformBridge();
 
 /**
  * Save map to file via Tauri backend (to app data folder).
@@ -16,7 +17,7 @@ import { serializeMapData, deserializeMapData } from "./MapData";
  */
 export async function saveMapToFile(mapData: MapData, filename: string): Promise<string> {
   const json = serializeMapData(mapData);
-  const filepath = await invoke<string>("save_map", { filename, data: json });
+  const filepath = await platform.invoke<string>("save_map", { filename, data: json });
   return filepath;
 }
 
@@ -34,7 +35,7 @@ export async function exportMapWithDialog(
 ): Promise<string | null> {
   // Show save dialog to let user choose location.
   // 显示保存对话框让用户选择位置
-  const filepath = await save({
+  const filepath = await platform.saveDialog({
     title: "Export Map",
     defaultPath: `${defaultFilename}.ofps-map`,
     filters: [
@@ -54,11 +55,7 @@ export async function exportMapWithDialog(
   // Serialize and write to the selected path.
   // 序列化并写入选定的路径
   const json = serializeMapData(mapData);
-  
-  // Use Tauri's fs API to write to arbitrary path.
-  // 使用 Tauri 的 fs API 写入任意路径
-  const { writeTextFile } = await import("@tauri-apps/plugin-fs");
-  await writeTextFile(filepath, json);
+  await platform.writeTextFile(filepath, json);
 
   return filepath;
 }
@@ -70,12 +67,9 @@ export async function exportMapWithDialog(
  * @returns Loaded map data, or null if cancelled.
  */
 export async function importMapWithDialog(): Promise<MapData | null> {
-  const { open } = await import("@tauri-apps/plugin-dialog");
-  const { readTextFile } = await import("@tauri-apps/plugin-fs");
-
   // Show open dialog to let user choose file.
   // 显示打开对话框让用户选择文件
-  const filepath = await open({
+  const filepath = await platform.openDialog({
     title: "Import Map",
     multiple: false,
     directory: false,
@@ -95,7 +89,7 @@ export async function importMapWithDialog(): Promise<MapData | null> {
 
   // Read and deserialize the file.
   // 读取并反序列化文件
-  const json = await readTextFile(filepath);
+  const json = await platform.readTextFile(filepath);
   const mapData = deserializeMapData(json);
   
   // Store the file path for later saves.
@@ -161,8 +155,6 @@ export async function saveMapToCurrentFile(
     return null;
   }
 
-  const { writeTextFile, rename } = await import("@tauri-apps/plugin-fs");
-
   // Check if we need to rename the file.
   // 检查是否需要重命名文件
   if (newName) {
@@ -179,7 +171,7 @@ export async function saveMapToCurrentFile(
 
       // Rename the file.
       // 重命名文件
-      await rename(currentMapFilePath, newPath);
+      await platform.renamePath(currentMapFilePath, newPath);
       currentMapFilePath = newPath;
     }
   }
@@ -187,7 +179,7 @@ export async function saveMapToCurrentFile(
   // Save data to (possibly renamed) file.
   // 保存数据到（可能已重命名的）文件
   const json = serializeMapData(mapData);
-  await writeTextFile(currentMapFilePath, json);
+  await platform.writeTextFile(currentMapFilePath, json);
 
   return currentMapFilePath;
 }
@@ -200,7 +192,7 @@ export async function saveMapToCurrentFile(
  * @returns Loaded map data.
  */
 export async function loadMapFromFile(filename: string): Promise<MapData> {
-  const json = await invoke<string>("load_map", { filename });
+  const json = await platform.invoke<string>("load_map", { filename });
   return deserializeMapData(json);
 }
 
@@ -211,7 +203,7 @@ export async function loadMapFromFile(filename: string): Promise<MapData> {
  * @returns Array of map filenames (without extension).
  */
 export async function listSavedMaps(): Promise<string[]> {
-  return invoke<string[]>("list_maps");
+  return platform.invoke<string[]>("list_maps");
 }
 
 /**
@@ -221,5 +213,5 @@ export async function listSavedMaps(): Promise<string[]> {
  * @param filename Filename (without extension).
  */
 export async function deleteMap(filename: string): Promise<void> {
-  await invoke("delete_map", { filename });
+  await platform.invoke<void>("delete_map", { filename });
 }

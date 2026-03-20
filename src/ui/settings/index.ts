@@ -4,6 +4,7 @@
 export { RangeField } from "./RangeField";
 export { TabButton } from "./TabButton";
 export {
+	getSettingsTabs,
 	SETTINGS_TABS,
 	SETTINGS_TAB_REGISTRY,
 	renderSettingsTab,

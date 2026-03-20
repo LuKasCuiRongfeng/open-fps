@@ -13,8 +13,10 @@ import {
   UnsignedByteType,
   type Texture,
 } from "three/webgpu";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { getPlatformBridge } from "@/platform";
 import type { TextureDefinition, TextureLayerDef } from "../../editor/texture/TextureData";
+
+const platform = getPlatformBridge();
 
 /**
  * Loaded PBR textures for a single layer.
@@ -120,25 +122,23 @@ export class TerrainTextures {
     projectPath: string,
     def: TextureLayerDef,
   ): Promise<PBRTextureSet> {
-    // Resolve local file path and convert to Tauri asset URL.
-    // 解析本地文件路径并转换为 Tauri asset URL
-    const resolvePath = (p: string) => convertFileSrc(`${projectPath}/${p}`);
+    const resolvePath = (p: string) => platform.resolveAssetUrl(`${projectPath}/${p}`);
 
     // Load diffuse (required).
     // 加载漫反射（必需）
-    const diffuse = await this.loadTexture(resolvePath(def.diffuse), true);
+    const diffuse = await this.loadTexture(await resolvePath(def.diffuse), true);
 
     // Load normal and displacement.
     // 加载法线和位移贴图
-    const normal = def.normal ? await this.loadTexture(resolvePath(def.normal), false) : undefined;
-    const displacement = def.displacement ? await this.loadTexture(resolvePath(def.displacement), false) : undefined;
+    const normal = def.normal ? await this.loadTexture(await resolvePath(def.normal), false) : undefined;
+    const displacement = def.displacement ? await this.loadTexture(await resolvePath(def.displacement), false) : undefined;
 
     // Load ARM packed texture OR separate maps.
     // 加载 ARM 打包纹理或分开的贴图
     if (def.arm) {
       // ARM mode: single texture with AO(R), Roughness(G), Metallic(B).
       // ARM 模式：单张纹理包含 AO(R)、Roughness(G)、Metallic(B)
-      const arm = await this.loadTexture(resolvePath(def.arm), false);
+      const arm = await this.loadTexture(await resolvePath(def.arm), false);
       return {
         diffuse,
         normal,
@@ -149,9 +149,9 @@ export class TerrainTextures {
     } else {
       // Separate maps mode (fallback).
       // 分开贴图模式（后备）
-      const ao = def.ao ? await this.loadTexture(resolvePath(def.ao), false) : undefined;
-      const roughness = def.roughness ? await this.loadTexture(resolvePath(def.roughness), false) : undefined;
-      const metallic = def.metallic ? await this.loadTexture(resolvePath(def.metallic), false) : undefined;
+      const ao = def.ao ? await this.loadTexture(await resolvePath(def.ao), false) : undefined;
+      const roughness = def.roughness ? await this.loadTexture(await resolvePath(def.roughness), false) : undefined;
+      const metallic = def.metallic ? await this.loadTexture(await resolvePath(def.metallic), false) : undefined;
       return {
         diffuse,
         normal,

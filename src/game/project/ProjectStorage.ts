@@ -1,8 +1,7 @@
 // ProjectStorage: Tauri backend API for project save/load.
 // ProjectStorage：Tauri 后端 API，用于项目保存/加载
 
-import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
+import { getPlatformBridge } from "@/platform";
 import type { MapData } from "./MapData";
 import { serializeMapData, deserializeMapData } from "./MapData";
 import type { ProjectMetadata } from "./ProjectData";
@@ -17,6 +16,7 @@ import { mergeSettingsWithDefaults } from "../settings";
 // Current project path (null = no project open, using procedural terrain).
 // 当前项目路径（null = 未打开项目，使用程序生成地形）
 let currentProjectPath: string | null = null;
+const platform = getPlatformBridge();
 
 /**
  * Get current project path.
@@ -50,7 +50,7 @@ export function getProjectNameFromPath(path: string): string {
  * @returns Project folder path, or null if cancelled.
  */
 export async function openProjectDialog(): Promise<string | null> {
-  const selected = await open({
+  const selected = await platform.openDialog({
     title: "Open Project Folder",
     directory: true,
     multiple: false,
@@ -62,7 +62,7 @@ export async function openProjectDialog(): Promise<string | null> {
 
   // Validate it's a valid project.
   // 验证是否为有效项目
-  const isValid = await invoke<boolean>("is_valid_project", { projectPath: selected });
+  const isValid = await platform.invoke<boolean>("is_valid_project", { projectPath: selected });
   if (!isValid) {
     throw new Error("Selected folder is not a valid Open FPS project (missing project.json)");
   }
@@ -77,7 +77,7 @@ export async function openProjectDialog(): Promise<string | null> {
  * @returns Selected folder path, or null if cancelled.
  */
 export async function selectProjectFolderDialog(): Promise<string | null> {
-  const selected = await open({
+  const selected = await platform.openDialog({
     title: "Select Folder for New Project",
     directory: true,
     multiple: false,
@@ -104,14 +104,14 @@ export async function loadProject(projectPath: string): Promise<{
 }> {
   // Read metadata.
   // 读取元数据
-  const metadataJson = await invoke<string>("read_project_metadata", { projectPath });
+  const metadataJson = await platform.invoke<string>("read_project_metadata", { projectPath });
   const metadata = deserializeProjectMetadata(metadataJson);
 
   // Read map (may not exist).
   // 读取地图（可能不存在）
   let map: MapData | null = null;
   try {
-    const mapJson = await invoke<string>("read_project_map", { projectPath });
+    const mapJson = await platform.invoke<string>("read_project_map", { projectPath });
     map = deserializeMapData(mapJson);
   } catch {
     // Map doesn't exist yet.
@@ -122,7 +122,7 @@ export async function loadProject(projectPath: string): Promise<{
   // 读取设置并与默认值合并（处理缺失/部分设置）
   let settingsJson: string | null = null;
   try {
-    settingsJson = await invoke<string>("read_project_settings", { projectPath });
+    settingsJson = await platform.invoke<string>("read_project_settings", { projectPath });
     if (!settingsJson || settingsJson.trim() === "") {
       settingsJson = null;
     }
@@ -137,7 +137,7 @@ export async function loadProject(projectPath: string): Promise<{
   // Add to recent projects list.
   // 添加到最近项目列表
   try {
-    await invoke("add_recent_project", { projectPath });
+    await platform.invoke<void>("add_recent_project", { projectPath });
   } catch {
     // Ignore errors adding to recent.
     // 忽略添加到最近的错误
@@ -161,7 +161,7 @@ export async function createProject(
   const metadata = createProjectMetadata(projectName);
   const metadataJson = serializeProjectMetadata(metadata);
 
-  await invoke("create_project", { projectPath, metadata: metadataJson });
+  await platform.invoke<void>("create_project", { projectPath, metadata: metadataJson });
 
   currentProjectPath = projectPath;
   return metadata;
@@ -191,7 +191,7 @@ export async function saveProjectMap(
   // 如果项目名称更改，重命名文件夹
   const currentName = getProjectNameFromPath(currentProjectPath);
   if (newProjectName && newProjectName !== currentName) {
-    projectPath = await invoke<string>("rename_project", {
+    projectPath = await platform.invoke<string>("rename_project", {
       oldPath: currentProjectPath,
       newName: newProjectName,
     });
@@ -201,13 +201,13 @@ export async function saveProjectMap(
   // Save map.
   // 保存地图
   const mapJson = serializeMapData(mapData);
-  await invoke("save_project_map", { projectPath, data: mapJson });
+  await platform.invoke<void>("save_project_map", { projectPath, data: mapJson });
 
   // Save settings if provided.
   // 如果提供了设置则保存
   if (settings) {
     const settingsJson = JSON.stringify(settings, null, 2);
-    await invoke("save_project_settings", { projectPath, data: settingsJson });
+    await platform.invoke<void>("save_project_settings", { projectPath, data: settingsJson });
   }
 
   // Update project metadata modified time.
@@ -229,7 +229,7 @@ export async function saveProjectSettings(settings: GameSettings): Promise<void>
   }
 
   const settingsJson = JSON.stringify(settings, null, 2);
-  await invoke("save_project_settings", { projectPath: currentProjectPath, data: settingsJson });
+  await platform.invoke<void>("save_project_settings", { projectPath: currentProjectPath, data: settingsJson });
 }
 
 /**
@@ -240,13 +240,13 @@ async function updateProjectModifiedTime(): Promise<void> {
   if (!currentProjectPath) return;
 
   try {
-    const metadataJson = await invoke<string>("read_project_metadata", { 
+    const metadataJson = await platform.invoke<string>("read_project_metadata", {
       projectPath: currentProjectPath 
     });
     const metadata = deserializeProjectMetadata(metadataJson);
     metadata.modified = Date.now();
     const updatedJson = serializeProjectMetadata(metadata);
-    await invoke("save_project_metadata", { 
+    await platform.invoke<void>("save_project_metadata", {
       projectPath: currentProjectPath, 
       data: updatedJson 
     });
@@ -284,13 +284,13 @@ export async function saveProjectAs(
   // Save map data.
   // 保存地图数据
   const mapJson = serializeMapData(mapData);
-  await invoke("save_project_map", { projectPath, data: mapJson });
+  await platform.invoke<void>("save_project_map", { projectPath, data: mapJson });
 
   // Save settings if provided.
   // 如果提供了设置则保存
   if (settings) {
     const settingsJson = JSON.stringify(settings, null, 2);
-    await invoke("save_project_settings", { projectPath, data: settingsJson });
+    await platform.invoke<void>("save_project_settings", { projectPath, data: settingsJson });
   }
 
   currentProjectPath = projectPath;
@@ -310,7 +310,7 @@ export function hasOpenProject(): boolean {
  * 列出最近项目
  */
 export async function listRecentProjects(): Promise<string[]> {
-  return invoke<string[]>("list_recent_projects");
+  return platform.invoke<string[]>("list_recent_projects");
 }
 
 /**
@@ -318,7 +318,7 @@ export async function listRecentProjects(): Promise<string[]> {
  * 将项目添加到最近项目列表
  */
 export async function addRecentProject(projectPath: string): Promise<void> {
-  return invoke("add_recent_project", { projectPath });
+  return platform.invoke<void>("add_recent_project", { projectPath });
 }
 
 /**
@@ -326,5 +326,5 @@ export async function addRecentProject(projectPath: string): Promise<void> {
  * 从最近项目列表中移除项目
  */
 export async function removeRecentProject(projectPath: string): Promise<void> {
-  return invoke("remove_recent_project", { projectPath });
+  return platform.invoke<void>("remove_recent_project", { projectPath });
 }

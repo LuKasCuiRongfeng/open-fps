@@ -208,6 +208,7 @@ export default function GameView() {
       {settings && (
         <SettingsPanel
           open={settingsOpen}
+          appTarget="editor"
           settings={settings}
           gameApp={appRef.current}
           terrainEditor={terrainEditor}
