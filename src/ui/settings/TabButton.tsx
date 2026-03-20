@@ -22,19 +22,3 @@ export function TabButton({ active, label, onClick }: TabButtonProps) {
     </button>
   );
 }
-
-export const TABS = [
-  { id: "help", label: "Help" },
-  { id: "file", label: "File" },
-  { id: "terrainEditor", label: "Terrain Editor" },
-  { id: "textureEditor", label: "Texture Editor" },
-  { id: "render", label: "Render" },
-  { id: "camera", label: "Camera" },
-  { id: "time", label: "Time (日暀)" },
-  { id: "sky", label: "Sky" },
-  { id: "movement", label: "Movement" },
-  { id: "physics", label: "Physics" },
-  { id: "thirdPerson", label: "3rd Person" },
-] as const;
-
-export type SettingsTabId = (typeof TABS)[number]["id"];

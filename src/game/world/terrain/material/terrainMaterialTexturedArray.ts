@@ -22,6 +22,7 @@ import {
   positionLocal,
   normalize,
   cameraViewMatrix,
+  transformDirection,
 } from "three/tsl";
 import type { TerrainConfig } from "../terrain";
 import type { TerrainTextureArrayResult } from "../TerrainTextureArrays";
@@ -315,7 +316,7 @@ export function createTexturedArrayTerrainMaterial(
     const finalColor = finalDiffuse.mul(aoFactor);
 
     mat.colorNode = finalColor;
-    mat.normalNode = normalize(cameraViewMatrix.transformDirection(perturbedNormal));
+    mat.normalNode = normalize(transformDirection(perturbedNormal, cameraViewMatrix));
     mat.roughnessNode = finalRoughness;
     mat.metalnessNode = finalMetallic;
 
@@ -357,7 +358,7 @@ export function createTexturedArrayTerrainMaterial(
     const finalColor = mix(baseColor, snowColor, snowMask);
 
     mat.colorNode = finalColor;
-    mat.normalNode = normalize(cameraViewMatrix.transformDirection(terrainNormal));
+    mat.normalNode = normalize(transformDirection(terrainNormal, cameraViewMatrix));
     mat.roughnessNode = float(cfg.material.roughness);
     mat.metalnessNode = float(cfg.material.metalness);
   }

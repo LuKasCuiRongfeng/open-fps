@@ -16,6 +16,7 @@ import {
   mix,
   uint,
   mod,
+  int,
 } from "three/tsl";
 import {
   DataTexture,
@@ -31,7 +32,7 @@ import type { TerrainConfig } from "../terrain";
 
 // Type alias for TSL float node (returns Node from float() TSL function).
 // TSL float 节点类型别名（float() TSL 函数返回 Node）
-type FloatNode = Node;
+type FloatNode = Node<"float">;
 
 /**
  * Creates hash texture for deterministic noise.
@@ -80,10 +81,10 @@ export function buildHeightComputeShader(
   config: TerrainConfig,
   heightTexture: StorageTexture,
   hashTexture: DataTexture,
-  chunkOffsetX: UniformNode<number>,
-  chunkOffsetZ: UniformNode<number>,
-  tileX: UniformNode<number>,
-  tileZ: UniformNode<number>
+  chunkOffsetX: UniformNode<"float", number>,
+  chunkOffsetZ: UniformNode<"float", number>,
+  tileX: UniformNode<"float", number>,
+  tileZ: UniformNode<"float", number>
 ): ComputeNode {
   const tileRes = config.gpuCompute.tileResolution;
   const chunkSize = float(config.streaming.chunkSizeMeters);
@@ -156,8 +157,8 @@ export function buildHeightComputeShader(
 
     // Use pre-computed tile coordinates from JavaScript.
     // 使用 JavaScript 预计算的 tile 坐标
-    const tileXCoord = uint(tileX);
-    const tileZCoord = uint(tileZ);
+    const tileXCoord = uint(int(tileX));
+    const tileZCoord = uint(int(tileZ));
 
     // World coordinates.
     // 世界坐标

@@ -26,6 +26,7 @@ import {
   positionLocal,
   normalize,
   cameraViewMatrix,
+  transformDirection,
 } from "three/tsl";
 import type { TerrainConfig } from "../terrain";
 
@@ -146,7 +147,7 @@ export function createGpuTerrainMaterial(
   // 使用 cameraViewMatrix.transformDirection() 将世界空间法线变换到视图空间。
   // （cameraNormalMatrix 是逆矩阵 - 它将视图→世界，而不是世界→视图）
   const worldNormal = normalize(sampledNormal);
-  const viewNormal = normalize(cameraViewMatrix.transformDirection(worldNormal));
+  const viewNormal = normalize(transformDirection(worldNormal, cameraViewMatrix));
 
   mat.normalNode = viewNormal;
 
@@ -284,9 +285,9 @@ export function createGpuTerrainMaterial(
 
   // Apply variation to base colors.
   // 将变化应用到基础颜色
-  const grassVaried = mul(grass, colorVariation);
-  const rockVaried = mul(rock, colorVariation);
-  const snowVaried = mul(snow, add(float(0.96), mul(combinedNoise, float(0.08))));
+  const grassVaried = grass.mul(colorVariation);
+  const rockVaried = rock.mul(colorVariation);
+  const snowVaried = snow.mul(add(float(0.96), mul(combinedNoise, float(0.08))));
 
   // Mix materials with variation.
   // 混合带变化的材质
@@ -345,14 +346,14 @@ export function createGpuTerrainMaterial(
 
     // Convert height to normal perturbation.
     // 将高度转换为法线扰动
-    const detailNormal = mx_heighttonormal(dnHeight, float(cfg.material.detailNormal.strength));
+  const detailNormal = vec3(mx_heighttonormal(dnHeight, float(cfg.material.detailNormal.strength)));
 
     // Blend detail normal with world normal, then transform to view space.
     // Use cameraViewMatrix.transformDirection() for world→view transformation.
     // 将细节法线与世界空间法线混合，然后转换到视图空间
     // 使用 cameraViewMatrix.transformDirection() 进行世界→视图变换
-    const blendedWorldNormal = normalize(add(worldNormal, mul(detailNormal, float(0.5))));
-    mat.normalNode = normalize(cameraViewMatrix.transformDirection(blendedWorldNormal));
+    const blendedWorldNormal = normalize(worldNormal.add(detailNormal.mul(0.5)));
+    mat.normalNode = normalize(transformDirection(blendedWorldNormal, cameraViewMatrix));
   }
 
   mat.colorNode = finalShaded;

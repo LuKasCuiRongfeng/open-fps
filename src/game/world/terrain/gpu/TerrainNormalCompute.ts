@@ -2,6 +2,7 @@
 // TerrainNormalCompute：用于地形法线生成的 GPU 计算着色器
 
 import {
+  clamp,
   float,
   texture,
   textureStore,
@@ -112,9 +113,9 @@ export class TerrainNormalCompute {
 
     // Sample height at atlas UV.
     // 在图集 UV 处采样高度
-    const sampleHeight = Fn(([u, v]: [Node, Node]) => {
-      const clampedU = u.clamp(0, 1);
-      const clampedV = v.clamp(0, 1);
+    const sampleHeight = Fn(([u, v]: [Node<"float">, Node<"float">]) => {
+      const clampedU = clamp(u, float(0), float(1));
+      const clampedV = clamp(v, float(0), float(1));
       return heightTex.sample(vec2(clampedU, clampedV)).r;
     });
 

@@ -9,6 +9,7 @@ import { TerrainChunk, disposeSharedGeometries } from "./TerrainChunk";
 import { TerrainHeightCompute, TerrainNormalCompute, TerrainBrushCompute } from "./gpu";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
 import type { BrushStroke } from "../../editor/terrain/TerrainEditor";
+import { buildLoadQueue, buildUnloadQueue, getAffectedChunkBounds } from "./chunkStreaming";
 
 export type ChunkCoord = { cx: number; cz: number };
 
@@ -209,45 +210,22 @@ export class ChunkManager {
 
   private rebuildQueues(playerCx: number, playerCz: number): void {
     const viewDist = this.config.streaming.viewDistanceChunks;
-
-    // Find chunks to load (based on view distance around player).
-    // 找到要加载的 chunk（基于玩家周围的视距）
-    // No world bounds check here - chunks can extend beyond playable area.
-    // 此处不检查世界边界 - chunk 可以延伸到可玩区域之外
-    // Player movement is restricted by worldBoundsSystem separately.
-    // 玩家移动由 worldBoundsSystem 单独限制
-    this.loadQueue.length = 0;
-    
-    for (let dz = -viewDist; dz <= viewDist; dz++) {
-      for (let dx = -viewDist; dx <= viewDist; dx++) {
-        const cx = playerCx + dx;
-        const cz = playerCz + dz;
-        const key = this.chunkKey(cx, cz);
-        if (!this.chunks.has(key) && !this.bakePending.has(key)) {
-          this.loadQueue.push({ cx, cz });
-        }
-      }
-    }
-
-    // Sort by distance (load closer chunks first).
-    // 按距离排序（先加载更近的 chunk）
-    this.loadQueue.sort((a, b) => {
-      const da = (a.cx - playerCx) ** 2 + (a.cz - playerCz) ** 2;
-      const db = (b.cx - playerCx) ** 2 + (b.cz - playerCz) ** 2;
-      return da - db;
-    });
-
-    // Find chunks to unload.
-    // 找到要卸载的 chunk
-    this.unloadQueue.length = 0;
     const maxDist = viewDist + this.config.streaming.hysteresisChunks;
-    for (const [key, chunk] of this.chunks) {
-      const chunkDx = Math.abs(chunk.cx - playerCx);
-      const chunkDz = Math.abs(chunk.cz - playerCz);
-      if (chunkDx > maxDist || chunkDz > maxDist) {
-        this.unloadQueue.push(key);
-      }
-    }
+
+    this.loadQueue.length = 0;
+    this.loadQueue.push(
+      ...buildLoadQueue(
+        playerCx,
+        playerCz,
+        viewDist,
+        (key) => this.chunks.has(key),
+        (key) => this.bakePending.has(key),
+        (cx, cz) => this.chunkKey(cx, cz),
+      ),
+    );
+
+    this.unloadQueue.length = 0;
+    this.unloadQueue.push(...buildUnloadQueue(playerCx, playerCz, maxDist, this.chunks));
   }
 
   private async processQueues(): Promise<void> {
@@ -407,23 +385,13 @@ export class ChunkManager {
       );
     }
 
-    // Compute bounding box of all strokes (merge ranges).
-    // 计算所有 strokes 的包围盒（合并范围）
-    let minCx = Infinity, maxCx = -Infinity;
-    let minCz = Infinity, maxCz = -Infinity;
-
-    for (const stroke of strokes) {
-      const radius = stroke.brush.radiusMeters;
-      minCx = Math.min(minCx, Math.floor((stroke.worldX - radius) / chunkSize));
-      maxCx = Math.max(maxCx, Math.floor((stroke.worldX + radius) / chunkSize));
-      minCz = Math.min(minCz, Math.floor((stroke.worldZ - radius) / chunkSize));
-      maxCz = Math.max(maxCz, Math.floor((stroke.worldZ + radius) / chunkSize));
-    }
+    const bounds = getAffectedChunkBounds(strokes, chunkSize);
+    if (!bounds) return;
 
     // Collect affected chunks from merged bounding box (single pass).
     // 从合并的包围盒收集受影响的 chunk（单次遍历）
-    for (let cx = minCx; cx <= maxCx; cx++) {
-      for (let cz = minCz; cz <= maxCz; cz++) {
+    for (let cx = bounds.minCx; cx <= bounds.maxCx; cx++) {
+      for (let cz = bounds.minCz; cz <= bounds.maxCz; cz++) {
         const key = this.chunkKey(cx, cz);
         if (this.chunks.has(key)) {
           affectedChunks.add(key);

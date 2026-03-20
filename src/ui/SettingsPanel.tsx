@@ -8,19 +8,9 @@ import type { TerrainEditor, MapData } from "@game/editor";
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 import {
   TabButton,
-  TABS,
+  SETTINGS_TABS,
+  renderSettingsTab,
   type SettingsTabId,
-  HelpTab,
-  RenderTab,
-  CameraTab,
-  SkyTab,
-  TimeTab,
-  MovementTab,
-  PhysicsTab,
-  ThirdPersonTab,
-  FileTab,
-  TerrainEditorTab,
-  TextureEditorTab,
   type ActiveEditorType,
 } from "./settings";
 
@@ -106,7 +96,7 @@ export default function SettingsPanel({
           <div className="flex max-h-[78vh] min-h-105">
             <div className="w-40 shrink-0 border-r border-white/10 p-3">
               <div className="space-y-1.5">
-                {TABS.map((t) => (
+                {SETTINGS_TABS.map((t) => (
                   <TabButton
                     key={t.id}
                     active={tab === t.id}
@@ -118,53 +108,21 @@ export default function SettingsPanel({
             </div>
 
             <div className="flex-1 overflow-auto p-4">
-              {tab === "help" && <HelpTab />}
-
-              {tab === "file" && (
-                <FileTab
-                  gameApp={gameApp}
-                  terrainEditor={terrainEditor}
-                  terrainMode={terrainMode}
-                  currentProjectPath={currentProjectPath}
-                  onProjectPathChange={onProjectPathChange}
-                  onLoadMap={onLoadMap}
-                  onApplySettings={onApplySettings}
-                />
-              )}
-
-              {tab === "terrainEditor" && (
-                <TerrainEditorTab
-                  terrainEditor={terrainEditor}
-                  terrainMode={terrainMode}
-                  activeEditor={activeEditor}
-                  onActiveEditorChange={onActiveEditorChange}
-                  onClose={onClose}
-                />
-              )}
-
-              {tab === "textureEditor" && (
-                <TextureEditorTab
-                  textureEditor={textureEditor}
-                  terrainMode={terrainMode}
-                  activeEditor={activeEditor}
-                  onActiveEditorChange={onActiveEditorChange}
-                  onClose={onClose}
-                />
-              )}
-
-              {tab === "render" && <RenderTab settings={settings} onPatch={onPatch} />}
-
-              {tab === "camera" && <CameraTab settings={settings} onPatch={onPatch} />}
-
-              {tab === "sky" && <SkyTab settings={settings} onPatch={onPatch} />}
-
-              {tab === "time" && <TimeTab settings={settings} onPatch={onPatch} />}
-
-              {tab === "movement" && <MovementTab settings={settings} onPatch={onPatch} />}
-
-              {tab === "physics" && <PhysicsTab settings={settings} onPatch={onPatch} />}
-
-              {tab === "thirdPerson" && <ThirdPersonTab settings={settings} onPatch={onPatch} />}
+              {renderSettingsTab(tab, {
+                settings,
+                gameApp,
+                terrainEditor,
+                textureEditor,
+                terrainMode,
+                activeEditor,
+                currentProjectPath,
+                onActiveEditorChange,
+                onProjectPathChange,
+                onLoadMap,
+                onApplySettings,
+                onPatch,
+                onClose,
+              })}
             </div>
           </div>
         </div>

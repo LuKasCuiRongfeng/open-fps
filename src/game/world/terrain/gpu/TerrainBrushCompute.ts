@@ -245,7 +245,9 @@ export class TerrainBrushCompute {
         const leftAtlasX = select(
           useLeftNeighbor,
           this.neighborXNeg_tileX.mul(int(tileRes)).add(int(tileRes - 2)),
-          int(tileXCoord).mul(int(tileRes)).add(int(pixelX).sub(1).max(0))
+          int(tileXCoord).mul(int(tileRes)).add(
+            select(int(pixelX).sub(1).lessThan(0), int(0), int(pixelX).sub(1))
+          )
         );
         const leftAtlasY = select(
           useLeftNeighbor,
@@ -260,7 +262,13 @@ export class TerrainBrushCompute {
         const rightAtlasX = select(
           useRightNeighbor,
           this.neighborXPos_tileX.mul(int(tileRes)).add(int(1)),
-          int(tileXCoord).mul(int(tileRes)).add(int(pixelX).add(1).min(tileRes - 1))
+          int(tileXCoord).mul(int(tileRes)).add(
+            select(
+              int(pixelX).add(1).greaterThan(int(tileRes - 1)),
+              int(tileRes - 1),
+              int(pixelX).add(1)
+            )
+          )
         );
         const rightAtlasY = select(
           useRightNeighbor,
@@ -280,7 +288,9 @@ export class TerrainBrushCompute {
         const bottomAtlasY = select(
           useBottomNeighbor,
           this.neighborZNeg_tileZ.mul(int(tileRes)).add(int(tileRes - 2)),
-          int(tileZCoord).mul(int(tileRes)).add(int(pixelY).sub(1).max(0))
+          int(tileZCoord).mul(int(tileRes)).add(
+            select(int(pixelY).sub(1).lessThan(0), int(0), int(pixelY).sub(1))
+          )
         );
         const h3 = texture(srcTexture).load(ivec2(bottomAtlasX, bottomAtlasY)).r;
 
@@ -295,7 +305,13 @@ export class TerrainBrushCompute {
         const topAtlasY = select(
           useTopNeighbor,
           this.neighborZPos_tileZ.mul(int(tileRes)).add(int(1)),
-          int(tileZCoord).mul(int(tileRes)).add(int(pixelY).add(1).min(tileRes - 1))
+          int(tileZCoord).mul(int(tileRes)).add(
+            select(
+              int(pixelY).add(1).greaterThan(int(tileRes - 1)),
+              int(tileRes - 1),
+              int(pixelY).add(1)
+            )
+          )
         );
         const h2 = texture(srcTexture).load(ivec2(topAtlasX, topAtlasY)).r;
 
@@ -365,8 +381,8 @@ export class TerrainBrushCompute {
       const heightB = texture(srcTexture).load(atlasB).r;
       const avgHeight = heightA.add(heightB).mul(0.5);
 
-      textureStore(dstTexture, uvec2(atlasA), vec4(avgHeight, float(0), float(0), float(1))).toWriteOnly();
-      textureStore(dstTexture, uvec2(atlasB), vec4(avgHeight, float(0), float(0), float(1))).toWriteOnly();
+      textureStore(dstTexture, atlasA.toUVec2(), vec4(avgHeight, float(0), float(0), float(1))).toWriteOnly();
+      textureStore(dstTexture, atlasB.toUVec2(), vec4(avgHeight, float(0), float(0), float(1))).toWriteOnly();
     });
 
     this.edgeStitchNode = stitchFn().compute(tileRes);

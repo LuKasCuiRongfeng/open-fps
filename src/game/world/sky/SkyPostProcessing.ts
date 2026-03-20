@@ -4,12 +4,11 @@
 import {
   PostProcessing,
   Vector2,
-  type Node,
   type PerspectiveCamera,
   type Scene,
   type WebGPURenderer,
 } from "three/webgpu";
-import { pass, uniform, vec2 } from "three/tsl";
+import { pass, uniform, vec2, vec4 } from "three/tsl";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
 import type BloomNode from "three/addons/tsl/display/BloomNode.js";
 import { radialBlur } from "three/addons/tsl/display/radialBlur.js";
@@ -36,7 +35,7 @@ export interface PostProcessingSettings {
 export class SkyPostProcessing {
   private postProcessing: PostProcessing | null = null;
   private bloomPass: BloomNode | null = null;
-  private godRaysPass: Node | null = null;
+  private godRaysPass: ReturnType<typeof radialBlur> | null = null;
 
   // God rays uniforms.
   // 上帝光线 uniform
@@ -83,7 +82,7 @@ export class SkyPostProcessing {
       exposure: this.godRaysExposureUniform,
     });
 
-    const godRaysContribution = this.godRaysPass.mul(this.godRaysEnabledUniform);
+    const godRaysContribution = vec4(this.godRaysPass).mul(this.godRaysEnabledUniform);
     this.postProcessing.outputNode = scenePassColor
       .add(this.bloomPass)
       .add(godRaysContribution);
