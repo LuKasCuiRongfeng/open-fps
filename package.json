@@ -10,26 +10,27 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.18",
-    "@tauri-apps/api": "^2",
+    "@tailwindcss/vite": "^4.2.2",
+    "@tauri-apps/api": "^2.10.1",
     "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-fs": "^2.4.5",
-    "@tauri-apps/plugin-opener": "^2",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "tailwindcss": "^4.1.18",
-    "three": "^0.182.0",
-    "three-mesh-bvh": "^0.9.6"
+    "@tauri-apps/plugin-opener": "^2.5.3",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "tailwindcss": "^4.2.2",
+    "three": "^0.183.2",
+    "three-mesh-bvh": "^0.9.9"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2",
-    "@types/node": "^25.0.9",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@types/three": "^0.182.0",
-    "@vitejs/plugin-react": "^4.6.0",
+    "@rolldown/plugin-babel": "^0.2.2",
+    "@tauri-apps/cli": "^2.10.1",
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.183.1",
+    "@vitejs/plugin-react": "^6.0.1",
     "babel-plugin-react-compiler": "^1.0.0",
-    "typescript": "~5.8.3",
-    "vite": "^7.0.4"
+    "typescript": "~5.9.3",
+    "vite": "^8.0.1"
   }
 }
