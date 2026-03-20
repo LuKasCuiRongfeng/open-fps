@@ -6,20 +6,14 @@
 
 import { useEffect, useState } from "react";
 import type { GameSettings, GameSettingsPatch } from "@game/settings";
-import type { MapData } from "@project/MapData";
 import type { ActiveEditorType } from "./settings/tabs/TerrainEditorTab";
-import { setCurrentProjectPath } from "@project/ProjectStorage";
 import FpsCounter from "./FpsCounter";
 import LoadingOverlay, { type LoadingStep } from "./LoadingOverlay";
 import SettingsPanel from "./SettingsPanel";
 import { TerrainEditorPanel } from "./TerrainEditorPanel";
 import { TextureEditorPanel } from "./TextureEditorPanel";
 import { MapImportScreen } from "./MapImportScreen";
-import { useCloseConfirmation, useEditorInput, useGameApp } from "./hooks";
-
-// Game state: whether we're in editable mode (project open) or procedural mode.
-// 游戏状态：是否处于可编辑模式（项目已打开）还是程序生成模式
-type TerrainMode = "editable" | "procedural";
+import { useCloseConfirmation, useEditorInput, useEditorWorkspace, useGameApp } from "./hooks";
 
 const LOADING_STEPS: LoadingStep[] = [
   { id: "checking-webgpu", label: "Checking WebGPU" },
@@ -31,13 +25,7 @@ const LOADING_STEPS: LoadingStep[] = [
 ];
 
 export default function GameView() {
-  // Project state.
-  // 项目状态
-  const [showProjectScreen, setShowProjectScreen] = useState(true);
-  const [pendingMapData, setPendingMapData] = useState<MapData | null>(null);
-  const [pendingSettings, setPendingSettings] = useState<GameSettings | null>(null);
-  const [terrainMode, setTerrainMode] = useState<TerrainMode>("procedural");
-  const [currentProjectPath, setProjectPath] = useState<string | null>(null);
+  const editorWorkspace = useEditorWorkspace();
 
   // UI state.
   // UI 状态
@@ -57,15 +45,19 @@ export default function GameView() {
     textureEditor,
     setSettings,
   } = useGameApp({
-    enabled: !showProjectScreen,
-    pendingMapData,
-    pendingSettings,
-    currentProjectPath,
+    enabled: !editorWorkspace.showProjectScreen,
+    pendingMapData: editorWorkspace.pendingMapData,
+    pendingSettings: editorWorkspace.pendingSettings,
+    currentProjectPath: editorWorkspace.currentProjectPath,
   });
 
   // Window close confirmation.
   // 窗口关闭确认
-  useCloseConfirmation(appRef);
+  useCloseConfirmation({
+    appRef,
+    hasOpenProject: editorWorkspace.currentProjectPath !== null,
+    saveCurrentProject: editorWorkspace.saveCurrentProjectForClose,
+  });
 
   // Editor input handling.
   // 编辑器输入处理
@@ -77,34 +69,10 @@ export default function GameView() {
     activeEditor,
   });
 
-  // Handle project open decision.
-  // 处理项目打开决定
-  const handleProjectComplete = (
-    mapData: MapData | null,
-    projectPath: string | null,
-    projectSettings: GameSettings | null
-  ) => {
-    setPendingMapData(mapData);
-    setPendingSettings(projectSettings);
-    setTerrainMode(projectPath ? "editable" : "procedural");
-    setProjectPath(projectPath);
-    setShowProjectScreen(false);
-  };
-
-  // Handle project path change (when saving procedural terrain as new project).
-  // 处理项目路径变化（当保存程序地形为新项目时）
-  const handleProjectPathChange = (path: string | null) => {
-    setProjectPath(path);
-    setCurrentProjectPath(path);
-    if (path) {
-      setTerrainMode("editable");
-    }
-  };
-
   // Handle loading a map from settings panel.
   // 处理从设置面板加载地图
-  const handleLoadMap = (_mapData: MapData) => {
-    setTerrainMode("editable");
+  const handleLoadMap = () => {
+    editorWorkspace.markEditableMode();
   };
 
   // Handle applying settings from loaded project.
@@ -213,11 +181,12 @@ export default function GameView() {
           gameApp={appRef.current}
           terrainEditor={terrainEditor}
           textureEditor={appRef.current?.getTextureEditor?.() ?? null}
-          terrainMode={terrainMode}
+          editorWorkspace={editorWorkspace}
+          terrainMode={editorWorkspace.terrainMode}
           activeEditor={activeEditor}
-          currentProjectPath={currentProjectPath}
+          currentProjectPath={editorWorkspace.currentProjectPath}
           onActiveEditorChange={handleActiveEditorChange}
-          onProjectPathChange={handleProjectPathChange}
+          onProjectPathChange={editorWorkspace.syncProjectPath}
           onLoadMap={handleLoadMap}
           onApplySettings={handleApplySettings}
           onPatch={applyPatch}
@@ -251,8 +220,8 @@ export default function GameView() {
 
       {/* Project Screen (before game starts). */}
       {/* 项目界面（游戏启动前） */}
-      {showProjectScreen && (
-        <MapImportScreen onComplete={handleProjectComplete} />
+      {editorWorkspace.showProjectScreen && (
+        <MapImportScreen workspace={editorWorkspace} />
       )}
     </div>
   );

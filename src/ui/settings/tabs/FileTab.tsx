@@ -5,25 +5,17 @@ import { useState, useEffect } from "react";
 import { getPlatformBridge } from "@/platform";
 import type { GameApp } from "@game/GameApp";
 import type { TerrainEditor } from "@game/editor";
-import {
-  getProjectNameFromPath,
-  saveProjectMap,
-  saveProjectAs,
-  hasOpenProject,
-  openProjectDialog,
-  loadProject,
-} from "@project/ProjectStorage";
+import { getProjectNameFromPath } from "@project/ProjectStorage";
 import type { MapData } from "@project/MapData";
 import type { GameSettings } from "@game/settings";
+import type { EditorWorkspaceController } from "@ui/hooks";
 
 const platform = getPlatformBridge();
 
 type FileTabProps = {
   gameApp: GameApp | null;
   terrainEditor: TerrainEditor | null;
-  terrainMode: "editable" | "procedural";
-  currentProjectPath: string | null;
-  onProjectPathChange?: (path: string | null) => void;
+  editorWorkspace: EditorWorkspaceController;
   onLoadMap?: (mapData: MapData) => void;
   onApplySettings?: (settings: GameSettings) => void;
 };
@@ -31,9 +23,7 @@ type FileTabProps = {
 export function FileTab({
   gameApp,
   terrainEditor,
-  terrainMode,
-  currentProjectPath,
-  onProjectPathChange,
+  editorWorkspace,
   onLoadMap,
   onApplySettings,
 }: FileTabProps) {
@@ -41,21 +31,21 @@ export function FileTab({
   const [statusMessage, setStatusMessage] = useState("");
   const [processing, setProcessing] = useState(false);
 
-  const canEdit = terrainMode === "editable";
+  const canEdit = editorWorkspace.terrainMode === "editable";
   const terrainDirty = terrainEditor?.dirty ?? false;
   const textureDirty = gameApp?.getTextureEditor()?.dirty ?? false;
   const dirty = terrainDirty || textureDirty;
-  const hasProject = hasOpenProject();
+  const hasProject = editorWorkspace.currentProjectPath !== null;
 
   // Sync editable map name from project path.
   // 从项目路径同步可编辑的地图名称
   useEffect(() => {
-    if (currentProjectPath) {
-      setEditableMapName(getProjectNameFromPath(currentProjectPath));
+    if (editorWorkspace.currentProjectPath) {
+      setEditableMapName(getProjectNameFromPath(editorWorkspace.currentProjectPath));
     } else {
       setEditableMapName("Untitled");
     }
-  }, [currentProjectPath]);
+  }, [editorWorkspace.currentProjectPath]);
 
   // Update map name in editor.
   // 更新编辑器中的地图名称
@@ -73,44 +63,14 @@ export function FileTab({
     setStatusMessage("");
 
     try {
-      const mapData = gameApp.exportCurrentMapData();
-      const settings = gameApp.getSettingsSnapshot();
       const projectName = editableMapName.trim() || "my_project";
-      mapData.metadata.name = projectName;
-
-      if (hasProject) {
-        // Save to current project (with rename if name changed).
-        // 保存到当前项目（如果名称更改则重命名）
-        const newPath = await saveProjectMap(mapData, settings, projectName);
-        
-        // Save texture data (splat map) to project.
-        // 保存纹理数据（splat map）到项目
-        await gameApp.saveTexturesToProject(newPath);
-        
-        terrainEditor?.markClean();
-        gameApp.getTextureEditor().setOnDirtyChange(() => {}); // Clear dirty callback
-        onProjectPathChange?.(newPath);
-        setStatusMessage(`✓ Saved to project`);
-        return true;
-      } else {
-        // No project open (procedural terrain) - save as new project.
-        // 未打开项目（程序地形）- 另存为新项目
-        const newPath = await saveProjectAs(mapData, projectName, settings);
-        if (newPath) {
-          // Save texture data if available.
-          // 如果有纹理数据则保存
-          if (gameApp.getTextureEditor().editingEnabled) {
-            await gameApp.saveTexturesToProject(newPath);
-          }
-          terrainEditor?.markClean();
-          onProjectPathChange?.(newPath);
-          setStatusMessage(`✓ Created project: ${getProjectNameFromPath(newPath)}`);
-          return true;
-        } else {
-          setStatusMessage("Save cancelled");
-          return false;
-        }
-      }
+      const result = await editorWorkspace.saveProjectSession({
+        gameApp,
+        terrainEditor,
+        projectName,
+      });
+      setStatusMessage(result.message);
+      return result.ok;
     } catch (e) {
       setStatusMessage(`✗ Save failed: ${e}`);
       return false;
@@ -140,24 +100,14 @@ export function FileTab({
     setStatusMessage("");
 
     try {
-      const mapData = gameApp.exportCurrentMapData();
-      const settings = gameApp.getSettingsSnapshot();
       const projectName = editableMapName.trim() || "my_project";
-      mapData.metadata.name = projectName;
-
-      const newPath = await saveProjectAs(mapData, projectName, settings);
-      if (newPath) {
-        // Save texture data if available.
-        // 如果有纹理数据则保存
-        if (gameApp.getTextureEditor().editingEnabled) {
-          await gameApp.saveTexturesToProject(newPath);
-        }
-        terrainEditor?.markClean();
-        onProjectPathChange?.(newPath);
-        setStatusMessage(`✓ Created project: ${getProjectNameFromPath(newPath)}`);
-      } else {
-        setStatusMessage("Save cancelled");
-      }
+      const result = await editorWorkspace.saveProjectSession({
+        gameApp,
+        terrainEditor,
+        projectName,
+        forceSaveAs: true,
+      });
+      setStatusMessage(result.message);
     } catch (e) {
       setStatusMessage(`✗ Save failed: ${e}`);
     } finally {
@@ -189,34 +139,13 @@ export function FileTab({
     setStatusMessage("");
 
     try {
-      const projectPath = await openProjectDialog();
-      if (!projectPath) {
-        setStatusMessage("Open cancelled");
-        setProcessing(false);
-        return;
-      }
-
-      const { map, settings } = await loadProject(projectPath);
-      
-      // Apply settings first.
-      // 先应用设置
-      gameApp.applySettings(settings);
-      onApplySettings?.(settings);
-
-      // Load textures from project (texture.json + splat map).
-      // 从项目加载纹理（texture.json + splat map）
-      await gameApp.loadTexturesFromProject(projectPath);
-      
-      if (map) {
-        // Load map into game.
-        // 加载地图到游戏
-        await gameApp.loadMapData(map);
-        onLoadMap?.(map);
-      }
-
-      terrainEditor?.markClean();
-      onProjectPathChange?.(projectPath);
-      setStatusMessage(`✓ Opened: ${getProjectNameFromPath(projectPath)}`);
+      const result = await editorWorkspace.openProjectInApp({
+        gameApp,
+        terrainEditor,
+        onLoadMap,
+        onApplySettings,
+      });
+      setStatusMessage(result.message);
     } catch (e) {
       setStatusMessage(`✗ Open failed: ${e}`);
     } finally {
@@ -245,9 +174,9 @@ export function FileTab({
         <div className="mt-2 text-xs text-white/50">
           Mode: {canEdit ? "✓ Project Open (Editable)" : "⚠ Procedural (View Only)"}
         </div>
-        {currentProjectPath && (
-          <div className="mt-1 text-xs text-white/40 truncate" title={currentProjectPath}>
-            📁 {currentProjectPath}
+        {editorWorkspace.currentProjectPath && (
+          <div className="mt-1 text-xs text-white/40 truncate" title={editorWorkspace.currentProjectPath}>
+            📁 {editorWorkspace.currentProjectPath}
           </div>
         )}
       </div>

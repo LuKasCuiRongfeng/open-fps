@@ -7,6 +7,7 @@ import type { GameSettings, GameSettingsPatch } from "@game/settings";
 import type { GameApp } from "@game/GameApp";
 import type { TerrainEditor, MapData } from "@game/editor";
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
+import type { EditorWorkspaceController } from "@ui/hooks";
 import {
   TabButton,
   getSettingsTabs,
@@ -22,6 +23,7 @@ type SettingsPanelProps = {
   gameApp: GameApp | null;
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;
+  editorWorkspace: EditorWorkspaceController;
   terrainMode: "editable" | "procedural";
   activeEditor: ActiveEditorType;
   currentProjectPath: string | null;
@@ -41,6 +43,7 @@ export default function SettingsPanel({
   gameApp,
   terrainEditor,
   textureEditor,
+  editorWorkspace,
   terrainMode,
   activeEditor,
   currentProjectPath,
@@ -125,6 +128,7 @@ export default function SettingsPanel({
                 gameApp,
                 terrainEditor,
                 textureEditor,
+                editorWorkspace,
                 terrainMode,
                 activeEditor,
                 currentProjectPath,

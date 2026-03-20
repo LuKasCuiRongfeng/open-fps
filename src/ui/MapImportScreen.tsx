@@ -1,43 +1,22 @@
 // ProjectScreen: Pre-game screen to open project or skip to procedural terrain.
 // ProjectScreen：游戏前打开项目或跳过到程序生成地形的界面
 
-import { useState, useEffect } from "react";
-import {
-  openProjectDialog,
-  loadProject,
-  setCurrentProjectPath,
-  listRecentProjects,
-  removeRecentProject,
-  getProjectNameFromPath,
-} from "@project/ProjectStorage";
-import type { MapData } from "@project/MapData";
-import type { GameSettings } from "@game/settings";
+import { useState } from "react";
+import { getProjectNameFromPath } from "@project/ProjectStorage";
+import type { EditorWorkspaceController } from "./hooks";
 
 interface Props {
-  onComplete: (
-    mapData: MapData | null,
-    projectPath: string | null,
-    settings: GameSettings | null
-  ) => void;
+  workspace: EditorWorkspaceController;
 }
 
 /**
  * Project screen shown before game starts.
  * 游戏开始前显示的项目界面
  */
-export function MapImportScreen({ onComplete }: Props) {
+export function MapImportScreen({ workspace }: Props) {
   const [loading, setLoading] = useState(false);
   const [loadingPath, setLoadingPath] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [recentProjects, setRecentProjects] = useState<string[]>([]);
-
-  // Load recent projects on mount.
-  // 挂载时加载最近项目
-  useEffect(() => {
-    listRecentProjects()
-      .then(setRecentProjects)
-      .catch(() => setRecentProjects([]));
-  }, []);
 
   // Open project from path (recent or dialog).
   // 从路径打开项目（最近或对话框）
@@ -49,8 +28,8 @@ export function MapImportScreen({ onComplete }: Props) {
     setError(null);
 
     try {
-      const { map, settings } = await loadProject(projectPath);
-      onComplete(map, projectPath, settings);
+      const project = await workspace.openProjectRecord(projectPath);
+      workspace.completeProjectSelection(project);
     } catch (e) {
       setError(`Failed to open project: ${e}`);
       setLoading(false);
@@ -65,9 +44,9 @@ export function MapImportScreen({ onComplete }: Props) {
     setError(null);
 
     try {
-      const projectPath = await openProjectDialog();
-      if (projectPath) {
-        await openProject(projectPath);
+      const project = await workspace.openProjectFromDialog();
+      if (project) {
+        workspace.completeProjectSelection(project);
       } else {
         setLoading(false);
       }
@@ -82,8 +61,7 @@ export function MapImportScreen({ onComplete }: Props) {
   const handleRemoveRecent = async (e: React.MouseEvent, path: string) => {
     e.stopPropagation();
     try {
-      await removeRecentProject(path);
-      setRecentProjects((prev) => prev.filter((p) => p !== path));
+      await workspace.removeRecentProjectEntry(path);
     } catch {
       // Ignore errors.
       // 忽略错误
@@ -93,8 +71,7 @@ export function MapImportScreen({ onComplete }: Props) {
   // Skip, use procedural terrain (no project).
   // 跳过，使用程序生成的地形（无项目）
   const handleSkip = () => {
-    setCurrentProjectPath(null);
-    onComplete(null, null, null);
+    workspace.enterProceduralMode();
   };
 
   return (
@@ -130,14 +107,14 @@ export function MapImportScreen({ onComplete }: Props) {
         )}
 
         {/* Recent Projects / 最近项目 */}
-        {recentProjects.length > 0 && (
+        {workspace.recentProjects.length > 0 && (
           <div className="mb-5 flex min-h-0 shrink flex-col">
             <h2 className="mb-3 flex shrink-0 items-center gap-2 text-sm font-medium text-gray-300">
               <span className="text-base">📂</span>
               Recent Projects
             </h2>
             <div className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-lg border border-white/5 bg-black/20 p-2">
-              {recentProjects.map((path) => (
+              {workspace.recentProjects.map((path) => (
                 <div
                   key={path}
                   onClick={() => !loading && openProject(path)}

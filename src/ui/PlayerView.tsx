@@ -3,7 +3,7 @@ import type { GameSettingsPatch } from "@game/settings";
 import FpsCounter from "./FpsCounter";
 import LoadingOverlay, { type LoadingStep } from "./LoadingOverlay";
 import SettingsPanel from "./SettingsPanel";
-import { useGameApp } from "./hooks";
+import { useEditorWorkspace, useGameApp } from "./hooks";
 
 const LOADING_STEPS: LoadingStep[] = [
   { id: "checking-webgpu", label: "Checking WebGPU" },
@@ -16,6 +16,7 @@ const LOADING_STEPS: LoadingStep[] = [
 
 export default function PlayerView() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const editorWorkspace = useEditorWorkspace();
 
   const {
     hostRef,
@@ -93,6 +94,7 @@ export default function PlayerView() {
           gameApp={appRef.current}
           terrainEditor={null}
           textureEditor={null}
+          editorWorkspace={editorWorkspace}
           terrainMode="procedural"
           activeEditor="none"
           currentProjectPath={null}

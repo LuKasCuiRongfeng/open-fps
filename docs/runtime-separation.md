@@ -27,11 +27,17 @@
   - File and editor tabs are editor-only.
   - Runtime settings tabs stay shared between editor and game shells.
 
+- Editor workspace seam:
+  - `src/ui/hooks/useEditorWorkspace.ts` owns project selection, recent projects, open/save flows, and the current editor session path.
+  - `GameView` now consumes that controller instead of hosting project workflow state inline.
+  - `MapImportScreen`, `FileTab`, and close-confirmation logic call into the same workspace controller.
+
 ## Rules
 
 - Do not import Tauri packages outside `src/platform/`.
 - When a new native capability is needed, extend `PlatformBridge` first.
 - Keep editor boot flow, project selection, and save workflows in the editor target.
+- Keep project workflow orchestration in the editor workspace layer instead of duplicating it in panels or screens.
 - Keep the standalone game target free of project-management UI.
 - For browser support, replace bridge methods instead of branching business logic per call site.
 

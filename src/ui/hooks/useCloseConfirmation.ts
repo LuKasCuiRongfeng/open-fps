@@ -4,15 +4,24 @@
 import { useEffect } from "react";
 import { getPlatformBridge } from "@/platform";
 import type { GameApp } from "@game/GameApp";
-import { hasOpenProject, saveProjectMap } from "@project/ProjectStorage";
 
 const platform = getPlatformBridge();
+
+interface UseCloseConfirmationOptions {
+  appRef: React.RefObject<GameApp | null>;
+  hasOpenProject: boolean;
+  saveCurrentProject: (app: GameApp) => Promise<unknown>;
+}
 
 /**
  * Hook to handle window close confirmation when there are unsaved changes.
  * 处理有未保存更改时的窗口关闭确认的 Hook
  */
-export function useCloseConfirmation(appRef: React.RefObject<GameApp | null>) {
+export function useCloseConfirmation({
+  appRef,
+  hasOpenProject,
+  saveCurrentProject,
+}: UseCloseConfirmationOptions) {
   useEffect(() => {
     let unlisten: (() => void) | undefined;
 
@@ -20,7 +29,7 @@ export function useCloseConfirmation(appRef: React.RefObject<GameApp | null>) {
       unlisten = await platform.onCloseRequested(async (event) => {
         // Only check for unsaved changes if a project is open.
         // 只有在打开项目时才检查未保存的更改
-        if (!hasOpenProject()) {
+        if (!hasOpenProject) {
           // No project open (procedural mode), allow close without prompt.
           // 未打开项目（程序生成模式），直接关闭无需提示
           return;
@@ -58,15 +67,7 @@ export function useCloseConfirmation(appRef: React.RefObject<GameApp | null>) {
           try {
             const app = appRef.current;
             if (app) {
-              const mapData = app.exportCurrentMapData();
-              const settings = app.getSettingsSnapshot();
-              const savedPath = await saveProjectMap(mapData, settings);
-
-              // Save texture data if texture editing is enabled.
-              // 如果启用了纹理编辑，保存纹理数据
-              if (app.getTextureEditor().editingEnabled && savedPath) {
-                await app.saveTexturesToProject(savedPath);
-              }
+              await saveCurrentProject(app);
             }
           } catch (e) {
             // Save failed, show error and abort close.
@@ -92,5 +93,5 @@ export function useCloseConfirmation(appRef: React.RefObject<GameApp | null>) {
     return () => {
       unlisten?.();
     };
-  }, [appRef]);
+  }, [appRef, hasOpenProject, saveCurrentProject]);
 }
