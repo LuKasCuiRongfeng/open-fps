@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import type { TerrainEditor, BrushType } from "@game/editor";
 import type { EditorMouseAction, GameSettings } from "@game/settings";
+import { useTerrainBrushSettings } from "@ui/hooks";
 
 // Local type for mouse config (subset of EditorSettings).
 // 本地鼠标配置类型（EditorSettings 的子集）
@@ -28,12 +29,16 @@ export function TerrainEditorTab({
   onActiveEditorChange,
   onClose,
 }: TerrainEditorTabProps) {
-  // Brush settings.
-  // 画刷设置
-  const [brushType, setBrushType] = useState<BrushType>("raise");
-  const [brushRadius, setBrushRadius] = useState(10);
-  const [brushStrength, setBrushStrength] = useState(0.5);
-  const [brushFalloff, setBrushFalloff] = useState(0.7);
+  const {
+    brushType,
+    brushRadius,
+    brushStrength,
+    brushFalloff,
+    setBrushType,
+    setBrushRadius,
+    setBrushStrength,
+    setBrushFalloff,
+  } = useTerrainBrushSettings(terrainEditor);
 
   // Mouse button configuration state.
   // 鼠标按键配置状态
@@ -54,12 +59,6 @@ export function TerrainEditorTab({
   // 从编辑器同步状态
   useEffect(() => {
     if (!terrainEditor) return;
-
-    const brush = terrainEditor.brushSettings;
-    setBrushType(brush.type);
-    setBrushRadius(brush.radiusMeters);
-    setBrushStrength(brush.strength);
-    setBrushFalloff(brush.falloff);
 
     setMouseConfig({
       leftButton: terrainEditor.mouseConfig.leftButton,
@@ -104,34 +103,6 @@ export function TerrainEditorTab({
     }
   };
 
-  // Brush type change.
-  // 画刷类型更改
-  const handleBrushTypeChange = (type: BrushType) => {
-    setBrushType(type);
-    terrainEditor?.setBrushType(type);
-  };
-
-  // Brush radius change.
-  // 画刷半径更改
-  const handleRadiusChange = (value: number) => {
-    setBrushRadius(value);
-    terrainEditor?.setBrushRadius(value);
-  };
-
-  // Brush strength change.
-  // 画刷强度更改
-  const handleStrengthChange = (value: number) => {
-    setBrushStrength(value);
-    terrainEditor?.setBrushStrength(value);
-  };
-
-  // Brush falloff change.
-  // 画刷衰减更改
-  const handleFalloffChange = (value: number) => {
-    setBrushFalloff(value);
-    terrainEditor?.setBrushFalloff(value);
-  };
-
   return (
     <div className="space-y-5">
       {/* Mode toggle */}
@@ -171,7 +142,7 @@ export function TerrainEditorTab({
               {(["raise", "lower", "smooth", "flatten"] as BrushType[]).map((type) => (
                 <button
                   key={type}
-                  onClick={() => handleBrushTypeChange(type)}
+                  onClick={() => setBrushType(type)}
                   className={`px-3 py-2 rounded-md text-xs font-medium transition-colors capitalize ${
                     brushType === type
                       ? "bg-green-600"
@@ -200,7 +171,7 @@ export function TerrainEditorTab({
                 max="50"
                 step="1"
                 value={brushRadius}
-                onChange={(e) => handleRadiusChange(Number(e.target.value))}
+                onChange={(e) => setBrushRadius(Number(e.target.value))}
                 className="w-full accent-green-500"
               />
             </div>
@@ -217,7 +188,7 @@ export function TerrainEditorTab({
                 max="1"
                 step="0.05"
                 value={brushStrength}
-                onChange={(e) => handleStrengthChange(Number(e.target.value))}
+                onChange={(e) => setBrushStrength(Number(e.target.value))}
                 className="w-full accent-green-500"
               />
             </div>
@@ -234,7 +205,7 @@ export function TerrainEditorTab({
                 max="1"
                 step="0.05"
                 value={brushFalloff}
-                onChange={(e) => handleFalloffChange(Number(e.target.value))}
+                onChange={(e) => setBrushFalloff(Number(e.target.value))}
                 className="w-full accent-green-500"
               />
             </div>

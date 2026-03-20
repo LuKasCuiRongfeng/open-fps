@@ -4,8 +4,8 @@
 // Displayed only in edit mode when texture editing is enabled.
 // 仅在启用纹理编辑的编辑模式下显示
 
-import { useState, useEffect } from "react";
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
+import { useTextureBrushSettings } from "./hooks";
 
 interface Props {
   editor: TextureEditor | null;
@@ -17,60 +17,20 @@ interface Props {
  * 纹理编辑器面板 - 纹理绘制的画刷控制
  */
 export function TextureEditorPanel({ editor, visible }: Props) {
-  const [selectedLayer, setSelectedLayer] = useState("");
-  const [brushRadius, setBrushRadius] = useState(20);
-  const [brushStrength, setBrushStrength] = useState(0.5);
-  const [brushFalloff, setBrushFalloff] = useState(0.5);
-  const [layerNames, setLayerNames] = useState<readonly string[]>([]);
-
-  // Sync layer names from editor (runs once when editor changes).
-  // 从编辑器同步层名称（编辑器更改时运行一次）
-  useEffect(() => {
-    if (!editor) return;
-    setLayerNames(editor.layerNames);
-  }, [editor]);
-
-  // Sync state from editor.
-  // 从编辑器同步状态
-  useEffect(() => {
-    if (!editor) return;
-
-    const brush = editor.brushSettings;
-    setSelectedLayer(brush.selectedLayer);
-    setBrushRadius(brush.radius);
-    setBrushStrength(brush.strength);
-    setBrushFalloff(brush.falloff);
-  }, [editor]);
-
-  // Layer selection change.
-  // 层选择更改
-  const handleLayerChange = (layer: string) => {
-    setSelectedLayer(layer);
-    editor?.setSelectedLayer(layer);
-  };
-
-  // Brush radius change.
-  // 画刷半径更改
-  const handleRadiusChange = (value: number) => {
-    setBrushRadius(value);
-    editor?.setBrushRadius(value);
-  };
-
-  // Brush strength change.
-  // 画刷强度更改
-  const handleStrengthChange = (value: number) => {
-    setBrushStrength(value);
-    editor?.setBrushStrength(value);
-  };
-
-  // Brush falloff change.
-  // 画刷衰减更改
-  const handleFalloffChange = (value: number) => {
-    setBrushFalloff(value);
-    editor?.setBrushFalloff(value);
-  };
+  const {
+    selectedLayer,
+    brushRadius,
+    brushStrength,
+    brushFalloff,
+    setSelectedLayer,
+    setBrushRadius,
+    setBrushStrength,
+    setBrushFalloff,
+  } = useTextureBrushSettings(editor);
 
   if (!editor || !visible || !editor.editingEnabled) return null;
+
+  const layerNames = editor.layerNames;
 
   return (
     <div className="absolute top-4 right-4 w-64 bg-black/80 backdrop-blur-sm rounded-lg p-4 text-white text-sm">
@@ -89,7 +49,7 @@ export function TextureEditorPanel({ editor, visible }: Props) {
           {layerNames.map((layer, index) => (
             <button
               key={layer}
-              onClick={() => handleLayerChange(layer)}
+              onClick={() => setSelectedLayer(layer)}
               className={`px-3 py-2 rounded text-xs font-medium transition-colors ${
                 selectedLayer === layer
                   ? "bg-purple-600"
@@ -120,7 +80,7 @@ export function TextureEditorPanel({ editor, visible }: Props) {
           max="100"
           step="1"
           value={brushRadius}
-          onChange={(e) => handleRadiusChange(Number(e.target.value))}
+          onChange={(e) => setBrushRadius(Number(e.target.value))}
           className="w-full accent-purple-500"
         />
       </div>
@@ -137,7 +97,7 @@ export function TextureEditorPanel({ editor, visible }: Props) {
           max="1"
           step="0.01"
           value={brushStrength}
-          onChange={(e) => handleStrengthChange(Number(e.target.value))}
+          onChange={(e) => setBrushStrength(Number(e.target.value))}
           className="w-full accent-purple-500"
         />
       </div>
@@ -154,7 +114,7 @@ export function TextureEditorPanel({ editor, visible }: Props) {
           max="1"
           step="0.01"
           value={brushFalloff}
-          onChange={(e) => handleFalloffChange(Number(e.target.value))}
+          onChange={(e) => setBrushFalloff(Number(e.target.value))}
           className="w-full accent-purple-500"
         />
       </div>

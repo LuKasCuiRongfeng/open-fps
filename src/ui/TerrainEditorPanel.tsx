@@ -4,8 +4,8 @@
 // Mode switching, file operations moved to SettingsPanel.
 // 模式切换、文件操作已移至 SettingsPanel
 
-import { useState, useEffect } from "react";
 import type { TerrainEditor, BrushType } from "@game/editor";
+import { useTerrainBrushSettings } from "./hooks";
 
 interface Props {
   editor: TerrainEditor | null;
@@ -19,50 +19,16 @@ interface Props {
  * 仅在编辑模式显示。模式切换在设置中。
  */
 export function TerrainEditorPanel({ editor }: Props) {
-  const [brushType, setBrushType] = useState<BrushType>("raise");
-  const [brushRadius, setBrushRadius] = useState(10);
-  const [brushStrength, setBrushStrength] = useState(0.5);
-  const [brushFalloff, setBrushFalloff] = useState(0.7);
-
-  // Sync state from editor.
-  // 从编辑器同步状态
-  useEffect(() => {
-    if (!editor) return;
-
-    const brush = editor.brushSettings;
-    setBrushType(brush.type);
-    setBrushRadius(brush.radiusMeters);
-    setBrushStrength(brush.strength);
-    setBrushFalloff(brush.falloff);
-  }, [editor]);
-
-  // Brush type change.
-  // 画刷类型更改
-  const handleBrushTypeChange = (type: BrushType) => {
-    setBrushType(type);
-    editor?.setBrushType(type);
-  };
-
-  // Brush radius change.
-  // 画刷半径更改
-  const handleRadiusChange = (value: number) => {
-    setBrushRadius(value);
-    editor?.setBrushRadius(value);
-  };
-
-  // Brush strength change.
-  // 画刷强度更改
-  const handleStrengthChange = (value: number) => {
-    setBrushStrength(value);
-    editor?.setBrushStrength(value);
-  };
-
-  // Brush falloff change.
-  // 画刷衰减更改
-  const handleFalloffChange = (value: number) => {
-    setBrushFalloff(value);
-    editor?.setBrushFalloff(value);
-  };
+  const {
+    brushType,
+    brushRadius,
+    brushStrength,
+    brushFalloff,
+    setBrushType,
+    setBrushRadius,
+    setBrushStrength,
+    setBrushFalloff,
+  } = useTerrainBrushSettings(editor);
 
   if (!editor) return null;
 
@@ -83,7 +49,7 @@ export function TerrainEditorPanel({ editor }: Props) {
           {(["raise", "lower", "smooth", "flatten"] as BrushType[]).map((type) => (
             <button
               key={type}
-              onClick={() => handleBrushTypeChange(type)}
+              onClick={() => setBrushType(type)}
               className={`px-3 py-2 rounded text-xs font-medium transition-colors capitalize ${
                 brushType === type
                   ? "bg-blue-600"
@@ -108,7 +74,7 @@ export function TerrainEditorPanel({ editor }: Props) {
           max="50"
           step="1"
           value={brushRadius}
-          onChange={(e) => handleRadiusChange(Number(e.target.value))}
+          onChange={(e) => setBrushRadius(Number(e.target.value))}
           className="w-full accent-blue-500"
         />
       </div>
@@ -125,7 +91,7 @@ export function TerrainEditorPanel({ editor }: Props) {
           max="1"
           step="0.05"
           value={brushStrength}
-          onChange={(e) => handleStrengthChange(Number(e.target.value))}
+          onChange={(e) => setBrushStrength(Number(e.target.value))}
           className="w-full accent-blue-500"
         />
       </div>
@@ -142,7 +108,7 @@ export function TerrainEditorPanel({ editor }: Props) {
           max="1"
           step="0.05"
           value={brushFalloff}
-          onChange={(e) => handleFalloffChange(Number(e.target.value))}
+          onChange={(e) => setBrushFalloff(Number(e.target.value))}
           className="w-full accent-blue-500"
         />
       </div>

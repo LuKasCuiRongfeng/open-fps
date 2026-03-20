@@ -4,3 +4,5 @@
 export { useCloseConfirmation } from "./useCloseConfirmation";
 export { useEditorInput } from "./useEditorInput";
 export { useGameApp } from "./useGameApp";
+export { useTerrainBrushSettings } from "./useTerrainBrushSettings";
+export { useTextureBrushSettings } from "./useTextureBrushSettings";

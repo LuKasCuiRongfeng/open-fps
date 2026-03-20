@@ -10,6 +10,7 @@ use tauri::Manager;
 const PROJECT_FILE: &str = "project.json";
 const MAP_FILE: &str = "map.json";
 const SETTINGS_FILE: &str = "settings.json";
+const RECENT_PROJECTS_FILE: &str = "recent_projects.json";
 
 /// Ensure project folder exists, create if not.
 /// 确保项目文件夹存在，不存在则创建
@@ -19,6 +20,47 @@ fn ensure_project_folder(path: &PathBuf) -> Result<(), String> {
             .map_err(|e| format!("Failed to create project folder: {}", e))?;
     }
     Ok(())
+}
+
+fn ensure_parent_directory(path: &PathBuf) -> Result<(), String> {
+    if let Some(parent) = path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create directory: {}", e))?;
+        }
+    }
+
+    Ok(())
+}
+
+fn recent_projects_file(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+
+    if !app_data_dir.exists() {
+        fs::create_dir_all(&app_data_dir)
+            .map_err(|e| format!("Failed to create app data dir: {}", e))?;
+    }
+
+    Ok(app_data_dir.join(RECENT_PROJECTS_FILE))
+}
+
+fn load_recent_project_paths(path: &PathBuf) -> Vec<String> {
+    if !path.exists() {
+        return Vec::new();
+    }
+
+    let content = fs::read_to_string(path).unwrap_or_default();
+    serde_json::from_str(&content).unwrap_or_default()
+}
+
+fn save_recent_project_paths(path: &PathBuf, paths: &[String]) -> Result<(), String> {
+    let content = serde_json::to_string_pretty(paths)
+        .map_err(|e| format!("Failed to serialize recent projects: {}", e))?;
+    fs::write(path, content)
+        .map_err(|e| format!("Failed to save recent projects: {}", e))
 }
 
 // --- Project validation / 项目验证 ---
@@ -160,21 +202,8 @@ pub async fn rename_project(old_path: String, new_name: String) -> Result<String
 /// 扫描 projects 文件夹并返回有效项目的路径
 #[tauri::command]
 pub async fn list_recent_projects(app: tauri::AppHandle) -> Result<Vec<String>, String> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
-    let recent_file = app_data_dir.join("recent_projects.json");
-
-    if !recent_file.exists() {
-        return Ok(Vec::new());
-    }
-
-    let content = fs::read_to_string(&recent_file)
-        .map_err(|e| format!("Failed to read recent projects: {}", e))?;
-    
-    let paths: Vec<String> = serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse recent projects: {}", e))?;
+    let recent_file = recent_projects_file(&app)?;
+    let paths = load_recent_project_paths(&recent_file);
     
     // Filter out invalid/deleted projects.
     // 过滤掉无效/已删除的项目
@@ -190,26 +219,8 @@ pub async fn list_recent_projects(app: tauri::AppHandle) -> Result<Vec<String>, 
 /// 将项目添加到最近项目列表
 #[tauri::command]
 pub async fn add_recent_project(app: tauri::AppHandle, project_path: String) -> Result<(), String> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
-    
-    if !app_data_dir.exists() {
-        fs::create_dir_all(&app_data_dir)
-            .map_err(|e| format!("Failed to create app data dir: {}", e))?;
-    }
-
-    let recent_file = app_data_dir.join("recent_projects.json");
-    
-    // Read existing list.
-    // 读取现有列表
-    let mut paths: Vec<String> = if recent_file.exists() {
-        let content = fs::read_to_string(&recent_file).unwrap_or_default();
-        serde_json::from_str(&content).unwrap_or_default()
-    } else {
-        Vec::new()
-    };
+    let recent_file = recent_projects_file(&app)?;
+    let mut paths = load_recent_project_paths(&recent_file);
 
     // Remove if already exists (to move to front).
     // 如果已存在则移除（以移动到最前面）
@@ -225,39 +236,19 @@ pub async fn add_recent_project(app: tauri::AppHandle, project_path: String) -> 
     
     // Write back.
     // 写回
-    let content = serde_json::to_string_pretty(&paths)
-        .map_err(|e| format!("Failed to serialize recent projects: {}", e))?;
-    fs::write(&recent_file, content)
-        .map_err(|e| format!("Failed to save recent projects: {}", e))?;
-
-    Ok(())
+    save_recent_project_paths(&recent_file, &paths)
 }
 
 /// Remove a project from the recent projects list.
 /// 从最近项目列表中移除项目
 #[tauri::command]
 pub async fn remove_recent_project(app: tauri::AppHandle, project_path: String) -> Result<(), String> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
-    let recent_file = app_data_dir.join("recent_projects.json");
-    
-    if !recent_file.exists() {
-        return Ok(());
-    }
-
-    let content = fs::read_to_string(&recent_file).unwrap_or_default();
-    let mut paths: Vec<String> = serde_json::from_str(&content).unwrap_or_default();
+    let recent_file = recent_projects_file(&app)?;
+    let mut paths = load_recent_project_paths(&recent_file);
     
     paths.retain(|p| p != &project_path);
-    
-    let content = serde_json::to_string_pretty(&paths)
-        .map_err(|e| format!("Failed to serialize recent projects: {}", e))?;
-    fs::write(&recent_file, content)
-        .map_err(|e| format!("Failed to save recent projects: {}", e))?;
 
-    Ok(())
+    save_recent_project_paths(&recent_file, &paths)
 }
 
 // --- Generic file operations / 通用文件操作 ---
@@ -277,12 +268,7 @@ pub async fn write_text_file(path: String, content: String) -> Result<(), String
     let path = PathBuf::from(&path);
     // Ensure parent directory exists.
     // 确保父目录存在
-    if let Some(parent) = path.parent() {
-        if !parent.exists() {
-            fs::create_dir_all(parent)
-                .map_err(|e| format!("Failed to create directory: {}", e))?;
-        }
-    }
+    ensure_parent_directory(&path)?;
     fs::write(&path, content).map_err(|e| format!("Failed to write file: {}", e))
 }
 
@@ -304,12 +290,7 @@ pub async fn write_binary_file_base64(path: String, base64: String) -> Result<()
     let path = PathBuf::from(&path);
     // Ensure parent directory exists.
     // 确保父目录存在
-    if let Some(parent) = path.parent() {
-        if !parent.exists() {
-            fs::create_dir_all(parent)
-                .map_err(|e| format!("Failed to create directory: {}", e))?;
-        }
-    }
+    ensure_parent_directory(&path)?;
     let bytes = STANDARD.decode(&base64).map_err(|e| format!("Failed to decode base64: {}", e))?;
     fs::write(&path, bytes).map_err(|e| format!("Failed to write file: {}", e))
 }
@@ -408,12 +389,7 @@ pub async fn write_png_rgba(
     
     // Ensure parent directory exists.
     // 确保父目录存在
-    if let Some(parent) = path.parent() {
-        if !parent.exists() {
-            fs::create_dir_all(parent)
-                .map_err(|e| format!("Failed to create directory: {}", e))?;
-        }
-    }
+    ensure_parent_directory(&path)?;
     
     let pixels = STANDARD.decode(&base64_pixels)
         .map_err(|e| format!("Failed to decode base64: {}", e))?;

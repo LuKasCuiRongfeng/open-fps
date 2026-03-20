@@ -7,39 +7,11 @@ import {
   type SplatMapData,
   createDefaultSplatMap,
 } from "./TextureData";
-
-/**
- * Get splat map filename for a given index.
- * 获取给定索引的 splat map 文件名
- */
-function getSplatMapFilename(index: number): string {
-  return index === 0 ? "splatmap.png" : `splatmap_${index}.png`;
-}
-
-/**
- * Convert Uint8Array to base64 string (without stack overflow for large arrays).
- * 将 Uint8Array 转换为 base64 字符串（大数组不会栈溢出）
- */
-function uint8ArrayToBase64(bytes: Uint8Array): string {
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-/**
- * Convert base64 string to Uint8Array.
- * 将 base64 字符串转换为 Uint8Array
- */
-function base64ToUint8Array(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
+import {
+  base64ToUint8Array,
+  getSplatMapFilename,
+  uint8ArrayToBase64,
+} from "./storageUtils";
 
 /**
  * Texture storage manager for loading/saving texture.json and splatmap files.

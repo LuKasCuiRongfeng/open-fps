@@ -1,9 +1,10 @@
 // TextureEditorTab: texture editor settings tab with start/stop editing.
 // TextureEditorTab：带有开始/停止编辑的纹理编辑器设置标签
 
-import { useState, useEffect } from "react";
+import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 import type { ActiveEditorType } from "./TerrainEditorTab";
+import { useTextureBrushSettings } from "@ui/hooks";
 
 type TextureEditorTabProps = {
   textureEditor: TextureEditor | null;
@@ -20,26 +21,21 @@ export function TextureEditorTab({
   onActiveEditorChange,
   onClose,
 }: TextureEditorTabProps) {
-  const [selectedLayer, setSelectedLayer] = useState("");
-  const [brushRadius, setBrushRadius] = useState(20);
-  const [brushStrength, setBrushStrength] = useState(0.5);
-  const [brushFalloff, setBrushFalloff] = useState(0.5);
+  const {
+    selectedLayer,
+    brushRadius,
+    brushStrength,
+    brushFalloff,
+    setSelectedLayer,
+    setBrushRadius,
+    setBrushStrength,
+    setBrushFalloff,
+  } = useTextureBrushSettings(textureEditor);
 
   const canEdit = terrainMode === "editable";
   const editingEnabled = textureEditor?.editingEnabled ?? false;
   const isEditing = activeEditor === "texture";
   const layerNames = textureEditor?.layerNames ?? [];
-
-  // Sync state from editor.
-  // 从编辑器同步状态
-  useEffect(() => {
-    if (textureEditor) {
-      setSelectedLayer(textureEditor.brushSettings.selectedLayer);
-      setBrushRadius(textureEditor.brushSettings.radius);
-      setBrushStrength(textureEditor.brushSettings.strength);
-      setBrushFalloff(textureEditor.brushSettings.falloff);
-    }
-  }, [textureEditor]);
 
   // Toggle edit mode.
   // 切换编辑模式
@@ -56,34 +52,6 @@ export function TextureEditorTab({
       onActiveEditorChange("texture");
       onClose?.();
     }
-  };
-
-  // Handle layer selection.
-  // 处理层选择
-  const handleLayerSelect = (layerName: string) => {
-    setSelectedLayer(layerName);
-    textureEditor?.setSelectedLayer(layerName);
-  };
-
-  // Handle brush radius change.
-  // 处理画刷半径变化
-  const handleRadiusChange = (value: number) => {
-    setBrushRadius(value);
-    textureEditor?.setBrushRadius(value);
-  };
-
-  // Handle brush strength change.
-  // 处理画刷强度变化
-  const handleStrengthChange = (value: number) => {
-    setBrushStrength(value);
-    textureEditor?.setBrushStrength(value);
-  };
-
-  // Handle brush falloff change.
-  // 处理画刷衰减变化
-  const handleFalloffChange = (value: number) => {
-    setBrushFalloff(value);
-    textureEditor?.setBrushFalloff(value);
   };
 
   const canStartEditing = canEdit && editingEnabled;
@@ -141,7 +109,7 @@ export function TextureEditorTab({
                 {layerNames.map((name, index) => (
                   <button
                     key={name}
-                    onClick={() => handleLayerSelect(name)}
+                    onClick={() => setSelectedLayer(name)}
                     className={`px-3 py-2 rounded-md text-xs font-medium transition-colors ${
                       selectedLayer === name
                         ? "bg-purple-600"
@@ -178,7 +146,7 @@ export function TextureEditorTab({
                 max="100"
                 step="1"
                 value={brushRadius}
-                onChange={(e) => handleRadiusChange(Number(e.target.value))}
+                onChange={(e) => setBrushRadius(Number(e.target.value))}
                 className="w-full accent-purple-500"
               />
             </div>
@@ -195,7 +163,7 @@ export function TextureEditorTab({
                 max="1"
                 step="0.01"
                 value={brushStrength}
-                onChange={(e) => handleStrengthChange(Number(e.target.value))}
+                onChange={(e) => setBrushStrength(Number(e.target.value))}
                 className="w-full accent-purple-500"
               />
             </div>
@@ -212,7 +180,7 @@ export function TextureEditorTab({
                 max="1"
                 step="0.01"
                 value={brushFalloff}
-                onChange={(e) => handleFalloffChange(Number(e.target.value))}
+                onChange={(e) => setBrushFalloff(Number(e.target.value))}
                 className="w-full accent-purple-500"
               />
             </div>
