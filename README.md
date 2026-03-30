@@ -92,6 +92,7 @@ CI vs Release:
 - A pushed `v*` tag runs the release workflow.
 - Only the release workflow creates a GitHub Release and uploads installer assets.
 - If the release workflow fails, the Release page will not be published successfully.
+- The Release page includes a short summary and a full changelog link instead of relying only on the default GitHub auto text.
 
 What counts as a real release:
 

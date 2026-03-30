@@ -122,11 +122,34 @@ jobs:
           path: release-assets
           merge-multiple: true
 
+      - name: Generate release body
+        run: |
+          cat <<EOF > release-notes.md
+          ## Summary
+
+          - Automated multi-platform release for ${GITHUB_REF_NAME}
+          - Targets: editor and game
+          - Platforms: Windows, Linux, macOS
+
+          ## Assets
+
+          - Windows: NSIS installer (.exe) and MSI package (.msi)
+          - Linux: AppImage (.AppImage) and Debian package (.deb)
+          - macOS: DMG package (.dmg)
+
+          ## Notes
+
+          - Release version is synchronized from the pushed Git tag.
+          - The GitHub Release is published only after all release builds succeed.
+
+          Full Changelog: https://github.com/${GITHUB_REPOSITORY}/commits/${GITHUB_REF_NAME}
+          EOF
+
       - name: Create GitHub release and upload assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          generate_release_notes: true
+          body_path: release-notes.md
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
