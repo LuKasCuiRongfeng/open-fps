@@ -36,6 +36,44 @@ pnpm build
 pnpm tauri build
 ```
 
+Editor is the default target for the generic commands above.
+
+Use explicit target commands when you want a dedicated runtime or package:
+
+```bash
+pnpm dev:editor
+pnpm dev:game
+pnpm build:editor
+pnpm build:game
+pnpm tauri:dev:editor
+pnpm tauri:dev:game
+pnpm tauri:build:editor
+pnpm tauri:build:game
+pnpm tauri:debug:editor
+pnpm tauri:debug:game
+```
+
+- `dist-editor/`: editor-only frontend bundle
+- `dist-game/`: game-only frontend bundle
+- `src-tauri/target-editor/`: editor-native cargo output and bundles
+- `src-tauri/target-game/`: game-native cargo output and bundles
+- `src-tauri/tauri.editor.conf.json`: editor package config
+- `src-tauri/tauri.game.conf.json`: game package config
+
+Dedicated native binaries:
+
+- Editor: `open-fps-editor`
+- Game: `open-fps-game`
+
+CI entrypoints:
+
+```bash
+pnpm ci:frontend:editor
+pnpm ci:frontend:game
+pnpm ci:tauri:editor
+pnpm ci:tauri:game
+```
+
 ## Architecture / 架构
 
 - ECS: pure-data components, stateless systems / ECS：纯数据组件、无状态系统

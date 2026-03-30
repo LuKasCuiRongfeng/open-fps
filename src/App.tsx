@@ -1,11 +1,7 @@
-import { resolveAppTarget } from "./app/appTarget";
-import EditorView from "./ui/EditorView";
-import PlayerView from "./ui/PlayerView";
+import AppEntry from "@app-entry";
 
 function App() {
-    const appTarget = resolveAppTarget();
-
-    return appTarget === "game" ? <PlayerView /> : <EditorView />;
+    return <AppEntry />;
 }
 
 export default App;

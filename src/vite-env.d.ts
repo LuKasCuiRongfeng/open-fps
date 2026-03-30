@@ -7,3 +7,10 @@ interface ImportMetaEnv {
 interface ImportMeta {
 	readonly env: ImportMetaEnv;
 }
+
+declare module "@app-entry" {
+	import type { ComponentType } from "react";
+
+	const AppEntry: ComponentType;
+	export default AppEntry;
+}

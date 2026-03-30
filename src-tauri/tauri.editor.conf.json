@@ -1,9 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "open-fps",
+  "productName": "open-fps-editor",
   "mainBinaryName": "open-fps-editor",
   "version": "0.1.0",
-  "identifier": "open-fps",
+  "identifier": "open-fps.editor",
   "build": {
     "beforeDevCommand": "pnpm dev:editor",
     "devUrl": "http://127.0.0.1:1420",
@@ -13,7 +13,7 @@
   "app": {
     "windows": [
       {
-        "title": "open-fps",
+        "title": "open-fps editor",
         "width": 1200,
         "height": 800,
         "closable": true

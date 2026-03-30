@@ -1,13 +1,22 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
 const host = process.env.TAURI_DEV_HOST;
+type AppTarget = "editor" | "game";
+
+function resolveAppTarget(mode: string): AppTarget {
+    const env = loadEnv(mode, process.cwd(), "");
+    return env.VITE_APP_TARGET === "game" ? "game" : "editor";
+}
 
 // https://vite.dev/config/
-export default defineConfig(async () => ({
+export default defineConfig(async ({ mode }) => {
+    const appTarget = resolveAppTarget(mode);
+
+    return ({
     plugins: [
         react(),
         babel({
@@ -23,7 +32,12 @@ export default defineConfig(async () => ({
             "@project": path.resolve(__dirname, "src/game/project"),
             "@ui": path.resolve(__dirname, "src/ui"),
             "@config": path.resolve(__dirname, "src/config"),
+            "@app-entry": path.resolve(__dirname, `src/app/entries/${appTarget}.tsx`),
         },
+    },
+
+    build: {
+        outDir: appTarget === "game" ? "dist-game" : "dist-editor",
     },
 
     // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
@@ -47,4 +61,5 @@ export default defineConfig(async () => ({
             ignored: ["**/src-tauri/**"],
         },
     },
-}));
+    });
+});

@@ -9,8 +9,14 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-editor
+dist-game
 dist-ssr
 *.local
+src-tauri/target-editor
+src-tauri/target-game
+artifacts/editor
+artifacts/game
 
 # Editor directories and files
 .vscode/*
