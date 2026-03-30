@@ -3,16 +3,14 @@
 
 import { useEffect, useState } from "react";
 import type { GameSettings, GameSettingsPatch } from "@game/settings";
-import type { ActiveEditorType } from "./editor/settings/tabs/TerrainEditorTab";
+import type { ActiveEditorType } from "./editor/settings/tabs";
 import FpsCounter from "./FpsCounter";
 import LoadingOverlay, { type LoadingStep } from "./LoadingOverlay";
 import { EditorSettingsPanel } from "./settings";
 import { TerrainEditorPanel } from "./TerrainEditorPanel";
 import { TextureEditorPanel } from "./TextureEditorPanel";
 import { ProjectScreen } from "./editor";
-import { useEditorWorkspace } from "./editor/hooks/useEditorWorkspace";
-import { useCloseConfirmation, useEditorInput } from "./editor/hooks";
-import { useEditorApp } from "./hooks";
+import { useCloseConfirmation, useEditorApp, useEditorInput, useEditorWorkspace } from "./editor/hooks";
 
 const LOADING_STEPS: LoadingStep[] = [
 	{ id: "checking-webgpu", label: "Checking WebGPU" },

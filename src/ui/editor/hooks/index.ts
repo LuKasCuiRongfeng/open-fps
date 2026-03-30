@@ -1,4 +1,5 @@
 export { useCloseConfirmation } from "./useCloseConfirmation";
+export { useEditorApp } from "./useEditorApp";
 export { useEditorInput } from "./useEditorInput";
 export {
   useEditorWorkspace,

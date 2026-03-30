@@ -5,12 +5,12 @@ import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 import type { GameSettings, GameSettingsPatch } from "@game/settings";
 import type { MapData } from "@project/MapData";
 import type { EditorWorkspaceController } from "@ui/editor/hooks/useEditorWorkspace";
-import type { ActiveEditorType } from "@ui/editor/settings/tabs/TerrainEditorTab";
+import type { ActiveEditorType } from "@ui/editor/settings/tabs";
 import {
-  getSettingsTabs,
-  renderSettingsTab,
-  type SettingsTabId,
-} from "./tabRegistry";
+  EDITOR_SETTINGS_TABS,
+  renderEditorSettingsTab,
+  type EditorSettingsTabId,
+} from "@ui/editor/settings/tabRegistry";
 import { SettingsPanelFrame } from "./SettingsPanelFrame";
 
 type EditorSettingsPanelProps = {
@@ -52,8 +52,8 @@ export function EditorSettingsPanel({
   onReset,
   onClose,
 }: EditorSettingsPanelProps) {
-  const [tab, setTab] = useState<SettingsTabId>("help");
-  const tabs = getSettingsTabs("editor");
+  const [tab, setTab] = useState<EditorSettingsTabId>("help");
+  const tabs = EDITOR_SETTINGS_TABS;
 
   useEffect(() => {
     if (tabs.some((entry) => entry.id === tab)) {
@@ -74,7 +74,7 @@ export function EditorSettingsPanel({
       onReset={onReset}
       onClose={onClose}
     >
-      {renderSettingsTab(tab, {
+      {renderEditorSettingsTab(tab, {
         settings,
         gameApp,
         editorApp,
