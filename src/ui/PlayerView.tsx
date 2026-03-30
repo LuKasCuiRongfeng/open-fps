@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import type { GameSettingsPatch } from "@game/settings";
 import FpsCounter from "./FpsCounter";
 import LoadingOverlay, { type LoadingStep } from "./LoadingOverlay";
-import SettingsPanel from "./SettingsPanel";
-import { useEditorWorkspace, useGameApp } from "./hooks";
+import { GameSettingsPanel } from "./settings";
+import { useGameApp } from "./hooks";
 
 const LOADING_STEPS: LoadingStep[] = [
   { id: "checking-webgpu", label: "Checking WebGPU" },
@@ -16,7 +16,6 @@ const LOADING_STEPS: LoadingStep[] = [
 
 export default function PlayerView() {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const editorWorkspace = useEditorWorkspace();
 
   const {
     hostRef,
@@ -30,7 +29,6 @@ export default function PlayerView() {
     enabled: true,
     pendingMapData: null,
     pendingSettings: null,
-    currentProjectPath: null,
   });
 
   useEffect(() => {
@@ -87,21 +85,10 @@ export default function PlayerView() {
       />
 
       {settings && (
-        <SettingsPanel
+        <GameSettingsPanel
           open={settingsOpen}
-          appTarget="game"
           settings={settings}
           gameApp={appRef.current}
-          terrainEditor={null}
-          textureEditor={null}
-          editorWorkspace={editorWorkspace}
-          terrainMode="procedural"
-          activeEditor="none"
-          currentProjectPath={null}
-          onActiveEditorChange={() => {}}
-          onProjectPathChange={() => {}}
-          onLoadMap={() => {}}
-          onApplySettings={() => {}}
           onPatch={applyPatch}
           onReset={resetToDefaults}
           onClose={() => setSettingsOpen(false)}

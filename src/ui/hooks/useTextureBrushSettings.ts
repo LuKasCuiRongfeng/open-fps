@@ -61,3 +61,7 @@ export function useTextureBrushSettings(
     setBrushFalloff,
   };
 }
+
+export {
+  useTextureBrushSettings as default,
+} from "../editor/hooks/useTextureBrushSettings";

@@ -61,7 +61,3 @@ export function useTerrainBrushSettings(
     setBrushFalloff,
   };
 }
-
-export {
-  useTerrainBrushSettings as default,
-} from "../editor/hooks/useTerrainBrushSettings";

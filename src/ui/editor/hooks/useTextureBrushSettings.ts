@@ -1,38 +1,38 @@
 import { useEffect, useState } from "react";
-import type { BrushType, TerrainEditor } from "@game/editor";
+import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 
-export interface TerrainBrushSettingsState {
-  brushType: BrushType;
+export interface TextureBrushSettingsState {
+  selectedLayer: string;
   brushRadius: number;
   brushStrength: number;
   brushFalloff: number;
-  setBrushType: (type: BrushType) => void;
+  setSelectedLayer: (layer: string) => void;
   setBrushRadius: (value: number) => void;
   setBrushStrength: (value: number) => void;
   setBrushFalloff: (value: number) => void;
 }
 
-export function useTerrainBrushSettings(
-  editor: TerrainEditor | null,
-): TerrainBrushSettingsState {
-  const [brushType, setBrushTypeState] = useState<BrushType>("raise");
-  const [brushRadius, setBrushRadiusState] = useState(10);
+export function useTextureBrushSettings(
+  editor: TextureEditor | null,
+): TextureBrushSettingsState {
+  const [selectedLayer, setSelectedLayerState] = useState("");
+  const [brushRadius, setBrushRadiusState] = useState(20);
   const [brushStrength, setBrushStrengthState] = useState(0.5);
-  const [brushFalloff, setBrushFalloffState] = useState(0.7);
+  const [brushFalloff, setBrushFalloffState] = useState(0.5);
 
   useEffect(() => {
     if (!editor) return;
 
     const brush = editor.brushSettings;
-    setBrushTypeState(brush.type);
-    setBrushRadiusState(brush.radiusMeters);
+    setSelectedLayerState(brush.selectedLayer);
+    setBrushRadiusState(brush.radius);
     setBrushStrengthState(brush.strength);
     setBrushFalloffState(brush.falloff);
   }, [editor]);
 
-  const setBrushType = (type: BrushType) => {
-    setBrushTypeState(type);
-    editor?.setBrushType(type);
+  const setSelectedLayer = (layer: string) => {
+    setSelectedLayerState(layer);
+    editor?.setSelectedLayer(layer);
   };
 
   const setBrushRadius = (value: number) => {
@@ -51,17 +51,13 @@ export function useTerrainBrushSettings(
   };
 
   return {
-    brushType,
+    selectedLayer,
     brushRadius,
     brushStrength,
     brushFalloff,
-    setBrushType,
+    setSelectedLayer,
     setBrushRadius,
     setBrushStrength,
     setBrushFalloff,
   };
 }
-
-export {
-  useTerrainBrushSettings as default,
-} from "../editor/hooks/useTerrainBrushSettings";

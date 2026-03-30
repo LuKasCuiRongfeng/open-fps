@@ -4,14 +4,10 @@
 import { useState, useEffect } from "react";
 import type { TerrainEditor, BrushType } from "@game/editor";
 import type { EditorMouseAction, GameSettings } from "@game/settings";
-import { useTerrainBrushSettings } from "@ui/hooks";
+import { useTerrainBrushSettings } from "../../hooks/useTerrainBrushSettings";
 
-// Local type for mouse config (subset of EditorSettings).
-// 本地鼠标配置类型（EditorSettings 的子集）
 type EditorMouseConfig = Pick<GameSettings["editor"], "leftButton" | "rightButton" | "middleButton">;
 
-// Active editor type - for mutual exclusion.
-// 活跃编辑器类型 - 用于互斥
 export type ActiveEditorType = "none" | "terrain" | "texture";
 
 type TerrainEditorTabProps = {
@@ -40,23 +36,16 @@ export function TerrainEditorTab({
     setBrushFalloff,
   } = useTerrainBrushSettings(terrainEditor);
 
-  // Mouse button configuration state.
-  // 鼠标按键配置状态
   const [mouseConfig, setMouseConfig] = useState<EditorMouseConfig>(() => ({
     leftButton: terrainEditor?.mouseConfig.leftButton ?? "brush",
     rightButton: terrainEditor?.mouseConfig.rightButton ?? "orbit",
     middleButton: terrainEditor?.mouseConfig.middleButton ?? "pan",
   }));
-
-  // Sticky drag state.
-  // 粘性拖拽状态
   const [stickyDrag, setStickyDrag] = useState(() => terrainEditor?.stickyDrag ?? false);
 
   const canEdit = terrainMode === "editable";
   const isEditing = activeEditor === "terrain";
 
-  // Sync state from editor.
-  // 从编辑器同步状态
   useEffect(() => {
     if (!terrainEditor) return;
 
@@ -68,35 +57,26 @@ export function TerrainEditorTab({
     setStickyDrag(terrainEditor.stickyDrag);
   }, [terrainEditor]);
 
-  // Handle mouse config change.
-  // 处理鼠标配置变化
   const handleMouseConfigChange = (
-    button: keyof EditorMouseConfig, action: EditorMouseAction
+    button: keyof EditorMouseConfig,
+    action: EditorMouseAction,
   ) => {
     setMouseConfig((prev) => ({ ...prev, [button]: action }));
     terrainEditor?.setMouseConfig({ [button]: action });
   };
 
-  // Handle sticky drag toggle.
-  // 处理粘性拖拽开关
   const handleStickyDragChange = (enabled: boolean) => {
     setStickyDrag(enabled);
     terrainEditor?.setStickyDrag(enabled);
   };
 
-  // Toggle edit mode.
-  // 切换编辑模式
   const handleToggleMode = () => {
     if (!canEdit) return;
 
     if (isEditing) {
-      // Stop editing.
-      // 停止编辑
       terrainEditor?.setMode("play");
       onActiveEditorChange("none");
     } else {
-      // Start editing - this will stop other editors.
-      // 开始编辑 - 这会停止其他编辑器
       terrainEditor?.setMode("edit");
       onActiveEditorChange("terrain");
       onClose?.();
@@ -105,7 +85,6 @@ export function TerrainEditorTab({
 
   return (
     <div className="space-y-5">
-      {/* Mode toggle */}
       <div className="flex items-center justify-between">
         <div>
           <div className="text-sm font-semibold">Terrain Editing</div>
@@ -132,10 +111,8 @@ export function TerrainEditorTab({
         </button>
       </div>
 
-      {/* Brush settings (only when editing) */}
       {isEditing && (
         <>
-          {/* Brush type */}
           <div>
             <div className="text-sm font-semibold mb-3">Brush Type</div>
             <div className="grid grid-cols-4 gap-2">
@@ -155,11 +132,9 @@ export function TerrainEditorTab({
             </div>
           </div>
 
-          {/* Brush parameters */}
           <div className="space-y-3">
             <div className="text-sm font-semibold">Brush Settings</div>
-            
-            {/* Radius */}
+
             <div>
               <div className="flex items-center justify-between text-sm text-white/80 mb-1">
                 <span>Radius</span>
@@ -176,7 +151,6 @@ export function TerrainEditorTab({
               />
             </div>
 
-            {/* Strength */}
             <div>
               <div className="flex items-center justify-between text-sm text-white/80 mb-1">
                 <span>Strength</span>
@@ -193,7 +167,6 @@ export function TerrainEditorTab({
               />
             </div>
 
-            {/* Falloff */}
             <div>
               <div className="flex items-center justify-between text-sm text-white/80 mb-1">
                 <span>Falloff</span>
@@ -213,7 +186,6 @@ export function TerrainEditorTab({
         </>
       )}
 
-      {/* Mouse button configuration */}
       <div>
         <div className="text-sm font-semibold mb-3">Mouse Controls</div>
         <div className="space-y-3">
@@ -264,7 +236,6 @@ export function TerrainEditorTab({
           Scroll: Zoom camera • Shift+Scroll: Brush radius
         </div>
 
-        {/* Sticky drag toggle */}
         <div className="mt-3 flex items-center justify-between">
           <div>
             <div className="text-sm text-white/80">Sticky Drag</div>
@@ -289,5 +260,3 @@ export function TerrainEditorTab({
     </div>
   );
 }
-
-export { TerrainEditorTab as default } from "../../editor/settings/tabs/TerrainEditorTab";

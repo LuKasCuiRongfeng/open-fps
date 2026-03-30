@@ -41,7 +41,7 @@ import {
 } from "three/webgpu";
 import type { ComputeNode } from "three/webgpu";
 import type { TerrainConfig } from "../terrain";
-import type { BrushStroke } from "../../../editor/terrain/TerrainEditor";
+import type { BrushStroke } from "../../../editor/terrain/TerrainBrush";
 import type { TileAtlasAllocator } from "@game/gpu";
 
 /**

@@ -1,4 +1,4 @@
-import type { BrushStroke } from "../../editor/terrain/TerrainEditor";
+import type { BrushStroke } from "../../editor/terrain/TerrainBrush";
 import type { ChunkCoord } from "./ChunkManager";
 
 type ChunkLike = {

@@ -3,7 +3,7 @@
 
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 import type { ActiveEditorType } from "./TerrainEditorTab";
-import { useTextureBrushSettings } from "@ui/hooks";
+import { useTextureBrushSettings } from "../../hooks/useTextureBrushSettings";
 
 type TextureEditorTabProps = {
   textureEditor: TextureEditor | null;
@@ -36,18 +36,12 @@ export function TextureEditorTab({
   const isEditing = activeEditor === "texture";
   const layerNames = textureEditor?.layerNames ?? [];
 
-  // Toggle edit mode.
-  // 切换编辑模式
   const handleToggleMode = () => {
     if (!canEdit || !editingEnabled) return;
 
     if (isEditing) {
-      // Stop editing.
-      // 停止编辑
       onActiveEditorChange("none");
     } else {
-      // Start editing - this will stop other editors.
-      // 开始编辑 - 这会停止其他编辑器
       onActiveEditorChange("texture");
       onClose?.();
     }
@@ -57,15 +51,14 @@ export function TextureEditorTab({
 
   return (
     <div className="space-y-5">
-      {/* Mode toggle / 模式切换 */}
       <div className="flex items-center justify-between">
         <div>
           <div className="text-sm font-semibold">Texture Painting</div>
           <div className="text-xs text-white/50">
-            {!canEdit 
-              ? "Open a project to enable editing" 
-              : !editingEnabled 
-                ? "Add texture.json to enable" 
+            {!canEdit
+              ? "Open a project to enable editing"
+              : !editingEnabled
+                ? "Add texture.json to enable"
                 : "Paint texture layers on terrain"}
           </div>
         </div>
@@ -90,17 +83,14 @@ export function TextureEditorTab({
         </button>
       </div>
 
-      {/* Not enabled warning / 未启用警告 */}
       {canEdit && !editingEnabled && (
         <div className="rounded-lg bg-amber-500/20 px-3 py-2 text-sm text-amber-300">
           Texture editing disabled. Create a <code className="rounded bg-black/30 px-1">texture.json</code> file in your project to enable.
         </div>
       )}
 
-      {/* Brush settings (only when editing) / 画刷设置（仅在编辑时） */}
       {isEditing && (
         <>
-          {/* Layer selection / 层选择 */}
           {layerNames.length > 0 && (
             <div>
               <div className="text-sm font-semibold mb-3">Texture Layer</div>
@@ -129,11 +119,9 @@ export function TextureEditorTab({
             </div>
           )}
 
-          {/* Brush parameters / 画刷参数 */}
           <div className="space-y-3">
             <div className="text-sm font-semibold">Brush Settings</div>
-            
-            {/* Radius / 半径 */}
+
             <div>
               <div className="flex items-center justify-between text-sm text-white/80 mb-1">
                 <span>Radius</span>
@@ -150,7 +138,6 @@ export function TextureEditorTab({
               />
             </div>
 
-            {/* Strength / 强度 */}
             <div>
               <div className="flex items-center justify-between text-sm text-white/80 mb-1">
                 <span>Strength</span>
@@ -167,7 +154,6 @@ export function TextureEditorTab({
               />
             </div>
 
-            {/* Falloff / 衰减 */}
             <div>
               <div className="flex items-center justify-between text-sm text-white/80 mb-1">
                 <span>Falloff</span>
@@ -185,7 +171,6 @@ export function TextureEditorTab({
             </div>
           </div>
 
-          {/* Help / 帮助 */}
           <div className="rounded-lg bg-purple-900/30 p-3 text-xs text-purple-200">
             <strong>Controls:</strong>
             <ul className="mt-1 list-disc list-inside space-y-1">
@@ -200,5 +185,3 @@ export function TextureEditorTab({
     </div>
   );
 }
-
-export { TextureEditorTab as default } from "../../editor/settings/tabs/TextureEditorTab";

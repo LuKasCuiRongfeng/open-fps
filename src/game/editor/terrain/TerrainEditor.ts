@@ -9,7 +9,7 @@ import {
   deserializeMapData,
   serializeMapData,
   type MapData,
-} from "../../project/MapData";
+} from "@project/MapData";
 import { EditorOrbitCamera } from "./EditorOrbitCamera";
 import { TerrainBrush, type BrushType, type BrushStroke, type BrushSettings } from "./TerrainBrush";
 

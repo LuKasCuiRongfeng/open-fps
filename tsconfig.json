@@ -3,7 +3,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@game/*": ["./src/game/*"],
-      "@project/*": ["./src/game/project/*"],
+      "@project/*": ["./src/workspace/*"],
+      "@workspace/*": ["./src/workspace/*"],
       "@ui/*": ["./src/ui/*"],
       "@config/*": ["./src/config/*"],
       "three/webgpu": ["./node_modules/@types/three/src/Three.WebGPU.d.ts"],

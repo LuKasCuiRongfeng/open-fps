@@ -1,10 +1,11 @@
 import type { AppTarget } from "@/app/appTarget";
 import type { ReactNode } from "react";
-import type { GameApp } from "@game/app/GameApp";
-import type { TerrainEditor, MapData } from "@game/editor";
+import type { GameApp, EditorApp } from "@game/app";
+import type { TerrainEditor } from "@game/editor";
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 import type { GameSettings, GameSettingsPatch } from "@game/settings";
-import type { EditorWorkspaceController } from "@ui/hooks";
+import type { MapData } from "@project/MapData";
+import type { EditorWorkspaceController } from "@ui/editor/hooks";
 import {
   HelpTab,
   RenderTab,
@@ -15,10 +16,12 @@ import {
   PhysicsTab,
   ThirdPersonTab,
   FileTab,
+} from "./tabs";
+import {
   TerrainEditorTab,
   TextureEditorTab,
   type ActiveEditorType,
-} from "./tabs";
+} from "../editor/settings/tabs";
 
 export const SETTINGS_TABS = [
   { id: "help", label: "Help", targets: ["editor", "game"] },
@@ -39,6 +42,7 @@ export type SettingsTabId = (typeof SETTINGS_TABS)[number]["id"];
 export type SettingsTabRenderProps = {
   settings: GameSettings;
   gameApp: GameApp | null;
+  editorApp: EditorApp | null;
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;
   editorWorkspace: EditorWorkspaceController;
@@ -73,7 +77,7 @@ export const SETTINGS_TAB_REGISTRY: Record<SettingsTabId, SettingsTabDescriptor>
     targets: ["editor"],
     render: (props) => (
       <FileTab
-        gameApp={props.gameApp}
+        editorApp={props.editorApp}
         terrainEditor={props.terrainEditor}
         editorWorkspace={props.editorWorkspace}
         onLoadMap={props.onLoadMap}

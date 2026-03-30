@@ -5,7 +5,7 @@
 // 仅在启用纹理编辑的编辑模式下显示
 
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
-import { useTextureBrushSettings } from "./hooks";
+import { useTextureBrushSettings } from "./editor/hooks";
 
 interface Props {
   editor: TextureEditor | null;

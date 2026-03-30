@@ -1,1 +1,1 @@
-export { GameApp, type GameBootPhase } from "./app/GameApp";
+export { GameApp, EditorApp, type GameBootPhase } from "./app";

@@ -1,5 +1,5 @@
-// GameApp: main game application coordinator.
-// GameApp：主游戏应用协调器
+// GameApp: shared gameplay runtime without editor-only orchestration.
+// GameApp：不包含编辑器编排的共享游戏运行时
 
 import {
   DirectionalLight,
@@ -9,17 +9,14 @@ import {
   type Scene,
   type WebGPURenderer,
 } from "three/webgpu";
-import { terrainConfig } from "@config/terrain";
 import { renderStaticConfig } from "@config/render";
 import { playerStaticConfig } from "@config/player";
 import { createWorld } from "./createWorld";
+import type { GameBootPhase, RuntimeAppSession } from "./types";
 import { FpsCounter, GameRenderer } from "../rendering";
 import { SystemScheduler } from "../scheduling";
 import { GameEcs } from "../ecs/GameEcs";
 import { createTimeResource, type GameResources } from "../ecs/resources";
-import { BrushIndicatorSystem, type EditorBrushInfo, type ActiveEditorType } from "../editor/common";
-import { TerrainEditor } from "../editor/terrain/TerrainEditor";
-import { TextureEditor } from "../editor/texture/TextureEditor";
 import { InputManager } from "../input/InputManager";
 import { createRawInputState } from "../input/RawInputState";
 import { createPlayer } from "../prefabs/createPlayer";
@@ -42,42 +39,29 @@ import {
   type GameSettings,
   type GameSettingsPatch,
 } from "../settings";
-import { TerrainTextureArrays } from "../world/terrain/TerrainTextureArrays";
 import { setTerrainNormalSoftness } from "../world/terrain/material/terrainMaterialTexturedArray";
 import { timeToSunPosition, type SkySystem } from "../world/sky/SkySystem";
-import type { MapData } from "../project/MapData";
-
-export type GameBootPhase =
-  | "checking-webgpu"
-  | "creating-renderer"
-  | "creating-world"
-  | "creating-ecs"
-  | "loading-map"
-  | "ready";
+import type { MapData } from "@project/MapData";
 
 /**
  * GameApp: coordinates game systems and lifecycle.
  * GameApp：协调游戏系统和生命周期
  */
-export class GameApp {
-  private readonly gameRenderer: GameRenderer;
-  private readonly ecs = new GameEcs();
-  private readonly scheduler = new SystemScheduler();
-  private readonly inputManager: InputManager;
-  private readonly resources: GameResources;
-  private readonly settings = createDefaultGameSettings();
-  private readonly fpsCounter = new FpsCounter();
-  private readonly sun: DirectionalLight;
-  private readonly hemi: HemisphereLight;
-  private readonly skySystem: SkySystem;
-  private readonly terrainEditor: TerrainEditor;
-  private readonly textureEditor: TextureEditor;
-  private readonly brushIndicator: BrushIndicatorSystem;
-  private activeEditorType: ActiveEditorType = null;
+export class GameApp implements RuntimeAppSession {
+  protected readonly gameRenderer: GameRenderer;
+  protected readonly ecs = new GameEcs();
+  protected readonly scheduler = new SystemScheduler();
+  protected readonly inputManager: InputManager;
+  protected readonly resources: GameResources;
+  protected readonly settings = createDefaultGameSettings();
+  protected readonly fpsCounter = new FpsCounter();
+  protected readonly sun: DirectionalLight;
+  protected readonly hemi: HemisphereLight;
+  protected readonly skySystem: SkySystem;
   readonly ready: Promise<void>;
-  private disposed = false;
+  protected disposed = false;
 
-  private onTimeUpdateCallback: ((timeOfDay: number) => void) | null = null;
+  protected onTimeUpdateCallback: ((timeOfDay: number) => void) | null = null;
 
   constructor(container: HTMLElement, onBootPhase?: (phase: GameBootPhase) => void) {
     onBootPhase?.("checking-webgpu");
@@ -111,22 +95,6 @@ export class GameApp {
 
     onBootPhase?.("creating-ecs");
 
-    this.terrainEditor = new TerrainEditor(terrainConfig);
-    this.textureEditor = new TextureEditor();
-
-    this.brushIndicator = new BrushIndicatorSystem();
-    this.brushIndicator.attach(this.gameRenderer.scene);
-
-    this.terrainEditor.setOnModeChange((mode) => {
-      this.inputManager.setPointerLockEnabled(mode === "play");
-      if (mode === "edit") {
-        const pos = this.getPlayerPosition();
-        if (pos) {
-          this.terrainEditor.initCameraFromPlayer(pos.x, pos.y, pos.z);
-        }
-      }
-    });
-
     this.registerSystems();
 
     this.ecs.world.onDestroy((entityId) => {
@@ -139,7 +107,7 @@ export class GameApp {
     this.ready = this.initRendererAndStart(onBootPhase);
   }
 
-  private registerSystems(): void {
+  protected registerSystems(): void {
     this.scheduler.register("input", "input", inputSystem);
     this.scheduler.register("cameraMode", "gameplay", cameraModeSystem);
     this.scheduler.register("look", "gameplay", lookSystem);
@@ -151,7 +119,7 @@ export class GameApp {
     this.scheduler.register("avatar", "render", avatarSystem);
   }
 
-  private async initRendererAndStart(onBootPhase?: (phase: GameBootPhase) => void) {
+  protected async initRendererAndStart(onBootPhase?: (phase: GameBootPhase) => void) {
     await this.gameRenderer.init();
     if (this.disposed) return;
 
@@ -162,11 +130,10 @@ export class GameApp {
     );
     if (this.disposed) return;
 
-    const splatWorldSize = terrainConfig.worldBounds.halfSizeMeters * 2;
-    await this.textureEditor.init(this.gameRenderer.renderer, splatWorldSize);
-    if (this.disposed) return;
-
     createPlayer(this.ecs, this.resources);
+
+    await this.initRuntimeExtensions();
+    if (this.disposed) return;
 
     this.skySystem.initPostProcessing(
       this.gameRenderer.renderer,
@@ -191,6 +158,8 @@ export class GameApp {
 
     onBootPhase?.("ready");
   }
+
+  protected async initRuntimeExtensions(): Promise<void> {}
 
   private async warmUpShaders(): Promise<void> {
     const { Euler } = await import("three/webgpu");
@@ -220,12 +189,13 @@ export class GameApp {
     if (this.disposed) return;
     this.disposed = true;
 
+    this.beforeDispose();
     this.inputManager.dispose();
     this.resources.runtime.terrain.dispose();
-    this.textureEditor.dispose();
-    this.brushIndicator.dispose();
     this.gameRenderer.dispose();
   }
+
+  protected beforeDispose(): void {}
 
   get renderer(): WebGPURenderer {
     return this.gameRenderer.renderer;
@@ -240,12 +210,11 @@ export class GameApp {
   }
 
   getSettingsSnapshot(): GameSettings {
-    const mc = this.terrainEditor.mouseConfig;
-    this.settings.editor.leftButton = mc.leftButton;
-    this.settings.editor.rightButton = mc.rightButton;
-    this.settings.editor.middleButton = mc.middleButton;
+    this.syncSettingsSnapshot(this.settings);
     return cloneSettings(this.settings);
   }
+
+  protected syncSettingsSnapshot(_settings: GameSettings): void {}
 
   setOnTimeUpdate(callback: ((timeOfDay: number) => void) | null): void {
     this.onTimeUpdateCallback = callback;
@@ -266,54 +235,11 @@ export class GameApp {
   }
 
   getMousePosition(): { x: number; y: number; z: number; valid: boolean } | null {
-    if (this.terrainEditor.mode !== "edit") return null;
-
-    if (this.terrainEditor.brushTargetValid) {
-      const x = this.terrainEditor.brushTargetX;
-      const z = this.terrainEditor.brushTargetZ;
-      const y = this.resources.runtime.terrain.heightAt(x, z);
-      return { x, y, z, valid: true };
-    }
-
-    if (this.textureEditor.brushTargetValid) {
-      const x = this.textureEditor.brushTargetX;
-      const z = this.textureEditor.brushTargetZ;
-      const y = this.resources.runtime.terrain.heightAt(x, z);
-      return { x, y, z, valid: true };
-    }
-
-    return { x: 0, y: 0, z: 0, valid: false };
+    return this.getMousePositionInternal();
   }
 
-  getTerrainEditor(): TerrainEditor {
-    return this.terrainEditor;
-  }
-
-  getTextureEditor(): TextureEditor {
-    return this.textureEditor;
-  }
-
-  setActiveEditorType(type: ActiveEditorType): void {
-    this.activeEditorType = type;
-    if (type) {
-      this.brushIndicator.setActiveEditor(type);
-    }
-  }
-
-  getActiveEditorType(): ActiveEditorType {
-    return this.activeEditorType;
-  }
-
-  updateEditorBrushTarget(mouseX: number, mouseY: number): void {
-    const canvas = this.gameRenderer.domElement;
-    this.terrainEditor.updateBrushTarget(
-      mouseX,
-      mouseY,
-      canvas.clientWidth,
-      canvas.clientHeight,
-      this.gameRenderer.camera,
-      this.resources.runtime.terrain.heightAt,
-    );
+  protected getMousePositionInternal(): { x: number; y: number; z: number; valid: boolean } | null {
+    return null;
   }
 
   exportCurrentMapData(): MapData {
@@ -322,44 +248,10 @@ export class GameApp {
 
   async loadMapData(mapData: MapData): Promise<void> {
     await this.resources.runtime.terrain.loadMapData(mapData);
-    this.terrainEditor.loadMap(JSON.stringify({
-      version: mapData.version,
-      seed: mapData.seed,
-      tileResolution: mapData.tileResolution,
-      chunkSizeMeters: mapData.chunkSizeMeters,
-      chunks: {},
-      metadata: mapData.metadata,
-    }));
+    await this.afterLoadMapData(mapData);
   }
 
-  async loadTexturesFromProject(projectPath: string): Promise<void> {
-    await this.textureEditor.loadFromProject(projectPath);
-    const textureDef = this.textureEditor.textureDefinition;
-    const textureArrays = await TerrainTextureArrays.getInstance().loadFromDefinition(projectPath, textureDef);
-    const splatMapTextures = this.textureEditor.getAllSplatTextures();
-    this.resources.runtime.terrain.setTextureData(textureArrays, splatMapTextures);
-    await this.skySystem.loadStarTexture(projectPath);
-  }
-
-  async saveTexturesToProject(projectPath: string): Promise<void> {
-    await this.textureEditor.saveToProject(projectPath);
-  }
-
-  updateTextureBrushTarget(mouseX: number, mouseY: number): void {
-    const canvas = this.gameRenderer.domElement;
-    this.textureEditor.updateBrushTarget(
-      mouseX,
-      mouseY,
-      canvas.clientWidth,
-      canvas.clientHeight,
-      this.gameRenderer.camera,
-      this.resources.runtime.terrain.heightAt,
-    );
-  }
-
-  async resetTerrain(): Promise<void> {
-    await this.resources.runtime.terrain.resetToOriginal();
-  }
+  protected async afterLoadMapData(_mapData: MapData): Promise<void> {}
 
   updateSettings(patch: GameSettingsPatch): void {
     applySettingsPatch(this.settings, patch);
@@ -394,14 +286,10 @@ export class GameApp {
       this.applySkySettings();
     }
 
-    if (patch.editor?.leftButton !== undefined || patch.editor?.rightButton !== undefined || patch.editor?.middleButton !== undefined) {
-      this.terrainEditor.setMouseConfig({
-        leftButton: this.settings.editor.leftButton,
-        rightButton: this.settings.editor.rightButton,
-        middleButton: this.settings.editor.middleButton,
-      });
-    }
+    this.applySettingsExtension(patch);
   }
+
+  protected applySettingsExtension(_patch: GameSettingsPatch): void {}
 
   private applyAllSettings(): void {
     const effectivePixelRatio =
@@ -414,13 +302,11 @@ export class GameApp {
       this.gameRenderer.scene.fog.density = this.settings.sky.fogDensity;
     }
 
-    this.terrainEditor.setMouseConfig({
-      leftButton: this.settings.editor.leftButton,
-      rightButton: this.settings.editor.rightButton,
-      middleButton: this.settings.editor.middleButton,
-    });
     this.applySkySettings();
+    this.applyAllSettingsExtension();
   }
+
+  protected applyAllSettingsExtension(): void {}
 
   private applySkySettings(): void {
     const sky = this.settings.sky;
@@ -435,7 +321,7 @@ export class GameApp {
     }
   }
 
-  private readonly onFrame = (): void => {
+  protected readonly onFrame = (): void => {
     if (this.disposed) return;
 
     const rawDt = this.gameRenderer.clock.getDelta();
@@ -448,14 +334,9 @@ export class GameApp {
     this.fpsCounter.tick();
     this.gameRenderer.setFov(this.settings.camera.fovDegrees);
 
-    if (this.terrainEditor.mode === "play") {
-      this.scheduler.execute(this.ecs.world, this.resources);
-    } else {
-      this.terrainEditor.applyCameraState(this.gameRenderer.camera);
-    }
-
+    this.runSimulationStep();
     this.updateTerrainStreaming();
-    this.updateTerrainEditor(dt);
+    this.afterFrame(dt);
     this.ecs.flushDestroyed();
     this.skySystem.update();
 
@@ -465,6 +346,12 @@ export class GameApp {
       this.gameRenderer.renderer.render(this.gameRenderer.scene, this.gameRenderer.camera);
     }
   };
+
+  protected runSimulationStep(): void {
+    this.scheduler.execute(this.ecs.world, this.resources);
+  }
+
+  protected afterFrame(_dt: number): void {}
 
   private updateWorldTime(dt: number): void {
     const time = this.settings.time;
@@ -497,70 +384,19 @@ export class GameApp {
   private updateTerrainStreaming(): void {
     const terrain = this.resources.runtime.terrain;
 
-    if (this.terrainEditor.mode === "edit") {
-      const target = this.terrainEditor.getCameraTarget();
+    const target = this.resolveTerrainUpdateTarget();
+    if (target) {
       terrain.update(target.x, target.z, this.gameRenderer.camera);
-      return;
     }
+  }
 
+  protected resolveTerrainUpdateTarget(): { x: number; z: number } | null {
     for (const [entityId] of this.ecs.world.query("transform", "player")) {
       const transform = this.ecs.world.get(entityId, "transform");
       if (transform) {
-        terrain.update(transform.x, transform.z, this.gameRenderer.camera);
-        break;
+        return { x: transform.x, z: transform.z };
       }
     }
-  }
-
-  private updateTerrainEditor(dt: number): void {
-    this.terrainEditor.applyBrush(dt);
-    const strokes = this.terrainEditor.consumePendingStrokes();
-    if (strokes.length > 0) {
-      void this.resources.runtime.terrain.applyBrushStrokes(strokes);
-    }
-    void this.textureEditor.applyBrush(dt);
-    this.updateBrushIndicator();
-  }
-
-  private updateBrushIndicator(): void {
-    if (this.terrainEditor.mode !== "edit" || !this.activeEditorType) {
-      this.brushIndicator.hide();
-      return;
-    }
-
-    const heightAt = this.resources.runtime.terrain.heightAt;
-    let brushInfo: EditorBrushInfo | null = null;
-
-    switch (this.activeEditorType) {
-      case "terrain":
-        if (this.terrainEditor.brushTargetValid) {
-          brushInfo = {
-            targetValid: true,
-            targetX: this.terrainEditor.brushTargetX,
-            targetZ: this.terrainEditor.brushTargetZ,
-            radius: this.terrainEditor.brushSettings.radiusMeters,
-            falloff: this.terrainEditor.brushSettings.falloff,
-            strength: this.terrainEditor.brushSettings.strength,
-            active: this.terrainEditor.brushActive,
-          };
-        }
-        break;
-
-      case "texture":
-        if (this.textureEditor.brushTargetValid) {
-          brushInfo = {
-            targetValid: true,
-            targetX: this.textureEditor.brushTargetX,
-            targetZ: this.textureEditor.brushTargetZ,
-            radius: this.textureEditor.brushSettings.radius,
-            falloff: this.textureEditor.brushSettings.falloff,
-            strength: this.textureEditor.brushSettings.strength,
-            active: this.textureEditor.brushActive,
-          };
-        }
-        break;
-    }
-
-    this.brushIndicator.update(brushInfo, heightAt);
+    return null;
   }
 }

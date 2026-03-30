@@ -5,7 +5,7 @@
 // 模式切换、文件操作已移至 SettingsPanel
 
 import type { TerrainEditor, BrushType } from "@game/editor";
-import { useTerrainBrushSettings } from "./hooks";
+import { useTerrainBrushSettings } from "./editor/hooks";
 
 interface Props {
   editor: TerrainEditor | null;

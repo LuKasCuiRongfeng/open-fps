@@ -8,7 +8,7 @@ import { FloatingOrigin } from "../common/FloatingOrigin";
 import { TerrainChunk, disposeSharedGeometries } from "./TerrainChunk";
 import { TerrainHeightCompute, TerrainNormalCompute, TerrainBrushCompute } from "./gpu";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
-import type { BrushStroke } from "../../editor/terrain/TerrainEditor";
+import type { BrushStroke } from "../../editor/terrain/TerrainBrush";
 import { buildLoadQueue, buildUnloadQueue, getAffectedChunkBounds } from "./chunkStreaming";
 
 export type ChunkCoord = { cx: number; cz: number };
