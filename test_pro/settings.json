@@ -1,0 +1,58 @@
+{
+  "player": {
+    "moveSpeed": 1.6,
+    "sprintBonus": 3.9,
+    "jumpVelocity": 4.6,
+    "gravity": 9.8,
+    "maxFallSpeed": 55,
+    "mouseSensitivity": 1,
+    "chaseFollowDistance": 3,
+    "chaseHeightOffset": 1.2,
+    "overShoulderFollowDistance": 2.6,
+    "overShoulderHeightOffset": 1.35,
+    "overShoulderOffset": 0.55,
+    "followLerpPerSecond": 12
+  },
+  "camera": {
+    "fovDegrees": 75,
+    "mode": "firstPerson",
+    "thirdPersonStyle": "overShoulder"
+  },
+  "render": {
+    "maxPixelRatio": 2,
+    "renderScale": 1
+  },
+  "sky": {
+    "sunElevation": 38.461057741540365,
+    "sunAzimuth": 298.40390000002276,
+    "sunSize": 15,
+    "ambientIntensity": 0.5273450860171152,
+    "sunIntensity": 1.0256282064410764,
+    "shadowsEnabled": true,
+    "normalSoftness": 0.4,
+    "fogDensity": 0.00015,
+    "bloomEnabled": true,
+    "bloomThreshold": 0.85,
+    "bloomStrength": 0.4,
+    "bloomRadius": 0.3,
+    "lensflareEnabled": true,
+    "godRaysEnabled": true,
+    "godRaysWeight": 0.5,
+    "godRaysDecay": 0.95,
+    "godRaysExposure": 3,
+    "starBrightness": 1.2,
+    "nightLightIntensity": 1
+  },
+  "editor": {
+    "leftButton": "brush",
+    "rightButton": "orbit",
+    "middleButton": "pan",
+    "stickyDrag": false
+  },
+  "time": {
+    "timeOfDay": 13.89663500000152,
+    "timeSpeed": 60,
+    "timePaused": false,
+    "timeDrivenSun": true
+  }
+}
