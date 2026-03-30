@@ -3,14 +3,14 @@
 
 import { useEffect } from "react";
 import { getPlatformBridge } from "@/platform";
-import type { EditorApp } from "@game/app";
+import type { EditorAppSession } from "@game/app";
 
 const platform = getPlatformBridge();
 
 interface UseCloseConfirmationOptions {
-  appRef: React.RefObject<EditorApp | null>;
+  appRef: React.RefObject<EditorAppSession | null>;
   hasOpenProject: boolean;
-  saveCurrentProject: (app: EditorApp) => Promise<unknown>;
+  saveCurrentProject: (app: EditorAppSession) => Promise<unknown>;
 }
 
 export function useCloseConfirmation({

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { EditorApp } from "@game/app";
+import type { EditorAppSession } from "@game/app";
 import type { TerrainEditor } from "@game/editor";
 import type { GameSettings } from "@game/settings";
 import type { MapData } from "@project/MapData";
@@ -30,14 +30,14 @@ export type WorkspaceOperationResult = {
 };
 
 type OpenProjectInAppOptions = {
-  editorApp: EditorApp | null;
+  editorApp: EditorAppSession | null;
   terrainEditor: TerrainEditor | null;
   onLoadMap?: (mapData: MapData) => void;
   onApplySettings?: (settings: GameSettings) => void;
 };
 
 type SaveProjectOptions = {
-  editorApp: EditorApp | null;
+  editorApp: EditorAppSession | null;
   terrainEditor: TerrainEditor | null;
   projectName: string;
   forceSaveAs?: boolean;
@@ -59,7 +59,7 @@ export interface EditorWorkspaceController {
   removeRecentProjectEntry: (projectPath: string) => Promise<void>;
   openProjectInApp: (options: OpenProjectInAppOptions) => Promise<WorkspaceOperationResult>;
   saveProjectSession: (options: SaveProjectOptions) => Promise<WorkspaceOperationResult>;
-  saveCurrentProjectForClose: (app: EditorApp) => Promise<string>;
+  saveCurrentProjectForClose: (app: EditorAppSession) => Promise<string>;
 }
 
 export function useEditorWorkspace(): EditorWorkspaceController {
@@ -205,7 +205,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     };
   };
 
-  const saveCurrentProjectForClose = async (app: EditorApp): Promise<string> => {
+  const saveCurrentProjectForClose = async (app: EditorAppSession): Promise<string> => {
     const mapData = app.exportCurrentMapData();
     const settings = app.getSettingsSnapshot();
     const savedPath = await saveProjectMap(mapData, settings);

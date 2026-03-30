@@ -31,10 +31,8 @@ export interface EditorAppSession extends RuntimeAppSession {
   getTerrainEditor(): TerrainEditor;
   getTextureEditor(): TextureEditor;
   setActiveEditorType(type: ActiveEditorType): void;
-  getActiveEditorType(): ActiveEditorType;
   updateEditorBrushTarget(mouseX: number, mouseY: number): void;
   updateTextureBrushTarget(mouseX: number, mouseY: number): void;
   loadTexturesFromProject(projectPath: string): Promise<void>;
   saveTexturesToProject(projectPath: string): Promise<void>;
-  resetTerrain(): Promise<void>;
 }

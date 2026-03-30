@@ -6,10 +6,7 @@ import type { GameSettings, GameSettingsPatch } from "@game/settings";
 import type { ActiveEditorType } from "./editor/settings/tabs";
 import FpsCounter from "./FpsCounter";
 import LoadingOverlay, { type LoadingStep } from "./LoadingOverlay";
-import { EditorSettingsPanel } from "./settings";
-import { TerrainEditorPanel } from "./TerrainEditorPanel";
-import { TextureEditorPanel } from "./TextureEditorPanel";
-import { ProjectScreen } from "./editor";
+import { EditorSettingsPanel, ProjectScreen, TerrainEditorPanel, TextureEditorPanel } from "./editor";
 import { useCloseConfirmation, useEditorApp, useEditorInput, useEditorWorkspace } from "./editor/hooks";
 
 const LOADING_STEPS: LoadingStep[] = [
@@ -143,16 +140,13 @@ export default function EditorView() {
 				<EditorSettingsPanel
 					open={settingsOpen}
 					settings={settings}
-					gameApp={appRef.current}
 					editorApp={appRef.current}
 					terrainEditor={terrainEditor}
-					textureEditor={appRef.current?.getTextureEditor?.() ?? null}
+					textureEditor={appRef.current?.getTextureEditor() ?? null}
 					editorWorkspace={editorWorkspace}
 					terrainMode={editorWorkspace.terrainMode}
 					activeEditor={activeEditor}
-					currentProjectPath={editorWorkspace.currentProjectPath}
 					onActiveEditorChange={handleActiveEditorChange}
-					onProjectPathChange={editorWorkspace.syncProjectPath}
 					onLoadMap={handleLoadMap}
 					onApplySettings={handleApplySettings}
 					onPatch={applyPatch}

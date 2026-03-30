@@ -5,7 +5,7 @@
 // 仅在启用纹理编辑的编辑模式下显示
 
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
-import { useTextureBrushSettings } from "./editor/hooks";
+import { useTextureBrushSettings } from "./hooks";
 
 interface Props {
   editor: TextureEditor | null;
@@ -34,7 +34,6 @@ export function TextureEditorPanel({ editor, visible }: Props) {
 
   return (
     <div className="absolute top-4 right-4 w-64 bg-black/80 backdrop-blur-sm rounded-lg p-4 text-white text-sm">
-      {/* Header / 标题 */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold">🎨 Texture Brush</h2>
         <span className="px-2 py-1 rounded text-xs font-medium bg-purple-600">
@@ -42,7 +41,6 @@ export function TextureEditorPanel({ editor, visible }: Props) {
         </span>
       </div>
 
-      {/* Layer selection / 层选择 */}
       <div className="mb-4">
         <label className="block text-gray-400 mb-2">Texture Layer</label>
         <div className="grid grid-cols-2 gap-2">
@@ -68,7 +66,6 @@ export function TextureEditorPanel({ editor, visible }: Props) {
         )}
       </div>
 
-      {/* Brush radius / 画刷半径 */}
       <div className="mb-3">
         <label className="flex items-center justify-between text-gray-400 mb-1">
           <span>Radius</span>
@@ -85,7 +82,6 @@ export function TextureEditorPanel({ editor, visible }: Props) {
         />
       </div>
 
-      {/* Brush strength / 画刷强度 */}
       <div className="mb-3">
         <label className="flex items-center justify-between text-gray-400 mb-1">
           <span>Strength</span>
@@ -102,7 +98,6 @@ export function TextureEditorPanel({ editor, visible }: Props) {
         />
       </div>
 
-      {/* Brush falloff / 画刷衰减 */}
       <div className="mb-3">
         <label className="flex items-center justify-between text-gray-400 mb-1">
           <span>Falloff</span>
@@ -119,7 +114,6 @@ export function TextureEditorPanel({ editor, visible }: Props) {
         />
       </div>
 
-      {/* Help text / 帮助文字 */}
       <div className="mt-4 pt-3 border-t border-gray-700 text-xs text-gray-500">
         <p>Left click: Paint texture</p>
         <p>Right click: Orbit camera</p>

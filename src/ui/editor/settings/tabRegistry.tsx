@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { GameApp, EditorApp } from "@game/app";
+import type { EditorAppSession } from "@game/app";
 import type { TerrainEditor } from "@game/editor";
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 import type { GameSettings, GameSettingsPatch } from "@game/settings";
@@ -36,16 +36,13 @@ export type EditorSettingsTabId = (typeof EDITOR_SETTINGS_TABS)[number]["id"];
 
 export type EditorSettingsTabRenderProps = {
   settings: GameSettings;
-  gameApp: GameApp | null;
-  editorApp: EditorApp | null;
+  editorApp: EditorAppSession | null;
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;
   editorWorkspace: EditorWorkspaceController;
   terrainMode: "editable" | "procedural";
   activeEditor: ActiveEditorType;
-  currentProjectPath: string | null;
   onActiveEditorChange: (editor: ActiveEditorType) => void;
-  onProjectPathChange: (path: string | null) => void;
   onLoadMap: (mapData: MapData) => void;
   onApplySettings: (settings: GameSettings) => void;
   onPatch: (patch: GameSettingsPatch) => void;

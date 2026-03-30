@@ -47,10 +47,6 @@ export class EditorApp extends GameApp implements EditorAppSession {
     this.brushIndicator.hide();
   }
 
-  getActiveEditorType(): ActiveEditorType {
-    return this.activeEditorType;
-  }
-
   updateEditorBrushTarget(mouseX: number, mouseY: number): void {
     const canvas = this.gameRenderer.domElement;
     this.terrainEditor.updateBrushTarget(
@@ -86,10 +82,6 @@ export class EditorApp extends GameApp implements EditorAppSession {
 
   async saveTexturesToProject(projectPath: string): Promise<void> {
     await this.textureEditor.saveToProject(projectPath);
-  }
-
-  async resetTerrain(): Promise<void> {
-    await this.resources.runtime.terrain.resetToOriginal();
   }
 
   protected override async initRuntimeExtensions(): Promise<void> {

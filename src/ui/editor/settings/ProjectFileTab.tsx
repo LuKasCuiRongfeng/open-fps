@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { getPlatformBridge } from "@/platform";
-import type { EditorApp } from "@game/app";
+import type { EditorAppSession } from "@game/app";
 import type { TerrainEditor } from "@game/editor";
 import { getProjectNameFromPath } from "@project/ProjectStorage";
 import type { MapData } from "@project/MapData";
@@ -13,7 +13,7 @@ import type { EditorWorkspaceController } from "../hooks/useEditorWorkspace";
 const platform = getPlatformBridge();
 
 type ProjectFileTabProps = {
-  editorApp: EditorApp | null;
+  editorApp: EditorAppSession | null;
   terrainEditor: TerrainEditor | null;
   editorWorkspace: EditorWorkspaceController;
   onLoadMap?: (mapData: MapData) => void;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { EditorApp, type GameBootPhase } from "@game/app";
+import { EditorApp, type EditorAppSession, type GameBootPhase } from "@game/app";
 import type { TerrainEditor } from "@game/editor";
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 import type { GameSettings } from "@game/settings";
@@ -14,7 +14,7 @@ interface UseEditorAppOptions {
 
 interface UseEditorAppReturn {
   hostRef: React.RefObject<HTMLDivElement | null>;
-  appRef: React.RefObject<EditorApp | null>;
+  appRef: React.RefObject<EditorAppSession | null>;
   bootPhase: GameBootPhase;
   loading: boolean;
   error: string | null;
@@ -31,7 +31,7 @@ export function useEditorApp({
   currentProjectPath,
 }: UseEditorAppOptions): UseEditorAppReturn {
   const hostRef = useRef<HTMLDivElement | null>(null);
-  const appRef = useRef<EditorApp | null>(null);
+  const appRef = useRef<EditorAppSession | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [bootPhase, setBootPhase] = useState<GameBootPhase>("checking-webgpu");
   const [loading, setLoading] = useState(true);

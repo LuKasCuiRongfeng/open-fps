@@ -2,13 +2,13 @@
 // useEditorInput：编辑器鼠标和滚轮事件处理
 
 import { useEffect, useRef, type RefObject } from "react";
-import type { EditorApp } from "@game/app";
+import type { EditorAppSession } from "@game/app";
 import type { TerrainEditor } from "@game/editor";
 import type { TextureEditor } from "@game/editor/texture/TextureEditor";
 import type { ActiveEditorType } from "../settings/tabs/TerrainEditorTab";
 
 interface UseEditorInputOptions {
-  appRef: RefObject<EditorApp | null>;
+  appRef: RefObject<EditorAppSession | null>;
   hostRef: RefObject<HTMLDivElement | null>;
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;

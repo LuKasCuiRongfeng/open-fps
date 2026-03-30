@@ -5,7 +5,7 @@
 // 模式切换、文件操作已移至 SettingsPanel
 
 import type { TerrainEditor, BrushType } from "@game/editor";
-import { useTerrainBrushSettings } from "./editor/hooks";
+import { useTerrainBrushSettings } from "./hooks";
 
 interface Props {
   editor: TerrainEditor | null;
@@ -34,7 +34,6 @@ export function TerrainEditorPanel({ editor }: Props) {
 
   return (
     <div className="absolute top-4 right-4 w-64 bg-black/80 backdrop-blur-sm rounded-lg p-4 text-white text-sm">
-      {/* Header / 标题 */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold">🖌️ Brush</h2>
         <span className="px-2 py-1 rounded text-xs font-medium bg-green-600">
@@ -42,7 +41,6 @@ export function TerrainEditorPanel({ editor }: Props) {
         </span>
       </div>
 
-      {/* Brush type / 画刷类型 */}
       <div className="mb-4">
         <label className="block text-gray-400 mb-2">Type</label>
         <div className="grid grid-cols-2 gap-2">
@@ -62,7 +60,6 @@ export function TerrainEditorPanel({ editor }: Props) {
         </div>
       </div>
 
-      {/* Brush radius / 画刷半径 */}
       <div className="mb-3">
         <label className="flex items-center justify-between text-gray-400 mb-1">
           <span>Radius</span>
@@ -79,7 +76,6 @@ export function TerrainEditorPanel({ editor }: Props) {
         />
       </div>
 
-      {/* Brush strength / 画刷强度 */}
       <div className="mb-3">
         <label className="flex items-center justify-between text-gray-400 mb-1">
           <span>Strength</span>
@@ -96,7 +92,6 @@ export function TerrainEditorPanel({ editor }: Props) {
         />
       </div>
 
-      {/* Brush falloff / 画刷衰减 */}
       <div className="mb-4">
         <label className="flex items-center justify-between text-gray-400 mb-1">
           <span>Falloff</span>
@@ -113,7 +108,6 @@ export function TerrainEditorPanel({ editor }: Props) {
         />
       </div>
 
-      {/* Instructions / 说明 */}
       <div className="p-2 bg-gray-800/50 rounded text-xs text-gray-400">
         <p>• Left-click: paint terrain</p>
         <p>• Right-drag: rotate camera</p>
