@@ -32,7 +32,6 @@
     "targets": "all",
     "icon": [
       "icons/game/32x32.png",
-      "icons/game/32x32.png",
       "icons/game/128x128.png",
       "icons/game/128x128@2x.png",
       "icons/game/icon.icns",

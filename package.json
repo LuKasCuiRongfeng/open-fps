@@ -19,6 +19,8 @@
     "tauri:build:game": "node scripts/run-tauri-target.mjs build game",
     "tauri:debug:editor": "node scripts/run-tauri-target.mjs build editor --debug --no-bundle",
     "tauri:debug:game": "node scripts/run-tauri-target.mjs build game --debug --no-bundle",
+    "tauri:release:editor": "node scripts/run-tauri-target.mjs build editor --ci --no-sign",
+    "tauri:release:game": "node scripts/run-tauri-target.mjs build game --ci --no-sign",
     "ci:frontend:editor": "pnpm build:editor",
     "ci:frontend:game": "pnpm build:game",
     "ci:tauri:editor": "node scripts/run-tauri-target.mjs build editor --ci --no-bundle",

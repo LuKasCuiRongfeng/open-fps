@@ -51,6 +51,8 @@ pnpm tauri:build:editor
 pnpm tauri:build:game
 pnpm tauri:debug:editor
 pnpm tauri:debug:game
+pnpm tauri:release:editor
+pnpm tauri:release:game
 ```
 
 - `dist-editor/`: editor-only frontend bundle
@@ -73,6 +75,21 @@ pnpm ci:frontend:game
 pnpm ci:tauri:editor
 pnpm ci:tauri:game
 ```
+
+Release flow:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Pushing a `v*` tag runs the release workflow, builds editor/game bundles on Windows, Linux, and macOS, and attaches them to a GitHub Release.
+
+`cross` note:
+
+- `cross` is available locally and can help with Rust-only or no-bundle target compilation.
+- Tauri release bundles still rely on native OS runners in CI because installers and app bundles are platform-specific.
+- In practice: use GitHub Actions native runners for release packaging; treat `cross` as a local helper, not the primary release path.
 
 ## Architecture / 架构
 

@@ -1,0 +1,106 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+
+  build-and-upload:
+    name: Release ${{ matrix.target }} on ${{ matrix.platform }}
+    runs-on: ${{ matrix.runs_on }}
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: editor
+            platform: windows
+            runs_on: windows-latest
+            release_command: pnpm run tauri:release:editor
+            asset_glob: |
+              src-tauri/target-editor/release/bundle/nsis/*.exe
+              src-tauri/target-editor/release/bundle/msi/*.msi
+          - target: game
+            platform: windows
+            runs_on: windows-latest
+            release_command: pnpm run tauri:release:game
+            asset_glob: |
+              src-tauri/target-game/release/bundle/nsis/*.exe
+              src-tauri/target-game/release/bundle/msi/*.msi
+          - target: editor
+            platform: linux
+            runs_on: ubuntu-22.04
+            release_command: node scripts/run-tauri-target.mjs build editor --ci --bundles appimage,deb
+            asset_glob: |
+              src-tauri/target-editor/release/bundle/appimage/*.AppImage
+              src-tauri/target-editor/release/bundle/deb/*.deb
+          - target: game
+            platform: linux
+            runs_on: ubuntu-22.04
+            release_command: node scripts/run-tauri-target.mjs build game --ci --bundles appimage,deb
+            asset_glob: |
+              src-tauri/target-game/release/bundle/appimage/*.AppImage
+              src-tauri/target-game/release/bundle/deb/*.deb
+          - target: editor
+            platform: macos
+            runs_on: macos-latest
+            release_command: node scripts/run-tauri-target.mjs build editor --ci --no-sign
+            asset_glob: |
+              src-tauri/target-editor/release/bundle/dmg/*.dmg
+          - target: game
+            platform: macos
+            runs_on: macos-latest
+            release_command: node scripts/run-tauri-target.mjs build game --ci --no-sign
+            asset_glob: |
+              src-tauri/target-game/release/bundle/dmg/*.dmg
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build release target
+        run: ${{ matrix.release_command }}
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          fail_on_unmatched_files: true
+          files: ${{ matrix.asset_glob }}
