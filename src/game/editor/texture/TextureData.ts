@@ -224,6 +224,19 @@ export function getSplatInfoForLayer(
 }
 
 /**
+ * Get global layer index for a layer by name.
+ * 通过名称获取层的全局索引
+ */
+export function getLayerIndexForLayer(
+  layerName: string,
+  def: TextureDefinition
+): number {
+  const assignments = computeLayerAssignments(def);
+  const assignment = assignments.find(a => a.layerName === layerName);
+  return assignment?.layerIndex ?? -1;
+}
+
+/**
  * Get splat map index and channel for a layer by global index.
  * 通过全局索引获取层的 splat map 索引和通道
  */

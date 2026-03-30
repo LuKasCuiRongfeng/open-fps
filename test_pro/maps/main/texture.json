@@ -1,0 +1,16 @@
+{
+	"beach": {
+		"diffuse": "../../assets/texture/aerial_beach_01_diff_1k.jpg",
+		"normal": "../../assets/texture/aerial_beach_01_nor_gl_1k.png",
+		"arm": "../../assets/texture/aerial_beach_01_arm_1k.png",
+		"displacement": "../../assets/texture/aerial_beach_01_disp_1k.png",
+		"scale": 9
+	},
+	"mud": {
+		"diffuse": "../../assets/texture/brown_mud_leaves_01_diff_1k.jpg",
+		"normal": "../../assets/texture/brown_mud_leaves_01_nor_gl_1k.png",
+		"arm": "../../assets/texture/brown_mud_leaves_01_arm_1k.png",
+		"displacement": "../../assets/texture/brown_mud_leaves_01_disp_1k.png",
+		"scale": 5
+	}
+}

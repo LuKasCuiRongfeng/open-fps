@@ -4,7 +4,7 @@
 import type { PerspectiveCamera } from "three/webgpu";
 import type { SplatBrushStroke } from "@game/world/terrain/gpu/SplatMapCompute";
 import type { TextureDefinition } from "./TextureData";
-import { getChannelForLayer, getLayerNames } from "./TextureData";
+import { getLayerIndexForLayer, getLayerNames } from "./TextureData";
 import { BrushRaycaster } from "../common/BrushRaycaster";
 
 /**
@@ -219,8 +219,8 @@ export class TextureBrush {
       return null;
     }
 
-    const channel = getChannelForLayer(this._settings.selectedLayer, this.textureDefinition);
-    if (channel === -1) {
+    const layerIndex = getLayerIndexForLayer(this._settings.selectedLayer, this.textureDefinition);
+    if (layerIndex === -1) {
       return null;
     }
 
@@ -230,7 +230,7 @@ export class TextureBrush {
       radius: this._settings.radius,
       strength: this._settings.strength,
       falloff: this._settings.falloff,
-      targetLayer: channel,
+      targetLayer: layerIndex,
       dt,
     };
   }

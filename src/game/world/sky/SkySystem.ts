@@ -197,27 +197,39 @@ export class SkySystem {
    * 从项目资源文件夹加载星空纹理
    */
   async loadStarTexture(projectPath: string): Promise<void> {
-    const texturePath = `${projectPath}/assets/textures/starry_4k.exr`;
     const { getPlatformBridge } = await import("@/platform");
-    const fileUrl = await getPlatformBridge().resolveAssetUrl(texturePath);
+    const platform = getPlatformBridge();
+    const candidatePaths = [
+      `${projectPath}/assets/textures/starry_4k.exr`,
+      `${projectPath}/assets/texture/starry_4k.exr`,
+    ];
 
-    return new Promise((resolve) => {
-      const loader = new EXRLoader();
-      loader.load(
-        fileUrl,
-        (tex) => {
-          tex.minFilter = LinearFilter;
-          tex.magFilter = LinearFilter;
-          this.skyDome.setStarTexture(tex);
-          resolve();
-        },
-        undefined,
-        (error) => {
-          console.warn("Failed to load star texture:", texturePath, error);
-          resolve();
-        }
-      );
-    });
+    const tryLoadTexture = async (texturePath: string): Promise<boolean> => {
+      const fileUrl = await platform.resolveAssetUrl(texturePath);
+
+      return new Promise((resolve) => {
+        const loader = new EXRLoader();
+        loader.load(
+          fileUrl,
+          (tex) => {
+            tex.minFilter = LinearFilter;
+            tex.magFilter = LinearFilter;
+            this.skyDome.setStarTexture(tex);
+            resolve(true);
+          },
+          undefined,
+          () => {
+            resolve(false);
+          }
+        );
+      });
+    };
+
+    for (const candidatePath of candidatePaths) {
+      if (await tryLoadTexture(candidatePath)) {
+        return;
+      }
+    }
   }
 
   private updateSunPosition(): void {

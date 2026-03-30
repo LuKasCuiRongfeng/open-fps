@@ -14,6 +14,10 @@ export class EditorApp extends GameApp implements EditorAppSession {
   private readonly brushIndicator = new BrushIndicatorSystem();
   private activeEditorType: ActiveEditorType = null;
 
+  private getProjectDirectoryFromMapDirectory(mapDirectory: string): string {
+    return mapDirectory.replace(/[\\/]maps[\\/][^\\/]+$/, "");
+  }
+
   constructor(container: HTMLElement, onBootPhase?: (phase: import("./types").GameBootPhase) => void) {
     super(container, onBootPhase);
 
@@ -77,7 +81,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
     const textureArrays = await TerrainTextureArrays.getInstance().loadFromDefinition(mapDirectory, textureDef);
     const splatMapTextures = this.textureEditor.getAllSplatTextures();
     this.resources.runtime.terrain.setTextureData(textureArrays, splatMapTextures);
-    await this.skySystem.loadStarTexture(mapDirectory);
+    await this.skySystem.loadStarTexture(this.getProjectDirectoryFromMapDirectory(mapDirectory));
   }
 
   async saveTexturesToMapDirectory(mapDirectory: string): Promise<void> {
