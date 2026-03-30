@@ -79,11 +79,47 @@ pnpm ci:tauri:game
 Release flow:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
 Pushing a `v*` tag runs the release workflow, builds editor/game bundles on Windows, Linux, and macOS, and attaches them to a GitHub Release.
+
+CI vs Release:
+
+- A normal `git push` to `master` runs CI only.
+- CI means build and validation jobs run in GitHub Actions, but no GitHub Release page is created.
+- A pushed `v*` tag runs the release workflow.
+- Only the release workflow creates a GitHub Release and uploads installer assets.
+- If the release workflow fails, the Release page will not be published successfully.
+
+What counts as a real release:
+
+- A commit pushed to `master` is not a release.
+- A version tag like `v0.1.1` is the release trigger.
+- The GitHub Release page with attached installers is the actual published release artifact.
+
+Recommended steps:
+
+1. Push your code changes to `master`.
+2. Wait for CI to pass.
+3. Create a version tag such as `v0.1.1`.
+4. Push the tag with `git push origin v0.1.1`.
+5. Wait for the `Release` workflow to finish.
+6. Check the GitHub Releases page for the published installers.
+
+What you do not need to do manually:
+
+- You do not need to edit `package.json` version before release.
+- You do not need to click `Create a new release` in the GitHub web UI.
+- You do not need to upload installer files by hand.
+
+Release versioning:
+
+- The Git tag is now the release version source of truth.
+- On release jobs, the workflow syncs `package.json` from the pushed tag before building.
+- Tauri configs read version metadata from `package.json`, so installers and app metadata follow the tag automatically.
+- Example: pushing `v0.1.1` makes the release build use `0.1.1` without manually editing files first.
 
 `cross` note:
 
