@@ -1,7 +1,7 @@
 // GpuTextureIO: GPU texture readback and upload utilities.
 // GpuTextureIO：GPU 纹理回读和上传工具
 
-import type { StorageTexture, WebGPURenderer } from "three/webgpu";
+import { type StorageTexture, type WebGPURenderer } from "three/webgpu";
 import type { TileAtlasAllocator } from "./TileAtlasAllocator";
 import { WebGpuBackend } from "./WebGpuBackend";
 

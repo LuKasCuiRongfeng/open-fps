@@ -11,7 +11,7 @@ import {
   type GameSettingsPatch,
   type SkySettings,
 } from "@game/settings";
-import type { SkySystem } from "@game/world/sky/SkySystem";
+import { timeToSunPosition, type SkySystem } from "@game/world/sky/SkySystem";
 import { setTerrainNormalSoftness } from "@game/world/terrain/material/terrainMaterialTextured";
 import type { TerrainEditor } from "@game/editor/terrain/TerrainEditor";
 import type { GameRenderer } from "./rendering/GameRenderer";
@@ -122,7 +122,6 @@ export class SettingsManager {
     }
 
     if (time.timeDrivenSun) {
-      const { timeToSunPosition } = require("@game/world/sky/SkySystem");
       const sunPos = timeToSunPosition(time.timeOfDay);
 
       if (

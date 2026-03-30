@@ -1,14 +1,13 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@game/*": ["src/game/*"],
-      "@project/*": ["src/game/project/*"],
-      "@ui/*": ["src/ui/*"],
-      "@config/*": ["src/config/*"],
-      "three/webgpu": ["node_modules/@types/three/build/three.webgpu.d.ts"],
-      "three/tsl": ["node_modules/@types/three/build/three.tsl.d.ts"]
+      "@/*": ["./src/*"],
+      "@game/*": ["./src/game/*"],
+      "@project/*": ["./src/game/project/*"],
+      "@ui/*": ["./src/ui/*"],
+      "@config/*": ["./src/config/*"],
+      "three/webgpu": ["./node_modules/@types/three/src/Three.WebGPU.d.ts"],
+      "three/tsl": ["./node_modules/@types/three/src/Three.TSL.d.ts"]
     },
     "target": "ES2020",
     "useDefineForClassFields": true,
