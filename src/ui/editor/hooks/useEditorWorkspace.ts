@@ -3,25 +3,23 @@ import type { EditorAppSession } from "@game/app";
 import type { TerrainEditor } from "@game/editor";
 import type { GameSettings } from "@game/settings";
 import type { MapData } from "@project/MapData";
+import type { ProjectMetadata } from "@project/ProjectData";
 import {
   addRecentProject,
   getProjectNameFromPath,
+  type LoadedProject,
   listRecentProjects,
-  loadProject,
+  loadProjectMap,
   openProjectDialog,
   removeRecentProject,
   saveProjectAs,
   saveProjectMap,
-  setCurrentProjectPath as setStoredCurrentProjectPath,
+  setCurrentProjectReference,
 } from "@project/ProjectStorage";
 
 export type TerrainMode = "editable" | "procedural";
 
-export type LoadedWorkspaceProject = {
-  projectPath: string;
-  map: MapData | null;
-  settings: GameSettings;
-};
+export type LoadedWorkspaceProject = LoadedProject;
 
 export type WorkspaceOperationResult = {
   ok: boolean;
@@ -36,11 +34,17 @@ type OpenProjectInAppOptions = {
   onApplySettings?: (settings: GameSettings) => void;
 };
 
+type OpenProjectMapInAppOptions = OpenProjectInAppOptions & {
+  mapId: string;
+};
+
 type SaveProjectOptions = {
   editorApp: EditorAppSession | null;
   terrainEditor: TerrainEditor | null;
   projectName: string;
+  mapName: string;
   forceSaveAs?: boolean;
+  createNewMap?: boolean;
 };
 
 export interface EditorWorkspaceController {
@@ -49,15 +53,19 @@ export interface EditorWorkspaceController {
   pendingSettings: GameSettings | null;
   terrainMode: TerrainMode;
   currentProjectPath: string | null;
+  currentProjectMetadata: ProjectMetadata | null;
+  currentMapId: string | null;
+  currentMapName: string | null;
+  currentMapDirectory: string | null;
   recentProjects: string[];
   completeProjectSelection: (project: LoadedWorkspaceProject | null) => void;
   enterProceduralMode: () => void;
-  syncProjectPath: (path: string | null) => void;
   markEditableMode: () => void;
   openProjectRecord: (projectPath: string) => Promise<LoadedWorkspaceProject>;
   openProjectFromDialog: () => Promise<LoadedWorkspaceProject | null>;
   removeRecentProjectEntry: (projectPath: string) => Promise<void>;
   openProjectInApp: (options: OpenProjectInAppOptions) => Promise<WorkspaceOperationResult>;
+  openProjectMapInApp: (options: OpenProjectMapInAppOptions) => Promise<WorkspaceOperationResult>;
   saveProjectSession: (options: SaveProjectOptions) => Promise<WorkspaceOperationResult>;
   saveCurrentProjectForClose: (app: EditorAppSession) => Promise<string>;
 }
@@ -68,6 +76,9 @@ export function useEditorWorkspace(): EditorWorkspaceController {
   const [pendingSettings, setPendingSettings] = useState<GameSettings | null>(null);
   const [terrainMode, setTerrainMode] = useState<TerrainMode>("procedural");
   const [currentProjectPath, setCurrentProjectPath] = useState<string | null>(null);
+  const [currentProjectMetadata, setCurrentProjectMetadata] = useState<ProjectMetadata | null>(null);
+  const [currentMapId, setCurrentMapId] = useState<string | null>(null);
+  const [currentMapDirectory, setCurrentMapDirectory] = useState<string | null>(null);
   const [recentProjects, setRecentProjects] = useState<string[]>([]);
 
   const refreshRecentProjects = async (): Promise<void> => {
@@ -82,16 +93,19 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     void refreshRecentProjects();
   }, []);
 
-  const syncProjectPath = (path: string | null) => {
-    setCurrentProjectPath(path);
-    setStoredCurrentProjectPath(path);
-    setTerrainMode(path ? "editable" : "procedural");
+  const syncProjectState = (project: LoadedWorkspaceProject | null) => {
+    setCurrentProjectPath(project?.projectPath ?? null);
+    setCurrentProjectMetadata(project?.metadata ?? null);
+    setCurrentMapId(project?.activeMap.id ?? null);
+    setCurrentMapDirectory(project?.activeMapDirectory ?? null);
+    setCurrentProjectReference(project?.projectPath ?? null, project?.metadata ?? null);
+    setTerrainMode(project ? "editable" : "procedural");
   };
 
   const completeProjectSelection = (project: LoadedWorkspaceProject | null) => {
     setPendingMapData(project?.map ?? null);
     setPendingSettings(project?.settings ?? null);
-    syncProjectPath(project?.projectPath ?? null);
+    syncProjectState(project);
     setShowProjectScreen(false);
   };
 
@@ -104,9 +118,9 @@ export function useEditorWorkspace(): EditorWorkspaceController {
   };
 
   const openProjectRecord = async (projectPath: string): Promise<LoadedWorkspaceProject> => {
-    const { map, settings } = await loadProject(projectPath);
+    const project = await loadProjectMap(projectPath);
     await refreshRecentProjects();
-    return { projectPath, map, settings };
+    return project;
   };
 
   const openProjectFromDialog = async (): Promise<LoadedWorkspaceProject | null> => {
@@ -121,6 +135,29 @@ export function useEditorWorkspace(): EditorWorkspaceController {
   const removeRecentProjectEntry = async (projectPath: string) => {
     await removeRecentProject(projectPath);
     setRecentProjects((prev) => prev.filter((path) => path !== projectPath));
+  };
+
+  const applyProjectToEditor = async (
+    project: LoadedWorkspaceProject,
+    editorApp: EditorAppSession,
+    terrainEditor: TerrainEditor | null,
+    onLoadMap?: (mapData: MapData) => void,
+    onApplySettings?: (settings: GameSettings) => void,
+  ): Promise<void> => {
+    editorApp.applySettings(project.settings);
+    onApplySettings?.(project.settings);
+
+    await editorApp.loadTexturesFromMapDirectory(project.activeMapDirectory);
+
+    if (project.map) {
+      await editorApp.loadMapData(project.map);
+      onLoadMap?.(project.map);
+    }
+
+    setPendingMapData(project.map);
+    setPendingSettings(project.settings);
+    terrainEditor?.markClean();
+    syncProjectState(project);
   };
 
   const openProjectInApp = async ({
@@ -138,23 +175,37 @@ export function useEditorWorkspace(): EditorWorkspaceController {
       return { ok: false, path: null, message: "Open cancelled" };
     }
 
-    editorApp.applySettings(project.settings);
-    onApplySettings?.(project.settings);
-
-    await editorApp.loadTexturesFromProject(project.projectPath);
-
-    if (project.map) {
-      await editorApp.loadMapData(project.map);
-      onLoadMap?.(project.map);
-    }
-
-    terrainEditor?.markClean();
-    syncProjectPath(project.projectPath);
+    await applyProjectToEditor(project, editorApp, terrainEditor, onLoadMap, onApplySettings);
 
     return {
       ok: true,
       path: project.projectPath,
-      message: `✓ Opened: ${getProjectNameFromPath(project.projectPath)}`,
+      message: `✓ Opened ${getProjectNameFromPath(project.projectPath)} / ${project.activeMap.name}`,
+    };
+  };
+
+  const openProjectMapInApp = async ({
+    editorApp,
+    terrainEditor,
+    mapId,
+    onLoadMap,
+    onApplySettings,
+  }: OpenProjectMapInAppOptions): Promise<WorkspaceOperationResult> => {
+    if (!editorApp) {
+      return { ok: false, path: null, message: "✗ Open failed: no active game session" };
+    }
+
+    if (!currentProjectPath) {
+      return { ok: false, path: null, message: "✗ Open failed: no project open" };
+    }
+
+    const project = await loadProjectMap(currentProjectPath, mapId);
+    await applyProjectToEditor(project, editorApp, terrainEditor, onLoadMap, onApplySettings);
+
+    return {
+      ok: true,
+      path: project.projectPath,
+      message: `✓ Switched to map: ${project.activeMap.name}`,
     };
   };
 
@@ -162,7 +213,9 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     editorApp,
     terrainEditor,
     projectName,
+    mapName,
     forceSaveAs = false,
+    createNewMap = false,
   }: SaveProjectOptions): Promise<WorkspaceOperationResult> => {
     if (!editorApp) {
       return { ok: false, path: null, message: "✗ Save failed: no active game session" };
@@ -170,54 +223,71 @@ export function useEditorWorkspace(): EditorWorkspaceController {
 
     const mapData = editorApp.exportCurrentMapData();
     const settings = editorApp.getSettingsSnapshot();
-    mapData.metadata.name = projectName;
+    mapData.metadata.name = mapName;
 
     const createNewProject = forceSaveAs || !currentProjectPath;
-    const savedPath = createNewProject
-      ? await saveProjectAs(mapData, projectName, settings)
-      : await saveProjectMap(mapData, settings, projectName);
+    const savedProject = createNewProject
+      ? await saveProjectAs(mapData, projectName, mapName, settings)
+      : await saveProjectMap(mapData, {
+          settings,
+          projectName,
+          mapName,
+          createNewMap,
+        });
 
-    if (!savedPath) {
+    if (!savedProject) {
       return { ok: false, path: null, message: "Save cancelled" };
     }
 
     if (editorApp.getTextureEditor().editingEnabled) {
-      await editorApp.saveTexturesToProject(savedPath);
+      await editorApp.saveTexturesToMapDirectory(savedProject.activeMapDirectory);
     }
 
     terrainEditor?.markClean();
 
     try {
-      await addRecentProject(savedPath);
+      await addRecentProject(savedProject.projectPath);
     } catch {
       // Ignore recent-project refresh failures.
     }
 
-    syncProjectPath(savedPath);
+    setPendingMapData(mapData);
+    setPendingSettings(settings);
+    syncProjectState(savedProject);
     await refreshRecentProjects();
 
     return {
       ok: true,
-      path: savedPath,
+      path: savedProject.projectPath,
       message: createNewProject
-        ? `✓ Created project: ${getProjectNameFromPath(savedPath)}`
-        : "✓ Saved to project",
+        ? `✓ Created project: ${getProjectNameFromPath(savedProject.projectPath)}`
+        : createNewMap
+          ? `✓ Created map: ${savedProject.activeMap.name}`
+          : `✓ Saved map: ${savedProject.activeMap.name}`,
     };
   };
 
   const saveCurrentProjectForClose = async (app: EditorAppSession): Promise<string> => {
     const mapData = app.exportCurrentMapData();
     const settings = app.getSettingsSnapshot();
-    const savedPath = await saveProjectMap(mapData, settings);
+    const savedProject = await saveProjectMap(mapData, {
+      settings,
+      projectName: currentProjectMetadata?.name,
+      mapName: currentProjectMetadata?.maps.find((entry) => entry.id === currentMapId)?.name,
+      mapId: currentMapId ?? undefined,
+    });
 
     if (app.getTextureEditor().editingEnabled) {
-      await app.saveTexturesToProject(savedPath);
+      await app.saveTexturesToMapDirectory(savedProject.activeMapDirectory);
     }
 
-    syncProjectPath(savedPath);
+    syncProjectState(savedProject);
     await refreshRecentProjects();
-    return savedPath;
+    return savedProject.projectPath;
   };
+
+  const currentMapName =
+    currentProjectMetadata?.maps.find((entry) => entry.id === currentMapId)?.name ?? null;
 
   return {
     showProjectScreen,
@@ -225,15 +295,19 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     pendingSettings,
     terrainMode,
     currentProjectPath,
+    currentProjectMetadata,
+    currentMapId,
+    currentMapName,
+    currentMapDirectory,
     recentProjects,
     completeProjectSelection,
     enterProceduralMode,
-    syncProjectPath,
     markEditableMode,
     openProjectRecord,
     openProjectFromDialog,
     removeRecentProjectEntry,
     openProjectInApp,
+    openProjectMapInApp,
     saveProjectSession,
     saveCurrentProjectForClose,
   };

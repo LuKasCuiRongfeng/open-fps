@@ -33,6 +33,6 @@ export interface EditorAppSession extends RuntimeAppSession {
   setActiveEditorType(type: ActiveEditorType): void;
   updateEditorBrushTarget(mouseX: number, mouseY: number): void;
   updateTextureBrushTarget(mouseX: number, mouseY: number): void;
-  loadTexturesFromProject(projectPath: string): Promise<void>;
-  saveTexturesToProject(projectPath: string): Promise<void>;
+  loadTexturesFromMapDirectory(mapDirectory: string): Promise<void>;
+  saveTexturesToMapDirectory(mapDirectory: string): Promise<void>;
 }

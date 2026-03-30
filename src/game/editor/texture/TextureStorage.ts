@@ -32,9 +32,9 @@ export class TextureStorage {
    * 从项目文件夹加载纹理定义
    * 如果 texture.json 不存在则返回 null（使用程序纹理）
    */
-  static async loadTextureDefinition(projectPath: string): Promise<TextureDefinition | null> {
+  static async loadTextureDefinition(mapDirectory: string): Promise<TextureDefinition | null> {
     try {
-      const jsonPath = `${projectPath}/texture.json`;
+      const jsonPath = `${mapDirectory}/texture.json`;
       const content = await platform.invoke<string>("read_text_file", { path: jsonPath });
       return JSON.parse(content) as TextureDefinition;
     } catch {
@@ -47,10 +47,10 @@ export class TextureStorage {
    * 保存纹理定义到项目文件夹
    */
   static async saveTextureDefinition(
-    projectPath: string,
+    mapDirectory: string,
     definition: TextureDefinition,
   ): Promise<void> {
-    const jsonPath = `${projectPath}/texture.json`;
+    const jsonPath = `${mapDirectory}/texture.json`;
     const content = JSON.stringify(definition, null, 2);
     await platform.invoke<void>("write_text_file", { path: jsonPath, content });
   }
@@ -65,12 +65,12 @@ export class TextureStorage {
    * @param splatMapIndex Which splat map to load (0 = splatmap.png, 1 = splatmap_1.png, etc.)
    */
   static async loadSplatMap(
-    projectPath: string,
+    mapDirectory: string,
     splatMapIndex: number = 0,
   ): Promise<SplatMapData | null> {
     try {
       const filename = getSplatMapFilename(splatMapIndex);
-      const pngPath = `${projectPath}/${filename}`;
+      const pngPath = `${mapDirectory}/${filename}`;
 
       // Use native Tauri PNG decoder to get raw RGBA pixels.
       // 使用原生 Tauri PNG 解码器获取原始 RGBA 像素
@@ -120,13 +120,13 @@ export class TextureStorage {
    * @param splatMapIndex Which splat map to save (0 = splatmap.png, 1 = splatmap_1.png, etc.)
    */
   static async saveSplatMap(
-    projectPath: string,
+    mapDirectory: string,
     splatMap: SplatMapData,
     splatMapIndex: number = 0,
   ): Promise<void> {
     const { resolution, pixels } = splatMap;
     const filename = getSplatMapFilename(splatMapIndex);
-    const pngPath = `${projectPath}/${filename}`;
+    const pngPath = `${mapDirectory}/${filename}`;
 
     // Use native Tauri PNG encoder to save raw RGBA pixels.
     // 使用原生 Tauri PNG 编码器保存原始 RGBA 像素
@@ -147,7 +147,7 @@ export class TextureStorage {
    * @param splatMapIndex Which splat map to ensure (0 = splatmap.png, 1 = splatmap_1.png, etc.)
    */
   static async ensureSplatMap(
-    projectPath: string,
+    mapDirectory: string,
     splatMapIndex: number = 0,
     resolution: number = 1024,
   ): Promise<void> {
@@ -156,11 +156,11 @@ export class TextureStorage {
       // Check if file exists by trying to read it.
       // 尝试读取文件来检查是否存在
       await platform.invoke<[string, number, number]>("read_png_rgba", {
-        path: `${projectPath}/${filename}`,
+        path: `${mapDirectory}/${filename}`,
       });
     } catch {
       const defaultSplatMap = createDefaultSplatMap(resolution, splatMapIndex);
-      await this.saveSplatMap(projectPath, defaultSplatMap, splatMapIndex);
+      await this.saveSplatMap(mapDirectory, defaultSplatMap, splatMapIndex);
     }
   }
 }

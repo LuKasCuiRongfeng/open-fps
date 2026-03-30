@@ -37,7 +37,7 @@ export default function EditorView() {
 		enabled: !editorWorkspace.showProjectScreen,
 		pendingMapData: editorWorkspace.pendingMapData,
 		pendingSettings: editorWorkspace.pendingSettings,
-		currentProjectPath: editorWorkspace.currentProjectPath,
+		currentMapDirectory: editorWorkspace.currentMapDirectory,
 	});
 
 	useCloseConfirmation({

@@ -9,7 +9,7 @@ interface UseEditorAppOptions {
   enabled: boolean;
   pendingMapData: MapData | null;
   pendingSettings: GameSettings | null;
-  currentProjectPath: string | null;
+  currentMapDirectory: string | null;
 }
 
 interface UseEditorAppReturn {
@@ -28,7 +28,7 @@ export function useEditorApp({
   enabled,
   pendingMapData,
   pendingSettings,
-  currentProjectPath,
+  currentMapDirectory,
 }: UseEditorAppOptions): UseEditorAppReturn {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const appRef = useRef<EditorAppSession | null>(null);
@@ -66,8 +66,8 @@ export function useEditorApp({
               app.applySettings(pendingSettings);
             }
 
-            if (currentProjectPath) {
-              await app.loadTexturesFromProject(currentProjectPath);
+            if (currentMapDirectory) {
+              await app.loadTexturesFromMapDirectory(currentMapDirectory);
             }
 
             if (pendingMapData) {
@@ -107,7 +107,7 @@ export function useEditorApp({
       appRef.current?.dispose();
       appRef.current = null;
     };
-  }, [enabled, pendingMapData, pendingSettings, currentProjectPath]);
+  }, [enabled, pendingMapData, pendingSettings, currentMapDirectory]);
 
   return {
     hostRef,

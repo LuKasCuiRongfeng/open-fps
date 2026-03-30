@@ -71,17 +71,17 @@ export class EditorApp extends GameApp implements EditorAppSession {
     );
   }
 
-  async loadTexturesFromProject(projectPath: string): Promise<void> {
-    await this.textureEditor.loadFromProject(projectPath);
+  async loadTexturesFromMapDirectory(mapDirectory: string): Promise<void> {
+    await this.textureEditor.loadFromMapDirectory(mapDirectory);
     const textureDef = this.textureEditor.textureDefinition;
-    const textureArrays = await TerrainTextureArrays.getInstance().loadFromDefinition(projectPath, textureDef);
+    const textureArrays = await TerrainTextureArrays.getInstance().loadFromDefinition(mapDirectory, textureDef);
     const splatMapTextures = this.textureEditor.getAllSplatTextures();
     this.resources.runtime.terrain.setTextureData(textureArrays, splatMapTextures);
-    await this.skySystem.loadStarTexture(projectPath);
+    await this.skySystem.loadStarTexture(mapDirectory);
   }
 
-  async saveTexturesToProject(projectPath: string): Promise<void> {
-    await this.textureEditor.saveToProject(projectPath);
+  async saveTexturesToMapDirectory(mapDirectory: string): Promise<void> {
+    await this.textureEditor.saveToMapDirectory(mapDirectory);
   }
 
   protected override async initRuntimeExtensions(): Promise<void> {

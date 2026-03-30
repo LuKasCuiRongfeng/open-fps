@@ -1,6 +1,33 @@
 {
   "name": "test_pro",
   "created": 1774839549823,
-  "modified": 1774839549823,
-  "version": 1
+  "modified": 1774862900752,
+  "version": 2,
+  "currentMapId": "main",
+  "maps": [
+    {
+      "id": "main",
+      "name": "Battleground Highlands",
+      "created": 1774839549823,
+      "modified": 1774862900752
+    },
+    {
+      "id": "ridge",
+      "name": "Ridgeline Siege",
+      "created": 1774839549823,
+      "modified": 1774862900752
+    },
+    {
+      "id": "coast",
+      "name": "Coastal Crossfire",
+      "created": 1774839549823,
+      "modified": 1774862900752
+    },
+    {
+      "id": "islands",
+      "name": "Island Gauntlet",
+      "created": 1774839549823,
+      "modified": 1774862900752
+    }
+  ]
 }

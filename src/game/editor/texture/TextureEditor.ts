@@ -84,8 +84,8 @@ export class TextureEditor {
    * Load texture definition and splat map from project.
    * 从项目加载纹理定义和 splat map
    */
-  async loadFromProject(projectPath: string): Promise<void> {
-    this._textureDefinition = await TextureStorage.loadTextureDefinition(projectPath);
+  async loadFromMapDirectory(mapDirectory: string): Promise<void> {
+    this._textureDefinition = await TextureStorage.loadTextureDefinition(mapDirectory);
 
     if (this._textureDefinition && this.splatMapSet && this.renderer) {
       this._editingEnabled = true;
@@ -99,8 +99,8 @@ export class TextureEditor {
       // Load all splat maps.
       // 加载所有 splat map
       for (let i = 0; i < splatMapCount; i++) {
-        await TextureStorage.ensureSplatMap(projectPath, i);
-        const splatMapData = await TextureStorage.loadSplatMap(projectPath, i);
+        await TextureStorage.ensureSplatMap(mapDirectory, i);
+        const splatMapData = await TextureStorage.loadSplatMap(mapDirectory, i);
         if (splatMapData) {
           await this.splatMapSet.loadFromPixels(this.renderer, splatMapData.pixels, i);
         }
@@ -117,13 +117,13 @@ export class TextureEditor {
    * Save texture definition and splat map to project.
    * 将纹理定义和 splat map 保存到项目
    */
-  async saveToProject(projectPath: string): Promise<void> {
+  async saveToMapDirectory(mapDirectory: string): Promise<void> {
     if (!this._editingEnabled || !this._textureDefinition) {
       console.warn("[TextureEditor] Cannot save: texture editing not enabled");
       return;
     }
 
-    await TextureStorage.saveTextureDefinition(projectPath, this._textureDefinition);
+    await TextureStorage.saveTextureDefinition(mapDirectory, this._textureDefinition);
 
     if (this.splatMapSet && this.renderer) {
       const splatMapCount = this.splatMapSet.getCount();
@@ -134,7 +134,7 @@ export class TextureEditor {
           pixels,
           splatMapIndex: i,
         };
-        await TextureStorage.saveSplatMap(projectPath, splatMapData, i);
+        await TextureStorage.saveSplatMap(mapDirectory, splatMapData, i);
       }
     }
 

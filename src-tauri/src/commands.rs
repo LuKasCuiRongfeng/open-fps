@@ -9,6 +9,7 @@ use tauri::Manager;
 /// 项目文件名
 const PROJECT_FILE: &str = "project.json";
 const MAP_FILE: &str = "map.json";
+const MAPS_DIR: &str = "maps";
 const SETTINGS_FILE: &str = "settings.json";
 const RECENT_PROJECTS_FILE: &str = "recent_projects.json";
 
@@ -31,6 +32,13 @@ fn ensure_parent_directory(path: &PathBuf) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+fn project_map_path(project_path: &str, map_id: &str) -> PathBuf {
+    PathBuf::from(project_path)
+        .join(MAPS_DIR)
+        .join(map_id)
+        .join(MAP_FILE)
 }
 
 fn recent_projects_file(app: &tauri::AppHandle) -> Result<PathBuf, String> {
@@ -100,8 +108,8 @@ pub async fn read_project_metadata(project_path: String) -> Result<String, Strin
 /// Read project map data (map.json).
 /// 读取项目地图数据 (map.json)
 #[tauri::command]
-pub async fn read_project_map(project_path: String) -> Result<String, String> {
-    let path = PathBuf::from(&project_path).join(MAP_FILE);
+pub async fn read_project_map(project_path: String, map_id: String) -> Result<String, String> {
+    let path = project_map_path(&project_path, &map_id);
     if !path.exists() {
         return Err("Map file not found".to_string());
     }
@@ -136,10 +144,14 @@ pub async fn save_project_metadata(project_path: String, data: String) -> Result
 /// Save project map data to map.json.
 /// 保存项目地图数据到 map.json
 #[tauri::command]
-pub async fn save_project_map(project_path: String, data: String) -> Result<(), String> {
-    let path = PathBuf::from(&project_path);
-    ensure_project_folder(&path)?;
-    fs::write(path.join(MAP_FILE), &data)
+pub async fn save_project_map(project_path: String, map_id: String, data: String) -> Result<(), String> {
+    let project_root = PathBuf::from(&project_path);
+    ensure_project_folder(&project_root)?;
+
+    let path = project_map_path(&project_path, &map_id);
+
+    ensure_parent_directory(&path)?;
+    fs::write(path, &data)
         .map_err(|e| format!("Failed to save map data: {}", e))
 }
 

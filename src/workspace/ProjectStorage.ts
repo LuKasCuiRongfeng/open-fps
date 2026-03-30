@@ -4,24 +4,62 @@
 import { getPlatformBridge } from "@/platform";
 import type { MapData } from "./MapData";
 import { serializeMapData, deserializeMapData } from "./MapData";
-import type { ProjectMetadata } from "./ProjectData";
+import type { ProjectMapRecord, ProjectMetadata } from "./ProjectData";
 import {
-  serializeProjectMetadata,
-  deserializeProjectMetadata,
   createProjectMetadata,
+  createUniqueProjectMapId,
+  deserializeProjectMetadata,
+  getCurrentProjectMapRecord,
+  getProjectMapDirectory,
+  getProjectMapRecord,
+  serializeProjectMetadata,
+  upsertProjectMapRecord,
 } from "./ProjectData";
 import type { GameSettings } from "@game/settings";
 import { mergeSettingsWithDefaults } from "@game/settings";
 
-let currentProjectPath: string | null = null;
+type CurrentProjectState = {
+  path: string;
+  metadata: ProjectMetadata;
+};
+
+export type LoadedProject = {
+  projectPath: string;
+  metadata: ProjectMetadata;
+  activeMap: ProjectMapRecord;
+  activeMapDirectory: string;
+  map: MapData | null;
+  settings: GameSettings;
+};
+
+type SaveProjectMapOptions = {
+  settings?: GameSettings;
+  projectName?: string;
+  mapName?: string;
+  mapId?: string;
+  createNewMap?: boolean;
+};
+
+let currentProject: CurrentProjectState | null = null;
 const platform = getPlatformBridge();
 
 export function getCurrentProjectPath(): string | null {
-  return currentProjectPath;
+  return currentProject?.path ?? null;
 }
 
-export function setCurrentProjectPath(path: string | null): void {
-  currentProjectPath = path;
+export function setCurrentProjectReference(
+  path: string | null,
+  metadata?: ProjectMetadata | null,
+): void {
+  if (!path) {
+    currentProject = null;
+    return;
+  }
+
+  currentProject = {
+    path,
+    metadata: metadata ?? currentProject?.metadata ?? createProjectMetadata(getProjectNameFromPath(path)),
+  };
 }
 
 export function getProjectNameFromPath(path: string): string {
@@ -67,12 +105,29 @@ export async function loadProject(projectPath: string): Promise<{
   map: MapData | null;
   settings: GameSettings;
 }> {
+  return loadProjectMap(projectPath);
+}
+
+export async function loadProjectMap(
+  projectPath: string,
+  requestedMapId?: string,
+): Promise<LoadedProject> {
   const metadataJson = await platform.invoke<string>("read_project_metadata", { projectPath });
-  const metadata = deserializeProjectMetadata(metadataJson);
+  let metadata = deserializeProjectMetadata(metadataJson);
+  const activeMapId = requestedMapId ?? metadata.currentMapId;
+  const activeMap = resolveProjectMap(metadata, activeMapId);
+
+  if (metadata.currentMapId !== activeMap.id) {
+    metadata = { ...metadata, currentMapId: activeMap.id, modified: Date.now() };
+    await saveProjectMetadata(projectPath, metadata);
+  }
 
   let map: MapData | null = null;
   try {
-    const mapJson = await platform.invoke<string>("read_project_map", { projectPath });
+    const mapJson = await platform.invoke<string>("read_project_map", {
+      projectPath,
+      mapId: activeMap.id,
+    });
     map = deserializeMapData(mapJson);
   } catch {
     // Map doesn't exist yet.
@@ -89,7 +144,7 @@ export async function loadProject(projectPath: string): Promise<{
   }
   const settings = mergeSettingsWithDefaults(settingsJson);
 
-  currentProjectPath = projectPath;
+  currentProject = { path: projectPath, metadata };
 
   try {
     await platform.invoke<void>("add_recent_project", { projectPath });
@@ -97,87 +152,95 @@ export async function loadProject(projectPath: string): Promise<{
     // Ignore errors adding to recent.
   }
 
-  return { metadata, map, settings };
+  return {
+    projectPath,
+    metadata,
+    activeMap,
+    activeMapDirectory: getProjectMapDirectory(projectPath, activeMap.id),
+    map,
+    settings,
+  };
 }
 
 export async function createProject(
   projectPath: string,
-  projectName: string
+  projectName: string,
+  initialMapName: string,
 ): Promise<ProjectMetadata> {
-  const metadata = createProjectMetadata(projectName);
+  const metadata = createProjectMetadata(projectName, initialMapName);
   const metadataJson = serializeProjectMetadata(metadata);
 
   await platform.invoke<void>("create_project", { projectPath, metadata: metadataJson });
 
-  currentProjectPath = projectPath;
+  currentProject = { path: projectPath, metadata };
   return metadata;
 }
 
 export async function saveProjectMap(
   mapData: MapData,
-  settings?: GameSettings,
-  newProjectName?: string
-): Promise<string> {
-  if (!currentProjectPath) {
+  options: SaveProjectMapOptions = {},
+): Promise<LoadedProject> {
+  if (!currentProject) {
     throw new Error("No project open");
   }
 
-  let projectPath = currentProjectPath;
-  const currentName = getProjectNameFromPath(currentProjectPath);
-  if (newProjectName && newProjectName !== currentName) {
+  let projectPath = currentProject.path;
+  let metadata = currentProject.metadata;
+  const normalizedProjectName = normalizeName(options.projectName, metadata.name);
+  if (normalizedProjectName !== metadata.name) {
     projectPath = await platform.invoke<string>("rename_project", {
-      oldPath: currentProjectPath,
-      newName: newProjectName,
+      oldPath: currentProject.path,
+      newName: normalizedProjectName,
     });
-    currentProjectPath = projectPath;
+    metadata = { ...metadata, name: normalizedProjectName, modified: Date.now() };
   }
 
-  const mapJson = serializeMapData(mapData);
-  await platform.invoke<void>("save_project_map", { projectPath, data: mapJson });
+  const currentMap = getCurrentProjectMapRecord(metadata);
+  const normalizedMapName = normalizeName(options.mapName, mapData.metadata.name || currentMap.name);
+  const targetMapId = options.createNewMap
+    ? createUniqueProjectMapId(normalizedMapName, metadata.maps)
+    : options.mapId ?? currentMap.id;
 
-  if (settings) {
-    const settingsJson = JSON.stringify(settings, null, 2);
+  metadata = upsertProjectMapRecord(metadata, targetMapId, normalizedMapName);
+  mapData.metadata.name = normalizedMapName;
+
+  await saveProjectMetadata(projectPath, metadata);
+
+  const mapJson = serializeMapData(mapData);
+  await platform.invoke<void>("save_project_map", { projectPath, mapId: targetMapId, data: mapJson });
+
+  if (options.settings) {
+    const settingsJson = JSON.stringify(options.settings, null, 2);
     await platform.invoke<void>("save_project_settings", { projectPath, data: settingsJson });
   }
 
-  await updateProjectModifiedTime();
+  currentProject = { path: projectPath, metadata };
 
-  return projectPath;
+  return {
+    projectPath,
+    metadata,
+    activeMap: resolveProjectMap(metadata, targetMapId),
+    activeMapDirectory: getProjectMapDirectory(projectPath, targetMapId),
+    map: mapData,
+    settings: options.settings ?? mergeSettingsWithDefaults(null),
+  };
 }
 
 export async function saveProjectSettings(settings: GameSettings): Promise<void> {
-  if (!currentProjectPath) {
+  if (!currentProject) {
     throw new Error("No project open");
   }
 
   const settingsJson = JSON.stringify(settings, null, 2);
-  await platform.invoke<void>("save_project_settings", { projectPath: currentProjectPath, data: settingsJson });
-}
-
-async function updateProjectModifiedTime(): Promise<void> {
-  if (!currentProjectPath) return;
-
-  try {
-    const metadataJson = await platform.invoke<string>("read_project_metadata", {
-      projectPath: currentProjectPath,
-    });
-    const metadata = deserializeProjectMetadata(metadataJson);
-    metadata.modified = Date.now();
-    const updatedJson = serializeProjectMetadata(metadata);
-    await platform.invoke<void>("save_project_metadata", {
-      projectPath: currentProjectPath,
-      data: updatedJson,
-    });
-  } catch {
-    // Ignore errors updating metadata.
-  }
+  await platform.invoke<void>("save_project_settings", { projectPath: currentProject.path, data: settingsJson });
 }
 
 export async function saveProjectAs(
   mapData: MapData,
   projectName: string,
-  settings?: GameSettings
-): Promise<string | null> {
+  mapName: string,
+  settings?: GameSettings,
+): Promise<LoadedProject | null> {
   const folderPath = await selectProjectFolderDialog();
   if (!folderPath) {
     return null;
@@ -185,22 +248,12 @@ export async function saveProjectAs(
 
   const projectPath = `${folderPath}/${projectName}`;
 
-  await createProject(projectPath, projectName);
-
-  const mapJson = serializeMapData(mapData);
-  await platform.invoke<void>("save_project_map", { projectPath, data: mapJson });
-
-  if (settings) {
-    const settingsJson = JSON.stringify(settings, null, 2);
-    await platform.invoke<void>("save_project_settings", { projectPath, data: settingsJson });
-  }
-
-  currentProjectPath = projectPath;
-  return projectPath;
+  await createProject(projectPath, projectName, mapName);
+  return saveProjectMap(mapData, { settings, mapName });
 }
 
 export function hasOpenProject(): boolean {
-  return currentProjectPath !== null;
+  return currentProject !== null;
 }
 
 export async function listRecentProjects(): Promise<string[]> {
@@ -213,4 +266,29 @@ export async function addRecentProject(projectPath: string): Promise<void> {
 
 export async function removeRecentProject(projectPath: string): Promise<void> {
   return platform.invoke<void>("remove_recent_project", { projectPath });
+}
+
+function resolveProjectMap(metadata: ProjectMetadata, mapId: string | null | undefined): ProjectMapRecord {
+  if (!mapId) {
+    throw new Error("No map selected in project metadata");
+  }
+
+  const mapRecord = getProjectMapRecord(metadata, mapId);
+  if (!mapRecord) {
+    throw new Error(`Project map '${mapId}' was not found`);
+  }
+
+  return mapRecord;
+}
+
+function normalizeName(name: string | undefined, fallback: string): string {
+  const trimmed = name?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : fallback;
+}
+
+async function saveProjectMetadata(projectPath: string, metadata: ProjectMetadata): Promise<void> {
+  await platform.invoke<void>("save_project_metadata", {
+    projectPath,
+    data: serializeProjectMetadata(metadata),
+  });
 }
