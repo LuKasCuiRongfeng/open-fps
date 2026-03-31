@@ -97,7 +97,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Sync version from tag
-        run: pnpm run release:sync-version -- ${{ github.ref_name }}
+        run: node scripts/sync-version-from-tag.mjs ${{ github.ref_name }}
 
       - name: Build release target
         run: ${{ matrix.release_command }}

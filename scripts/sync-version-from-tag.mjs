@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const [, , rawTag] = process.argv;
+const rawTag = process.argv.slice(2).find((value) => value !== "--");
 
 if (!rawTag) {
   console.error("Usage: node scripts/sync-version-from-tag.mjs <tag>");
