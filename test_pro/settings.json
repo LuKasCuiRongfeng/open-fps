@@ -36,10 +36,6 @@
     "bloomStrength": 0.4,
     "bloomRadius": 0.3,
     "lensflareEnabled": true,
-    "godRaysEnabled": true,
-    "godRaysWeight": 0.5,
-    "godRaysDecay": 0.95,
-    "godRaysExposure": 3,
     "starBrightness": 1.2,
     "nightLightIntensity": 1
   },

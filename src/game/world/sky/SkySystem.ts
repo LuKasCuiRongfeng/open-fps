@@ -81,8 +81,8 @@ export class SkySystem {
     camera: PerspectiveCamera
   ): void {
     this.camera = camera;
+    scene.userData.mainDirectionalLight = this.directionalLight;
     this.postProcessing.init(renderer, scene, camera);
-    this.updateGodRaysCenter();
   }
 
   /**
@@ -91,6 +91,7 @@ export class SkySystem {
    */
   setDirectionalLight(light: DirectionalLight): void {
     this.directionalLight = light;
+    this.scene.userData.mainDirectionalLight = light;
     this.updateSunPosition();
   }
 
@@ -173,7 +174,6 @@ export class SkySystem {
       this.skyDome.mesh.position.copy(this.camera.position);
       this.sunRenderer.followCamera(this.camera.position, this.sunDirection);
     }
-    this.updateGodRaysCenter();
   }
 
   /**
@@ -265,19 +265,9 @@ export class SkySystem {
       this.directionalLight.intensity = lightSettings.intensity;
     }
 
-    // Update god rays center.
-    // 更新上帝光线中心
-    this.updateGodRaysCenter();
-
     // Update night light.
     // 更新夜光
     this.updateNightLight();
-  }
-
-  private updateGodRaysCenter(): void {
-    if (!this.camera) return;
-    const sunPos = this.sunRenderer.mesh.position;
-    this.postProcessing.updateGodRaysCenter({ x: sunPos.x, y: sunPos.y, z: sunPos.z });
   }
 
   private updateNightLight(): void {
@@ -303,10 +293,6 @@ export class SkySystem {
       bloomStrength: this.settings.bloomStrength,
       bloomRadius: this.settings.bloomRadius,
       bloomEnabled: this.settings.bloomEnabled,
-      godRaysEnabled: this.settings.godRaysEnabled,
-      godRaysWeight: this.settings.godRaysWeight,
-      godRaysDecay: this.settings.godRaysDecay,
-      godRaysExposure: this.settings.godRaysExposure,
     };
   }
 
