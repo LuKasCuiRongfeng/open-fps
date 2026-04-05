@@ -21,8 +21,7 @@ import {
   uniform,
   positionLocal,
   normalize,
-  cameraViewMatrix,
-  transformDirection,
+  transformNormalToView,
 } from "three/tsl";
 import type { TerrainConfig } from "../terrain";
 import type { TerrainTextureArrayResult } from "../TerrainTextureArrays";
@@ -96,7 +95,6 @@ export function createTexturedArrayTerrainMaterial(
   // 高度和法线纹理
   const heightTex = texture(params.heightTexture);
   const normalTex = texture(params.normalTexture);
-
   // ============================================================================
   // Vertex Displacement
   // 顶点位移
@@ -121,10 +119,9 @@ export function createTexturedArrayTerrainMaterial(
     positionLocal.z,
   );
 
-  // Sample terrain normal.
-  // 采样地形法线
-  const sampledNormal = normalTex.sample(atlasUv).xyz;
-  const rawNormal = normalize(sampledNormal);
+  // Sample the precomputed terrain normal atlas to keep chunk seams continuous.
+  // 采样预计算地形法线图集以保持 chunk 接缝连续
+  const rawNormal = normalize(normalTex.sample(atlasUv).xyz);
 
   // Soften normal for lighting.
   // 软化法线以柔和光照
@@ -174,7 +171,6 @@ export function createTexturedArrayTerrainMaterial(
     // Create texture nodes for arrays.
     // 创建纹理数组节点
     const diffuseArray = textureArrays.diffuseArray!;
-    const normalArray = textureArrays.normalArray!;
     const armArray = textureArrays.armArray!;
 
     // Scale values for each layer.
@@ -215,11 +211,10 @@ export function createTexturedArrayTerrainMaterial(
     // 采样每个 splat map
     const splatSamples = splatTexNodes.map((tex) => tex.sample(splatUV));
 
-    // Build layer contributions: weighted diffuse, normal, ARM for each layer.
-    // 构建层贡献：每层的加权漫反射、法线、ARM
+    // Build layer contributions: weighted diffuse and ARM for each layer.
+    // 构建层贡献：每层的加权漫反射和 ARM
     const layerContributions: Array<{
       diffuse: ReturnType<typeof triplanarSampleArray>;
-      normal: ReturnType<typeof triplanarSampleArray>;
       arm: ReturnType<typeof triplanarSampleArray>;
       weight: ReturnType<typeof float>;
     }> = [];
@@ -243,12 +238,10 @@ export function createTexturedArrayTerrainMaterial(
       // Sample textures for this layer.
       // 为此层采样纹理
       const layerDiffuse = triplanarSampleArray(diffuseArray, i, scales[i] ?? 4);
-      const layerNormal = triplanarSampleArray(normalArray, i, scales[i] ?? 4);
       const layerARM = triplanarSampleArray(armArray, i, scales[i] ?? 4);
 
       layerContributions.push({
         diffuse: layerDiffuse.mul(layerWeight),
-        normal: layerNormal.mul(layerWeight),
         arm: layerARM.mul(layerWeight),
         weight: layerWeight,
       });
@@ -259,7 +252,6 @@ export function createTexturedArrayTerrainMaterial(
     if (layerContributions.length === 0) {
       layerContributions.push({
         diffuse: triplanarSampleArray(diffuseArray, 0, scales[0] ?? 4),
-        normal: triplanarSampleArray(normalArray, 0, scales[0] ?? 4),
         arm: triplanarSampleArray(armArray, 0, scales[0] ?? 4),
         weight: float(1),
       });
@@ -271,7 +263,6 @@ export function createTexturedArrayTerrainMaterial(
     // 从第一个贡献开始
     const first = layerContributions[0];
     let accDiffuse = first.diffuse;
-    let accNormal = first.normal;
     let accARM = first.arm;
     let totalWeight = first.weight;
 
@@ -280,7 +271,6 @@ export function createTexturedArrayTerrainMaterial(
     for (let i = 1; i < layerContributions.length; i++) {
       const c = layerContributions[i];
       accDiffuse = accDiffuse.add(c.diffuse);
-      accNormal = accNormal.add(c.normal);
       accARM = accARM.add(c.arm);
       totalWeight = totalWeight.add(c.weight);
     }
@@ -289,34 +279,32 @@ export function createTexturedArrayTerrainMaterial(
     // 按总权重归一化（如无权重则回退到第一层）
     const safeWeight = totalWeight.max(0.001);
     const finalDiffuse = accDiffuse.div(safeWeight);
-    const blendedNormalMap = accNormal.div(safeWeight);
     const finalARM = accARM.div(safeWeight);
-
-    // Convert and apply normal map.
-    // 转换并应用法线贴图
-    const tangentNormal = normalize(blendedNormalMap.mul(2.0).sub(1.0));
-    const perturbedNormal = normalize(
-      vec3(
-        terrainNormal.x.add(tangentNormal.x.mul(0.5)),
-        terrainNormal.y.add(tangentNormal.z),
-        terrainNormal.z.add(tangentNormal.y.mul(0.5)),
-      )
-    );
 
     // Extract AO, Roughness, Metallic.
     // 提取 AO、Roughness、Metallic
     const finalAO = finalARM.x;
     const finalRoughness = finalARM.y;
-    const finalMetallic = finalARM.z;
+    // Terrain layers are treated as dielectrics even when source packs contain noisy metallic data.
+    // 地形层按非金属介质处理，即使源纹理包里带有噪声金属度数据
+    const finalMetallic = float(0.0);
 
-    // Apply AO.
-    // 应用 AO
+    // Feed AO through the material AO channel instead of darkening the albedo.
+    // This keeps direct lighting from being incorrectly attenuated by baked AO.
+    // 通过材质 AO 通道使用 AO，而不是直接压暗底色。
+    // 这样可避免烘焙 AO 错误地衰减直射光。
     const aoIntensity = float(0.5);
-    const aoFactor = mix(float(1.0), finalAO, aoIntensity);
-    const finalColor = finalDiffuse.mul(aoFactor);
+    const finalAOFactor = mix(float(1.0), finalAO, aoIntensity);
 
-    mat.colorNode = finalColor;
-    mat.normalNode = normalize(transformDirection(perturbedNormal, cameraViewMatrix));
+    mat.colorNode = finalDiffuse;
+    mat.aoNode = finalAOFactor;
+    // Do not apply tangent-space layer normal maps here.
+    // The current triplanar terrain path does not build a correct per-axis tangent basis,
+    // and treating sampled normal maps as plain vectors causes angle-dependent darkening.
+    // 这里不应用切线空间层法线贴图。
+    // 当前三平面地形路径没有建立正确的逐轴切线基，
+    // 把采样法线贴图当普通向量混合会导致随角度变化的错误变暗。
+    mat.normalNode = transformNormalToView(terrainNormal);
     mat.roughnessNode = finalRoughness;
     mat.metalnessNode = finalMetallic;
 
@@ -358,7 +346,7 @@ export function createTexturedArrayTerrainMaterial(
     const finalColor = mix(baseColor, snowColor, snowMask);
 
     mat.colorNode = finalColor;
-    mat.normalNode = normalize(transformDirection(terrainNormal, cameraViewMatrix));
+    mat.normalNode = transformNormalToView(terrainNormal);
     mat.roughnessNode = float(cfg.material.roughness);
     mat.metalnessNode = float(cfg.material.metalness);
   }

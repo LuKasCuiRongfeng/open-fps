@@ -25,8 +25,7 @@ import {
   uniform,
   positionLocal,
   normalize,
-  cameraViewMatrix,
-  transformDirection,
+  transformNormalToView,
 } from "three/tsl";
 import type { TerrainConfig } from "../terrain";
 
@@ -63,8 +62,8 @@ export function createGpuTerrainMaterial(
 ): MeshStandardNodeMaterial {
   const mat = new MeshStandardNodeMaterial();
   mat.fog = true;
-  // Enable double-sided rendering for skirts to be visible from below.
-  // 启用双面渲染以便从下方看到裙边
+  // Keep skirts visible from all required viewing directions.
+  // 保持裙边在需要的观察方向上可见，避免 chunk 边界开裂
   mat.side = DoubleSide;
 
   // Uniforms for this chunk's atlas tile location.
@@ -80,7 +79,6 @@ export function createGpuTerrainMaterial(
   // 高度和法线纹理
   const heightTex = texture(params.heightTexture);
   const normalTex = texture(params.normalTexture);
-
   // Compute atlas UV from local position.
   // 从本地位置计算图集 UV
   // Local position is in range [-chunkSize/2, chunkSize/2]
@@ -136,20 +134,10 @@ export function createGpuTerrainMaterial(
     positionLocal.z,
   );
 
-  // Sample normal from pre-computed texture.
-  // 从预计算纹理采样法线
-  const sampledNormal = normalTex.sample(atlasUv).xyz;
-
-  // The normal from texture is in WORLD space (not object space).
-  // Use cameraViewMatrix.transformDirection() to transform world-space normal to view-space.
-  // (cameraNormalMatrix is the INVERSE - it transforms view→world, not world→view)
-  // 纹理中的法线是世界空间的（不是对象空间）。
-  // 使用 cameraViewMatrix.transformDirection() 将世界空间法线变换到视图空间。
-  // （cameraNormalMatrix 是逆矩阵 - 它将视图→世界，而不是世界→视图）
-  const worldNormal = normalize(sampledNormal);
-  const viewNormal = normalize(transformDirection(worldNormal, cameraViewMatrix));
-
-  mat.normalNode = viewNormal;
+  // Use the precomputed terrain normal atlas and let NodeMaterial handle the local->view transform.
+  // 使用预计算地形法线图集，并由 NodeMaterial 负责局部到视图空间的变换。
+  const terrainNormal = normalize(normalTex.sample(atlasUv).xyz);
+  mat.normalNode = transformNormalToView(terrainNormal);
 
   // Compute world position for material blending (after displacement).
   // 计算世界位置用于材质混合（位移后）
@@ -162,7 +150,7 @@ export function createGpuTerrainMaterial(
   // Layer order: grass (low) -> rock (mid/steep) -> snow (high)
   // 层级顺序：草地（低）-> 岩石（中/陡）-> 雪（高）
   const y = worldY;
-  const slope = clamp(oneMinus(sampledNormal.y), float(0.0), float(1.0));
+  const slope = clamp(oneMinus(terrainNormal.y), float(0.0), float(1.0));
 
   const grass = color(...cfg.material.grassColorRgb);
   const rock = color(...cfg.material.rockColorRgb);
@@ -348,12 +336,10 @@ export function createGpuTerrainMaterial(
     // 将高度转换为法线扰动
   const detailNormal = vec3(mx_heighttonormal(dnHeight, float(cfg.material.detailNormal.strength)));
 
-    // Blend detail normal with world normal, then transform to view space.
-    // Use cameraViewMatrix.transformDirection() for world→view transformation.
-    // 将细节法线与世界空间法线混合，然后转换到视图空间
-    // 使用 cameraViewMatrix.transformDirection() 进行世界→视图变换
-    const blendedWorldNormal = normalize(worldNormal.add(detailNormal.mul(0.5)));
-    mat.normalNode = normalize(transformDirection(blendedWorldNormal, cameraViewMatrix));
+    // Blend detail normal in terrain space before handing it to the material lighting path.
+    // 在地形空间中混合细节法线，再交给材质光照路径处理。
+    const blendedTerrainNormal = normalize(terrainNormal.add(detailNormal.mul(0.5)));
+    mat.normalNode = transformNormalToView(blendedTerrainNormal);
   }
 
   mat.colorNode = finalShaded;

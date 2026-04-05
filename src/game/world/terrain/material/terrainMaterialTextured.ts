@@ -16,8 +16,7 @@ import {
   uniform,
   positionLocal,
   normalize,
-  cameraViewMatrix,
-  transformDirection,
+  transformNormalToView,
 } from "three/tsl";
 import type { TerrainConfig } from "../terrain";
 import type { TerrainTextureResult, PBRTextureSet } from "../TerrainTextures";
@@ -91,7 +90,6 @@ export function createTexturedTerrainMaterial(
   // 高度和法线纹理
   const heightTex = texture(params.heightTexture);
   const normalTex = texture(params.normalTexture);
-
   // ============================================================================
   // Vertex Displacement
   // 顶点位移
@@ -116,10 +114,9 @@ export function createTexturedTerrainMaterial(
     positionLocal.z,
   );
 
-  // Sample terrain normal.
-  // 采样地形法线
-  const sampledNormal = normalTex.sample(atlasUv).xyz;
-  const rawNormal = normalize(sampledNormal);
+  // Sample the precomputed terrain normal atlas to keep chunk seams continuous.
+  // 采样预计算地形法线图集以保持 chunk 接缝连续
+  const rawNormal = normalize(normalTex.sample(atlasUv).xyz);
   
   // Soften normal for lighting by blending toward up vector (reduces harsh front/back contrast).
   // 将法线向上方向混合以软化光照（减少正面/背面的强烈对比）
@@ -210,13 +207,6 @@ export function createTexturedTerrainMaterial(
       return triplanarSample(texture(layer.diffuse), float(layer.scale));
     };
 
-    // Sample normal map for one layer (returns tangent-space normal).
-    // 采样单层的法线贴图（返回切线空间法线）
-    const sampleNormal = (layer: PBRTextureSet | undefined) => {
-      if (!layer?.normal) return vec3(0.5, 0.5, 1.0); // Flat normal / 平面法线
-      return triplanarSample(texture(layer.normal), float(layer.scale));
-    };
-
     // Sample ARM (AO, Roughness, Metallic) or separate maps.
     // 采样 ARM（AO、Roughness、Metallic）或分开的贴图
     const sampleARM = (layer: PBRTextureSet | undefined) => {
@@ -246,34 +236,6 @@ export function createTexturedTerrainMaterial(
       .add(d2.mul(normSplat.b))
       .add(d3.mul(normSplat.a));
 
-    // Sample and blend 4 layers - Normal.
-    // 采样并混合4层 - 法线
-    const n0 = sampleNormal(layers[0]);
-    const n1 = sampleNormal(layers[1]);
-    const n2 = sampleNormal(layers[2]);
-    const n3 = sampleNormal(layers[3]);
-
-    const blendedNormalMap = n0.mul(normSplat.r)
-      .add(n1.mul(normSplat.g))
-      .add(n2.mul(normSplat.b))
-      .add(n3.mul(normSplat.a));
-
-    // Convert normal map (0-1) to tangent space (-1 to 1) and apply to terrain normal.
-    // 将法线贴图（0-1）转换为切线空间（-1到1）并应用到地形法线
-    const tangentNormal = normalize(blendedNormalMap.mul(2.0).sub(1.0));
-    
-    // Perturb the terrain normal using the tangent-space normal (simplified TBN).
-    // 使用切线空间法线扰动地形法线（简化的 TBN）
-    // For terrain, we approximate: tangent = X axis, bitangent = Z axis.
-    // 对于地形，我们近似：tangent = X 轴，bitangent = Z 轴
-    const perturbedNormal = normalize(
-      vec3(
-        terrainNormal.x.add(tangentNormal.x.mul(0.5)),
-        terrainNormal.y.add(tangentNormal.z),
-        terrainNormal.z.add(tangentNormal.y.mul(0.5)),
-      )
-    );
-
     // Sample and blend 4 layers - ARM (AO, Roughness, Metallic).
     // 采样并混合4层 - ARM（AO、Roughness、Metallic）
     const arm0 = sampleARM(layers[0]);
@@ -290,18 +252,26 @@ export function createTexturedTerrainMaterial(
     // 从混合后的 ARM 中提取 AO、Roughness、Metallic
     const finalAO = finalARM.x;
     const finalRoughness = finalARM.y;
-    const finalMetallic = finalARM.z;
+    // Terrain layers are treated as dielectrics even when source packs contain noisy metallic data.
+    // 地形层按非金属介质处理，即使源纹理包里带有噪声金属度数据
+    const finalMetallic = float(0.0);
 
-    // Apply AO to diffuse color.
-    // 将 AO 应用到漫反射颜色
+    // Feed AO through the material AO channel instead of baking it into albedo.
+    // AO should only attenuate indirect lighting, not direct sun light.
+    // 通过材质 AO 通道使用 AO，而不是把它烘进底色。
+    // AO 只应影响间接光，不应直接压暗太阳直射。
     const aoIntensity = float(0.5); // AO strength / AO 强度
-    const aoFactor = mix(float(1.0), finalAO, aoIntensity);
-    const finalColor = finalDiffuse.mul(aoFactor);
+    const finalAOFactor = mix(float(1.0), finalAO, aoIntensity);
 
-    mat.colorNode = finalColor;
-    // Transform perturbed normal to view space.
-    // 将扰动后的法线变换到视图空间
-    mat.normalNode = normalize(transformDirection(perturbedNormal, cameraViewMatrix));
+    mat.colorNode = finalDiffuse;
+    mat.aoNode = finalAOFactor;
+    // Do not apply tangent-space layer normal maps here.
+    // The current triplanar terrain path does not build a correct per-axis tangent basis,
+    // and treating sampled normal maps as plain vectors causes angle-dependent darkening.
+    // 这里不应用切线空间层法线贴图。
+    // 当前三平面地形路径没有建立正确的逐轴切线基，
+    // 把采样法线贴图当普通向量混合会导致随角度变化的错误变暗。
+    mat.normalNode = transformNormalToView(terrainNormal);
     mat.roughnessNode = finalRoughness;
     mat.metalnessNode = finalMetallic;
 
@@ -355,11 +325,7 @@ export function createTexturedTerrainMaterial(
     const finalColor = mix(baseColor, snowColor, snowMask);
 
     mat.colorNode = finalColor;
-    // Transform world-space normal to view space using cameraViewMatrix.
-    // (cameraNormalMatrix is the INVERSE - it transforms view→world, not world→view)
-    // 使用 cameraViewMatrix 将世界空间法线变换到视图空间。
-    // （cameraNormalMatrix 是逆矩阵 - 它将视图→世界，而不是世界→视图）
-    mat.normalNode = normalize(transformDirection(terrainNormal, cameraViewMatrix));
+    mat.normalNode = transformNormalToView(terrainNormal);
     mat.roughnessNode = float(cfg.material.roughness);
     mat.metalnessNode = float(cfg.material.metalness);
   }
