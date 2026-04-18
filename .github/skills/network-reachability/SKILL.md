@@ -18,12 +18,14 @@ argument-hint: 'Describe the failing network operation, the exact error text, an
 
 1. Start by classifying the failure: DNS resolution, TCP connect failure, timeout, connection reset, TLS or certificate issue, authentication issue, or proxy misconfiguration.
 2. Check whether proxy settings already exist before assuming direct internet access. Inspect environment variables such as `HTTP_PROXY`, `HTTPS_PROXY`, and `ALL_PROXY`, plus tool-specific settings such as git proxy config.
-3. Prefer a small reachability check before retrying large operations. Confirm whether the target host and port are reachable.
-4. Retry once when the error looks transient, such as a connection reset or short-lived timeout. Do not loop repeated retries without new evidence.
-5. Do not assume the repository or dependency configuration is broken when the failure is clearly network-related.
-6. Do not print secrets, tokens, or full proxy credentials in summaries.
-7. If a working proxy or VPN already exists in the environment, prefer using it over inventing unrelated workarounds.
-8. If the blocker remains external, explain the exact network constraint and stop at the clean boundary instead of fabricating success.
+3. On Windows, do not stop at environment variables. Also inspect WinHTTP, WinINET or Internet Settings, and the effective system proxy resolution for the target host.
+4. If a system proxy is present but the failing tool does not appear to be using it, prefer a one-shot retry with the discovered proxy before trying unrelated transport tweaks.
+5. Prefer a small reachability check before retrying large operations. Confirm whether the target host and port are reachable.
+6. Retry once when the error looks transient, such as a connection reset or short-lived timeout. Do not loop repeated retries without new evidence.
+7. Do not assume the repository or dependency configuration is broken when the failure is clearly network-related.
+8. Do not print secrets, tokens, or full proxy credentials in summaries.
+9. If a working proxy or VPN already exists in the environment, prefer using it over inventing unrelated workarounds.
+10. If the blocker remains external, explain the exact network constraint and stop at the clean boundary instead of fabricating success.
 
 ## Output
 
