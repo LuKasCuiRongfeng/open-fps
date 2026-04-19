@@ -1,123 +1,47 @@
 ---
 name: engineering
-description: For general software engineering review, refactoring, maintainability improvement, code cleanup, implementation planning, and verification strategy. Use this skill when the task is not tied to a single framework but requires stronger engineering judgment about code quality, structure, scope control, and validation.
-argument-hint: "[goal or problem] [maintainability or quality target] [constraints]"
+description: "通用软件工程实现与重构规范。USE WHEN: 进行代码审查、重构、复杂度治理、结构优化、垃圾代码清理，或需要定义验证与风险边界。KEYWORDS: engineering, refactor, review, maintainability, complexity, cleanup, verify, risk, 工程, 重构, 复杂度, 可维护性, 验证"
+argument-hint: "[目标或问题] [质量或维护性目标] [约束]"
 ---
 
 # engineering
 
-Use this skill for general-purpose engineering work that is broader than any single framework or language feature.
+聚焦通用软件工程判断、结构收敛、复杂度控制与验证闭环的技能卡。
 
-## What This Skill Helps With
+## 核心原则
 
-- Code review focused on correctness, maintainability, and risk.
-- Refactoring for simpler structure, smaller units, and lower complexity.
-- Cleanup of AI-generated waste, dead code, and overbuilt implementations.
-- Implementation planning with explicit success criteria and verification strategy.
-- Deciding when to extract constants, shared mappings, configuration, or helper modules.
-- Keeping files, modules, and responsibilities maintainable over time.
+- 优先选择能完整解决问题的最小方案，避免为抽象而抽象。
+- 优先修根因，不叠表面补丁；能删掉的复杂度优先删掉。
+- 保持职责边界清晰，避免同一逻辑散落多个文件或被塞进巨型工具模块。
+- 只有在确实提升清晰度、复用性或变更管理时，才提取常量、映射、配置或 helper。
+- 保持公共行为稳定，除非任务明确要求改变行为。
+- 清理死代码、无用 helper、冗余间接层和 AI 生成垃圾。
+- 代码写完后必须主动自检，并让自检强度与改动风险和类型匹配。
+- 用最强可行验证信号闭环，并明确剩余风险。
 
-## When To Use This Skill
+## 设计与执行流程
 
-- The task is a general engineering review rather than a framework-specific question.
-- The user asks for refactoring, cleanup, maintainability improvement, or complexity reduction.
-- The code works but is too large, too repetitive, too fragile, or too hard to verify.
-- The task needs stronger structure, verification planning, or quality control across modules.
-- The problem spans several files or layers and needs engineering judgment more than library-specific syntax knowledge.
+使用此 skill 时，按以下顺序执行：
 
-## When Not To Use This Skill
+1. 先定义真实目标、约束和成功标准。
+2. 判断当前问题主要是复杂度、重复、结构、正确性还是验证缺口。
+3. 选择最小变更集，先简化结构、删除浪费，再考虑新增抽象。
+4. 只在能明显改善清晰度或维护性的地方提取常量、配置或 helper。
+5. 主动运行与改动匹配的自检，例如 lint、typecheck、test、build 或目标路径的最小运行验证。
+6. 明确说明运行了什么验证、哪些未运行、为什么未运行，以及剩余风险或未验证部分。
 
-- The task is primarily domain-specific and should be led by a specialized skill such as React, Tailwind, Web 3D, or network troubleshooting.
-- The request is only about framework syntax or a narrow API usage question.
+## 输出与检查项
 
-## Default Engineering Baseline
+- 真实问题是什么，是否抓到了根因而不是表象。
+- 当前结构是否过大、过重复、过脆弱，是否需要删除、简化、拆分或提取。
+- 是否有应提取的常量、映射或配置，或者应保持本地的局部不变量。
+- 是否清理了死代码、无用产物和多余抽象。
+- 是否主动运行了与改动匹配的 lint、typecheck、test、build 或运行验证。
+- 运行了什么验证，还剩哪些风险或未知。
 
-- Prefer the smallest coherent solution that fully satisfies the requirement.
-- Fix root causes instead of layering patches when practical.
-- Reduce complexity instead of redistributing it into more files without benefit.
-- Keep responsibilities clear at the file, module, function, and component levels.
-- Validate behavior with the strongest practical signal before declaring the task complete.
+## 示例输入
 
-## Required Engineering Rules
-
-- Do not preserve accidental complexity just because it already exists.
-- If a shorter, clearer implementation can preserve behavior, prefer it.
-- Remove dead paths, unused helpers, redundant indirection, and temporary scaffolding introduced during the task.
-- Keep public behavior stable unless the task explicitly requires a behavior change.
-- Do not spread the same logic across multiple files when one clear location is enough.
-- Do not overcentralize unrelated logic into giant utility files or oversized modules.
-
-## Maintainability Rules
-
-- Split files by responsibility, not by ceremony.
-- Treat files approaching 800 lines as refactoring candidates.
-- Extract repeated or change-prone data into constants, mappings, or configuration when that improves clarity and maintenance.
-- Keep true local invariants local instead of promoting every literal into a distant constants file.
-- Prefer names and structure that are understandable without tracing excessive indirection.
-- Keep modules easy to review: narrow scope, predictable inputs, predictable outputs.
-
-## Refactoring Strategy
-
-- Refactor toward fewer concepts, clearer ownership, and smaller change surfaces.
-- Prefer deletion over abstraction when removal solves the problem.
-- Extract helpers only when they remove real duplication or clarify the main path.
-- Avoid speculative architecture for requirements that do not exist yet.
-- When splitting a file, separate responsibilities along real boundaries such as data shaping, business logic, side effects, rendering, or integration.
-
-## Verification Strategy
-
-- Define what success means before or during implementation.
-- Match verification depth to risk.
-- Prefer direct evidence such as tests, type checks, linting, builds, or targeted execution over verbal confidence.
-- If you cannot fully verify the change, state what was checked and what remains uncertain.
-- Treat unverified behavior changes as risk, not as done work.
-
-## Execution Workflow
-
-When using this skill, follow this sequence:
-
-1. Define the real goal, constraints, and success criteria.
-2. Identify whether the current problem is complexity, duplication, structure, correctness, or verification.
-3. Choose the smallest change set that fixes the real problem.
-4. Simplify structure and remove waste before adding new abstractions.
-5. Extract constants, helpers, or configuration only where they improve clarity or change management.
-6. Verify the result with the strongest practical checks.
-7. Report remaining risks or unverified areas explicitly.
-
-## Output Requirements
-
-When you generate an answer, code change, design proposal, or review, include the following whenever relevant:
-
-- What the real problem is, not just the visible symptom.
-- Whether the current structure is too large, too repetitive, or too hard to maintain.
-- Whether code should be deleted, simplified, split, or extracted.
-- Whether any data is hardcoded in a way that should become constants, mappings, or configuration.
-- What verification was run or should be run.
-- What risks remain after the change.
-
-## Review Checklist
-
-- Does the solution solve the root problem rather than only the symptom?
-- Is the implementation simpler than before, not just different?
-- Are dead code, unused artifacts, and AI-generated waste removed?
-- Are responsibilities split clearly across files and modules?
-- Is any file too large or trending toward an unmaintainable size?
-- Are constants, mappings, or configuration extracted where that improves maintenance?
-- Are local invariants kept local when extraction would only add indirection?
-- Was the result verified with appropriate checks?
-- Are remaining risks or unknowns stated clearly?
-
-## Example Inputs
-
-- `Review this change for maintainability, complexity, and verification gaps.`
-- `Refactor this module so it is smaller, clearer, and easier to test without changing behavior.`
-- `Clean up AI-generated code and remove redundant abstractions from this feature.`
-- `Help decide whether these values should stay inline or move to constants or configuration.`
-
-## Expected Behavior
-
-- Push toward simpler, clearer, and more maintainable code.
-- Remove waste and accidental complexity introduced during the task.
-- Keep file and module boundaries aligned with real responsibilities.
-- Use extraction and abstraction only when they improve the code materially.
-- Treat verification as part of completion, not as an optional extra.
+- `审查这次改动，重点看可维护性、复杂度和验证缺口。`
+- `把这个模块重构得更小、更清晰、更容易验证，同时保持行为不变。`
+- `清理这块 AI 生成的垃圾代码和多余抽象。`
+- `帮我判断这些值该保留在本地，还是提取到常量或配置。`

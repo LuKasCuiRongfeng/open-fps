@@ -1,82 +1,43 @@
 ---
 name: error
-description: For error handling, recovery strategy, logging and reporting, fallback design, and review of swallowed failures. Use this skill when a task involves try/catch logic, retries, graceful degradation, background jobs, API boundaries, UI error states, or deciding how failures should be surfaced.
-argument-hint: "[error scenario] [runtime or layer] [visibility or recovery goal]"
+description: "错误处理与恢复策略规范。USE WHEN: 编写或修改 try/catch、重试、fallback、批处理、后台任务、API 边界、UI 错误状态，或需要决定错误如何暴露与恢复。KEYWORDS: error, exception, retry, fallback, recover, logging, telemetry, failure, try/catch, 错误, 重试, 降级, 日志"
+argument-hint: "[错误场景] [运行时或层级] [暴露或恢复目标]"
 ---
 
 # error
 
-Use this skill for designing, implementing, or reviewing error handling.
+聚焦错误暴露、恢复策略、降级行为与禁止静默吞错的技能卡。
 
-## What This Skill Helps With
+## 核心原则
 
-- Deciding whether a failure should be thrown, returned, retried, skipped, or downgraded.
-- Making fatal and recoverable failures visible to developers.
-- Designing fallback behavior without hiding the original problem.
-- Reviewing code for swallowed errors, empty catches, and misleading success paths.
-- Choosing reporting mechanisms such as logs, UI error states, metrics, or aggregated summaries.
+- 不要静默忽略错误；致命和可恢复错误都必须以合适方式对开发者可见。
+- 先保留并暴露系统原始错误，再在确有必要时补充自定义错误或业务语义。
+- 优先选择诚实的失败路径，不要用“看起来成功”的返回值掩盖失败。
+- 只有在降级行为真实可接受时才使用 fallback，而且必须报告降级事实。
+- 重试必须有边界、理由和幂等性保证；不能无休止重试。
+- 批处理或部分成功场景可以跳过单项失败，但必须报告失败项和汇总结果。
 
-## When To Use This Skill
+## 设计与执行流程
 
-- The task adds or changes try/catch behavior.
-- The task involves retries, fallback data, partial success, background work, or batch processing.
-- The task needs a decision about recoverable versus fatal failures.
-- The task includes error logging, telemetry, user-visible error states, or operational reporting.
-- The code currently ignores failures or hides them behind silent defaults.
+使用此 skill 时，按以下顺序执行：
 
-## Core Rules
+1. 先区分错误是致命、可恢复、可跳过，还是需要降级处理。
+2. 决定当前层该抛出、返回显式错误结果、重试、跳过还是降级。
+3. 选择合适的暴露方式：日志、UI 错误状态、CLI 输出、指标或汇总报告。
+4. 确保原始错误、关键上下文和降级事实没有被隐藏。
+5. 检查是否存在空 catch、假成功返回、无限重试或吞错 fallback。
 
-- Do not silently ignore errors.
-- Report the system or original error first, then add custom error reporting only when it materially improves diagnosis or handling.
-- Make failures visible through an appropriate mechanism for the runtime and audience.
-- Preserve useful context such as operation, input identity, dependency, and failure reason.
-- Prefer explicit failure paths over fake success paths.
-- If a failure is intentionally downgraded, report that downgrade instead of pretending nothing happened.
+## 输出与检查项
 
-## Choosing A Handling Strategy
+- 错误是否对正确的开发者、操作者或用户可见。
+- 是否保留了原始错误、操作上下文、输入标识和依赖信息。
+- 当前策略是抛出、返回、重试、跳过还是降级，是否合理且诚实。
+- retry、fallback 和 partial success 是否有边界且被显式报告。
+- 是否存在空 catch、假成功值、隐藏底层错误或丢失 rejected promise 的情况。
 
-- Throw when the current layer cannot recover correctly.
-- Return an explicit error result when the caller is expected to decide how to recover.
-- Retry only for failures that are plausibly transient, bounded, and safe to repeat.
-- Skip individual items only when partial success is acceptable and the skipped failures are still reported.
-- Use fallback values only when degraded behavior is genuinely acceptable and the failure remains visible.
+## 示例输入
 
-## Visibility By Runtime
-
-- Backend or services: log with enough context to diagnose the failing operation.
-- Frontend: expose the failure through a visible error state, developer-visible logging, or both, depending on the audience.
-- Scripts and CLIs: print actionable error output and use a failing exit code when the overall operation failed.
-- Batch jobs: aggregate per-item failures and surface both the summary and the affected items.
-- Libraries: avoid unilaterally logging noisy duplicates when the caller owns reporting, but still return or throw explicit failure information.
-
-## Prohibited Patterns
-
-- Empty catch blocks.
-- Catching and returning a normal-looking success value without reporting the failure.
-- Replacing the original error with only a custom error message that hides the underlying failure.
-- Retrying indefinitely without surfacing repeated failure.
-- Using fallback behavior that erases the original cause.
-- Dropping rejected promises, callback errors, or stream errors without handling them.
-
-## Review Checklist
-
-- Is the failure visible to the right developer or operator?
-- Does the handling preserve enough context to debug the issue?
-- Is the code honest about partial success versus full success?
-- Is retry bounded, justified, and safe?
-- Is any fallback behavior explicitly reported?
-- Are any catches, defaults, or skips hiding real failures?
-
-## Example Inputs
-
-- `Design error handling for this batch import so bad rows are skipped but still reported.`
-- `Review this code for swallowed async errors and misleading fallback behavior.`
-- `Decide whether this API client should throw, retry, or return a result object.`
-- `Add frontend error states without hiding the original network failure.`
-
-## Expected Behavior
-
-- Surface failures instead of hiding them.
-- Keep recovery behavior explicit and defensible.
-- Match reporting style to the runtime and ownership boundary.
-- Treat silent degradation as a bug unless it is explicitly reported.
+- `设计这个批量导入的错误处理，让坏行可以跳过，但仍然被报告。`
+- `审查这段代码，找出被吞掉的异步错误和误导性的 fallback。`
+- `判断这个 API client 应该抛出、重试，还是返回结果对象。`
+- `补前端错误状态，但不要隐藏底层网络错误。`

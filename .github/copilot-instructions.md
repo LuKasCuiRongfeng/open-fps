@@ -1,44 +1,45 @@
-# Repository Copilot Instructions
+# 仓库 Copilot 指引
 
-These instructions are the repository-wide baseline for all AI coding work in this repository.
+这些指引是本仓库内所有 AI 编码工作的仓库级基线。
 
-Keep this file short. Put reusable implementation detail in skills.
-Use this file for rules that should apply across languages, frameworks, and tasks.
-Use the engineering skill for general engineering detail.
-Use the error skill for error handling, recovery, and reporting detail.
-Use the documentation skill for comments and documentation detail.
-Use domain skills such as React, Tailwind, Web 3D, or networking when the task matches.
+保持这个文件简短。可复用的实现细节应下沉到 skills。
+这个文件只放跨语言、跨框架、跨任务都应适用的规则。
+通用工程细节使用 engineering skill。
+错误处理、恢复与错误暴露细节使用 error skill。
+注释与文档细节使用 documentation skill。
+当任务命中对应领域时，使用 JavaScript、Rust、React、Tailwind、Web 3D、network 等领域 skill。
 
-## Think Before Coding
+## 编码前先思考
 
-- Do not assume missing details.
-- State assumptions explicitly when they matter.
-- If you are uncertain about a requirement that changes the implementation, ask rather than guess.
-- Surface tradeoffs when multiple approaches are reasonable.
-- Push back when a simpler or safer approach is better than the requested implementation.
-- Stop and clarify when confusion would otherwise lead to speculative code.
+- 不要擅自假设缺失细节。
+- 当假设会影响实现时，要明确说出来。
+- 如果某个不确定需求会改变实现方式，应先问清楚，而不是猜。
+- 当存在多个合理方案时，要明确说明取舍。
+- 如果更简单或更安全的方案优于用户当前要求，应明确提出。
+- 如果当前理解不清，再继续只会导致投机式编码，就先停下来澄清。
 
-## Prefer Simplicity
+## 优先简洁
 
-- Prefer the simplest solution that fully satisfies the requirement.
-- Keep changes focused on the problem being solved.
-- Avoid unnecessary abstraction, duplication, and low-value boilerplate.
+- 在保证性能、可读性、可维护性等关键质量目标的前提下，优先选择能完整满足需求的最简洁实现。
+- 变更应聚焦在当前要解决的问题上。
+- 避免不必要的抽象、重复和低价值样板代码。
 
-## Keep It Short
+## 保持简短
 
-- Keep implementation and documentation concise.
-- Prefer dense, high-signal wording over filler.
+- 实现和文档都应保持简洁。
+- 优先使用高信息密度表达，避免废话。
 
-## Close The Loop
+## 闭环验证
 
-- Define success criteria before or during implementation.
-- Verify with the strongest practical signal available.
-- If full verification is not possible, say what was checked and what remains uncertain.
+- 在实现前或实现过程中定义成功标准。
+- 代码修改完成后，必须主动运行至少一轮与改动相匹配的自检。
+- 用当前可行的最强验证信号做验证。
+- 如果无法完整验证，要明确说明已检查什么、还有什么不确定。
 
-## Expected Default Behavior
+## 默认行为预期
 
-- Be explicit about uncertainty.
-- Do not silently ignore errors. Report both fatal and recoverable errors through an appropriate mechanism so developers know the failure happened.
-- Remove waste created during the task.
-- Use the engineering skill for detailed engineering guidance.
-- Use the error skill for detailed error-handling guidance.
+- 对不确定性要明确表达。
+- 不要静默忽略错误。无论是致命错误还是可恢复错误，都必须通过合适机制暴露出来，让开发者知道错误发生过。
+- 清理任务过程中产生的无用内容。
+- 需要详细工程指导时使用 engineering skill。
+- 需要详细错误处理指导时使用 error skill。

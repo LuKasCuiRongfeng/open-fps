@@ -1,109 +1,44 @@
 ---
 name: network
-description: For network troubleshooting, connectivity diagnosis, proxy detection, proxy validation, and root-cause analysis of client-side or environment-level network failures. Use this skill when the task involves failed requests, unreachable hosts, DNS issues, TLS errors, blocked connections, proxy configuration, or determining whether a working proxy is available.
-argument-hint: "[network problem] [target host or service] [constraints]"
+description: "网络连接诊断与代理排障规范。USE WHEN: 遇到请求失败、主机不可达、DNS、TLS、代理、路由或网络环境问题，或需要判断是否存在可用代理。KEYWORDS: network, dns, tls, proxy, http, socks, vpn, connectivity, timeout, git, npm, 网络, 代理, DNS, TLS, 连通性"
+argument-hint: "[网络问题] [目标主机或服务] [约束]"
 ---
 
 # network
 
-Use this skill when the AI encounters a network problem and needs to determine what is broken and whether a usable proxy is available.
+聚焦网络故障分层诊断、代理检测与可用性验证的技能卡。
 
-## What This Skill Helps With
+## 核心原则
 
-- Diagnose where a network failure occurs.
-- Distinguish between DNS, TCP, TLS, HTTP, proxy, authentication, and application-layer failures.
-- Check whether the current environment has a configured proxy.
-- Check whether the operating system has a configured system proxy.
-- Verify whether a configured proxy is actually reachable and usable.
-- Identify whether the issue is local-only, proxy-related, target-related, or environment-related.
-- Suggest the next most likely checks in a disciplined order.
+- 不要猜测，先识别失败层级，再提出修复方向。
+- 严格区分 DNS、TCP 连通性、TLS 握手、HTTP 响应、代理行为和应用层失败。
+- 代理是否存在，与代理是否真正生效、可达、可转发，是不同问题。
+- 同时检查环境变量、工具级代理设置和系统级代理设置。
+- 优先相信真实连通性验证，而不是静态配置本身。
+- 在 Windows 上，相关时同时检查系统代理和 WinHTTP 代理。
 
-## When To Use This Skill
+## 设计与执行流程
 
-- The AI cannot access a website, API, package registry, git remote, or other network resource.
-- A request times out, fails to resolve, fails TLS negotiation, or returns an unexpected proxy-related error.
-- The user mentions VPN, proxy, SOCKS, HTTP proxy, HTTPS proxy, environment variables, or routing issues.
-- The task requires determining whether a usable proxy exists before taking other network actions.
+使用此 skill 时，按以下顺序执行：
 
-## When Not To Use This Skill
+1. 识别失败操作、目标主机、端口、协议和精确错误症状。
+2. 先检查名称解析，再检查目标主机和端口的原始连通性。
+3. 如果涉及 TLS，判断失败发生在握手前还是握手中。
+4. 检查环境变量、工具链和系统层面是否配置了代理。
+5. 如果配置了代理，验证它是否可达、是否真的能把流量转发到目标。
+6. 明确失败属于直连路径、代理路径，还是两者共同失败，并给出下一步高信号检查。
 
-- The problem is clearly unrelated to networking.
-- The failure is already proven to be purely application logic with healthy underlying connectivity.
+## 输出与检查项
 
-## Default Troubleshooting Goal
+- 失败层级是什么，证据指向 DNS、TCP、TLS、HTTP、代理还是更高层。
+- 是否配置了代理、系统代理，以及它们是否真的生效。
+- 代理是存在但不可用，还是根本未配置，或并未作用于当前工具。
+- 问题更像本地配置、代理路径、远端服务还是策略限制。
+- 下一步最高信号的诊断或修复动作是什么。
 
-- Find the failure layer before proposing fixes.
-- Determine whether the issue is caused by local configuration, DNS, raw connectivity, TLS, proxy settings, authentication, the remote service, or policy restrictions.
-- Check whether a usable proxy is available and whether traffic is actually going through it.
+## 示例输入
 
-## Core Diagnostic Rules
-
-- Do not guess. Identify the failing layer first.
-- Start with the simplest external symptom and narrow inward.
-- Separate name resolution, routing, port reachability, TLS handshake, HTTP response, and proxy behavior.
-- Treat proxy presence and proxy usability as different questions.
-- Do not assume that configured proxy environment variables are correct or active.
-- Prefer evidence from actual connectivity checks over static configuration alone.
-
-## Proxy Rules
-
-- Always check whether proxy-related environment variables or tool-specific proxy settings are present.
-- Always check whether a system-level proxy is configured, not just shell variables.
-- Check common proxy configuration sources such as `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`, lowercase variants, git proxy settings, npm proxy settings, and OS-level proxy configuration.
-- On Windows, explicitly inspect both Internet Settings style system proxy settings and WinHTTP proxy settings when relevant.
-- If a proxy is configured, verify that it is reachable and that it can actually forward traffic to the intended target.
-- If multiple proxies are present, determine which one is actually in effect for the failing tool.
-- If no proxy is configured, say that clearly instead of implying one exists.
-
-## Diagnostic Workflow
-
-When using this skill, follow this sequence:
-
-1. Identify the failing operation, target host, port, protocol, and exact error symptom.
-2. Check whether the target name resolves correctly.
-3. Check whether raw connectivity to the target host and port is possible.
-4. If TLS is involved, determine whether the failure is before or during handshake.
-5. Check whether any proxy is configured in the current environment, toolchain, or operating system.
-6. If a proxy is configured, test whether it is reachable and whether requests succeed through it.
-7. Determine whether the failure is direct-path only, proxy-path only, or common to both.
-8. Report the most likely failure layer and the next corrective action.
-
-## Output Requirements
-
-When you generate an answer, review, or troubleshooting result, include the following whenever relevant:
-
-- The failing layer or the most likely failing layer.
-- Whether a proxy is configured.
-- Whether a system proxy is configured.
-- Whether the configured proxy is actually usable.
-- What evidence supports the conclusion.
-- Whether the issue appears local, proxy-related, remote-side, or policy-related.
-- The next diagnostic or corrective step, ordered from highest signal to lowest.
-
-## Review Checklist
-
-- Did the analysis identify the exact network symptom?
-- Did it distinguish DNS failure from connection failure?
-- Did it distinguish TCP reachability from TLS or HTTP failure?
-- Did it check whether any proxy is configured?
-- Did it check whether an OS-level or system proxy is configured?
-- Did it verify whether the proxy actually works, not just whether it exists in configuration?
-- Did it avoid assuming the proxy applies to every tool automatically?
-- Did it state clearly whether the problem is direct-path, proxy-path, or both?
-- Did it recommend the next checks in a logical order?
-
-## Example Inputs
-
-- `Git push fails. Determine whether the problem is DNS, connectivity, authentication, or proxy related.`
-- `This machine cannot access npm. Check whether a working proxy is configured.`
-- `API requests time out. Figure out whether the proxy is broken or the target host is unreachable.`
-- `Diagnose why HTTPS requests fail in this environment and confirm whether traffic is going through a proxy.`
-
-## Expected Behavior
-
-- Diagnose the network issue layer by layer instead of guessing.
-- Always consider proxy configuration when the environment may depend on one.
-- Check system proxy configuration explicitly instead of only checking environment variables.
-- Verify whether a proxy is both configured and functional.
-- Report a clear conclusion about where the failure most likely occurs.
-- Recommend the next highest-value check rather than a vague list of possibilities.
+- `Git push 失败，判断是 DNS、连通性、认证还是代理问题。`
+- `这台机器不能访问 npm，检查是否存在可用代理。`
+- `API 请求超时，判断是代理坏了还是目标主机不可达。`
+- `诊断这个环境里 HTTPS 请求失败的原因，并确认流量是否经过代理。`

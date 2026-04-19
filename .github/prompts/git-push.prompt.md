@@ -1,40 +1,40 @@
 ---
 name: git-push
-description: Stage changes, create a git commit, and push to the current remote branch. Use --message to provide the commit message, or generate an English message automatically when omitted.
+description: 暂存变更、创建 git commit，并推送到当前远端分支。可使用 `--message` 指定提交信息；未提供时自动生成英文提交信息。
 agent: agent
-argument-hint: "[--message \"your commit message\"]"
+argument-hint: "[--message \"提交信息\"]"
 ---
 
-Stage the current repository changes, create a commit, and push it to the current remote branch.
+暂存当前仓库变更，创建 commit，并推送到当前远端分支。
 
-Follow this workflow:
+按以下流程执行：
 
-1. Inspect the repository status and changed files before making any git changes.
-2. Parse the prompt input.
-3. If the user provided a `--message` argument, use its value exactly as the commit message after trimming surrounding whitespace.
-4. If the user did not provide `--message`, inspect the actual staged and unstaged changes and generate a concise English commit message that accurately describes the change.
-5. Stage the necessary tracked and untracked files for the current task.
-6. Create a normal git commit.
-7. Push to the current branch's configured upstream remote.
+1. 在执行任何 git 操作前，先检查仓库状态和变更文件。
+2. 解析 prompt 输入。
+3. 如果用户提供了 `--message` 参数，在去除首尾空白后，原样使用它作为 commit message。
+4. 如果用户没有提供 `--message`，检查实际的 staged 和 unstaged 变更，并生成一条能准确描述改动的简洁英文 commit message。
+5. 暂存当前任务需要的 tracked 和 untracked 文件。
+6. 创建一个普通 git commit。
+7. 推送到当前分支配置的上游远端。
 
-Requirements:
+要求：
 
-- Do not invent a commit message without first checking the actual changes.
-- If generating the commit message automatically, it must be in English.
-- Keep the generated message concise and specific.
-- Do not amend existing commits unless the user explicitly asks for it.
-- Do not use destructive git commands.
-- If there are no changes to commit, report that clearly and stop.
-- If push fails because no upstream is configured, set the upstream for the current branch and then push.
-- If push fails for another reason, report the actual failure reason.
+- 在未检查实际变更前，不要凭空编造 commit message。
+- 如果自动生成 commit message，必须使用英文。
+- 生成的 message 应简洁且具体。
+- 除非用户明确要求，否则不要 amend 已有 commit。
+- 不要使用破坏性的 git 命令。
+- 如果没有可提交的变更，要明确说明并停止。
+- 如果 push 因未配置 upstream 失败，先为当前分支设置 upstream 再 push。
+- 如果 push 因其他原因失败，报告真实失败原因。
 
-Output expectations:
+输出要求：
 
-- State which commit message was used.
-- State which branch and remote were pushed.
-- If nothing was committed or pushed, explain why.
+- 说明最终使用的 commit message。
+- 说明推送到了哪个 branch 和 remote。
+- 如果没有 commit 或 push，解释原因。
 
-Examples:
+示例：
 
 - `/git-push --message "Add react skill guidance for dependency-driven rerenders"`
 - `/git-push`

@@ -1,126 +1,44 @@
 ---
 name: web3d
-description: For Web 3D architecture design, technology selection, implementation, refactoring, debugging, code review, and performance optimization. Unless the task is a special case such as GIS, globe rendering, or surveying, default to Three.js and enforce WebGPU, TSL, GPU-first, and performance-first decisions. Use this skill when the task involves rendering architecture, shaders, materials, animation, interaction, GPU compute, performance tuning, or selecting third-party rendering acceleration libraries.
-argument-hint: "[scene goal] [performance target] [constraints]"
+description: "Three.js WebGPU 渲染编程规范。USE WHEN: 编写或修改 3D 渲染代码、创建场景、编写 TSL 着色器、使用 Node Material、调试 WebGPU 渲染问题，或进行渲染架构与性能优化。KEYWORDS: Three.js, WebGPU, TSL, shader, 3D, scene, renderer, Node Material, WGSL, compute shader, 渲染, 着色器, 场景, WebGPU"
+argument-hint: "[场景目标] [性能目标] [约束]"
 ---
 
 # web3d
 
-Use this skill for general-purpose Web 3D work. This is the default skill for most 3D scenes in the browser.
+聚焦 Three.js、WebGPU、TSL 与 GPU-first 渲染架构的技能卡。
 
-## What This Skill Helps With
+## 核心原则
 
-- Rendering architecture and technology selection for Web 3D projects.
-- Three.js scene design, renderer setup, resource flow, and rendering pipeline design.
-- Shader, material, post-processing, particle, animation, and interaction implementation.
-- Refactoring, debugging, reviewing, and optimizing existing Web 3D code.
-- GPU compute strategy, acceleration structures, and advanced rendering technique selection.
-- Third-party library selection when the goal is higher performance or less boilerplate.
+- 除 GIS、globe、surveying 等特殊场景外，默认选择 Three.js。
+- renderer 必须使用 WebGPU；materials 默认使用 Node Materials；shader 默认优先 TSL，热点再考虑 WGSL。
+- GPU-first：能放到 GPU 的重复重活不要留在 CPU。
+- 优先选择更高性能但仍可维护的架构，关注主线程开销、draw calls、状态切换和垃圾压力。
+- 能带来真实收益时，优先使用 instancing、batching、compute shader、BVH、GPU animation、GPU particles 等现代手段。
+- 第三方库只要能显著提效或减少低价值样板，就应积极采用。
 
-## When To Use This Skill
+## 设计与执行流程
 
-- The task is a normal browser 3D scene rather than a GIS or globe platform.
-- The user asks for scene implementation, renderer setup, material design, shader authoring, animation, post-processing, or interaction logic.
-- The user asks for WebGPU migration, Three.js architecture, performance tuning, bottleneck analysis, or rendering-path redesign.
-- The user asks which rendering technique or library should be chosen for a Web 3D problem.
+使用此 skill 时，按以下顺序执行：
 
-## When Not To Use This Skill
+1. 先判断是否真的是普通 Web 3D 场景，而不是 GIS、globe 或测绘类特殊问题。
+2. 对普通场景默认选择 Three.js + WebGPU，并明确 GPU/CPU 边界。
+3. 先用 Node Materials + TSL 设计材质与着色逻辑，热点再考虑 WGSL。
+4. 评估 instancing、batching、compute shader、BVH 和 GPU 粒子/动画等加速路径。
+5. 需要时引入高价值第三方库，并说明它带来的真实性能或工程收益。
+6. 输出最终方案时说明渲染路径、瓶颈判断和为什么这样更快。
 
-- The task is primarily GIS, globe rendering, map projection, terrain, or surveying. In those cases, evaluate Cesium or other dedicated engines first.
-- The task is not really 3D rendering, such as pure 2D canvas, DOM-only animation, or generic frontend UI work.
+## 输出与检查项
 
-## Default Technical Baseline
+- 推荐的 engine、renderer、shader 路径，以及 GPU/CPU 职责边界。
+- 是否使用了 WebGPU、Node Materials、TSL，以及热点是否需要 WGSL 或 compute shader。
+- 是否应使用 instancing、batching、BVH、GPU animation、GPU particles 等高价值优化手段。
+- imports 是否限制在 `three/webgpu`、`three/tsl` 和 `three/addons/...`，是否避免了 bare `three` 和过时 API。
+- 哪些第三方库值得引入，以及它们为何能提升性能或减少样板。
 
-- Except for special cases such as GIS, globe, and surveying, default to Three.js.
-- The renderer must be WebGPU.
-- Materials must use Node Materials.
-- Shaders must default to TSL.
-- If TSL cannot reach the required performance, use native WGSL.
-- GPU is the first priority. If work can run on the GPU, do not move it back to the CPU.
-- If compute shader can accelerate the workload, prefer compute shader.
+## 示例输入
 
-## Required Three.js Rules
-
-- Import only from `three/webgpu`, `three/tsl`, and `three/addons/...`.
-- Never import from bare `three`.
-- Use Node Materials for material authoring. Do not default to legacy non-node material workflows.
-- Use current standard APIs.
-- Do not use deprecated APIs, legacy example patterns, or compatibility-era code style.
-- Prefer official Three.js types whenever available. Do not casually invent replacement types for existing official ones.
-
-## Core Decision Rules
-
-- Prefer the highest-performance architecture that is still maintainable.
-- Do not keep GPU-eligible work on the CPU just because it is easier to write.
-- Prefer lower main-thread cost, fewer draw calls, fewer state changes, less synchronization, and less garbage pressure.
-- Prefer instancing, batching, GPU-driven animation, GPU particles, GPU visibility work, indirect workflows, spatial acceleration structures, and advanced modern rendering paths when they provide measurable gains.
-- If a more advanced technique can deliver meaningfully better real-world performance, prefer it over conservative implementations.
-
-## Shader And Compute Strategy
-
-- Start with Node Materials plus TSL for material logic, procedural effects, and render-path customization.
-- If profiling shows that TSL output is the bottleneck and WGSL can materially improve performance, switch the hotspot to WGSL.
-- For large particle systems, procedural animation, crowd logic, simulation, precomputation, and spatial queries, evaluate compute shader first.
-- Move animation, deformation, blending preparation, visibility classification, sampling preparation, and repeated per-element math to the GPU whenever practical.
-
-## Third-Party Library Strategy
-
-- Use third-party libraries aggressively when they improve performance or remove substantial boilerplate.
-- Prefer well-maintained libraries with a clear benefit and active usage.
-- For mesh raycasting, picking, spatial queries, and acceleration structures, prefer `three-mesh-bvh` when appropriate.
-- Do not add libraries that increase abstraction without a clear rendering or productivity win.
-
-## Execution Workflow
-
-When using this skill, follow this sequence:
-
-1. Classify the scene type. Decide whether it is a normal Web 3D scene or a special engine case such as GIS.
-2. Choose the rendering baseline. For normal scenes, default to Three.js plus WebGPU.
-3. Define the GPU/CPU boundary. Explicitly state what must stay on the GPU and what remains CPU-side only for orchestration.
-4. Choose shader strategy. Prefer TSL first, then WGSL only for proven hotspots.
-5. Choose acceleration strategy. Evaluate instancing, batching, BVH, compute shader, culling, and other advanced techniques.
-6. Choose supporting libraries. Add high-value libraries when they improve performance or reduce low-value boilerplate.
-7. Produce the implementation or review. The final answer should reflect the performance-first constraints above.
-
-## Output Requirements
-
-When you generate an answer, code change, design proposal, or review, include the following whenever relevant:
-
-- The recommended engine and rendering path.
-- The GPU versus CPU responsibility split.
-- Whether Node Materials are used for material authoring.
-- Whether TSL, WGSL, compute shader, instancing, BVH, or other advanced techniques should be used.
-- Why the chosen path is faster or more scalable.
-- Which imports and APIs are acceptable.
-- Which third-party libraries are justified and why.
-- If multiple options exist, rank them by expected real-world performance.
-
-## Review Checklist
-
-- Is this actually a normal Web 3D task rather than a special GIS-style task?
-- Does the solution default to Three.js for normal scenes?
-- Is the renderer WebGPU?
-- Are materials implemented with Node Materials?
-- Are imports restricted to `three/webgpu`, `three/tsl`, and `three/addons/...`?
-- Is TSL used by default, and is WGSL only used for justified hotspots?
-- Is GPU-first respected throughout the design?
-- Was compute shader evaluated for heavy repeated computation?
-- Are deprecated APIs avoided?
-- Were official types reused where possible?
-- Should `three-mesh-bvh` or another mature performance-oriented library be used?
-
-## Example Inputs
-
-- `Build a high-performance ocean particle scene with 100k particles and keep it stable on mobile devices.`
-- `Migrate an existing Three.js scene to WebGPU and explain which animation logic should move to the GPU.`
-- `Design the material and post-processing strategy for a product showcase scene with high image quality and low main-thread cost.`
-- `Review this Web 3D code and focus on CPU-heavy logic, invalid import paths, deprecated APIs, and incorrect rendering architecture.`
-
-## Expected Behavior
-
-- Default to a Three.js plus WebGPU solution for standard browser 3D scenes.
-- Use Node Materials as the default material system.
-- Push heavy repeated work to GPU implementations whenever feasible.
-- Prefer TSL-first shader authoring, with WGSL reserved for hotspot optimization.
-- Recommend advanced rendering techniques and high-value ecosystem libraries when they improve real performance.
-- Reject bare `three` imports, deprecated APIs, and CPU-first rendering designs unless the user explicitly requests an exception.
+- `构建一个高性能海洋粒子场景，粒子数 10 万，并在移动端保持稳定。`
+- `把现有 Three.js 场景迁移到 WebGPU，并说明哪些动画逻辑应搬到 GPU。`
+- `为产品展示场景设计材质和后处理方案，兼顾画质与低主线程开销。`
+- `审查这段 Web 3D 代码，重点看 CPU 重活、错误 import、过时 API 和渲染架构问题。`

@@ -1,77 +1,42 @@
 ---
 name: documentation
-description: For code comments, developer documentation, architecture notes, and deciding what should be documented, where it should live, and how to keep it concise and current. Use this skill when a task involves comments, READMEs, migration notes, workflow docs, or deciding whether documentation is needed at all.
-argument-hint: "[feature or area] [documentation need] [audience or scope]"
+description: "代码注释与文档编写规范。USE WHEN: 编写或修改注释、README、架构说明、迁移说明、工作流文档，或需要判断某件事是否该被记录以及该写在哪里。KEYWORDS: documentation, comment, README, architecture, migration, workflow, note, 注释, 文档, README, 架构, 迁移"
+argument-hint: "[功能或范围] [文档需求] [读者或作用域]"
 ---
 
 # documentation
 
-Use this skill for deciding whether to add comments or documentation and for writing or reviewing them well.
+聚焦注释、开发文档、架构说明与文档位置判断的技能卡。
 
-## What This Skill Helps With
+## 核心原则
 
-- Deciding whether a code path needs a comment at all.
-- Choosing between inline comments, local docs, and repository-wide docs.
-- Keeping documentation short, current, and scoped to real reader needs.
-- Reviewing comments and docs for redundancy, staleness, and missing context.
-- Capturing workflows, architecture notes, and operational guidance when code alone is not enough.
+- 只记录能明显提升理解或操作正确性的内容。
+- 能靠命名和结构表达清楚的，就不要再写注释重复一遍。
+- 文档尽量短、准、作用域清晰，并放在最贴近责任的位置。
+- 面向仓库范围的概念写仓库文档，局部行为写局部文档，局部意图写 inline comments。
+- 修改代码时同步更新或删除过期文档与注释。
 
-## When To Use This Skill
+## 设计与执行流程
 
-- The task adds or changes comments.
-- The task needs README, architecture, workflow, migration, or setup documentation.
-- The code contains non-obvious constraints, edge cases, or tradeoffs that future readers need explained.
-- The current docs are stale, too long, too vague, or missing.
-- The question is whether something should be documented and where.
+使用此 skill 时，按以下顺序执行：
 
-## Core Rules
+1. 先判断是否真的需要写注释或文档，而不是默认补文字。
+2. 决定最合适的位置：inline comment、本地文档，还是仓库级文档。
+3. 只保留读者完成任务所需的信息，删除解释性废话。
+4. 检查是否有过期、重复或作用域错误的现有文档需要同步调整。
+5. 用示例、范围和假设帮助读者快速上手，但不要堆成参考手册。
 
-- Document only what materially improves understanding or operation.
-- Prefer no comment over an obvious comment.
-- Keep docs as short as possible while still unambiguous.
-- Put documentation near the responsibility it explains unless the audience is repository-wide.
-- Update or delete stale documentation as part of the change.
+## 输出与检查项
 
-## Choosing The Right Form
+- 这段注释或文档是否真的提供了代码本身没有直接表达的信息。
+- 位置是否正确，能否被目标读者在需要时自然找到。
+- 文案是否短、具体、无重复。
+- 是否存在过期、范围过大或应该删除的内容。
+- 是否本该通过更清晰的代码结构来替代部分文字说明。
 
-- Use inline comments for non-obvious intent, constraints, invariants, edge cases, or tradeoffs.
-- Use local documentation for subsystem behavior, workflows, or contracts that are too large for code comments.
-- Use repository-wide documentation for concepts, setup, or architecture that many parts of the codebase depend on.
-- Use naming and structure instead of comments when code can be made self-explanatory.
+## 示例输入
 
-## Comment Guidance
-
-- Explain why, not what, when the code is already readable.
-- Comment important assumptions and failure modes when they are not obvious from the implementation.
-- Keep comments close to the logic they explain.
-- Remove comments that only paraphrase code or describe outdated behavior.
-
-## Documentation Guidance
-
-- Prefer task-oriented documents over vague reference dumps.
-- State scope, audience, and assumptions early.
-- Include only the detail needed for the intended reader to act correctly.
-- Shorten or split documents that mix unrelated concerns.
-- Keep examples aligned with the current codebase.
-
-## Review Checklist
-
-- Does this comment or doc teach something the code alone does not?
-- Is the chosen location appropriate for the intended audience?
-- Is the wording concise and specific?
-- Is any part stale, redundant, or too broad in scope?
-- Would clearer code remove the need for some of this documentation?
-
-## Example Inputs
-
-- `Review these comments and remove the ones that only restate the code.`
-- `Decide whether this feature needs README documentation or only local comments.`
-- `Write a short architecture note for this workflow without turning it into a long design doc.`
-- `Clean up stale setup docs after this refactor.`
-
-## Expected Behavior
-
-- Add documentation only when it improves shared understanding.
-- Keep comments and docs short, specific, and current.
-- Choose the narrowest location that reaches the right audience.
-- Prefer clearer code over explanatory prose when possible.
+- `审查这些注释，删掉只是在重复代码的部分。`
+- `判断这个功能该写到 README，还是只需要局部注释。`
+- `给这个工作流补一段简短架构说明，不要写成长文档。`
+- `在这次重构后清理过期的 setup 文档。`
