@@ -1,71 +1,40 @@
 ---
 name: git-push
-description: Review local git changes, prepare a commit message in Chinese or English, and commit and push with either confirmation or direct execution.
-argument-hint: "[--lang=zh|en] [--message=custom message] [--force]"
+description: Stage changes, create a git commit, and push to the current remote branch. Use --message to provide the commit message, or generate an English message automatically when omitted.
 agent: agent
+argument-hint: "[--message \"your commit message\"]"
 ---
 
-# Git Commit And Push
+Stage the current repository changes, create a commit, and push it to the current remote branch.
 
-You are preparing to commit the current workspace changes and push them to the remote repository.
+Follow this workflow:
 
-## Argument Parsing
+1. Inspect the repository status and changed files before making any git changes.
+2. Parse the prompt input.
+3. If the user provided a `--message` argument, use its value exactly as the commit message after trimming surrounding whitespace.
+4. If the user did not provide `--message`, inspect the actual staged and unstaged changes and generate a concise English commit message that accurately describes the change.
+5. Stage the necessary tracked and untracked files for the current task.
+6. Create a normal git commit.
+7. Push to the current branch's configured upstream remote.
 
-- Parse the user arguments that follow `/git-push`.
-- `--lang=zh|en`: choose the commit message language. Default to `en`.
-- `--message=...`: use the provided commit message exactly as the commit title or full message.
-- `--force`: skip the confirmation step and commit and push immediately.
-- Treat `--force` here as a workflow flag only. Do not run `git push --force` unless the user explicitly asks for a forced remote push.
-- If `--lang` is missing, default to `en`.
-- If `--lang` has any value other than `zh` or `en`, stop and ask the user to provide one of those two values.
+Requirements:
 
-## Required Inspection
-
-- Inspect the git working tree before making any commit.
-- Check staged and unstaged changes, the current branch, and whether a push remote is configured.
-- Review enough diff context to generate a defensible commit message instead of guessing.
-- If there is nothing to commit, stop and say so.
-- If the branch has no usable upstream or no remote push target, stop and explain the blocker.
-
-## Commit Message Rules
-
-- If `--message` is present, use it exactly and do not rewrite it.
-- If `--message` is not present, generate a concise commit message from the actual changes.
-- Generate the message in the language selected by `--lang`.
-- Keep the message concrete and repository-relevant.
-- Prefer one clear subject line. Add a short body only when the change spans distinct areas or needs clarification.
-
-## Interaction Rules
-
-- If `--message` is present and `--force` is not present, use the provided message and proceed directly to commit and push without asking for another suggestion.
-- If `--message` is present and `--force` is present, still use the provided message exactly and proceed directly.
-- If `--message` is not present and `--force` is not present, generate a proposed commit message, show it to the user in the current conversation, and ask whether to use it or replace it.
-- If `--message` is not present and `--force` is present, generate the commit message and proceed directly without asking.
-
-## Execution Rules
-
-- Stage the relevant current workspace changes before committing.
-- Commit only after you have either a user-provided message or an approved/generated message according to the rules above.
-- Push to the configured remote branch after a successful commit.
-- Use non-interactive git commands only.
+- Do not invent a commit message without first checking the actual changes.
+- If generating the commit message automatically, it must be in English.
+- Keep the generated message concise and specific.
 - Do not amend existing commits unless the user explicitly asks for it.
+- Do not use destructive git commands.
+- If there are no changes to commit, report that clearly and stop.
+- If push fails because no upstream is configured, set the upstream for the current branch and then push.
+- If push fails for another reason, report the actual failure reason.
 
-## Response Format Before Waiting For User Feedback
+Output expectations:
 
-If you need user input because `--message` is missing and `--force` is not present, respond with:
+- State which commit message was used.
+- State which branch and remote were pushed.
+- If nothing was committed or pushed, explain why.
 
-1. Branch and push target
-2. Short change summary
-3. Proposed commit message
-4. A direct question asking whether to use it or replace it
+Examples:
 
-Keep this report concise.
-
-## Response Format After Execution
-
-After committing and pushing, summarize:
-
-1. The branch and remote target used
-2. The commit message used
-3. Whether push succeeded
-4. Any blocker or follow-up risk that still matters
+- `/git-push --message "Add react skill guidance for dependency-driven rerenders"`
+- `/git-push`

@@ -1,63 +1,79 @@
-# Copilot Instructions (open-fps)
+# Repository Copilot Instructions
 
-Keep this file limited to rules that must always be present. Put directory-specific guidance in `.github/instructions/` and task workflows in `.github/skills/`.
+These instructions are the default engineering baseline for all AI coding work in this repository.
 
-## GPU-First
-- All workloads that can reasonably run on GPU must stay on GPU.
-- If GPU can implement it, or GPU is the better option, do not add any CPU compatibility path.
-- Do not trade visual quality for convenience.
+Use skills for domain-specific expertise such as React, Tailwind, Web 3D, or networking.
+Use this file for rules that should apply across languages, frameworks, and tasks.
 
-## Compute-Shader First
-- Data-parallel gameplay and world-generation work must use compute shaders.
-- CPU code is only for bootstrap, UI, orchestration, and small glue logic.
-- Do not add per-vertex or per-instance CPU loops for work that belongs in GPU compute.
+## Think Before Coding
 
-## No Unapproved Fallbacks
-- If a WebGPU or TSL path appears blocked, check official docs first.
-- If the GPU path is still unclear, stop and ask before implementing a CPU or otherwise inferior fallback.
+- Do not assume missing details.
+- State assumptions explicitly when they matter.
+- If the request is ambiguous, present the plausible interpretations instead of silently picking one.
+- If you are uncertain about a requirement that changes the implementation, ask rather than guess.
+- Do not hide confusion. Name what is unclear.
+- Surface tradeoffs when multiple approaches are reasonable.
+- Push back when a simpler or safer approach is better than the requested implementation.
+- Stop and clarify when confusion would otherwise lead to speculative code.
 
-## React Compiler
-- React Compiler is enabled.
-- Do not add `useMemo`, `useCallback`, or `React.memo` unless the user explicitly requests an exception.
+## Prefer Simplicity
 
-## Language
-- Code comments may be bilingual English and Chinese, and important logic must be commented.
-- Everything else must be English only, including UI strings, dialog text, logs, errors, and documentation.
+- Prefer the simplest solution that fully satisfies the requirement.
+- If 200 lines can reasonably become 50 without losing clarity, correctness, or maintainability, rewrite it.
+- Do not produce ceremonial abstractions, placeholder layers, or speculative extensibility without a real need.
+- Avoid redundant branches, repeated helpers, copy-paste variants, and low-value boilerplate.
+- Keep changes focused on the problem being solved.
 
-## Documentation Style
-- When writing documentation, keep it concise and direct.
-- Keep documentation updated in a timely manner so it does not drift out of sync with the implementation or surrounding context.
-- Do not produce overly detailed, verbose, or repetitive documentation unless the user explicitly asks for it.
+## Keep Writing Short
 
-## Code Hygiene
-- Keep code concise and remove redundant content.
-- After resolving a problem, review any code added in earlier attempts and delete anything that is no longer necessary.
-- Do not leave behind dead code, unused compatibility paths, temporary fixes, or other redundant implementation leftovers.
+- All documentation should be as short as possible while staying meaningful and unambiguous.
+- Do not write long-winded explanations, filler, or repetitive prose.
+- Prefer dense, high-signal wording over narrative padding.
+- If a shorter version communicates the same meaning clearly, use the shorter version.
 
-## Customization Maintenance
-- During implementation, if it would improve future coding quality or execution reliability, update documentation, update existing skills or instructions, or add a new appropriate skill or instruction.
-- Only make these customization changes when they are genuinely useful for better future coding in this repository.
-- Name skills by domain, not by one-off actions or bug categories.
+## Comments And Documentation
 
-## Repository Constraints
+- Add comments for important code when they materially improve understanding of non-obvious logic, constraints, or tradeoffs.
+- Do not add comments that merely restate obvious code.
+- If understanding the feature, architecture, workflow, or repository-wide behavior would benefit from documentation, create it proactively.
+- Choose the documentation location based on scope. Prefer a root-level document for repository-wide concepts, and a local document for narrower subsystem details.
+- Documentation is part of the implementation, not a one-time artifact. Update, add, trim, move, or delete docs as the code evolves.
+- Do not leave stale documentation behind after changing behavior, structure, or workflows.
 
-- Frontend code lives in `src/`.
-- Tauri backend code lives in `src-tauri/`.
-- Do not edit build outputs such as `dist/` or `src-tauri/target/`.
-- Prefer path aliases: `@game/*`, `@project/*`, `@ui/*`, `@config/*`.
-- Put constants and tunables in `src/config/` instead of hardcoding them.
+## Clean Up After Your Changes
 
-## Architecture
+- Remove imports, variables, functions, types, files, and branches that your changes made unused.
+- Do not leave behind AI-generated scaffolding, dead code, commented-out experiments, or meaningless helpers.
+- If a temporary workaround or debug artifact is no longer needed, delete it before finishing.
+- The final diff should not contain obvious garbage introduced during problem solving.
 
-- The project supports separate `editor` and `game` app targets on top of a shared WebGPU runtime.
-- Preserve the browser/desktop boundary through `src/platform/`; do not spread Tauri-specific logic across app code.
-- Tauri APIs may only be imported inside `src/platform/desktopBridge.ts`; browser support should be implemented by replacing bridge methods, not by branching host logic at call sites.
-- Storage and asset-loading flows must depend on `PlatformBridge` contracts rather than directly depending on Tauri packages or platform-specific APIs.
-- Keep editor boot flow, project selection, recent-projects state, and save/open workflows in the editor target and workspace layer.
-- Keep the standalone game target free of project-management UI while continuing to share runtime systems where appropriate.
+## Goal-Driven Execution
 
-## Verification
+- Define the success criteria before or during implementation.
+- Work until the requested outcome is actually verified, not just coded.
+- Close the loop by checking behavior with the best available validation method, such as tests, linting, type checking, build verification, or direct execution.
+- If full verification is not possible, say exactly what was checked and what remains unverified.
+- Do not stop at partial implementation when the task can be completed end to end.
 
-- Use `pnpm lint` or `pnpm tsc --noEmit` for validation.
-- Do not run `pnpm dev` or `pnpm tauri dev` for AI validation.
-- When working in Three.js WebGPU or TSL code, consult official docs and current package APIs before assuming a limitation.
+## Change Quality Rules
+
+- Fix the root cause when practical instead of stacking superficial patches.
+- Prefer clear, locally understandable code over cleverness.
+- Keep public APIs and surrounding code style stable unless the task requires change.
+- Do not refactor unrelated areas unless doing so is necessary to complete the task correctly.
+- When a simpler design removes complexity, prefer deletion over additional code.
+- Split code into maintainable files with clear responsibilities.
+- Keep code files under 800 lines whenever practical. If a file approaches that size, split it.
+- Avoid hardcoded data when a constant, shared mapping, or configuration file would make the code clearer and easier to maintain.
+- Use judgment when extracting values: keep true local invariants local, but extract reusable or change-prone values out of the implementation.
+
+## Expected Default Behavior
+
+- Be explicit about uncertainty.
+- Be concise in implementation.
+- Be concise in documentation.
+- Comment important non-obvious code when it helps future readers.
+- Create and maintain documentation proactively when shared understanding needs it.
+- Remove waste created during the task.
+- Verify results before declaring completion.
+- Use skills as additional guidance, not as a replacement for these baseline rules.
