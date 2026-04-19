@@ -334,7 +334,10 @@ export function createGpuTerrainMaterial(
 
     // Convert height to normal perturbation.
     // 将高度转换为法线扰动
-  const detailNormal = vec3(mx_heighttonormal(dnHeight, float(cfg.material.detailNormal.strength)));
+    const detailNormal = mx_heighttonormal(
+      dnHeight,
+      float(cfg.material.detailNormal.strength),
+    ) as ReturnType<typeof vec3>;
 
     // Blend detail normal in terrain space before handing it to the material lighting path.
     // 在地形空间中混合细节法线，再交给材质光照路径处理。

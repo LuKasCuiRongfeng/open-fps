@@ -324,6 +324,7 @@ export class GameApp implements RuntimeAppSession {
   protected readonly onFrame = (): void => {
     if (this.disposed) return;
 
+    this.gameRenderer.clock.update();
     const rawDt = this.gameRenderer.clock.getDelta();
     const dt = Math.min(renderStaticConfig.maxDeltaSeconds, rawDt);
     this.resources.time.dt = dt;

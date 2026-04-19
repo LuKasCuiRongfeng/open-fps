@@ -210,13 +210,14 @@ export function createTexturedArrayTerrainMaterial(
     // Sample each splat map.
     // 采样每个 splat map
     const splatSamples = splatTexNodes.map((tex) => tex.sample(splatUV));
+    type LayerWeightNode = typeof splatSamples[number]["r"];
 
     // Build layer contributions: weighted diffuse and ARM for each layer.
     // 构建层贡献：每层的加权漫反射和 ARM
     const layerContributions: Array<{
       diffuse: ReturnType<typeof triplanarSampleArray>;
       arm: ReturnType<typeof triplanarSampleArray>;
-      weight: ReturnType<typeof float>;
+      weight: LayerWeightNode;
     }> = [];
 
     for (let i = 0; i < layerCount; i++) {

@@ -122,8 +122,9 @@ export class TerrainNormalCompute {
     const computeFn = Fn(() => {
       // Compute pixel coordinates within atlas.
       // 计算图集内的像素坐标
-      const pixelX = mod(instanceIndex, uint(atlasRes));
-      const pixelY = instanceIndex.div(uint(atlasRes));
+      const linearIndex = uint(instanceIndex);
+      const pixelX = mod(linearIndex, uint(atlasRes));
+      const pixelY = linearIndex.div(uint(atlasRes));
 
       // Compute which tile this pixel belongs to.
       // 计算此像素属于哪个 tile
@@ -186,7 +187,7 @@ export class TerrainNormalCompute {
 
       // Write to normal atlas.
       // 写入法线图集
-      textureStore(this.normalTexture!, uvec2(pixelX, pixelY), vec4(normal, float(1))).toWriteOnly();
+      textureStore(this.normalTexture!, uvec2(pixelX.toUint(), pixelY.toUint()), vec4(normal, float(1))).toWriteOnly();
     });
 
     this.computeNode = computeFn().compute(atlasRes * atlasRes);

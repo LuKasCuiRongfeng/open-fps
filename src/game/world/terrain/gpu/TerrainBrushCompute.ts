@@ -172,8 +172,9 @@ export class TerrainBrushCompute {
     const dstTexture = this.heightTexture!;
 
     const computeFn = Fn(() => {
-      const pixelX = mod(instanceIndex, uint(tileRes));
-      const pixelY = instanceIndex.div(uint(tileRes));
+      const linearIndex = uint(instanceIndex);
+      const pixelX = mod(linearIndex, uint(tileRes)).toUint();
+      const pixelY = linearIndex.div(uint(tileRes)).toUint();
 
       const tileXCoord = uint(this.targetTileX);
       const tileZCoord = uint(this.targetTileZ);
@@ -254,7 +255,7 @@ export class TerrainBrushCompute {
           this.neighborXNeg_tileZ.mul(int(tileRes)).add(int(pixelY)),
           int(atlasY)
         );
-        const h1 = texture(srcTexture).load(ivec2(leftAtlasX, leftAtlasY)).r;
+        const h1 = texture(srcTexture).load(ivec2(leftAtlasX.toInt(), leftAtlasY.toInt())).r;
 
         // Right neighbor.
         // 右邻居
@@ -275,7 +276,7 @@ export class TerrainBrushCompute {
           this.neighborXPos_tileZ.mul(int(tileRes)).add(int(pixelY)),
           int(atlasY)
         );
-        const h0 = texture(srcTexture).load(ivec2(rightAtlasX, rightAtlasY)).r;
+        const h0 = texture(srcTexture).load(ivec2(rightAtlasX.toInt(), rightAtlasY.toInt())).r;
 
         // Bottom neighbor.
         // 下邻居
@@ -292,7 +293,7 @@ export class TerrainBrushCompute {
             select(int(pixelY).sub(1).lessThan(0), int(0), int(pixelY).sub(1))
           )
         );
-        const h3 = texture(srcTexture).load(ivec2(bottomAtlasX, bottomAtlasY)).r;
+        const h3 = texture(srcTexture).load(ivec2(bottomAtlasX.toInt(), bottomAtlasY.toInt())).r;
 
         // Top neighbor.
         // 上邻居
@@ -313,7 +314,7 @@ export class TerrainBrushCompute {
             )
           )
         );
-        const h2 = texture(srcTexture).load(ivec2(topAtlasX, topAtlasY)).r;
+        const h2 = texture(srcTexture).load(ivec2(topAtlasX.toInt(), topAtlasY.toInt())).r;
 
         const avgHeight = h0.add(h1).add(h2).add(h3).div(4);
         const smoothFactor = this.brushStrength.mul(this.brushDt).mul(5).mul(falloffMask);
@@ -329,7 +330,7 @@ export class TerrainBrushCompute {
 
       const newHeight = currentHeight.add(delta);
       const outputHeight = insideBrush.select(newHeight, currentHeight);
-      textureStore(dstTexture, uvec2(atlasX, atlasY), vec4(outputHeight, float(0), float(0), float(1))).toWriteOnly();
+      textureStore(dstTexture, uvec2(uint(atlasX), uint(atlasY)), vec4(outputHeight, float(0), float(0), float(1))).toWriteOnly();
     });
 
     this.brushComputeNode = computeFn().compute(tileRes * tileRes);
@@ -347,10 +348,10 @@ export class TerrainBrushCompute {
     const stitchFn = Fn(() => {
       const edgeIdx = int(instanceIndex);
 
-      const tileAx = this.stitchTileA_X;
-      const tileAz = this.stitchTileA_Z;
-      const tileBx = this.stitchTileB_X;
-      const tileBz = this.stitchTileB_Z;
+      const tileAx = this.stitchTileA_X.toInt();
+      const tileAz = this.stitchTileA_Z.toInt();
+      const tileBx = this.stitchTileB_X.toInt();
+      const tileBz = this.stitchTileB_Z.toInt();
 
       const atlasA = ivec2(0, 0).toVar();
       const atlasB = ivec2(0, 0).toVar();

@@ -190,8 +190,8 @@ export function createTexturedTerrainMaterial(
 
     // Helper to do triplanar sampling for any texture.
     // 辅助函数：对任意纹理进行三平面采样
-    const triplanarSample = (tex: ReturnType<typeof texture>, scale: ReturnType<typeof float>) => {
-      const coord = worldPos.div(scale);
+    const triplanarSample = (tex: ReturnType<typeof texture>, scale: number) => {
+      const coord = worldPos.div(float(scale));
       const sYZ = tex.sample(vec2(coord.y, coord.z)).xyz;
       const sXZ = tex.sample(vec2(coord.x, coord.z)).xyz;
       const sXY = tex.sample(vec2(coord.x, coord.y)).xyz;
@@ -204,14 +204,14 @@ export function createTexturedTerrainMaterial(
     // 采样单层的漫反射
     const sampleDiffuse = (layer: PBRTextureSet | undefined) => {
       if (!layer) return vec3(0.5, 0.5, 0.5);
-      return triplanarSample(texture(layer.diffuse), float(layer.scale));
+      return triplanarSample(texture(layer.diffuse), layer.scale);
     };
 
     // Sample ARM (AO, Roughness, Metallic) or separate maps.
     // 采样 ARM（AO、Roughness、Metallic）或分开的贴图
     const sampleARM = (layer: PBRTextureSet | undefined) => {
       if (!layer) return vec3(1.0, 0.8, 0.0); // Default: AO=1, Rough=0.8, Metal=0
-      const scale = float(layer.scale);
+      const scale = layer.scale;
       if (layer.arm) {
         // ARM packed texture / ARM 打包纹理
         return triplanarSample(texture(layer.arm), scale);

@@ -16,7 +16,6 @@ Use this skill for general-purpose engineering work that is broader than any sin
 - Implementation planning with explicit success criteria and verification strategy.
 - Deciding when to extract constants, shared mappings, configuration, or helper modules.
 - Keeping files, modules, and responsibilities maintainable over time.
-- Deciding when important code needs comments or when the project needs documentation to stay understandable.
 
 ## When To Use This Skill
 
@@ -56,10 +55,6 @@ Use this skill for general-purpose engineering work that is broader than any sin
 - Keep true local invariants local instead of promoting every literal into a distant constants file.
 - Prefer names and structure that are understandable without tracing excessive indirection.
 - Keep modules easy to review: narrow scope, predictable inputs, predictable outputs.
-- Add comments where intent, constraints, edge cases, or tradeoffs are not obvious from the code itself.
-- Do not add comments that only paraphrase the code line by line.
-- Create documentation when code changes introduce repository-wide concepts, workflows, or architectural decisions that are harder to understand from local code alone.
-- Keep documentation aligned with the current codebase by updating or deleting stale docs as part of the change.
 
 ## Refactoring Strategy
 
@@ -68,7 +63,6 @@ Use this skill for general-purpose engineering work that is broader than any sin
 - Extract helpers only when they remove real duplication or clarify the main path.
 - Avoid speculative architecture for requirements that do not exist yet.
 - When splitting a file, separate responsibilities along real boundaries such as data shaping, business logic, side effects, rendering, or integration.
-- When behavior becomes easier to understand through a short architectural note than through more code structure alone, add or update documentation.
 
 ## Verification Strategy
 
@@ -98,8 +92,6 @@ When you generate an answer, code change, design proposal, or review, include th
 - Whether the current structure is too large, too repetitive, or too hard to maintain.
 - Whether code should be deleted, simplified, split, or extracted.
 - Whether any data is hardcoded in a way that should become constants, mappings, or configuration.
-- Whether important non-obvious logic should be commented.
-- Whether documentation should be added, updated, moved, shortened, or removed.
 - What verification was run or should be run.
 - What risks remain after the change.
 
@@ -112,8 +104,6 @@ When you generate an answer, code change, design proposal, or review, include th
 - Is any file too large or trending toward an unmaintainable size?
 - Are constants, mappings, or configuration extracted where that improves maintenance?
 - Are local invariants kept local when extraction would only add indirection?
-- Are important non-obvious parts of the code commented where needed?
-- Is any supporting documentation missing, stale, too long, or no longer justified?
 - Was the result verified with appropriate checks?
 - Are remaining risks or unknowns stated clearly?
 
@@ -130,6 +120,4 @@ When you generate an answer, code change, design proposal, or review, include th
 - Remove waste and accidental complexity introduced during the task.
 - Keep file and module boundaries aligned with real responsibilities.
 - Use extraction and abstraction only when they improve the code materially.
-- Add concise comments for important non-obvious code when they improve maintainability.
-- Create and maintain documentation when shared understanding needs more than local code context.
 - Treat verification as part of completion, not as an optional extra.

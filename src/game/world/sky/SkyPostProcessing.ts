@@ -2,8 +2,8 @@
 // SkyPostProcessing：天空的泛光、上帝光线和其他后处理效果
 
 import {
-  PostProcessing,
   type PerspectiveCamera,
+  RenderPipeline,
   type Scene,
   type WebGPURenderer,
 } from "three/webgpu";
@@ -27,7 +27,7 @@ export interface PostProcessingSettings {
  * SkyPostProcessing：管理泛光和上帝光线效果
  */
 export class SkyPostProcessing {
-  private postProcessing: PostProcessing | null = null;
+  private postProcessing: RenderPipeline | null = null;
   private bloomPass: BloomNode | null = null;
 
   private settings: PostProcessingSettings;
@@ -41,7 +41,7 @@ export class SkyPostProcessing {
    * 初始化后处理（必须在 renderer.init() 之后调用）
    */
   init(renderer: WebGPURenderer, scene: Scene, camera: PerspectiveCamera): void {
-    this.postProcessing = new PostProcessing(renderer);
+    this.postProcessing = new RenderPipeline(renderer);
 
     const scenePass = pass(scene, camera);
     const scenePassColor = scenePass.getTextureNode("output");

@@ -102,7 +102,12 @@ export class TextureEditor {
         await TextureStorage.ensureSplatMap(mapDirectory, i);
         const splatMapData = await TextureStorage.loadSplatMap(mapDirectory, i);
         if (splatMapData) {
-          await this.splatMapSet.loadFromPixels(this.renderer, splatMapData.pixels, i);
+          await this.splatMapSet.loadFromPixels(
+            this.renderer,
+            splatMapData.pixels,
+            splatMapData.resolution,
+            i,
+          );
         }
       }
     } else {

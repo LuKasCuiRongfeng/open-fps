@@ -209,8 +209,9 @@ export class SplatMapCompute {
     const dstTexture = this.splatTexture!;
     const defaultR = isFirstSplatMap ? 1.0 : 0.0;
     const initFn = Fn(() => {
-      const pixelX = mod(instanceIndex, uint(res));
-      const pixelY = instanceIndex.div(uint(res));
+      const linearIndex = uint(instanceIndex);
+      const pixelX = mod(linearIndex, uint(res)).toUint();
+      const pixelY = linearIndex.div(uint(res)).toUint();
       const coord = uvec2(pixelX, pixelY);
       textureStore(dstTexture, coord, vec4(float(defaultR), 0.0, 0.0, 0.0)).toWriteOnly();
     });
@@ -248,8 +249,9 @@ export class SplatMapCompute {
     const dstTexture = this.splatTexture!;
 
     const computeFn = Fn(() => {
-      const pixelX = mod(instanceIndex, uint(res));
-      const pixelY = instanceIndex.div(uint(res));
+      const linearIndex = uint(instanceIndex);
+      const pixelX = mod(linearIndex, uint(res)).toUint();
+      const pixelY = linearIndex.div(uint(res)).toUint();
 
       // World coordinates.
       // 世界坐标
@@ -440,6 +442,38 @@ export class SplatMapCompute {
     return this.worldSize;
   }
 
+  private resizeRgbaPixelsNearest(pixels: Uint8Array, sourceResolution: number): Uint8Array {
+    if (sourceResolution === this.resolution) {
+      return pixels;
+    }
+
+    const resized = new Uint8Array(this.resolution * this.resolution * 4);
+
+    for (let y = 0; y < this.resolution; y++) {
+      const srcY = Math.min(
+        sourceResolution - 1,
+        Math.floor((y / this.resolution) * sourceResolution),
+      );
+
+      for (let x = 0; x < this.resolution; x++) {
+        const srcX = Math.min(
+          sourceResolution - 1,
+          Math.floor((x / this.resolution) * sourceResolution),
+        );
+
+        const srcIndex = (srcY * sourceResolution + srcX) * 4;
+        const dstIndex = (y * this.resolution + x) * 4;
+
+        resized[dstIndex] = pixels[srcIndex];
+        resized[dstIndex + 1] = pixels[srcIndex + 1];
+        resized[dstIndex + 2] = pixels[srcIndex + 2];
+        resized[dstIndex + 3] = pixels[srcIndex + 3];
+      }
+    }
+
+    return resized;
+  }
+
   /**
    * Load splat map data from CPU pixels (Uint8Array RGBA).
    * 从 CPU 像素（Uint8Array RGBA）加载 splat map 数据
@@ -448,13 +482,26 @@ export class SplatMapCompute {
    * bypassing DataTexture needsUpdate timing issues.
    * 使用 WebGPU 原生 API 直接写入 StorageTexture，绕过 DataTexture needsUpdate 时序问题
    */
-  async loadFromPixels(renderer: WebGPURenderer, pixels: Uint8Array): Promise<void> {
+  async loadFromPixels(
+    renderer: WebGPURenderer,
+    pixels: Uint8Array,
+    sourceResolution: number = this.resolution,
+  ): Promise<void> {
     if (!this.splatTexture || !this.splatTextureRead) {
       console.warn("[SplatMapCompute] Not initialized");
       return;
     }
 
     const res = this.resolution;
+    const expectedSourceLength = sourceResolution * sourceResolution * 4;
+    if (pixels.length !== expectedSourceLength) {
+      console.warn(
+        `[SplatMapCompute] Pixel data length ${pixels.length} does not match source resolution ${sourceResolution}`,
+      );
+      return;
+    }
+
+    const uploadPixels = this.resizeRgbaPixelsNearest(pixels, sourceResolution);
     const backend = WebGpuBackend.from(renderer);
     const textureGPU = backend?.getTextureGPU(this.splatTexture);
     
@@ -463,17 +510,18 @@ export class SplatMapCompute {
       // Fallback: update DataTexture directly.
       // 回退：直接更新 DataTexture
       const data = this.splatTextureRead.image.data as Uint8Array;
-      const len = Math.min(pixels.length, data.length);
+      const len = Math.min(uploadPixels.length, data.length);
       for (let i = 0; i < len; i++) {
-        data[i] = pixels[i];
+        data[i] = uploadPixels[i];
       }
       this.splatTextureRead.needsUpdate = true;
       return;
     }
 
-    // Ensure pixels is backed by a regular ArrayBuffer (not SharedArrayBuffer).
-    // 确保 pixels 由普通 ArrayBuffer 支持（而非 SharedArrayBuffer）
-    const pixelData = new Uint8Array(pixels.buffer instanceof ArrayBuffer ? pixels : new Uint8Array(pixels));
+    const pixelData =
+      uploadPixels.buffer instanceof ArrayBuffer
+        ? uploadPixels
+        : new Uint8Array(uploadPixels);
 
     // Directly write pixels to StorageTexture using WebGPU API.
     // 使用 WebGPU API 直接将像素写入 StorageTexture
@@ -491,9 +539,9 @@ export class SplatMapCompute {
     // Also update CPU-side data for consistency.
     // 同时更新 CPU 端数据以保持一致性
     const data = this.splatTextureRead.image.data as Uint8Array;
-    const len = Math.min(pixels.length, data.length);
+    const len = Math.min(uploadPixels.length, data.length);
     for (let i = 0; i < len; i++) {
-      data[i] = pixels[i];
+      data[i] = uploadPixels[i];
     }
     // Mark texture as needing update to ensure CPU data is uploaded to GPU.
     // This is necessary because copyTextureToTexture may not fully sync in all cases.
@@ -864,13 +912,14 @@ export class SplatMapSet {
   async loadFromPixels(
     renderer: WebGPURenderer,
     pixels: Uint8Array,
+    sourceResolution: number = this.resolution,
     splatMapIndex: number = 0,
   ): Promise<void> {
     if (splatMapIndex >= this.splatMaps.length) {
       console.warn(`[SplatMapSet] Index ${splatMapIndex} out of range`);
       return;
     }
-    await this.splatMaps[splatMapIndex].loadFromPixels(renderer, pixels);
+    await this.splatMaps[splatMapIndex].loadFromPixels(renderer, pixels, sourceResolution);
   }
 
   /**
