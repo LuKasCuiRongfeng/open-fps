@@ -2,6 +2,7 @@
 // ProjectStorage：Tauri 后端 API，用于项目保存/加载
 
 import { getPlatformBridge } from "@/platform";
+import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
 import type { MapData } from "./MapData";
 import { serializeMapData, deserializeMapData } from "./MapData";
 import type { ProjectMapRecord, ProjectMetadata } from "./ProjectData";
@@ -129,8 +130,13 @@ export async function loadProjectMap(
       mapId: activeMap.id,
     });
     map = deserializeMapData(mapJson);
-  } catch {
-    // Map doesn't exist yet.
+  } catch (error) {
+    if (isMissingFileSystemResourceError(error)) {
+      console.warn("[ProjectStorage] Project map does not exist yet", error);
+    } else {
+      console.error(`[ProjectStorage] Failed to read project map: ${formatUnknownError(error)}`, error);
+      throw error;
+    }
   }
 
   let settingsJson: string | null = null;
@@ -139,8 +145,13 @@ export async function loadProjectMap(
     if (!settingsJson || settingsJson.trim() === "") {
       settingsJson = null;
     }
-  } catch {
-    // Settings don't exist yet.
+  } catch (error) {
+    if (isMissingFileSystemResourceError(error)) {
+      console.warn("[ProjectStorage] Project settings do not exist yet", error);
+    } else {
+      console.error(`[ProjectStorage] Failed to read project settings: ${formatUnknownError(error)}`, error);
+      throw error;
+    }
   }
   const settings = mergeSettingsWithDefaults(settingsJson);
 
@@ -148,8 +159,8 @@ export async function loadProjectMap(
 
   try {
     await platform.invoke<void>("add_recent_project", { projectPath });
-  } catch {
-    // Ignore errors adding to recent.
+  } catch (error) {
+    console.warn("[ProjectStorage] Failed to add recent project entry", error);
   }
 
   return {

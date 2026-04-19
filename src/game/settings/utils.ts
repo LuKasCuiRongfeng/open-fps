@@ -67,7 +67,8 @@ export function mergeSettingsWithDefaults(json: string | null): GameSettings {
   try {
     const parsed = JSON.parse(json) as Partial<GameSettings>;
     return deepMerge(defaults, parsed);
-  } catch {
+  } catch (error) {
+    console.warn("[settings] Failed to parse settings JSON, falling back to defaults", error);
     return defaults;
   }
 }

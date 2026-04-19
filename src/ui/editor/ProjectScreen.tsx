@@ -52,8 +52,9 @@ export function ProjectScreen({ workspace }: Props) {
     e.stopPropagation();
     try {
       await workspace.removeRecentProjectEntry(path);
-    } catch {
-      // Ignore errors.
+    } catch (error) {
+      console.warn("[ProjectScreen] Failed to remove recent project entry", error);
+      setError(`Failed to remove recent project: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 

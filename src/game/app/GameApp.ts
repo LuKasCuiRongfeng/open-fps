@@ -145,14 +145,17 @@ export class GameApp implements RuntimeAppSession {
     this.gameRenderer.updateSize();
 
     const originalWarn = console.warn;
-    console.warn = (...args: unknown[]) => {
-      if (typeof args[0] === "string" && args[0].includes('Vertex attribute "normal" not found')) {
-        return;
-      }
-      originalWarn.apply(console, args);
-    };
-    await this.warmUpShaders();
-    console.warn = originalWarn;
+    try {
+      console.warn = (...args: unknown[]) => {
+        if (typeof args[0] === "string" && args[0].includes('Vertex attribute "normal" not found')) {
+          return;
+        }
+        originalWarn.apply(console, args);
+      };
+      await this.warmUpShaders();
+    } finally {
+      console.warn = originalWarn;
+    }
 
     this.gameRenderer.startLoop(this.onFrame);
 

@@ -2,6 +2,7 @@
 // TextureStorage：加载和保存纹理定义和 splat map
 
 import { getPlatformBridge } from "@/platform";
+import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
 import {
   type TextureDefinition,
   type SplatMapData,
@@ -33,12 +34,22 @@ export class TextureStorage {
    * 如果 texture.json 不存在则返回 null（使用程序纹理）
    */
   static async loadTextureDefinition(mapDirectory: string): Promise<TextureDefinition | null> {
+    const jsonPath = `${mapDirectory}/texture.json`;
+
     try {
-      const jsonPath = `${mapDirectory}/texture.json`;
       const content = await platform.invoke<string>("read_text_file", { path: jsonPath });
       return JSON.parse(content) as TextureDefinition;
-    } catch {
-      return null;
+    } catch (error) {
+      if (isMissingFileSystemResourceError(error)) {
+        console.warn(`[TextureStorage] Texture definition not found: ${jsonPath}`, error);
+        return null;
+      }
+
+      console.error(
+        `[TextureStorage] Failed to load texture definition: ${jsonPath}: ${formatUnknownError(error)}`,
+        error,
+      );
+      throw error;
     }
   }
 
@@ -68,10 +79,10 @@ export class TextureStorage {
     mapDirectory: string,
     splatMapIndex: number = 0,
   ): Promise<SplatMapData | null> {
-    try {
-      const filename = getSplatMapFilename(splatMapIndex);
-      const pngPath = `${mapDirectory}/${filename}`;
+    const filename = getSplatMapFilename(splatMapIndex);
+    const pngPath = `${mapDirectory}/${filename}`;
 
+    try {
       // Use native Tauri PNG decoder to get raw RGBA pixels.
       // 使用原生 Tauri PNG 解码器获取原始 RGBA 像素
       const [base64Pixels, width, _height] = await platform.invoke<[string, number, number]>(
@@ -103,8 +114,17 @@ export class TextureStorage {
         pixels,
         splatMapIndex,
       };
-    } catch {
-      return null;
+    } catch (error) {
+      if (isMissingFileSystemResourceError(error)) {
+        console.warn(`[TextureStorage] Splat map not found: ${pngPath}`, error);
+        return null;
+      }
+
+      console.error(
+        `[TextureStorage] Failed to load splat map: ${pngPath}: ${formatUnknownError(error)}`,
+        error,
+      );
+      throw error;
     }
   }
 
@@ -152,13 +172,24 @@ export class TextureStorage {
     resolution: number = 1024,
   ): Promise<void> {
     const filename = getSplatMapFilename(splatMapIndex);
+    const pngPath = `${mapDirectory}/${filename}`;
+
     try {
       // Check if file exists by trying to read it.
       // 尝试读取文件来检查是否存在
       await platform.invoke<[string, number, number]>("read_png_rgba", {
-        path: `${mapDirectory}/${filename}`,
+        path: pngPath,
       });
-    } catch {
+    } catch (error) {
+      if (!isMissingFileSystemResourceError(error)) {
+        console.error(
+          `[TextureStorage] Failed to verify splat map: ${pngPath}: ${formatUnknownError(error)}`,
+          error,
+        );
+        throw error;
+      }
+
+      console.warn(`[TextureStorage] Splat map missing, creating default: ${pngPath}`, error);
       const defaultSplatMap = createDefaultSplatMap(resolution, splatMapIndex);
       await this.saveSplatMap(mapDirectory, defaultSplatMap, splatMapIndex);
     }

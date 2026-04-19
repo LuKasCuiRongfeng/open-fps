@@ -2,7 +2,7 @@
 // TextureEditor：地形 splat map 纹理绘制协调器
 
 import type { DataTexture, PerspectiveCamera, WebGPURenderer } from "three/webgpu";
-import { SplatMapSet } from "@game/world/terrain/gpu/SplatMapCompute";
+import { SplatMapSet } from "@game/world/terrain/gpu/SplatMapSet";
 import {
   type TextureDefinition,
   type SplatMapData,

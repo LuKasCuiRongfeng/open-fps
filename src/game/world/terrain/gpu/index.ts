@@ -5,4 +5,5 @@ export { TerrainHeightCompute } from "./TerrainHeightCompute";
 export { TerrainNormalCompute } from "./TerrainNormalCompute";
 export { TerrainBrushCompute } from "./TerrainBrushCompute";
 export { SplatMapCompute } from "./SplatMapCompute";
+export { SplatMapSet } from "./SplatMapSet";
 export { createHashTexture, buildHeightComputeShader } from "./TerrainNoiseShader";
