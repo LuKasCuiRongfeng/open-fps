@@ -152,8 +152,9 @@ export function buildHeightComputeShader(
   const computeFn = Fn(() => {
     // Compute pixel coordinates from instance index.
     // 从实例索引计算像素坐标
-    const pixelX = mod(instanceIndex, uint(tileRes));
-    const pixelY = mod(instanceIndex.div(uint(tileRes)), uint(tileRes));
+    const linearIndex = uint(instanceIndex);
+    const pixelX = mod(linearIndex, uint(tileRes));
+    const pixelY = mod(linearIndex.div(uint(tileRes)), uint(tileRes));
 
     // Use pre-computed tile coordinates from JavaScript.
     // 使用 JavaScript 预计算的 tile 坐标

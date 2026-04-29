@@ -10,7 +10,7 @@ import {
   TextureLoader,
   Vector3,
 } from "three/webgpu";
-import { uniform, vec3, float } from "three/tsl";
+import { color, uniform, float } from "three/tsl";
 import { LensflareMesh, LensflareElement } from "three/addons/objects/LensflareMesh.js";
 import { calculateSunColor } from "./DayNightCycle";
 
@@ -28,7 +28,7 @@ export class SunRenderer {
   constructor(initialSize = 15) {
     const geometry = new SphereGeometry(initialSize, 32, 32);
     this.material = new MeshBasicNodeMaterial({ side: FrontSide });
-    this.material.colorNode = vec3(this.colorUniform).mul(float(this.brightnessUniform));
+    this.material.colorNode = color(this.colorUniform).mul(float(this.brightnessUniform));
     this.mesh = new Mesh(geometry, this.material);
     this.mesh.name = "sun-disc";
 

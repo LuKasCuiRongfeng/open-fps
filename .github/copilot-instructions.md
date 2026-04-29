@@ -1,60 +1,48 @@
-# Copilot Instructions (open-fps)
+# 仓库 Copilot 指引
 
-Keep this file limited to rules that must always be present. Put directory-specific guidance in `.github/instructions/` and task workflows in `.github/skills/`.
+这些指引是本仓库内所有 AI 编码工作的仓库级基线。
 
-## Non-Negotiable Rules
+保持这个文件简短。可复用的实现细节应下沉到 skills。
+这个文件只放跨语言、跨框架、跨任务都应适用的规则。
+通用工程细节使用 engineering skill。
+错误处理、恢复与错误暴露细节使用 error skill。
+注释与文档细节使用 documentation skill。
+当任务命中对应领域时，使用 JavaScript、Rust、React、Tailwind、Web 3D、network 等领域 skill。
 
-### GPU-First
-- All workloads that can reasonably run on GPU must stay on GPU.
-- Do not introduce CPU fallbacks for GPU-capable terrain, culling, LOD, particles, skinning, visibility, or indirect draw work.
-- Do not trade visual quality for convenience.
+## 编码前先思考
 
-### Compute-Shader First
-- Data-parallel gameplay and world-generation work must use compute shaders.
-- CPU code is only for bootstrap, UI, orchestration, and small glue logic.
-- Do not add per-vertex or per-instance CPU loops for work that belongs in GPU compute.
+- 不要擅自假设缺失细节。
+- 当假设会影响实现时，要明确说出来。
+- 如果某个不确定需求会改变实现方式，应先问清楚，而不是猜。
+- 当存在多个合理方案时，要明确说明取舍。
+- 如果更简单或更安全的方案优于用户当前要求，应明确提出。
+- 如果当前理解不清，再继续只会导致投机式编码，就先停下来澄清。
 
-### No Unapproved Fallbacks
-- If a WebGPU or TSL path appears blocked, check official docs first.
-- If the GPU path is still unclear, stop and ask before implementing a CPU or otherwise inferior fallback.
+## 优先简洁
 
-### React Compiler
-- React Compiler is enabled.
-- Do not add `useMemo`, `useCallback`, or `React.memo` unless the user explicitly requests an exception.
+- 在保证性能、可读性、可维护性等关键质量目标的前提下，优先选择能完整满足需求的最简洁实现。
+- 变更应聚焦在当前要解决的问题上。
+- 避免不必要的抽象、重复和低价值样板代码。
+- 如果语言或类型系统已经能清楚推导类型，就不要补多余的显式类型标注。
+- 命名遵循各语言和生态的惯例，不自创风格。
+- 目录命名统一使用 kebab-case，例如 `some-books`。
 
-### Language
-- Code comments may be bilingual English and Chinese.
-- UI strings, dialog text, logs, errors, and other runtime text must be English only.
+## 保持简短
 
-### Documentation Style
-- When writing documentation, keep it concise and direct.
-- Do not produce overly detailed, verbose, or repetitive documentation unless the user explicitly asks for it.
+- 实现和文档都应保持简洁。
+- 优先使用高信息密度表达，避免废话。
 
-### Customization Maintenance
-- During implementation, if it would improve future coding quality or execution reliability, update documentation, update existing skills or instructions, or add a new appropriate skill or instruction.
-- Only make these customization changes when they are genuinely useful for better future coding in this repository.
-- Name skills by domain, not by one-off actions or bug categories.
+## 闭环验证
 
-## Repository Constraints
+- 在实现前或实现过程中定义成功标准。
+- 代码修改完成后，必须主动运行至少一轮与改动相匹配的自检。
+- 用当前可行的最强验证信号做验证。
+- 如果无法完整验证，要明确说明已检查什么、还有什么不确定。
 
-- Frontend code lives in `src/`.
-- Tauri backend code lives in `src-tauri/`.
-- Do not edit build outputs such as `dist/` or `src-tauri/target/`.
-- Prefer path aliases: `@game/*`, `@project/*`, `@ui/*`, `@config/*`.
-- Put constants and tunables in `src/config/` instead of hardcoding them.
+## 默认行为预期
 
-## Architecture Defaults
-
-- Favor ECS with pure-data components and stateless systems.
-- Preserve phase ordering: input -> gameplay -> physics -> render.
-- Keep files focused on one responsibility and organize by feature or domain.
-- Preserve the browser/desktop platform boundary through `src/platform/`; do not spread Tauri-specific logic across app code.
-- Preserve the split between editor and game targets: share runtime systems where appropriate, but keep editor workflow and project-management UI out of the standalone game target.
-- Terrain remains GPU-driven with chunk streaming and LOD.
-- Large-world work should preserve batching, streaming, and floating-origin discipline.
-
-## Verification
-
-- Use `pnpm build` or `pnpm tsc --noEmit` for validation.
-- Do not run `pnpm dev` or `pnpm tauri dev` for AI validation.
-- When working in Three.js WebGPU or TSL code, consult official docs and current package APIs before assuming a limitation.
+- 对不确定性要明确表达。
+- 不要静默忽略错误。无论是致命错误还是可恢复错误，都必须通过合适机制暴露出来，让开发者知道错误发生过。
+- 清理任务过程中产生的无用内容。
+- 需要详细工程指导时使用 engineering skill。
+- 需要详细错误处理指导时使用 error skill。

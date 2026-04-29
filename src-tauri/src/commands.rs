@@ -2,7 +2,7 @@
 // Tauri 项目管理命令
 
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 use tauri::Manager;
 
 /// Project file names.
@@ -34,11 +34,25 @@ fn ensure_parent_directory(path: &PathBuf) -> Result<(), String> {
     Ok(())
 }
 
-fn project_map_path(project_path: &str, map_id: &str) -> PathBuf {
-    PathBuf::from(project_path)
+fn validate_single_path_segment(value: &str, field_name: &str) -> Result<(), String> {
+    if value.is_empty() {
+        return Err(format!("{} cannot be empty", field_name));
+    }
+
+    let mut components = Path::new(value).components();
+    match (components.next(), components.next()) {
+        (Some(Component::Normal(_)), None) => Ok(()),
+        _ => Err(format!("{} must be a single folder-safe name", field_name)),
+    }
+}
+
+fn project_map_path(project_path: &str, map_id: &str) -> Result<PathBuf, String> {
+    validate_single_path_segment(map_id, "map_id")?;
+
+    Ok(PathBuf::from(project_path)
         .join(MAPS_DIR)
         .join(map_id)
-        .join(MAP_FILE)
+        .join(MAP_FILE))
 }
 
 fn recent_projects_file(app: &tauri::AppHandle) -> Result<PathBuf, String> {
@@ -55,13 +69,15 @@ fn recent_projects_file(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     Ok(app_data_dir.join(RECENT_PROJECTS_FILE))
 }
 
-fn load_recent_project_paths(path: &PathBuf) -> Vec<String> {
+fn load_recent_project_paths(path: &PathBuf) -> Result<Vec<String>, String> {
     if !path.exists() {
-        return Vec::new();
+        return Ok(Vec::new());
     }
 
-    let content = fs::read_to_string(path).unwrap_or_default();
-    serde_json::from_str(&content).unwrap_or_default()
+    let content = fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read recent projects: {}", e))?;
+    serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse recent projects: {}", e))
 }
 
 fn save_recent_project_paths(path: &PathBuf, paths: &[String]) -> Result<(), String> {
@@ -109,7 +125,7 @@ pub async fn read_project_metadata(project_path: String) -> Result<String, Strin
 /// 读取项目地图数据 (map.json)
 #[tauri::command]
 pub async fn read_project_map(project_path: String, map_id: String) -> Result<String, String> {
-    let path = project_map_path(&project_path, &map_id);
+    let path = project_map_path(&project_path, &map_id)?;
     if !path.exists() {
         return Err("Map file not found".to_string());
     }
@@ -148,7 +164,7 @@ pub async fn save_project_map(project_path: String, map_id: String, data: String
     let project_root = PathBuf::from(&project_path);
     ensure_project_folder(&project_root)?;
 
-    let path = project_map_path(&project_path, &map_id);
+    let path = project_map_path(&project_path, &map_id)?;
 
     ensure_parent_directory(&path)?;
     fs::write(path, &data)
@@ -198,6 +214,9 @@ pub async fn rename_project(old_path: String, new_name: String) -> Result<String
     let parent = old_path
         .parent()
         .ok_or_else(|| "Cannot get parent directory".to_string())?;
+
+    validate_single_path_segment(&new_name, "new_name")?;
+
     let new_path = parent.join(&new_name);
 
     if new_path.exists() {
@@ -215,7 +234,7 @@ pub async fn rename_project(old_path: String, new_name: String) -> Result<String
 #[tauri::command]
 pub async fn list_recent_projects(app: tauri::AppHandle) -> Result<Vec<String>, String> {
     let recent_file = recent_projects_file(&app)?;
-    let paths = load_recent_project_paths(&recent_file);
+    let paths = load_recent_project_paths(&recent_file)?;
     
     // Filter out invalid/deleted projects.
     // 过滤掉无效/已删除的项目
@@ -232,7 +251,7 @@ pub async fn list_recent_projects(app: tauri::AppHandle) -> Result<Vec<String>, 
 #[tauri::command]
 pub async fn add_recent_project(app: tauri::AppHandle, project_path: String) -> Result<(), String> {
     let recent_file = recent_projects_file(&app)?;
-    let mut paths = load_recent_project_paths(&recent_file);
+    let mut paths = load_recent_project_paths(&recent_file)?;
 
     // Remove if already exists (to move to front).
     // 如果已存在则移除（以移动到最前面）
@@ -256,7 +275,7 @@ pub async fn add_recent_project(app: tauri::AppHandle, project_path: String) -> 
 #[tauri::command]
 pub async fn remove_recent_project(app: tauri::AppHandle, project_path: String) -> Result<(), String> {
     let recent_file = recent_projects_file(&app)?;
-    let mut paths = load_recent_project_paths(&recent_file);
+    let mut paths = load_recent_project_paths(&recent_file)?;
     
     paths.retain(|p| p != &project_path);
 
@@ -324,7 +343,10 @@ pub async fn read_png_rgba(path: String) -> Result<(String, u32, u32), String> {
     let mut reader = decoder.read_info()
         .map_err(|e| format!("Failed to read PNG info: {}", e))?;
     
-    let mut buf = vec![0; reader.output_buffer_size()];
+    let output_size = reader
+        .output_buffer_size()
+        .ok_or_else(|| "Failed to determine PNG output buffer size".to_string())?;
+    let mut buf = vec![0; output_size];
     let info = reader.next_frame(&mut buf)
         .map_err(|e| format!("Failed to decode PNG frame: {}", e))?;
     
@@ -425,9 +447,6 @@ pub async fn write_png_rgba(
     // Use fast compression for better save speed.
     // 使用快速压缩以提高保存速度
     encoder.set_compression(png::Compression::Fast);
-    // Disable filtering for splat maps (random-ish data, filtering doesn't help).
-    // 禁用过滤（splat map 是随机数据，过滤无帮助）
-    encoder.set_filter(png::FilterType::NoFilter);
     
     let mut writer = encoder.write_header()
         .map_err(|e| format!("Failed to write PNG header: {}", e))?;

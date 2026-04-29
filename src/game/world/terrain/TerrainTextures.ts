@@ -7,7 +7,7 @@ import {
   LinearMipmapLinearFilter,
   LinearFilter,
   SRGBColorSpace,
-  LinearSRGBColorSpace,
+  NoColorSpace,
   DataTexture,
   RGBAFormat,
   UnsignedByteType,
@@ -177,7 +177,7 @@ export class TerrainTextures {
           tex.wrapT = RepeatWrapping;
           tex.minFilter = LinearMipmapLinearFilter;
           tex.magFilter = LinearFilter;
-          tex.colorSpace = isSRGB ? SRGBColorSpace : LinearSRGBColorSpace;
+          tex.colorSpace = isSRGB ? SRGBColorSpace : NoColorSpace;
           tex.generateMipmaps = true;
           resolve(tex);
         },
@@ -218,7 +218,7 @@ export class TerrainTextures {
     tex.wrapT = RepeatWrapping;
     tex.minFilter = LinearMipmapLinearFilter;
     tex.magFilter = LinearFilter;
-    tex.colorSpace = isSRGB ? SRGBColorSpace : LinearSRGBColorSpace;
+    tex.colorSpace = isSRGB ? SRGBColorSpace : NoColorSpace;
     tex.generateMipmaps = true;
     tex.needsUpdate = true;
 

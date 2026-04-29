@@ -2,9 +2,9 @@
 // GameRenderer：WebGPU 渲染器管理和画布处理
 
 import {
-  Clock,
   PerspectiveCamera,
   Scene,
+  Timer,
   WebGPURenderer,
 } from "three/webgpu";
 import { cameraRuntimeConfig, cameraStaticConfig } from "@config/camera";
@@ -18,7 +18,7 @@ export class GameRenderer {
   readonly renderer: WebGPURenderer;
   readonly camera: PerspectiveCamera;
   readonly scene: Scene;
-  readonly clock: Clock;
+  readonly clock: Timer;
   private readonly container: HTMLElement;
   private disposed = false;
 
@@ -48,7 +48,8 @@ export class GameRenderer {
       cameraStaticConfig.farMeters
     );
 
-    this.clock = new Clock();
+    this.clock = new Timer();
+    this.clock.connect(document);
 
     container.appendChild(this.renderer.domElement);
     this.updateSize();
@@ -104,7 +105,7 @@ export class GameRenderer {
    * 启动渲染循环
    */
   startLoop(callback: () => void): void {
-    this.clock.start();
+    this.clock.reset();
     this.renderer.setAnimationLoop(callback);
   }
 
@@ -139,6 +140,7 @@ export class GameRenderer {
       this.container.removeChild(this.renderer.domElement);
     }
 
+    this.clock.dispose();
     this.renderer.dispose();
   }
 }

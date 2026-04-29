@@ -35,10 +35,6 @@ export const skyRuntimeConfig = {
   // Effects.
   // 特效
   lensflareEnabled: true,
-  godRaysEnabled: true,
-  godRaysWeight: 0.5,
-  godRaysDecay: 0.95,
-  godRaysExposure: 3.0,
 
   // Night sky.
   // 夜空

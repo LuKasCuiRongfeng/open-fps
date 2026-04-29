@@ -81,8 +81,8 @@ export class SkySystem {
     camera: PerspectiveCamera
   ): void {
     this.camera = camera;
+    scene.userData.mainDirectionalLight = this.directionalLight;
     this.postProcessing.init(renderer, scene, camera);
-    this.updateGodRaysCenter();
   }
 
   /**
@@ -91,6 +91,7 @@ export class SkySystem {
    */
   setDirectionalLight(light: DirectionalLight): void {
     this.directionalLight = light;
+    this.scene.userData.mainDirectionalLight = light;
     this.updateSunPosition();
   }
 
@@ -173,7 +174,6 @@ export class SkySystem {
       this.skyDome.mesh.position.copy(this.camera.position);
       this.sunRenderer.followCamera(this.camera.position, this.sunDirection);
     }
-    this.updateGodRaysCenter();
   }
 
   /**
@@ -196,29 +196,76 @@ export class SkySystem {
    * Load star texture from project assets folder.
    * 从项目资源文件夹加载星空纹理
    */
-  async loadStarTexture(projectPath: string): Promise<void> {
+  async loadStarTexture(projectPath: string): Promise<boolean> {
     const { getPlatformBridge } = await import("@/platform");
     const platform = getPlatformBridge();
     const candidatePaths = [
       `${projectPath}/assets/textures/starry_4k.exr`,
       `${projectPath}/assets/texture/starry_4k.exr`,
     ];
+    const failures: Array<{ path: string; stage: "read" | "decode"; error: unknown }> = [];
+
+    const formatError = (error: unknown): string => {
+      if (error instanceof Error) {
+        return error.message;
+      }
+
+      return typeof error === "string" ? error : JSON.stringify(error);
+    };
+
+    const reportCandidateFailure = (
+      texturePath: string,
+      stage: "read" | "decode",
+      error: unknown,
+    ): void => {
+      failures.push({ path: texturePath, stage, error });
+      console.warn("[SkySystem] Star texture candidate failed", error);
+    };
+
+    const decodeBase64 = (value: string): Uint8Array => {
+      const binary = atob(value);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes;
+    };
 
     const tryLoadTexture = async (texturePath: string): Promise<boolean> => {
-      const fileUrl = await platform.resolveAssetUrl(texturePath);
+      let objectUrl: string | null = null;
+
+      try {
+        const base64 = await platform.invoke<string>("read_binary_file_base64", {
+          path: texturePath,
+        });
+        const bytes = decodeBase64(base64);
+        const blobBuffer = new ArrayBuffer(bytes.byteLength);
+        new Uint8Array(blobBuffer).set(bytes);
+        objectUrl = URL.createObjectURL(new Blob([blobBuffer], { type: "image/x-exr" }));
+      } catch (error) {
+        reportCandidateFailure(texturePath, "read", error);
+        return false;
+      }
 
       return new Promise((resolve) => {
         const loader = new EXRLoader();
         loader.load(
-          fileUrl,
+          objectUrl,
           (tex) => {
             tex.minFilter = LinearFilter;
             tex.magFilter = LinearFilter;
             this.skyDome.setStarTexture(tex);
+            if (objectUrl) {
+              URL.revokeObjectURL(objectUrl);
+            }
             resolve(true);
           },
           undefined,
-          () => {
+          (error) => {
+            if (objectUrl) {
+              URL.revokeObjectURL(objectUrl);
+            }
+            reportCandidateFailure(texturePath, "decode", error);
             resolve(false);
           }
         );
@@ -227,9 +274,21 @@ export class SkySystem {
 
     for (const candidatePath of candidatePaths) {
       if (await tryLoadTexture(candidatePath)) {
-        return;
+        return true;
       }
     }
+
+    console.warn("[SkySystem] Star texture unavailable, continuing without night sky texture", {
+      projectPath,
+      candidatePaths,
+      failures: failures.map((failure) => ({
+        path: failure.path,
+        stage: failure.stage,
+        reason: formatError(failure.error),
+      })),
+    });
+
+    return false;
   }
 
   private updateSunPosition(): void {
@@ -265,19 +324,9 @@ export class SkySystem {
       this.directionalLight.intensity = lightSettings.intensity;
     }
 
-    // Update god rays center.
-    // 更新上帝光线中心
-    this.updateGodRaysCenter();
-
     // Update night light.
     // 更新夜光
     this.updateNightLight();
-  }
-
-  private updateGodRaysCenter(): void {
-    if (!this.camera) return;
-    const sunPos = this.sunRenderer.mesh.position;
-    this.postProcessing.updateGodRaysCenter({ x: sunPos.x, y: sunPos.y, z: sunPos.z });
   }
 
   private updateNightLight(): void {
@@ -303,10 +352,6 @@ export class SkySystem {
       bloomStrength: this.settings.bloomStrength,
       bloomRadius: this.settings.bloomRadius,
       bloomEnabled: this.settings.bloomEnabled,
-      godRaysEnabled: this.settings.godRaysEnabled,
-      godRaysWeight: this.settings.godRaysWeight,
-      godRaysDecay: this.settings.godRaysDecay,
-      godRaysExposure: this.settings.godRaysExposure,
     };
   }
 

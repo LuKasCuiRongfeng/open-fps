@@ -84,7 +84,8 @@ export function useEditorWorkspace(): EditorWorkspaceController {
   const refreshRecentProjects = async (): Promise<void> => {
     try {
       setRecentProjects(await listRecentProjects());
-    } catch {
+    } catch (error) {
+      console.warn("[useEditorWorkspace] Failed to refresh recent projects, clearing cached list", error);
       setRecentProjects([]);
     }
   };
@@ -247,8 +248,8 @@ export function useEditorWorkspace(): EditorWorkspaceController {
 
     try {
       await addRecentProject(savedProject.projectPath);
-    } catch {
-      // Ignore recent-project refresh failures.
+    } catch (error) {
+      console.warn("[useEditorWorkspace] Failed to add recent project entry", error);
     }
 
     setPendingMapData(mapData);

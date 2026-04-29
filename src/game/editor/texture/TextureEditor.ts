@@ -2,7 +2,7 @@
 // TextureEditor：地形 splat map 纹理绘制协调器
 
 import type { DataTexture, PerspectiveCamera, WebGPURenderer } from "three/webgpu";
-import { SplatMapSet } from "@game/world/terrain/gpu/SplatMapCompute";
+import { SplatMapSet } from "@game/world/terrain/gpu/SplatMapSet";
 import {
   type TextureDefinition,
   type SplatMapData,
@@ -102,7 +102,12 @@ export class TextureEditor {
         await TextureStorage.ensureSplatMap(mapDirectory, i);
         const splatMapData = await TextureStorage.loadSplatMap(mapDirectory, i);
         if (splatMapData) {
-          await this.splatMapSet.loadFromPixels(this.renderer, splatMapData.pixels, i);
+          await this.splatMapSet.loadFromPixels(
+            this.renderer,
+            splatMapData.pixels,
+            splatMapData.resolution,
+            i,
+          );
         }
       }
     } else {

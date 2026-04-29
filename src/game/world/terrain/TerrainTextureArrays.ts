@@ -7,7 +7,7 @@ import {
   LinearMipmapLinearFilter,
   LinearFilter,
   SRGBColorSpace,
-  LinearSRGBColorSpace,
+  NoColorSpace,
   RGBAFormat,
   UnsignedByteType,
 } from "three/webgpu";
@@ -255,7 +255,7 @@ export class TerrainTextureArrays {
     tex.wrapT = RepeatWrapping;
     tex.minFilter = LinearMipmapLinearFilter;
     tex.magFilter = LinearFilter;
-    tex.colorSpace = isSRGB ? SRGBColorSpace : LinearSRGBColorSpace;
+    tex.colorSpace = isSRGB ? SRGBColorSpace : NoColorSpace;
     tex.generateMipmaps = true;
     tex.needsUpdate = true;
     return tex;
