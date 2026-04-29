@@ -23,11 +23,11 @@
     "renderScale": 1
   },
   "sky": {
-    "sunElevation": 38.461057741540365,
-    "sunAzimuth": 298.40390000002276,
+    "sunElevation": 28.31431043712413,
+    "sunAzimuth": 317.87325000003125,
     "sunSize": 15,
-    "ambientIntensity": 0.5273450860171152,
-    "sunIntensity": 1.0256282064410764,
+    "ambientIntensity": 0.41460344930137927,
+    "sunIntensity": 0.7550482783233101,
     "shadowsEnabled": true,
     "normalSoftness": 0.4,
     "fogDensity": 0.00015,
@@ -39,16 +39,16 @@
     "starBrightness": 1.2,
     "nightLightIntensity": 1
   },
+  "time": {
+    "timeOfDay": 15.196273333335512,
+    "timeSpeed": 60,
+    "timePaused": false,
+    "timeDrivenSun": true
+  },
   "editor": {
     "leftButton": "brush",
     "rightButton": "orbit",
     "middleButton": "pan",
     "stickyDrag": false
-  },
-  "time": {
-    "timeOfDay": 13.89663500000152,
-    "timeSpeed": 60,
-    "timePaused": false,
-    "timeDrivenSun": true
   }
 }
