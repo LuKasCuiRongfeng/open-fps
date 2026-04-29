@@ -149,14 +149,20 @@ function valueNoise(x, y, seed) {
   return lerp(nx0, nx1, sy);
 }
 
-function decodeHeights(base64) {
-  const buffer = Buffer.from(base64, "base64");
-  return new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4);
-}
-
 function parseChunkKey(key) {
   const [chunkX, chunkZ] = key.split(",").map(Number);
   return { chunkX, chunkZ };
+}
+
+async function readHeightChunk(mapDirectory, reference, tileResolution) {
+  const chunkPath = path.join(mapDirectory, reference.path);
+  const buffer = await fs.readFile(chunkPath);
+  const expectedByteLength = tileResolution * tileResolution * Float32Array.BYTES_PER_ELEMENT;
+  if (buffer.byteLength !== expectedByteLength) {
+    throw new Error(`Invalid height chunk size for ${chunkPath}: expected ${expectedByteLength}, got ${buffer.byteLength}`);
+  }
+
+  return new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Float32Array.BYTES_PER_ELEMENT);
 }
 
 function sampleChunkHeight(heights, tileResolution, localU, localV) {
@@ -214,7 +220,7 @@ function sampleSlope(context, u, v) {
   return Math.sqrt(sx * sx + sz * sz);
 }
 
-function createContext(mapId, mapData) {
+async function createContext(mapDirectory, mapId, mapData) {
   const entries = Object.entries(mapData.chunks ?? {});
   if (entries.length === 0) {
     throw new Error(`Map ${mapId} has no chunks`);
@@ -228,9 +234,9 @@ function createContext(mapId, mapData) {
   let minHeight = Number.POSITIVE_INFINITY;
   let maxHeight = Number.NEGATIVE_INFINITY;
 
-  for (const [key, chunkData] of entries) {
+  for (const [key, chunkReference] of entries) {
     const { chunkX, chunkZ } = parseChunkKey(key);
-    const heights = decodeHeights(chunkData.heightsBase64);
+    const heights = await readHeightChunk(mapDirectory, chunkReference, mapData.tileResolution);
     parsedChunks.set(key, heights);
 
     minChunkX = Math.min(minChunkX, chunkX);
@@ -344,7 +350,7 @@ async function generateForMap(projectDir, mapId) {
 
   await fs.access(texturePath);
   const mapData = JSON.parse(await fs.readFile(mapPath, "utf8"));
-  const context = createContext(mapId, mapData);
+  const context = await createContext(mapDirectory, mapId, mapData);
   const splatPixels = buildSplatMap(context);
   const png = encodePngRgba(outputResolution, outputResolution, splatPixels);
   const outputPath = path.join(mapDirectory, "splatmap.png");

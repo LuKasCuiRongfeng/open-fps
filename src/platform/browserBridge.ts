@@ -240,11 +240,19 @@ export function createBrowserPlatform(): PlatformHost {
         unsupported("Browser project workspace");
       },
 
-      async readMap(): Promise<string> {
+      async readMapManifest(): Promise<string> {
         unsupported("Browser project workspace");
       },
 
-      async saveMap(): Promise<void> {
+      async saveMapManifest(): Promise<void> {
+        unsupported("Browser project workspace");
+      },
+
+      async readMapChunk(): Promise<string> {
+        unsupported("Browser project workspace");
+      },
+
+      async saveMapChunk(): Promise<void> {
         unsupported("Browser project workspace");
       },
 

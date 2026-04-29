@@ -145,14 +145,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
   }
 
   protected override async afterLoadMapData(mapData: MapData): Promise<void> {
-    this.terrainEditor.loadMap(JSON.stringify({
-      version: mapData.version,
-      seed: mapData.seed,
-      tileResolution: mapData.tileResolution,
-      chunkSizeMeters: mapData.chunkSizeMeters,
-      chunks: {},
-      metadata: mapData.metadata,
-    }));
+    this.terrainEditor.loadMapData(mapData);
   }
 
   protected override runSimulationStep(): void {

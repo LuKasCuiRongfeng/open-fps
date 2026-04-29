@@ -76,8 +76,10 @@ export interface PlatformProjects {
     renameProject(oldPath: string, newName: string): Promise<string>;
     readMetadata(projectPath: string): Promise<string>;
     saveMetadata(projectPath: string, data: string): Promise<void>;
-    readMap(projectPath: string, mapId: string): Promise<string>;
-    saveMap(projectPath: string, mapId: string, data: string): Promise<void>;
+    readMapManifest(projectPath: string, mapId: string): Promise<string>;
+    saveMapManifest(projectPath: string, mapId: string, data: string): Promise<void>;
+    readMapChunk(projectPath: string, mapId: string, chunkPath: string): Promise<string>;
+    saveMapChunk(projectPath: string, mapId: string, chunkPath: string, base64: string): Promise<void>;
     readSettings(projectPath: string): Promise<string>;
     saveSettings(projectPath: string, data: string): Promise<void>;
     listRecentProjects(): Promise<string[]>;

@@ -6,9 +6,8 @@
 
 ## Key Files
 
-- `MapData.ts`: map schema, chunk serialization helpers, and map versioning
+- `MapData.ts`: map schema, manifest helpers, binary height chunk helpers, and map versioning
 - `ProjectData.ts`: project metadata, map records, project paths, and project versioning
-- `MapStorage.ts`: map import, export, save, and current map file tracking
 - `ProjectStorage.ts`: project open, create, load, save, recent-project, and current project flows
 - `index.ts`: barrel exports for workspace contracts
 
@@ -19,9 +18,10 @@
 - Keep storage flows explicit instead of hiding them inside UI components.
 - Use platform capabilities for dialogs, file reads or writes, project workspace operations, and host-specific behavior.
 - Treat current map and current project references as shared workflow state, not UI-local state.
+- Store editable terrain height payloads as per-map binary chunk files referenced by the map manifest.
 
 ## Common Changes
 
 - Change a saved field: update the data type, serializer, deserializer, and all related callers in the same change.
-- Change open or save behavior: start from `ProjectStorage.ts` or `MapStorage.ts` before editing UI screens.
+- Change open or save behavior: start from `ProjectStorage.ts` before editing UI screens.
 - Add a project workflow feature: keep orchestration here and let UI call into it.

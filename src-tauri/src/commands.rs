@@ -34,6 +34,29 @@ fn ensure_parent_directory(path: &PathBuf) -> Result<(), String> {
     Ok(())
 }
 
+fn safe_write(path: &PathBuf, bytes: &[u8]) -> Result<(), String> {
+    // EN: Project data is staged through a sibling temp file so failed writes do not leave truncated files.
+    // 中文: 项目数据先写入同级临时文件，避免失败写入留下被截断的文件。
+    ensure_parent_directory(path)?;
+
+    let file_name = path
+        .file_name()
+        .ok_or_else(|| "Path must include a file name".to_string())?
+        .to_string_lossy();
+    let temp_path = path.with_file_name(format!(".{}.{}.tmp", file_name, std::process::id()));
+
+    fs::write(&temp_path, bytes).map_err(|e| format!("Failed to write temp file: {}", e))?;
+
+    if path.exists() {
+        fs::remove_file(path).map_err(|e| format!("Failed to replace existing file: {}", e))?;
+    }
+
+    fs::rename(&temp_path, path).map_err(|e| {
+        let _ = fs::remove_file(&temp_path);
+        format!("Failed to replace file: {}", e)
+    })
+}
+
 fn validate_single_path_segment(value: &str, field_name: &str) -> Result<(), String> {
     if value.is_empty() {
         return Err(format!("{} cannot be empty", field_name));
@@ -46,13 +69,38 @@ fn validate_single_path_segment(value: &str, field_name: &str) -> Result<(), Str
     }
 }
 
-fn project_map_path(project_path: &str, map_id: &str) -> Result<PathBuf, String> {
+fn project_map_manifest_path(project_path: &str, map_id: &str) -> Result<PathBuf, String> {
     validate_single_path_segment(map_id, "map_id")?;
 
     Ok(PathBuf::from(project_path)
         .join(MAPS_DIR)
         .join(map_id)
         .join(MAP_FILE))
+}
+
+fn validate_relative_file_path(value: &str, field_name: &str) -> Result<(), String> {
+    if value.is_empty() {
+        return Err(format!("{} cannot be empty", field_name));
+    }
+
+    for component in Path::new(value).components() {
+        match component {
+            Component::Normal(_) => {}
+            _ => return Err(format!("{} must be a safe relative file path", field_name)),
+        }
+    }
+
+    Ok(())
+}
+
+fn project_map_chunk_path(project_path: &str, map_id: &str, chunk_path: &str) -> Result<PathBuf, String> {
+    validate_single_path_segment(map_id, "map_id")?;
+    validate_relative_file_path(chunk_path, "chunk_path")?;
+
+    Ok(PathBuf::from(project_path)
+        .join(MAPS_DIR)
+        .join(map_id)
+        .join(chunk_path))
 }
 
 fn recent_projects_file(app: &tauri::AppHandle) -> Result<PathBuf, String> {
@@ -107,15 +155,34 @@ pub async fn read_project_metadata(project_path: String) -> Result<String, Strin
     fs::read_to_string(&path).map_err(|e| format!("Failed to read project metadata: {}", e))
 }
 
-/// Read project map data (map.json).
-/// 读取项目地图数据 (map.json)
+/// Read project map manifest (map.json).
+/// 读取项目地图清单 (map.json)
 #[tauri::command]
-pub async fn read_project_map(project_path: String, map_id: String) -> Result<String, String> {
-    let path = project_map_path(&project_path, &map_id)?;
+pub async fn read_project_map_manifest(project_path: String, map_id: String) -> Result<String, String> {
+    let path = project_map_manifest_path(&project_path, &map_id)?;
     if !path.exists() {
-        return Err("Map file not found".to_string());
+        return Err("Map manifest not found".to_string());
     }
-    fs::read_to_string(&path).map_err(|e| format!("Failed to read map data: {}", e))
+    fs::read_to_string(&path).map_err(|e| format!("Failed to read map manifest: {}", e))
+}
+
+/// Read a project map height chunk as base64.
+/// 以 base64 读取项目地图高度 chunk
+#[tauri::command]
+pub async fn read_project_map_chunk_base64(
+    project_path: String,
+    map_id: String,
+    chunk_path: String,
+) -> Result<String, String> {
+    use base64::{engine::general_purpose::STANDARD, Engine as _};
+
+    let path = project_map_chunk_path(&project_path, &map_id, &chunk_path)?;
+    if !path.exists() {
+        return Err("Map chunk not found".to_string());
+    }
+
+    let bytes = fs::read(&path).map_err(|e| format!("Failed to read map chunk: {}", e))?;
+    Ok(STANDARD.encode(&bytes))
 }
 
 /// Read project settings (settings.json).
@@ -139,22 +206,40 @@ pub async fn read_project_settings(project_path: String) -> Result<String, Strin
 pub async fn save_project_metadata(project_path: String, data: String) -> Result<(), String> {
     let path = PathBuf::from(&project_path);
     ensure_project_folder(&path)?;
-    fs::write(path.join(PROJECT_FILE), &data)
+    safe_write(&path.join(PROJECT_FILE), data.as_bytes())
         .map_err(|e| format!("Failed to save project metadata: {}", e))
 }
 
-/// Save project map data to map.json.
-/// 保存项目地图数据到 map.json
+/// Save project map manifest to map.json.
+/// 保存项目地图清单到 map.json
 #[tauri::command]
-pub async fn save_project_map(project_path: String, map_id: String, data: String) -> Result<(), String> {
+pub async fn save_project_map_manifest(project_path: String, map_id: String, data: String) -> Result<(), String> {
     let project_root = PathBuf::from(&project_path);
     ensure_project_folder(&project_root)?;
 
-    let path = project_map_path(&project_path, &map_id)?;
+    let path = project_map_manifest_path(&project_path, &map_id)?;
 
-    ensure_parent_directory(&path)?;
-    fs::write(path, &data)
-        .map_err(|e| format!("Failed to save map data: {}", e))
+    safe_write(&path, data.as_bytes())
+        .map_err(|e| format!("Failed to save map manifest: {}", e))
+}
+
+/// Save a project map height chunk from base64.
+/// 从 base64 保存项目地图高度 chunk
+#[tauri::command]
+pub async fn save_project_map_chunk_base64(
+    project_path: String,
+    map_id: String,
+    chunk_path: String,
+    base64: String,
+) -> Result<(), String> {
+    use base64::{engine::general_purpose::STANDARD, Engine as _};
+
+    let project_root = PathBuf::from(&project_path);
+    ensure_project_folder(&project_root)?;
+
+    let path = project_map_chunk_path(&project_path, &map_id, &chunk_path)?;
+    let bytes = STANDARD.decode(&base64).map_err(|e| format!("Failed to decode map chunk: {}", e))?;
+    safe_write(&path, &bytes).map_err(|e| format!("Failed to save map chunk: {}", e))
 }
 
 /// Save project settings to settings.json.
@@ -163,7 +248,7 @@ pub async fn save_project_map(project_path: String, map_id: String, data: String
 pub async fn save_project_settings(project_path: String, data: String) -> Result<(), String> {
     let path = PathBuf::from(&project_path);
     ensure_project_folder(&path)?;
-    fs::write(path.join(SETTINGS_FILE), &data)
+    safe_write(&path.join(SETTINGS_FILE), data.as_bytes())
         .map_err(|e| format!("Failed to save settings: {}", e))
 }
 
@@ -186,7 +271,7 @@ pub async fn create_project(project_path: String, metadata: String) -> Result<()
             .map_err(|e| format!("Failed to create assets folder: {}", e))?;
     }
 
-    fs::write(path.join(PROJECT_FILE), &metadata)
+    safe_write(&path.join(PROJECT_FILE), metadata.as_bytes())
         .map_err(|e| format!("Failed to write project metadata: {}", e))
 }
 
@@ -286,7 +371,7 @@ pub async fn write_text_file(path: String, content: String) -> Result<(), String
     // Ensure parent directory exists.
     // 确保父目录存在
     ensure_parent_directory(&path)?;
-    fs::write(&path, content).map_err(|e| format!("Failed to write file: {}", e))
+    safe_write(&path, content.as_bytes()).map_err(|e| format!("Failed to write file: {}", e))
 }
 
 /// Read a binary file from disk as base64.
@@ -309,7 +394,7 @@ pub async fn write_binary_file_base64(path: String, base64: String) -> Result<()
     // 确保父目录存在
     ensure_parent_directory(&path)?;
     let bytes = STANDARD.decode(&base64).map_err(|e| format!("Failed to decode base64: {}", e))?;
-    fs::write(&path, bytes).map_err(|e| format!("Failed to write file: {}", e))
+    safe_write(&path, &bytes).map_err(|e| format!("Failed to write file: {}", e))
 }
 
 /// Read a PNG file and return raw RGBA pixels as base64 + dimensions.

@@ -1,14 +1,14 @@
-// MapData: terrain editor map data types and serialization.
-// MapData：地形编辑器地图数据类型和序列化
+// MapData: terrain editor map data types and manifest helpers.
+// MapData：地形编辑器地图数据类型和清单辅助函数
 
 /**
  * Chunk height data: full height data for a single chunk.
  * Chunk 高度数据：单个 chunk 的完整高度数据
  */
 export interface ChunkHeightData {
-  // Full height array (resolution x resolution), base64 encoded in JSON.
-  // 完整高度数组（resolution x resolution），JSON 中使用 base64 编码
-  heights: number[];
+  // Full height array (resolution x resolution), stored as binary float32 chunks on disk.
+  // 完整高度数组（resolution x resolution），在磁盘上以二进制 float32 chunk 存储
+  heights: Float32Array;
 }
 
 /**
@@ -32,9 +32,36 @@ export interface MapData {
   chunkSizeMeters: number;
   chunks: Record<string, ChunkHeightData>;
   metadata: MapMetadata;
+  dirtyChunkKeys?: readonly string[];
 }
 
-export const MAP_DATA_VERSION = 2;
+export interface MapChunkReference {
+  path: string;
+  byteLength: number;
+}
+
+export interface MapChunkBounds {
+  minChunkX: number;
+  maxChunkX: number;
+  minChunkZ: number;
+  maxChunkZ: number;
+}
+
+export interface MapManifest {
+  version: number;
+  seed: number;
+  tileResolution: number;
+  chunkSizeMeters: number;
+  heightFormat: typeof MAP_HEIGHT_FORMAT;
+  chunksDirectory: typeof MAP_HEIGHT_CHUNKS_DIRECTORY;
+  chunks: Record<string, MapChunkReference>;
+  bounds: MapChunkBounds | null;
+  metadata: MapMetadata;
+}
+
+export const MAP_DATA_VERSION = 3;
+export const MAP_HEIGHT_FORMAT = "float32le";
+export const MAP_HEIGHT_CHUNKS_DIRECTORY = "terrain/chunks";
 
 export function createEmptyMapData(
   seed: number,
@@ -62,7 +89,13 @@ export function chunkKey(cx: number, cz: number): string {
 }
 
 export function parseChunkKey(key: string): { cx: number; cz: number } {
-  const [cx, cz] = key.split(",").map(Number);
+  const match = key.match(/^(-?\d+),(-?\d+)$/);
+  if (!match) {
+    throw new Error(`Invalid chunk key '${key}'`);
+  }
+
+  const cx = Number(match[1]);
+  const cz = Number(match[2]);
   return { cx, cz };
 }
 
@@ -83,76 +116,221 @@ export function setChunkData(
   mapData: MapData,
   cx: number,
   cz: number,
-  heights: number[]
+  heights: Float32Array | ArrayLike<number>
 ): void {
   const key = chunkKey(cx, cz);
-  mapData.chunks[key] = { heights };
+  mapData.chunks[key] = {
+    heights: heights instanceof Float32Array ? new Float32Array(heights) : Float32Array.from(heights),
+  };
 }
 
-export function serializeMapData(mapData: MapData): string {
-  mapData.metadata.modified = Date.now();
+export function createMapManifest(mapData: MapData): MapManifest {
+  const chunks: Record<string, MapChunkReference> = {};
 
-  const serializable: MapDataSerialized = {
-    version: mapData.version,
+  for (const key of Object.keys(mapData.chunks).sort(compareChunkKeys)) {
+    const { cx, cz } = parseChunkKey(key);
+    chunks[key] = {
+      path: getHeightChunkPath(cx, cz),
+      byteLength: getExpectedHeightChunkByteLength(mapData.tileResolution),
+    };
+  }
+
+  return {
+    version: MAP_DATA_VERSION,
     seed: mapData.seed,
     tileResolution: mapData.tileResolution,
     chunkSizeMeters: mapData.chunkSizeMeters,
-    chunks: {},
-    metadata: mapData.metadata,
+    heightFormat: MAP_HEIGHT_FORMAT,
+    chunksDirectory: MAP_HEIGHT_CHUNKS_DIRECTORY,
+    chunks,
+    bounds: getMapChunkBounds(mapData),
+    metadata: { ...mapData.metadata },
   };
-
-  for (const [key, chunkData] of Object.entries(mapData.chunks)) {
-    const float32 = new Float32Array(chunkData.heights);
-    const uint8 = new Uint8Array(float32.buffer);
-    let binary = "";
-    for (let i = 0; i < uint8.length; i++) {
-      binary += String.fromCharCode(uint8[i]);
-    }
-    const base64 = btoa(binary);
-    serializable.chunks[key] = { heightsBase64: base64 };
-  }
-
-  return JSON.stringify(serializable);
 }
 
-export function deserializeMapData(json: string): MapData {
-  const serialized = JSON.parse(json) as MapDataSerialized;
+export function serializeMapManifest(mapData: MapData): string {
+  return `${JSON.stringify(createMapManifest(mapData), null, 2)}\n`;
+}
 
-  if (serialized.version < MAP_DATA_VERSION) {
-    console.warn(`[MapData] Migrating map from version ${serialized.version} to ${MAP_DATA_VERSION}`);
+export function deserializeMapManifest(json: string): MapManifest {
+  const parsed = JSON.parse(json) as Partial<MapManifest>;
+
+  if (parsed.version !== MAP_DATA_VERSION) {
+    throw new Error(`Map manifest version ${parsed.version ?? "unknown"} is not supported`);
   }
 
-  const mapData: MapData = {
+  if (parsed.heightFormat !== MAP_HEIGHT_FORMAT) {
+    throw new Error(`Map height format '${parsed.heightFormat ?? "unknown"}' is not supported`);
+  }
+
+  if (parsed.chunksDirectory !== MAP_HEIGHT_CHUNKS_DIRECTORY) {
+    throw new Error(`Map chunks directory '${parsed.chunksDirectory ?? "unknown"}' is not supported`);
+  }
+
+  const seed = parsed.seed;
+  const tileResolution = parsed.tileResolution;
+  const chunkSizeMeters = parsed.chunkSizeMeters;
+
+  if (!Number.isFinite(seed) || !Number.isFinite(tileResolution) || !Number.isFinite(chunkSizeMeters)) {
+    throw new Error("Map manifest has invalid terrain settings");
+  }
+
+  if (!parsed.metadata?.name || !Number.isFinite(parsed.metadata.created) || !Number.isFinite(parsed.metadata.modified)) {
+    throw new Error("Map manifest has invalid metadata");
+  }
+
+  if (!parsed.chunks || typeof parsed.chunks !== "object") {
+    throw new Error("Map manifest must contain chunk references");
+  }
+
+  const chunks: Record<string, MapChunkReference> = {};
+  const expectedByteLength = getExpectedHeightChunkByteLength(tileResolution!);
+
+  for (const [key, reference] of Object.entries(parsed.chunks)) {
+    parseChunkKey(key);
+    if (!reference || typeof reference.path !== "string" || !reference.path.startsWith(`${MAP_HEIGHT_CHUNKS_DIRECTORY}/`)) {
+      throw new Error(`Map chunk '${key}' has an invalid path`);
+    }
+
+    if (reference.byteLength !== expectedByteLength) {
+      throw new Error(`Map chunk '${key}' has invalid byte length ${reference.byteLength}`);
+    }
+
+    chunks[key] = {
+      path: reference.path,
+      byteLength: reference.byteLength,
+    };
+  }
+
+  return {
     version: MAP_DATA_VERSION,
-    seed: serialized.seed,
-    tileResolution: serialized.tileResolution,
-    chunkSizeMeters: serialized.chunkSizeMeters,
-    chunks: {},
-    metadata: serialized.metadata,
+    seed: seed!,
+    tileResolution: tileResolution!,
+    chunkSizeMeters: chunkSizeMeters!,
+    heightFormat: MAP_HEIGHT_FORMAT,
+    chunksDirectory: MAP_HEIGHT_CHUNKS_DIRECTORY,
+    chunks,
+    bounds: parsed.bounds ?? null,
+    metadata: {
+      name: parsed.metadata.name,
+      created: parsed.metadata.created,
+      modified: parsed.metadata.modified,
+    },
   };
+}
 
-  for (const [key, chunkData] of Object.entries(serialized.chunks)) {
-    const binary = atob(chunkData.heightsBase64);
-    const uint8 = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      uint8[i] = binary.charCodeAt(i);
-    }
-    const float32 = new Float32Array(uint8.buffer);
-    mapData.chunks[key] = { heights: Array.from(float32) };
+export function createMapDataFromManifest(
+  manifest: MapManifest,
+  chunks: Record<string, ChunkHeightData>,
+): MapData {
+  return {
+    version: MAP_DATA_VERSION,
+    seed: manifest.seed,
+    tileResolution: manifest.tileResolution,
+    chunkSizeMeters: manifest.chunkSizeMeters,
+    chunks,
+    metadata: { ...manifest.metadata },
+  };
+}
+
+export function getHeightChunkPath(cx: number, cz: number): string {
+  return `${MAP_HEIGHT_CHUNKS_DIRECTORY}/${formatChunkCoordinate(cx)}_${formatChunkCoordinate(cz)}.height.f32`;
+}
+
+export function encodeHeightChunkBase64(heights: Float32Array, tileResolution: number): string {
+  validateHeightChunkLength(heights, tileResolution);
+
+  const bytes = new Uint8Array(heights.length * Float32Array.BYTES_PER_ELEMENT);
+  const view = new DataView(bytes.buffer);
+  for (let index = 0; index < heights.length; index += 1) {
+    view.setFloat32(index * Float32Array.BYTES_PER_ELEMENT, heights[index], true);
   }
 
-  return mapData;
+  return uint8ArrayToBase64(bytes);
 }
 
-interface ChunkHeightDataSerialized {
-  heightsBase64: string;
+export function decodeHeightChunkBase64(base64: string, tileResolution: number): Float32Array {
+  const bytes = base64ToUint8Array(base64);
+  const expectedByteLength = getExpectedHeightChunkByteLength(tileResolution);
+  if (bytes.byteLength !== expectedByteLength) {
+    throw new Error(`Invalid height chunk byte length: expected ${expectedByteLength}, got ${bytes.byteLength}`);
+  }
+
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const heights = new Float32Array(tileResolution * tileResolution);
+  for (let index = 0; index < heights.length; index += 1) {
+    heights[index] = view.getFloat32(index * Float32Array.BYTES_PER_ELEMENT, true);
+  }
+
+  return heights;
 }
 
-interface MapDataSerialized {
-  version: number;
-  seed: number;
-  tileResolution: number;
-  chunkSizeMeters: number;
-  chunks: Record<string, ChunkHeightDataSerialized>;
-  metadata: MapMetadata;
+export function getExpectedHeightChunkByteLength(tileResolution: number): number {
+  return tileResolution * tileResolution * Float32Array.BYTES_PER_ELEMENT;
+}
+
+function validateHeightChunkLength(heights: Float32Array, tileResolution: number): void {
+  const expectedLength = tileResolution * tileResolution;
+  if (heights.length !== expectedLength) {
+    throw new Error(`Invalid height chunk length: expected ${expectedLength}, got ${heights.length}`);
+  }
+}
+
+function getMapChunkBounds(mapData: MapData): MapChunkBounds | null {
+  const keys = Object.keys(mapData.chunks);
+  if (keys.length === 0) {
+    return null;
+  }
+
+  let minChunkX = Number.POSITIVE_INFINITY;
+  let maxChunkX = Number.NEGATIVE_INFINITY;
+  let minChunkZ = Number.POSITIVE_INFINITY;
+  let maxChunkZ = Number.NEGATIVE_INFINITY;
+
+  for (const key of keys) {
+    const { cx, cz } = parseChunkKey(key);
+    minChunkX = Math.min(minChunkX, cx);
+    maxChunkX = Math.max(maxChunkX, cx);
+    minChunkZ = Math.min(minChunkZ, cz);
+    maxChunkZ = Math.max(maxChunkZ, cz);
+  }
+
+  return { minChunkX, maxChunkX, minChunkZ, maxChunkZ };
+}
+
+function compareChunkKeys(left: string, right: string): number {
+  const a = parseChunkKey(left);
+  const b = parseChunkKey(right);
+  return a.cz - b.cz || a.cx - b.cx;
+}
+
+function formatChunkCoordinate(value: number): string {
+  if (!Number.isInteger(value)) {
+    throw new Error(`Chunk coordinate must be an integer: ${value}`);
+  }
+
+  return value < 0 ? `m${Math.abs(value)}` : String(value);
+}
+
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  const chunks: string[] = [];
+  const chunkSize = 0x8000;
+
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    const slice = bytes.subarray(offset, offset + chunkSize);
+    chunks.push(String.fromCharCode(...slice));
+  }
+
+  return btoa(chunks.join(""));
+}
+
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes;
 }

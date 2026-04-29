@@ -24,6 +24,10 @@ export class TerrainHeightSampler {
   // 缓存：Map<chunkKey, Float32Array>，来自 GPU 回读
   private static cache = new Map<string, Float32Array>();
 
+  // Dirty chunks changed since the last successful project save.
+  // 自上次成功保存项目以来发生变化的脏 chunk
+  private static dirtyChunks = new Set<string>();
+
   // Resolution of cached tiles (must match GPU tile resolution).
   // 缓存 tile 的分辨率（必须与 GPU tile 分辨率匹配）
   private static tileResolution = 0;
@@ -52,6 +56,7 @@ export class TerrainHeightSampler {
    */
   static clearCache(): void {
     this.cache.clear();
+    this.dirtyChunks.clear();
   }
 
   /**
@@ -62,12 +67,32 @@ export class TerrainHeightSampler {
    * @param cz Chunk Z coordinate.
    * @param heightData Height data from GPU readback (must be tileResolution x tileResolution).
    */
-  static setChunkHeightData(cx: number, cz: number, heightData: Float32Array): void {
+  static setChunkHeightData(cx: number, cz: number, heightData: Float32Array, dirty = false): void {
     const key = `${cx},${cz}`;
 
     // Clone the data to avoid reference issues.
     // 克隆数据以避免引用问题
     this.cache.set(key, new Float32Array(heightData));
+
+    if (dirty) {
+      this.dirtyChunks.add(key);
+    }
+  }
+
+  /**
+   * Mark all cached chunks as clean after a successful save or load.
+   * 成功保存或加载后，将所有缓存 chunk 标记为干净
+   */
+  static clearDirtyChunks(): void {
+    this.dirtyChunks.clear();
+  }
+
+  /**
+   * Get chunk keys modified since the last clean state.
+   * 获取自上次干净状态以来修改过的 chunk 键
+   */
+  static getDirtyChunkKeys(): string[] {
+    return Array.from(this.dirtyChunks.keys());
   }
 
   /**

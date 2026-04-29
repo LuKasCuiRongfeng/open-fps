@@ -15,6 +15,10 @@ const chunkSizeMeters = 64;
 const tileResolution = 64;
 const chunkMin = -8;
 const chunkMax = 7;
+const projectVersion = 3;
+const mapVersion = 3;
+const chunksDirectory = "terrain/chunks";
+const heightFormat = "float32le";
 
 const baseHeightConfig = {
   baseHeightMeters: 6,
@@ -387,7 +391,7 @@ function generateHeight(worldX, worldZ, preset, heightConfig) {
 }
 
 function createChunkHeights(cx, cz, preset, heightConfig) {
-  const heights = new Array(tileResolution * tileResolution);
+  const heights = new Float32Array(tileResolution * tileResolution);
   for (let z = 0; z < tileResolution; z += 1) {
     const localV = z / (tileResolution - 1);
     for (let x = 0; x < tileResolution; x += 1) {
@@ -400,9 +404,16 @@ function createChunkHeights(cx, cz, preset, heightConfig) {
   return heights;
 }
 
-function encodeHeightsBase64(heights) {
-  const float32 = new Float32Array(heights);
-  return Buffer.from(float32.buffer).toString("base64");
+function chunkPathFor(cx, cz) {
+  return `${chunksDirectory}/${formatChunkCoordinate(cx)}_${formatChunkCoordinate(cz)}.height.f32`;
+}
+
+function formatChunkCoordinate(value) {
+  return value < 0 ? `m${Math.abs(value)}` : String(value);
+}
+
+function toPosixPath(value) {
+  return value.split(path.sep).join("/");
 }
 
 async function readExistingProject() {
@@ -424,7 +435,7 @@ async function updateProjectMetadata(presets) {
     name: projectName,
     created,
     modified: now,
-    version: 2,
+    version: projectVersion,
     currentMapId: presets[0]?.id ?? "main",
     maps: presets.map((preset) => ({
       id: preset.id,
@@ -441,10 +452,13 @@ async function generateMap(preset) {
   const now = Date.now();
   const mapDir = path.join(projectDir, "maps", preset.id);
   const mapPath = path.join(mapDir, "map.json");
+  const chunksDir = path.join(mapDir, chunksDirectory);
   const heightConfig = buildHeightConfig(preset);
   const chunks = {};
   let minHeight = Number.POSITIVE_INFINITY;
   let maxHeight = Number.NEGATIVE_INFINITY;
+
+  await rm(chunksDir, { recursive: true, force: true });
 
   for (let cz = chunkMin; cz <= chunkMax; cz += 1) {
     for (let cx = chunkMin; cx <= chunkMax; cx += 1) {
@@ -453,18 +467,33 @@ async function generateMap(preset) {
         minHeight = Math.min(minHeight, value);
         maxHeight = Math.max(maxHeight, value);
       }
+
+      const relativeChunkPath = chunkPathFor(cx, cz);
+      const chunkFilePath = path.join(mapDir, relativeChunkPath);
+      await mkdir(path.dirname(chunkFilePath), { recursive: true });
+      await writeFile(chunkFilePath, Buffer.from(heights.buffer, heights.byteOffset, heights.byteLength));
+
       chunks[`${cx},${cz}`] = {
-        heightsBase64: encodeHeightsBase64(heights),
+        path: toPosixPath(relativeChunkPath),
+        byteLength: heights.byteLength,
       };
     }
   }
 
   const mapData = {
-    version: 2,
+    version: mapVersion,
     seed: preset.seed,
     tileResolution,
     chunkSizeMeters,
+    heightFormat,
+    chunksDirectory,
     chunks,
+    bounds: {
+      minChunkX: chunkMin,
+      maxChunkX: chunkMax,
+      minChunkZ: chunkMin,
+      maxChunkZ: chunkMax,
+    },
     metadata: {
       name: preset.name,
       created: now,

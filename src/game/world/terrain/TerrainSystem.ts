@@ -24,6 +24,7 @@ export type TerrainSystemResource = {
   // 地图保存/加载 API
   exportCurrentMapData: () => MapData;
   loadMapData: (mapData: MapData) => Promise<void>;
+  markMapDataSaved: () => void;
   resetToOriginal: () => Promise<void>;
   // Texture array data for PBR terrain materials.
   // PBR 地形材质的纹理数组数据
@@ -141,9 +142,11 @@ export function createTerrainSystem(
       const { cx, cz } = parseChunkKey(key);
       const heightData = TerrainHeightSampler.getChunkHeightData(cx, cz);
       if (heightData) {
-        setChunkData(mapData, cx, cz, Array.from(heightData));
+        setChunkData(mapData, cx, cz, heightData);
       }
     }
+
+    mapData.dirtyChunkKeys = TerrainHeightSampler.getDirtyChunkKeys();
 
     return mapData;
   };
@@ -168,11 +171,12 @@ export function createTerrainSystem(
         const { cx, cz } = parseChunkKey(key);
         const chunkData = getChunkData(mapData, cx, cz);
         if (chunkData) {
-          const heightData = new Float32Array(chunkData.heights);
-          TerrainHeightSampler.setChunkHeightData(cx, cz, heightData);
+          TerrainHeightSampler.setChunkHeightData(cx, cz, chunkData.heights);
         }
       }
     }
+
+    TerrainHeightSampler.clearDirtyChunks();
 
     // Store original map data for reset.
     // 存储原始地图数据用于重置
@@ -201,6 +205,14 @@ export function createTerrainSystem(
     // Reload original data.
     // 重新加载原始数据
     await loadMapData(originalMapData);
+  };
+
+  /**
+   * Mark exported terrain chunks as saved after project persistence succeeds.
+   * 项目持久化成功后，将已导出的地形 chunk 标记为已保存
+   */
+  const markMapDataSaved = (): void => {
+    TerrainHeightSampler.clearDirtyChunks();
   };
 
   /**
@@ -234,6 +246,7 @@ export function createTerrainSystem(
     applyBrushStrokes,
     exportCurrentMapData,
     loadMapData,
+    markMapDataSaved,
     resetToOriginal,
     setTextureData,
     dispose,

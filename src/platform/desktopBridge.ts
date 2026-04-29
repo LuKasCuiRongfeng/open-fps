@@ -202,12 +202,20 @@ export function createDesktopPlatform(): PlatformHost {
         return invokeCommand<void>("save_project_metadata", { projectPath, data });
       },
 
-      readMap(projectPath: string, mapId: string): Promise<string> {
-        return invokeCommand<string>("read_project_map", { projectPath, mapId });
+      readMapManifest(projectPath: string, mapId: string): Promise<string> {
+        return invokeCommand<string>("read_project_map_manifest", { projectPath, mapId });
       },
 
-      saveMap(projectPath: string, mapId: string, data: string): Promise<void> {
-        return invokeCommand<void>("save_project_map", { projectPath, mapId, data });
+      saveMapManifest(projectPath: string, mapId: string, data: string): Promise<void> {
+        return invokeCommand<void>("save_project_map_manifest", { projectPath, mapId, data });
+      },
+
+      readMapChunk(projectPath: string, mapId: string, chunkPath: string): Promise<string> {
+        return invokeCommand<string>("read_project_map_chunk_base64", { projectPath, mapId, chunkPath });
+      },
+
+      saveMapChunk(projectPath: string, mapId: string, chunkPath: string, base64: string): Promise<void> {
+        return invokeCommand<void>("save_project_map_chunk_base64", { projectPath, mapId, chunkPath, base64 });
       },
 
       readSettings(projectPath: string): Promise<string> {

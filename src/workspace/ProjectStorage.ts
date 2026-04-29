@@ -3,8 +3,15 @@
 
 import { getPlatform } from "@/platform";
 import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
-import type { MapData } from "./MapData";
-import { serializeMapData, deserializeMapData } from "./MapData";
+import type { ChunkHeightData, MapData } from "./MapData";
+import {
+  createMapDataFromManifest,
+  createMapManifest,
+  decodeHeightChunkBase64,
+  deserializeMapManifest,
+  encodeHeightChunkBase64,
+  serializeMapManifest,
+} from "./MapData";
 import type { ProjectMapRecord, ProjectMetadata } from "./ProjectData";
 import {
   createProjectMetadata,
@@ -39,6 +46,7 @@ type SaveProjectMapOptions = {
   mapName?: string;
   mapId?: string;
   createNewMap?: boolean;
+  forceWriteAllChunks?: boolean;
 };
 
 let currentProject: CurrentProjectState | null = null;
@@ -121,8 +129,7 @@ export async function loadProjectMap(
 
   let map: MapData | null = null;
   try {
-    const mapJson = await platform.projects.readMap(projectPath, activeMap.id);
-    map = deserializeMapData(mapJson);
+    map = await loadProjectMapData(projectPath, activeMap.id);
   } catch (error) {
     if (isMissingFileSystemResourceError(error)) {
       console.warn("[ProjectStorage] Project map does not exist yet", error);
@@ -202,18 +209,27 @@ export async function saveProjectMap(
     ? createUniqueProjectMapId(normalizedMapName, metadata.maps)
     : options.mapId ?? currentMap.id;
 
+  const now = Date.now();
   metadata = upsertProjectMapRecord(metadata, targetMapId, normalizedMapName);
-  mapData.metadata.name = normalizedMapName;
+  const savedMapData: MapData = {
+    ...mapData,
+    version: createMapManifest(mapData).version,
+    metadata: {
+      ...mapData.metadata,
+      name: normalizedMapName,
+      modified: now,
+    },
+  };
 
-  await saveProjectMetadata(projectPath, metadata);
-
-  const mapJson = serializeMapData(mapData);
-  await platform.projects.saveMap(projectPath, targetMapId, mapJson);
+  const writeAllChunks = options.forceWriteAllChunks || options.createNewMap || mapData.dirtyChunkKeys === undefined;
+  await saveProjectMapData(projectPath, targetMapId, savedMapData, writeAllChunks);
 
   if (options.settings) {
     const settingsJson = JSON.stringify(options.settings, null, 2);
     await platform.projects.saveSettings(projectPath, settingsJson);
   }
+
+  await saveProjectMetadata(projectPath, metadata);
 
   currentProject = { path: projectPath, metadata };
 
@@ -222,7 +238,7 @@ export async function saveProjectMap(
     metadata,
     activeMap: resolveProjectMap(metadata, targetMapId),
     activeMapDirectory: getProjectMapDirectory(projectPath, targetMapId),
-    map: mapData,
+    map: savedMapData,
     settings: options.settings ?? mergeSettingsWithDefaults(null),
   };
 }
@@ -250,7 +266,7 @@ export async function saveProjectAs(
   const projectPath = `${folderPath}/${projectName}`;
 
   await createProject(projectPath, projectName, mapName);
-  return saveProjectMap(mapData, { settings, mapName });
+  return saveProjectMap(mapData, { settings, mapName, forceWriteAllChunks: true });
 }
 
 export function hasOpenProject(): boolean {
@@ -289,4 +305,47 @@ function normalizeName(name: string | undefined, fallback: string): string {
 
 async function saveProjectMetadata(projectPath: string, metadata: ProjectMetadata): Promise<void> {
   await platform.projects.saveMetadata(projectPath, serializeProjectMetadata(metadata));
+}
+
+async function loadProjectMapData(projectPath: string, mapId: string): Promise<MapData> {
+  const manifestJson = await platform.projects.readMapManifest(projectPath, mapId);
+  const manifest = deserializeMapManifest(manifestJson);
+  const chunkEntries = await Promise.all(
+    Object.entries(manifest.chunks).map(async ([key, reference]) => {
+      const base64 = await platform.projects.readMapChunk(projectPath, mapId, reference.path);
+      return [key, { heights: decodeHeightChunkBase64(base64, manifest.tileResolution) }] as const;
+    }),
+  );
+
+  const chunks: Record<string, ChunkHeightData> = Object.fromEntries(chunkEntries);
+  return createMapDataFromManifest(manifest, chunks);
+}
+
+async function saveProjectMapData(
+  projectPath: string,
+  mapId: string,
+  mapData: MapData,
+  writeAllChunks: boolean,
+): Promise<void> {
+  const manifest = createMapManifest(mapData);
+  const dirtyChunkKeys = new Set(mapData.dirtyChunkKeys ?? []);
+  const chunkKeys = Object.keys(mapData.chunks);
+  const chunkKeysToWrite = writeAllChunks
+    ? chunkKeys
+    : chunkKeys.filter((key) => dirtyChunkKeys.has(key));
+
+  // EN: Height payloads are written before the manifest so the manifest never points at missing new chunk files.
+  // 中文: 高度数据先于清单写入，避免清单指向尚未写好的新 chunk 文件。
+  await Promise.all(chunkKeysToWrite.map(async (key) => {
+    const reference = manifest.chunks[key];
+    const chunkData = mapData.chunks[key];
+    if (!reference || !chunkData) {
+      throw new Error(`Map chunk '${key}' is missing during save`);
+    }
+
+    const base64 = encodeHeightChunkBase64(chunkData.heights, mapData.tileResolution);
+    await platform.projects.saveMapChunk(projectPath, mapId, reference.path, base64);
+  }));
+
+  await platform.projects.saveMapManifest(projectPath, mapId, serializeMapManifest(mapData));
 }

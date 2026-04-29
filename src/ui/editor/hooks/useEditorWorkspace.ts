@@ -244,6 +244,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
       await editorApp.saveTexturesToMapDirectory(savedProject.activeMapDirectory);
     }
 
+    editorApp.markMapDataSaved();
     terrainEditor?.markClean();
 
     try {
@@ -252,7 +253,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
       console.warn("[useEditorWorkspace] Failed to add recent project entry", error);
     }
 
-    setPendingMapData(mapData);
+    setPendingMapData(savedProject.map);
     setPendingSettings(settings);
     syncProjectState(savedProject);
     await refreshRecentProjects();
@@ -282,6 +283,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
       await app.saveTexturesToMapDirectory(savedProject.activeMapDirectory);
     }
 
+    app.markMapDataSaved();
     syncProjectState(savedProject);
     await refreshRecentProjects();
     return savedProject.projectPath;

@@ -6,8 +6,6 @@ import type { TerrainConfig } from "../../world/terrain/terrain";
 import type { EditorMouseAction } from "../../settings";
 import {
   createEmptyMapData,
-  deserializeMapData,
-  serializeMapData,
   type MapData,
 } from "@project/MapData";
 import { EditorOrbitCamera } from "./EditorOrbitCamera";
@@ -388,15 +386,13 @@ export class TerrainEditor {
     this.setDirty(false);
   }
 
-  loadMap(json: string): void {
-    this.mapData = deserializeMapData(json);
+  loadMapData(mapData: MapData): void {
+    this.mapData = {
+      ...mapData,
+      chunks: {},
+      metadata: { ...mapData.metadata },
+    };
     this.setDirty(false);
-  }
-
-  saveMap(): string {
-    const json = serializeMapData(this.mapData);
-    this.setDirty(false);
-    return json;
   }
 
   setMapName(name: string): void {

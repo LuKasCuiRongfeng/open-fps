@@ -254,6 +254,10 @@ export class GameApp implements RuntimeAppSession {
     await this.afterLoadMapData(mapData);
   }
 
+  markMapDataSaved(): void {
+    this.resources.runtime.terrain.markMapDataSaved();
+  }
+
   protected async afterLoadMapData(_mapData: MapData): Promise<void> {}
 
   updateSettings(patch: GameSettingsPatch): void {

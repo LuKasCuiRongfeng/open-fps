@@ -456,7 +456,7 @@ export class ChunkManager {
       const heightData = await this.heightCompute.readbackChunkHeight(
         chunk.cx, chunk.cz, this.renderer!
       );
-      TerrainHeightSampler.setChunkHeightData(chunk.cx, chunk.cz, heightData);
+      TerrainHeightSampler.setChunkHeightData(chunk.cx, chunk.cz, heightData, true);
     }
 
     // Regenerate normals for affected chunks.

@@ -22,6 +22,7 @@ export interface RuntimeAppSession {
   getMousePosition(): { x: number; y: number; z: number; valid: boolean } | null;
   exportCurrentMapData(): MapData;
   loadMapData(mapData: MapData): Promise<void>;
+  markMapDataSaved(): void;
   updateSettings(patch: GameSettingsPatch): void;
   applySettings(newSettings: GameSettings): void;
   resetSettings(): void;

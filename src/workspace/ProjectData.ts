@@ -26,7 +26,7 @@ export interface ProjectData {
   settings: GameSettings;
 }
 
-export const PROJECT_VERSION = 2;
+export const PROJECT_VERSION = 3;
 export const DEFAULT_PROJECT_MAP_ID = "main";
 
 export const PROJECT_FILES = {
@@ -147,6 +147,10 @@ export function serializeProjectMetadata(metadata: ProjectMetadata): string {
 export function deserializeProjectMetadata(json: string): ProjectMetadata {
   const parsed = JSON.parse(json) as Partial<ProjectMetadata>;
   const now = Date.now();
+
+  if (parsed.version !== PROJECT_VERSION) {
+    throw new Error(`Project metadata version ${parsed.version ?? "unknown"} is not supported`);
+  }
 
   if (!Array.isArray(parsed.maps) || parsed.maps.length === 0) {
     throw new Error("Project metadata must contain at least one map");
