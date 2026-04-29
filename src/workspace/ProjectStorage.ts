@@ -1,7 +1,7 @@
-// ProjectStorage: Tauri backend API for project save/load.
-// ProjectStorage：Tauri 后端 API，用于项目保存/加载
+// ProjectStorage: project save/load workflow over platform project capabilities.
+// ProjectStorage：基于平台项目能力的项目保存/加载流程
 
-import { getPlatformBridge } from "@/platform";
+import { getPlatform } from "@/platform";
 import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
 import type { MapData } from "./MapData";
 import { serializeMapData, deserializeMapData } from "./MapData";
@@ -42,7 +42,7 @@ type SaveProjectMapOptions = {
 };
 
 let currentProject: CurrentProjectState | null = null;
-const platform = getPlatformBridge();
+const platform = getPlatform();
 
 export function getCurrentProjectPath(): string | null {
   return currentProject?.path ?? null;
@@ -69,17 +69,15 @@ export function getProjectNameFromPath(path: string): string {
 }
 
 export async function openProjectDialog(): Promise<string | null> {
-  const selected = await platform.openDialog({
+  const selected = await platform.dialogs.openFolder({
     title: "Open Project Folder",
-    directory: true,
-    multiple: false,
   });
 
   if (!selected || typeof selected !== "string") {
     return null;
   }
 
-  const isValid = await platform.invoke<boolean>("is_valid_project", { projectPath: selected });
+  const isValid = await platform.projects.isValidProject(selected);
   if (!isValid) {
     throw new Error("Selected folder is not a valid Open FPS project (missing project.json)");
   }
@@ -88,10 +86,8 @@ export async function openProjectDialog(): Promise<string | null> {
 }
 
 export async function selectProjectFolderDialog(): Promise<string | null> {
-  const selected = await platform.openDialog({
+  const selected = await platform.dialogs.openFolder({
     title: "Select Folder for New Project",
-    directory: true,
-    multiple: false,
   });
 
   if (!selected || typeof selected !== "string") {
@@ -113,7 +109,7 @@ export async function loadProjectMap(
   projectPath: string,
   requestedMapId?: string,
 ): Promise<LoadedProject> {
-  const metadataJson = await platform.invoke<string>("read_project_metadata", { projectPath });
+  const metadataJson = await platform.projects.readMetadata(projectPath);
   let metadata = deserializeProjectMetadata(metadataJson);
   const activeMapId = requestedMapId ?? metadata.currentMapId;
   const activeMap = resolveProjectMap(metadata, activeMapId);
@@ -125,10 +121,7 @@ export async function loadProjectMap(
 
   let map: MapData | null = null;
   try {
-    const mapJson = await platform.invoke<string>("read_project_map", {
-      projectPath,
-      mapId: activeMap.id,
-    });
+    const mapJson = await platform.projects.readMap(projectPath, activeMap.id);
     map = deserializeMapData(mapJson);
   } catch (error) {
     if (isMissingFileSystemResourceError(error)) {
@@ -141,7 +134,7 @@ export async function loadProjectMap(
 
   let settingsJson: string | null = null;
   try {
-    settingsJson = await platform.invoke<string>("read_project_settings", { projectPath });
+    settingsJson = await platform.projects.readSettings(projectPath);
     if (!settingsJson || settingsJson.trim() === "") {
       settingsJson = null;
     }
@@ -158,7 +151,7 @@ export async function loadProjectMap(
   currentProject = { path: projectPath, metadata };
 
   try {
-    await platform.invoke<void>("add_recent_project", { projectPath });
+    await platform.projects.addRecentProject(projectPath);
   } catch (error) {
     console.warn("[ProjectStorage] Failed to add recent project entry", error);
   }
@@ -181,7 +174,7 @@ export async function createProject(
   const metadata = createProjectMetadata(projectName, initialMapName);
   const metadataJson = serializeProjectMetadata(metadata);
 
-  await platform.invoke<void>("create_project", { projectPath, metadata: metadataJson });
+  await platform.projects.createProject(projectPath, metadataJson);
 
   currentProject = { path: projectPath, metadata };
   return metadata;
@@ -199,10 +192,7 @@ export async function saveProjectMap(
   let metadata = currentProject.metadata;
   const normalizedProjectName = normalizeName(options.projectName, metadata.name);
   if (normalizedProjectName !== metadata.name) {
-    projectPath = await platform.invoke<string>("rename_project", {
-      oldPath: currentProject.path,
-      newName: normalizedProjectName,
-    });
+    projectPath = await platform.projects.renameProject(currentProject.path, normalizedProjectName);
     metadata = { ...metadata, name: normalizedProjectName, modified: Date.now() };
   }
 
@@ -218,11 +208,11 @@ export async function saveProjectMap(
   await saveProjectMetadata(projectPath, metadata);
 
   const mapJson = serializeMapData(mapData);
-  await platform.invoke<void>("save_project_map", { projectPath, mapId: targetMapId, data: mapJson });
+  await platform.projects.saveMap(projectPath, targetMapId, mapJson);
 
   if (options.settings) {
     const settingsJson = JSON.stringify(options.settings, null, 2);
-    await platform.invoke<void>("save_project_settings", { projectPath, data: settingsJson });
+    await platform.projects.saveSettings(projectPath, settingsJson);
   }
 
   currentProject = { path: projectPath, metadata };
@@ -243,7 +233,7 @@ export async function saveProjectSettings(settings: GameSettings): Promise<void>
   }
 
   const settingsJson = JSON.stringify(settings, null, 2);
-  await platform.invoke<void>("save_project_settings", { projectPath: currentProject.path, data: settingsJson });
+  await platform.projects.saveSettings(currentProject.path, settingsJson);
 }
 
 export async function saveProjectAs(
@@ -268,15 +258,15 @@ export function hasOpenProject(): boolean {
 }
 
 export async function listRecentProjects(): Promise<string[]> {
-  return platform.invoke<string[]>("list_recent_projects");
+  return platform.projects.listRecentProjects();
 }
 
 export async function addRecentProject(projectPath: string): Promise<void> {
-  return platform.invoke<void>("add_recent_project", { projectPath });
+  return platform.projects.addRecentProject(projectPath);
 }
 
 export async function removeRecentProject(projectPath: string): Promise<void> {
-  return platform.invoke<void>("remove_recent_project", { projectPath });
+  return platform.projects.removeRecentProject(projectPath);
 }
 
 function resolveProjectMap(metadata: ProjectMetadata, mapId: string | null | undefined): ProjectMapRecord {
@@ -298,8 +288,5 @@ function normalizeName(name: string | undefined, fallback: string): string {
 }
 
 async function saveProjectMetadata(projectPath: string, metadata: ProjectMetadata): Promise<void> {
-  await platform.invoke<void>("save_project_metadata", {
-    projectPath,
-    data: serializeProjectMetadata(metadata),
-  });
+  await platform.projects.saveMetadata(projectPath, serializeProjectMetadata(metadata));
 }

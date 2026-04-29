@@ -5,6 +5,10 @@
 保持这个文件简短。可复用的实现细节应下沉到 skills。
 skill 的 YAML `description` 统一使用这类简洁结构：`[一句简短说明]。USE WHEN: [短语]。KEYWORDS: [关键词列表]`。
 
+## Project-Specific Supplement
+
+Always read and follow [`AI_DEVELOPMENT_GUIDE.md`](../AI_DEVELOPMENT_GUIDE.md) for this project's AI-assisted development requirements.
+
 ## Skills
 
 **AI必须无条件严格遵守skill要求，且必须自检有没有遵守，强制执行。**

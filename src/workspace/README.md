@@ -17,7 +17,7 @@
 - Keep `MapData` and `ProjectData` as the source of truth for serialized shapes.
 - Update every affected caller when storage contracts change.
 - Keep storage flows explicit instead of hiding them inside UI components.
-- Use platform bridge capabilities for dialogs, file reads or writes, and backend commands.
+- Use platform capabilities for dialogs, file reads or writes, project workspace operations, and host-specific behavior.
 - Treat current map and current project references as shared workflow state, not UI-local state.
 
 ## Common Changes
@@ -25,8 +25,3 @@
 - Change a saved field: update the data type, serializer, deserializer, and all related callers in the same change.
 - Change open or save behavior: start from `ProjectStorage.ts` or `MapStorage.ts` before editing UI screens.
 - Add a project workflow feature: keep orchestration here and let UI call into it.
-
-## Related Docs
-
-- See `docs/runtime-separation.md` for how workspace flows stay editor-only.
-- See `.github/skills/storage-contracts/SKILL.md` for contract-change workflow guidance.

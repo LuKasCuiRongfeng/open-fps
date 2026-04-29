@@ -9,9 +9,9 @@ Rendering uses Three.js WebGPU. The frontend uses React, TypeScript, Tailwind, a
 - `src/`: frontend, rendering, gameplay, editor
 - `src/game/`: ECS, systems, world, GPU runtime
 - `src/config/`: shared constants and tunables
-- `src/platform/`: browser and desktop bridge boundary
+- `src/platform/`: browser and desktop platform boundary
 - `src-tauri/`: Tauri backend and native integration
-- `docs/`: project documentation
+- `AI_DEVELOPMENT_GUIDE.md`: project-specific AI development rules
 
 ## Development
 
@@ -57,7 +57,7 @@ pnpm tsc --noEmit
 
 ## Architecture
 
-See `docs/runtime-separation.md` for target and platform-boundary details.
+See `src/platform/README.md` for platform-boundary details and `src/ui/README.md` for target-level UI boundaries.
 
 ## Release
 

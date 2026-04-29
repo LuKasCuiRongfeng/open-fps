@@ -27,8 +27,3 @@
 - Change editor boot or runtime interaction: inspect `EditorView.tsx`, `useEditorApp.ts`, and related editor hooks together.
 - Change standalone game behavior: start from `PlayerView.tsx` and shared game hooks, not editor screens.
 - Add a new panel or settings surface: keep target-specific UI in the correct subtree and reuse shared settings UI only when the workflow is shared.
-
-## Related Docs
-
-- See `docs/runtime-separation.md` for target-level UI boundaries.
-- See `.github/skills/editor-workspace-flow/SKILL.md` for editor workflow changes.

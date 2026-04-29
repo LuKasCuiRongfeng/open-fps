@@ -2,14 +2,14 @@
 // ProjectFileTab：编辑器模式下的项目文件操作标签
 
 import { useEffect, useState } from "react";
-import { getPlatformBridge } from "@/platform";
+import { getPlatform } from "@/platform";
 import type { EditorAppSession } from "@game/app";
 import type { TerrainEditor } from "@game/editor";
 import type { MapData } from "@project/MapData";
 import type { GameSettings } from "@game/settings";
 import type { EditorWorkspaceController } from "../hooks/useEditorWorkspace";
 
-const platform = getPlatformBridge();
+const platform = getPlatform();
 
 type ProjectFileTabProps = {
   editorApp: EditorAppSession | null;
@@ -87,7 +87,7 @@ export function ProjectFileTab({
     if (!editorApp) return;
 
     if (dirty && hasProject) {
-      const shouldSave = await platform.ask(
+      const shouldSave = await platform.dialogs.confirm(
         "Save changes to current project before creating a new one?",
         { title: "Unsaved Changes", kind: "warning" }
       );
@@ -121,7 +121,7 @@ export function ProjectFileTab({
     if (!editorApp) return;
 
     if (dirty) {
-      const shouldSave = await platform.ask(
+      const shouldSave = await platform.dialogs.confirm(
         "Save changes to current project before opening another?",
         { title: "Unsaved Changes", kind: "warning" }
       );
@@ -157,7 +157,7 @@ export function ProjectFileTab({
     }
 
     if (dirty) {
-      const shouldSave = await platform.ask(
+      const shouldSave = await platform.dialogs.confirm(
         "Save changes to the current map before switching?",
         { title: "Unsaved Changes", kind: "warning" }
       );

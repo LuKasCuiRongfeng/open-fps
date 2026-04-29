@@ -1,23 +1,23 @@
-// MapStorage: Tauri backend API for map save/load.
-// MapStorage：Tauri 后端 API，用于地图保存/加载
+// MapStorage: standalone map import/export helpers over platform file capabilities.
+// MapStorage：基于平台文件能力的独立地图导入/导出辅助工具
 
-import { getPlatformBridge } from "@/platform";
+import { getPlatform } from "@/platform";
 import type { MapData } from "./MapData";
 import { serializeMapData, deserializeMapData } from "./MapData";
 
-const platform = getPlatformBridge();
+const platform = getPlatform();
 
-export async function saveMapToFile(mapData: MapData, filename: string): Promise<string> {
+export async function saveMapToFile(mapData: MapData, filePath: string): Promise<string> {
   const json = serializeMapData(mapData);
-  const filepath = await platform.invoke<string>("save_map", { filename, data: json });
-  return filepath;
+  await platform.files.writeText(filePath, json);
+  return filePath;
 }
 
 export async function exportMapWithDialog(
   mapData: MapData,
   defaultFilename: string
 ): Promise<string | null> {
-  const filepath = await platform.saveDialog({
+  const filepath = await platform.dialogs.saveFile({
     title: "Export Map",
     defaultPath: `${defaultFilename}.ofps-map`,
     filters: [
@@ -33,16 +33,14 @@ export async function exportMapWithDialog(
   }
 
   const json = serializeMapData(mapData);
-  await platform.writeTextFile(filepath, json);
+  await platform.files.writeText(filepath, json);
 
   return filepath;
 }
 
 export async function importMapWithDialog(): Promise<MapData | null> {
-  const filepath = await platform.openDialog({
+  const filepath = await platform.dialogs.openFile({
     title: "Import Map",
-    multiple: false,
-    directory: false,
     filters: [
       {
         name: "Open FPS Map",
@@ -55,7 +53,7 @@ export async function importMapWithDialog(): Promise<MapData | null> {
     return null;
   }
 
-  const json = await platform.readTextFile(filepath);
+  const json = await platform.files.readText(filepath);
   const mapData = deserializeMapData(json);
   currentMapFilePath = filepath;
 
@@ -102,26 +100,18 @@ export async function saveMapToCurrentFile(
       const dir = lastSlash >= 0 ? currentMapFilePath.substring(0, lastSlash + 1) : "";
       const newPath = `${dir}${newName}.ofps-map`;
 
-      await platform.renamePath(currentMapFilePath, newPath);
+      await platform.files.rename(currentMapFilePath, newPath);
       currentMapFilePath = newPath;
     }
   }
 
   const json = serializeMapData(mapData);
-  await platform.writeTextFile(currentMapFilePath, json);
+  await platform.files.writeText(currentMapFilePath, json);
 
   return currentMapFilePath;
 }
 
-export async function loadMapFromFile(filename: string): Promise<MapData> {
-  const json = await platform.invoke<string>("load_map", { filename });
+export async function loadMapFromFile(filePath: string): Promise<MapData> {
+  const json = await platform.files.readText(filePath);
   return deserializeMapData(json);
-}
-
-export async function listSavedMaps(): Promise<string[]> {
-  return platform.invoke<string[]>("list_maps");
-}
-
-export async function deleteMap(filename: string): Promise<void> {
-  await platform.invoke<void>("delete_map", { filename });
 }

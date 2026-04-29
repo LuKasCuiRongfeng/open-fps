@@ -197,8 +197,8 @@ export class SkySystem {
    * 从项目资源文件夹加载星空纹理
    */
   async loadStarTexture(projectPath: string): Promise<boolean> {
-    const { getPlatformBridge } = await import("@/platform");
-    const platform = getPlatformBridge();
+    const { getPlatform } = await import("@/platform");
+    const platform = getPlatform();
     const candidatePaths = [
       `${projectPath}/assets/textures/starry_4k.exr`,
       `${projectPath}/assets/texture/starry_4k.exr`,
@@ -235,9 +235,7 @@ export class SkySystem {
       let objectUrl: string | null = null;
 
       try {
-        const base64 = await platform.invoke<string>("read_binary_file_base64", {
-          path: texturePath,
-        });
+        const base64 = await platform.files.readBinaryBase64(texturePath);
         const bytes = decodeBase64(base64);
         const blobBuffer = new ArrayBuffer(bytes.byteLength);
         new Uint8Array(blobBuffer).set(bytes);

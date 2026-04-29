@@ -2,10 +2,10 @@
 // useCloseConfirmation：带有未保存更改检查的窗口关闭确认
 
 import { useEffect } from "react";
-import { getPlatformBridge } from "@/platform";
+import { getPlatform } from "@/platform";
 import type { EditorAppSession } from "@game/app";
 
-const platform = getPlatformBridge();
+const platform = getPlatform();
 
 interface UseCloseConfirmationOptions {
   appRef: React.RefObject<EditorAppSession | null>;
@@ -22,7 +22,7 @@ export function useCloseConfirmation({
     let unlisten: (() => void) | undefined;
 
     const setupCloseHandler = async () => {
-      unlisten = await platform.onCloseRequested(async (event) => {
+      unlisten = await platform.window.onCloseRequested(async (event) => {
         if (!hasOpenProject) {
           return;
         }
@@ -35,7 +35,7 @@ export function useCloseConfirmation({
 
         event.preventDefault();
 
-        const shouldSave = await platform.ask(
+        const shouldSave = await platform.dialogs.confirm(
           "You have unsaved changes. Do you want to save before exiting?",
           {
             title: "Unsaved Changes",
@@ -52,7 +52,7 @@ export function useCloseConfirmation({
               await saveCurrentProject(app);
             }
           } catch (e) {
-            await platform.message(
+            await platform.dialogs.notify(
               `Save failed: ${e}\n\nPlease try again or use Save As to save to a different location.`,
               { title: "Save Error", kind: "error" }
             );
@@ -60,7 +60,7 @@ export function useCloseConfirmation({
           }
         }
 
-        await platform.closeWindow();
+        await platform.window.close();
       });
     };
 

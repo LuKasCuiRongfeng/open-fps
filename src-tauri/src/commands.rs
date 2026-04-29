@@ -89,20 +89,6 @@ fn save_recent_project_paths(path: &PathBuf, paths: &[String]) -> Result<(), Str
 
 // --- Project validation / 项目验证 ---
 
-/// Open a project folder and return its path if valid.
-/// 打开项目文件夹并返回路径（如果有效）
-#[tauri::command]
-pub async fn open_project(project_path: String) -> Result<String, String> {
-    let path = PathBuf::from(&project_path);
-    let project_file = path.join(PROJECT_FILE);
-
-    if !project_file.exists() {
-        return Err("Invalid project folder: project.json not found".to_string());
-    }
-
-    Ok(project_path)
-}
-
 /// Check if a path is a valid project folder.
 /// 检查路径是否为有效的项目文件夹
 #[tauri::command]

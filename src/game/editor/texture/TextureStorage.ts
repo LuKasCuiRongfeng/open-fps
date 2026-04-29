@@ -1,7 +1,7 @@
 // TextureStorage: Load and save texture definitions and splat maps.
 // TextureStorage：加载和保存纹理定义和 splat map
 
-import { getPlatformBridge } from "@/platform";
+import { getPlatform } from "@/platform";
 import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
 import {
   type TextureDefinition,
@@ -14,7 +14,7 @@ import {
   uint8ArrayToBase64,
 } from "./storageUtils";
 
-const platform = getPlatformBridge();
+const platform = getPlatform();
 
 /**
  * Texture storage manager for loading/saving texture.json and splatmap files.
@@ -37,7 +37,7 @@ export class TextureStorage {
     const jsonPath = `${mapDirectory}/texture.json`;
 
     try {
-      const content = await platform.invoke<string>("read_text_file", { path: jsonPath });
+      const content = await platform.files.readText(jsonPath);
       return JSON.parse(content) as TextureDefinition;
     } catch (error) {
       if (isMissingFileSystemResourceError(error)) {
@@ -63,7 +63,7 @@ export class TextureStorage {
   ): Promise<void> {
     const jsonPath = `${mapDirectory}/texture.json`;
     const content = JSON.stringify(definition, null, 2);
-    await platform.invoke<void>("write_text_file", { path: jsonPath, content });
+    await platform.files.writeText(jsonPath, content);
   }
 
   /**
@@ -85,10 +85,7 @@ export class TextureStorage {
     try {
       // Use native Tauri PNG decoder to get raw RGBA pixels.
       // 使用原生 Tauri PNG 解码器获取原始 RGBA 像素
-      const [base64Pixels, width, _height] = await platform.invoke<[string, number, number]>(
-        "read_png_rgba",
-        { path: pngPath }
-      );
+      const { base64Pixels, width } = await platform.files.readPngRgba(pngPath);
 
       const pixels = base64ToUint8Array(base64Pixels);
 
@@ -152,8 +149,7 @@ export class TextureStorage {
     // 使用原生 Tauri PNG 编码器保存原始 RGBA 像素
     const base64Pixels = uint8ArrayToBase64(pixels);
 
-    await platform.invoke<void>("write_png_rgba", {
-      path: pngPath,
+    await platform.files.writePngRgba(pngPath, {
       base64Pixels,
       width: resolution,
       height: resolution,
@@ -177,9 +173,7 @@ export class TextureStorage {
     try {
       // Check if file exists by trying to read it.
       // 尝试读取文件来检查是否存在
-      await platform.invoke<[string, number, number]>("read_png_rgba", {
-        path: pngPath,
-      });
+      await platform.files.readPngRgba(pngPath);
     } catch (error) {
       if (!isMissingFileSystemResourceError(error)) {
         console.error(
