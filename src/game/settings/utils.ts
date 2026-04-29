@@ -10,6 +10,10 @@ import { createDefaultGameSettings } from "./defaults";
  */
 function deepMerge<T extends object>(target: T, source: object): T {
   for (const key in source) {
+    // Ignore editor-only or future unknown fields at the game settings boundary.
+    // 在游戏设置边界忽略仅编辑器使用或未来未知的字段。
+    if (!(key in target)) continue;
+
     const sourceVal = (source as Record<string, unknown>)[key];
     if (sourceVal === undefined || sourceVal === null) continue;
 

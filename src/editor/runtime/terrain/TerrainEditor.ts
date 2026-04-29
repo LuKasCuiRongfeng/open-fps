@@ -2,8 +2,8 @@
 // TerrainEditor：地形编辑状态和画刷管理
 
 import type { PerspectiveCamera } from "three/webgpu";
-import type { TerrainConfig } from "../../world/terrain/terrain";
-import type { EditorMouseAction } from "../../settings";
+import type { TerrainConfig } from "@game/world/terrain/terrain";
+import type { EditorMouseAction } from "@editor/settings";
 import {
   createEmptyMapData,
   type MapData,

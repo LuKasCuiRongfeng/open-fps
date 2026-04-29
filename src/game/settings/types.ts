@@ -25,20 +25,6 @@ export type CameraSettings = typeof cameraRuntimeConfig;
 export type RenderSettings = typeof renderRuntimeConfig;
 export type SkySettings = typeof skyRuntimeConfig;
 
-// Editor mouse action type.
-// 编辑器鼠标动作类型
-export type EditorMouseAction = "brush" | "orbit" | "pan";
-
-// Editor settings (no config equivalent - editor-only).
-// 编辑器设置（无对应 config - 仅编辑器使用）
-export type EditorSettings = {
-    leftButton: EditorMouseAction;
-    rightButton: EditorMouseAction;
-    middleButton: EditorMouseAction;
-    /** When true, drag operations continue even if mouse leaves window. / 为 true 时，拖拽操作在鼠标离开窗口后继续 */
-    stickyDrag: boolean;
-};
-
 // Time settings (no config equivalent - runtime-only state).
 // 时间设置（无对应 config - 仅运行时状态）
 export type TimeSettings = {
@@ -65,7 +51,6 @@ export type GameSettings = {
     camera: CameraSettings;
     render: RenderSettings;
     sky: SkySettings;
-    editor: EditorSettings;
     time: TimeSettings;
 };
 

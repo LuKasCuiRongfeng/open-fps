@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import type { EditorAppSession } from "@game/app";
-import type { TerrainEditor } from "@game/editor";
-import type { TextureEditor } from "@game/editor/texture/TextureEditor";
-import type { GameSettings, GameSettingsPatch } from "@game/settings";
+import type { EditorAppSession } from "@editor/app";
+import type { TerrainEditor } from "@editor/runtime";
+import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
+import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings";
 import type { MapData } from "@project/MapData";
 import type { EditorWorkspaceController } from "@ui/editor/hooks/useEditorWorkspace";
 import type { ActiveEditorType } from "./tabs";
@@ -15,7 +15,7 @@ import { SettingsPanelFrame } from "@ui/settings/SettingsPanelFrame";
 
 type EditorSettingsPanelProps = {
   open: boolean;
-  settings: GameSettings;
+  settings: EditorAppSettings;
   editorApp: EditorAppSession | null;
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;
@@ -24,8 +24,8 @@ type EditorSettingsPanelProps = {
   activeEditor: ActiveEditorType;
   onActiveEditorChange: (editor: ActiveEditorType) => void;
   onLoadMap: (mapData: MapData) => void;
-  onApplySettings: (settings: GameSettings) => void;
-  onPatch: (patch: GameSettingsPatch) => void;
+  onApplySettings: (settings: EditorAppSettings) => void;
+  onPatch: (patch: EditorAppSettingsPatch) => void;
   onReset: () => void;
   onClose: () => void;
 };

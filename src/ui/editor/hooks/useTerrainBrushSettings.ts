@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { BrushType, TerrainEditor } from "@game/editor";
+import type { BrushType, TerrainEditor } from "@editor/runtime";
 
 export interface TerrainBrushSettingsState {
   brushType: BrushType;

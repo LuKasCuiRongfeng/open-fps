@@ -26,22 +26,24 @@ import {
 import type { GameSettings } from "@game/settings";
 import { mergeSettingsWithDefaults } from "@game/settings";
 
+type SettingsParser<TSettings extends GameSettings> = (json: string | null) => TSettings;
+
 type CurrentProjectState = {
   path: string;
   metadata: ProjectMetadata;
 };
 
-export type LoadedProject = {
+export type LoadedProject<TSettings extends GameSettings = GameSettings> = {
   projectPath: string;
   metadata: ProjectMetadata;
   activeMap: ProjectMapRecord;
   activeMapDirectory: string;
   map: MapData | null;
-  settings: GameSettings;
+  settings: TSettings;
 };
 
-type SaveProjectMapOptions = {
-  settings?: GameSettings;
+type SaveProjectMapOptions<TSettings extends GameSettings = GameSettings> = {
+  settings?: TSettings;
   projectName?: string;
   mapName?: string;
   mapId?: string;
@@ -113,10 +115,11 @@ export async function loadProject(projectPath: string): Promise<{
   return loadProjectMap(projectPath);
 }
 
-export async function loadProjectMap(
+export async function loadProjectMap<TSettings extends GameSettings = GameSettings>(
   projectPath: string,
   requestedMapId?: string,
-): Promise<LoadedProject> {
+  parseSettings: SettingsParser<TSettings> = mergeSettingsWithDefaults as SettingsParser<TSettings>,
+): Promise<LoadedProject<TSettings>> {
   const metadataJson = await platform.projects.readMetadata(projectPath);
   let metadata = deserializeProjectMetadata(metadataJson);
   const activeMapId = requestedMapId ?? metadata.currentMapId;
@@ -153,7 +156,7 @@ export async function loadProjectMap(
       throw error;
     }
   }
-  const settings = mergeSettingsWithDefaults(settingsJson);
+  const settings = parseSettings(settingsJson);
 
   currentProject = { path: projectPath, metadata };
 
@@ -187,10 +190,11 @@ export async function createProject(
   return metadata;
 }
 
-export async function saveProjectMap(
+export async function saveProjectMap<TSettings extends GameSettings = GameSettings>(
   mapData: MapData,
-  options: SaveProjectMapOptions = {},
-): Promise<LoadedProject> {
+  options: SaveProjectMapOptions<TSettings> = {},
+  parseSettings: SettingsParser<TSettings> = mergeSettingsWithDefaults as SettingsParser<TSettings>,
+): Promise<LoadedProject<TSettings>> {
   if (!currentProject) {
     throw new Error("No project open");
   }
@@ -239,7 +243,7 @@ export async function saveProjectMap(
     activeMap: resolveProjectMap(metadata, targetMapId),
     activeMapDirectory: getProjectMapDirectory(projectPath, targetMapId),
     map: savedMapData,
-    settings: options.settings ?? mergeSettingsWithDefaults(null),
+    settings: options.settings ?? parseSettings(null),
   };
 }
 
@@ -252,12 +256,12 @@ export async function saveProjectSettings(settings: GameSettings): Promise<void>
   await platform.projects.saveSettings(currentProject.path, settingsJson);
 }
 
-export async function saveProjectAs(
+export async function saveProjectAs<TSettings extends GameSettings = GameSettings>(
   mapData: MapData,
   projectName: string,
   mapName: string,
-  settings?: GameSettings,
-): Promise<LoadedProject | null> {
+  settings?: TSettings,
+): Promise<LoadedProject<TSettings> | null> {
   const folderPath = await selectProjectFolderDialog();
   if (!folderPath) {
     return null;
@@ -266,7 +270,7 @@ export async function saveProjectAs(
   const projectPath = `${folderPath}/${projectName}`;
 
   await createProject(projectPath, projectName, mapName);
-  return saveProjectMap(mapData, { settings, mapName, forceWriteAllChunks: true });
+  return saveProjectMap<TSettings>(mapData, { settings, mapName, forceWriteAllChunks: true });
 }
 
 export function hasOpenProject(): boolean {

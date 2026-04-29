@@ -13,6 +13,5 @@ export * from "./terrain/TerrainBrush";
 
 // Texture editing.
 // 纹理编辑
-export * from "./texture/TextureData";
 export * from "./texture/TextureStorage";
 export * from "./texture/TextureEditor";

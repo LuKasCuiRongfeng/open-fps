@@ -17,7 +17,7 @@ import {
   type LayerAssignment,
   computeLayerAssignments,
   getSplatMapCount,
-} from "../../editor/texture/TextureData";
+} from "./TextureData";
 
 const platform = getPlatform();
 

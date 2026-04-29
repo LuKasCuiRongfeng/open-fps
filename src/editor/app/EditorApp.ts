@@ -1,14 +1,23 @@
 import { terrainConfig } from "@config/terrain";
-import { GameApp } from "./GameApp";
+import { GameApp, type GameBootPhase } from "@game/app";
 import type { EditorAppSession } from "./types";
-import { BrushIndicatorSystem, type EditorBrushInfo, type ActiveEditorType } from "@game/editor/common";
-import { TerrainEditor } from "@game/editor/terrain/TerrainEditor";
-import { TextureEditor } from "@game/editor/texture/TextureEditor";
+import { BrushIndicatorSystem, type EditorBrushInfo, type ActiveEditorType } from "@editor/runtime/common";
+import { TerrainEditor } from "@editor/runtime/terrain/TerrainEditor";
+import { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import { TerrainTextureArrays } from "@game/world/terrain/TerrainTextureArrays";
 import type { MapData } from "@project/MapData";
-import type { GameSettings, GameSettingsPatch } from "@game/settings";
+import {
+  applyEditorSettingsPatch,
+  cloneEditorSettings,
+  createDefaultEditorSettings,
+  setEditorSettings,
+  type EditorAppSettings,
+  type EditorAppSettingsPatch,
+  type EditorSettings,
+} from "@editor/settings";
 
 export class EditorApp extends GameApp implements EditorAppSession {
+  private readonly editorSettings = createDefaultEditorSettings();
   private readonly terrainEditor = new TerrainEditor(terrainConfig);
   private readonly textureEditor = new TextureEditor();
   private readonly brushIndicator = new BrushIndicatorSystem();
@@ -18,7 +27,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
     return mapDirectory.replace(/[\\/]maps[\\/][^\\/]+$/, "");
   }
 
-  constructor(container: HTMLElement, onBootPhase?: (phase: import("./types").GameBootPhase) => void) {
+  constructor(container: HTMLElement, onBootPhase?: (phase: GameBootPhase) => void) {
     super(container, onBootPhase);
 
     this.brushIndicator.attach(this.scene);
@@ -93,33 +102,53 @@ export class EditorApp extends GameApp implements EditorAppSession {
     await this.textureEditor.init(this.renderer, splatWorldSize);
   }
 
-  protected override syncSettingsSnapshot(settings: GameSettings): void {
-    const mouseConfig = this.terrainEditor.mouseConfig;
-    settings.editor.leftButton = mouseConfig.leftButton;
-    settings.editor.rightButton = mouseConfig.rightButton;
-    settings.editor.middleButton = mouseConfig.middleButton;
+  override getSettingsSnapshot(): EditorAppSettings {
+    this.syncEditorSettingsSnapshot(this.editorSettings);
+
+    return {
+      ...super.getSettingsSnapshot(),
+      editor: cloneEditorSettings(this.editorSettings),
+    };
   }
 
-  protected override applySettingsExtension(patch: GameSettingsPatch): void {
-    if (
-      patch.editor?.leftButton !== undefined ||
-      patch.editor?.rightButton !== undefined ||
-      patch.editor?.middleButton !== undefined
-    ) {
-      this.terrainEditor.setMouseConfig({
-        leftButton: this.settings.editor.leftButton,
-        rightButton: this.settings.editor.rightButton,
-        middleButton: this.settings.editor.middleButton,
-      });
+  override updateSettings(patch: EditorAppSettingsPatch): void {
+    const { editor, ...gamePatch } = patch;
+    super.updateSettings(gamePatch);
+
+    if (editor) {
+      applyEditorSettingsPatch(this.editorSettings, editor);
+      this.applyEditorSettingsToRuntime();
     }
   }
 
-  protected override applyAllSettingsExtension(): void {
+  override applySettings(newSettings: EditorAppSettings): void {
+    const { editor, ...gameSettings } = newSettings;
+    super.applySettings(gameSettings);
+    setEditorSettings(this.editorSettings, editor);
+    this.applyEditorSettingsToRuntime();
+  }
+
+  override resetSettings(): void {
+    super.resetSettings();
+    setEditorSettings(this.editorSettings, createDefaultEditorSettings());
+    this.applyEditorSettingsToRuntime();
+  }
+
+  private syncEditorSettingsSnapshot(settings: EditorSettings): void {
+    const mouseConfig = this.terrainEditor.mouseConfig;
+    settings.leftButton = mouseConfig.leftButton;
+    settings.rightButton = mouseConfig.rightButton;
+    settings.middleButton = mouseConfig.middleButton;
+    settings.stickyDrag = this.terrainEditor.stickyDrag;
+  }
+
+  private applyEditorSettingsToRuntime(): void {
     this.terrainEditor.setMouseConfig({
-      leftButton: this.settings.editor.leftButton,
-      rightButton: this.settings.editor.rightButton,
-      middleButton: this.settings.editor.middleButton,
+      leftButton: this.editorSettings.leftButton,
+      rightButton: this.editorSettings.rightButton,
+      middleButton: this.editorSettings.middleButton,
     });
+    this.terrainEditor.setStickyDrag(this.editorSettings.stickyDrag);
   }
 
   protected override getMousePositionInternal(): { x: number; y: number; z: number; valid: boolean } | null {

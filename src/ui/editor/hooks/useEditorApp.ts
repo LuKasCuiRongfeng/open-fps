@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { EditorApp, type EditorAppSession, type GameBootPhase } from "@game/app";
-import type { TerrainEditor } from "@game/editor";
-import type { TextureEditor } from "@game/editor/texture/TextureEditor";
-import type { GameSettings } from "@game/settings";
+import { EditorApp, type EditorAppSession, type GameBootPhase } from "@editor/app";
+import type { TerrainEditor } from "@editor/runtime";
+import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
+import type { EditorAppSettings } from "@editor/settings";
 import type { MapData } from "@project/MapData";
 
 interface UseEditorAppOptions {
   enabled: boolean;
   pendingMapData: MapData | null;
-  pendingSettings: GameSettings | null;
+  pendingSettings: EditorAppSettings | null;
   currentMapDirectory: string | null;
 }
 
@@ -18,10 +18,10 @@ interface UseEditorAppReturn {
   bootPhase: GameBootPhase;
   loading: boolean;
   error: string | null;
-  settings: GameSettings | null;
+  settings: EditorAppSettings | null;
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;
-  setSettings: React.Dispatch<React.SetStateAction<GameSettings | null>>;
+  setSettings: React.Dispatch<React.SetStateAction<EditorAppSettings | null>>;
 }
 
 export function useEditorApp({
@@ -35,7 +35,7 @@ export function useEditorApp({
   const [error, setError] = useState<string | null>(null);
   const [bootPhase, setBootPhase] = useState<GameBootPhase>("checking-webgpu");
   const [loading, setLoading] = useState(true);
-  const [settings, setSettings] = useState<GameSettings | null>(null);
+  const [settings, setSettings] = useState<EditorAppSettings | null>(null);
   const [terrainEditor, setTerrainEditor] = useState<TerrainEditor | null>(null);
   const [textureEditor, setTextureEditor] = useState<TextureEditor | null>(null);
 

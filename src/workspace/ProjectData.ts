@@ -20,10 +20,10 @@ export interface ProjectMetadata {
   maps: ProjectMapRecord[];
 }
 
-export interface ProjectData {
+export interface ProjectData<TSettings extends GameSettings = GameSettings> {
   metadata: ProjectMetadata;
   map: MapData | null;
-  settings: GameSettings;
+  settings: TSettings;
 }
 
 export const PROJECT_VERSION = 3;

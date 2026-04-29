@@ -1,7 +1,7 @@
 // TextureEditorTab: texture editor settings tab with start/stop editing.
 // TextureEditorTab：带有开始/停止编辑的纹理编辑器设置标签
 
-import type { TextureEditor } from "@game/editor/texture/TextureEditor";
+import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import type { ActiveEditorType } from "./TerrainEditorTab";
 import { useTextureBrushSettings } from "../../hooks/useTextureBrushSettings";
 

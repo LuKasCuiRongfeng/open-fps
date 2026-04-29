@@ -7,8 +7,6 @@
 - `gpu/`: low-level WebGPU and atlas helpers
 - `scheduling/`: system execution orchestration
 - `gameplay/`: ECS, player systems, input, and prefabs
-- `editor/`: authoring tools and editor-only runtime helpers
-- `workspace/`: map/project persistence contracts and storage flows
 - `settings/`: runtime settings data and patch helpers
 - `world/`: terrain, sky, and world-space systems
 - `core/`: temporary compatibility layer for legacy imports and leftover utilities
@@ -18,7 +16,8 @@
 - `app/` is where engine pieces are assembled.
 - `rendering/`, `gpu/`, and `scheduling/` make infrastructure responsibilities explicit instead of hiding them under a broad `core/` label.
 - `gameplay/` groups runtime behavior by domain rather than by implementation style.
-- `workspace/` keeps storage and project flows out of gameplay and editor logic.
+- Editor runtime code lives under `src/editor/` and may depend on `src/game/`; `src/game/` must not depend on editor modules.
+- Workspace storage lives under `src/workspace/` and keeps project flows out of gameplay.
 - `world/` keeps terrain and sky together as environment systems.
 - `core/` should shrink over time until only shims or truly cross-domain leftovers remain.
 

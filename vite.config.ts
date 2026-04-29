@@ -29,6 +29,7 @@ export default defineConfig(async ({ mode }) => {
         alias: {
             "@": path.resolve(__dirname, "src"),
             "@game": path.resolve(__dirname, "src/game"),
+            "@editor": path.resolve(__dirname, "src/editor"),
             "@project": path.resolve(__dirname, "src/workspace"),
             "@workspace": path.resolve(__dirname, "src/workspace"),
             "@ui": path.resolve(__dirname, "src/ui"),

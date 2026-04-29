@@ -1,5 +1,5 @@
 import type { DataTexture, WebGPURenderer } from "three/webgpu";
-import { MAX_SPLAT_MAPS, LAYERS_PER_SPLAT_MAP } from "../../../editor/texture/TextureData";
+import { MAX_SPLAT_MAPS, LAYERS_PER_SPLAT_MAP } from "../TextureData";
 import { SplatMapCompute, type SplatBrushStroke } from "./SplatMapCompute";
 
 export class SplatMapSet {

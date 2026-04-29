@@ -7,7 +7,7 @@ import type { TerrainConfig } from "./terrain";
 import { ChunkManager } from "./ChunkManager";
 import { FloatingOrigin } from "../common/FloatingOrigin";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
-import type { BrushStroke } from "../../editor/terrain/TerrainBrush";
+import type { BrushStroke } from "./brushTypes";
 import { type MapData, createEmptyMapData, setChunkData, parseChunkKey, getChunkData, hasChunks } from "@project/MapData";
 import type { TerrainTextureArrayResult } from "./TerrainTextureArrays";
 

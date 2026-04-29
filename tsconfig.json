@@ -3,6 +3,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@game/*": ["./src/game/*"],
+      "@editor/*": ["./src/editor/*"],
       "@project/*": ["./src/workspace/*"],
       "@workspace/*": ["./src/workspace/*"],
       "@ui/*": ["./src/ui/*"],

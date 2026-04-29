@@ -3,8 +3,6 @@
 
 export type {
   DeepPartial,
-  EditorMouseAction,
-  EditorSettings,
   TimeSettings,
   GameSettings,
   GameSettingsPatch,

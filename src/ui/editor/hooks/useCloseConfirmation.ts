@@ -3,7 +3,7 @@
 
 import { useEffect } from "react";
 import { getPlatform } from "@/platform";
-import type { EditorAppSession } from "@game/app";
+import type { EditorAppSession } from "@editor/app";
 
 const platform = getPlatform();
 

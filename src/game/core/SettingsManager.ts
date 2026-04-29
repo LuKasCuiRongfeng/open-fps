@@ -13,7 +13,6 @@ import {
 } from "@game/settings";
 import { timeToSunPosition, type SkySystem } from "@game/world/sky/SkySystem";
 import { setTerrainNormalSoftness } from "@game/world/terrain/material/terrainMaterialTextured";
-import type { TerrainEditor } from "@game/editor/terrain/TerrainEditor";
 import type { GameRenderer } from "./rendering/GameRenderer";
 
 export type SettingsChangeCallback = (settings: GameSettings, patch: Partial<GameSettingsPatch>) => void;
@@ -27,7 +26,6 @@ export class SettingsManager {
   private readonly renderer: GameRenderer;
   private readonly scene: Scene;
   private readonly skySystem: SkySystem;
-  private readonly terrainEditor: TerrainEditor;
   private onChangeCallbacks: SettingsChangeCallback[] = [];
 
   // Callback for time updates (used by React UI to sync sundial).
@@ -38,13 +36,11 @@ export class SettingsManager {
     renderer: GameRenderer,
     scene: Scene,
     skySystem: SkySystem,
-    terrainEditor: TerrainEditor
   ) {
     this.settings = createDefaultGameSettings();
     this.renderer = renderer;
     this.scene = scene;
     this.skySystem = skySystem;
-    this.terrainEditor = terrainEditor;
   }
 
   /**
@@ -52,13 +48,6 @@ export class SettingsManager {
    * 获取当前设置快照
    */
   getSnapshot(): GameSettings {
-    // Sync editor mouse config from terrain editor before returning.
-    // 返回前从地形编辑器同步鼠标配置
-    const mc = this.terrainEditor.mouseConfig;
-    this.settings.editor.leftButton = mc.leftButton;
-    this.settings.editor.rightButton = mc.rightButton;
-    this.settings.editor.middleButton = mc.middleButton;
-
     return cloneSettings(this.settings);
   }
 
@@ -189,15 +178,6 @@ export class SettingsManager {
       this.applySkySettings();
     }
 
-    // Apply editor mouse config.
-    // 应用编辑器鼠标配置
-    if (patch.editor?.leftButton !== undefined || patch.editor?.rightButton !== undefined || patch.editor?.middleButton !== undefined) {
-      this.terrainEditor.setMouseConfig({
-        leftButton: this.settings.editor.leftButton,
-        rightButton: this.settings.editor.rightButton,
-        middleButton: this.settings.editor.middleButton,
-      });
-    }
   }
 
   private applyAll(): void {
@@ -208,11 +188,6 @@ export class SettingsManager {
       this.scene.fog.density = this.settings.sky.fogDensity;
     }
 
-    this.terrainEditor.setMouseConfig({
-      leftButton: this.settings.editor.leftButton,
-      rightButton: this.settings.editor.rightButton,
-      middleButton: this.settings.editor.middleButton,
-    });
     this.applySkySettings();
   }
 

@@ -3,34 +3,9 @@
 
 import type { PerspectiveCamera } from "three/webgpu";
 import { Raycaster, Vector2 } from "three/webgpu";
+import type { BrushSettings, BrushStroke, BrushType } from "@game/world/terrain/brushTypes";
 
-/**
- * Brush types for terrain editing.
- * 地形编辑的画刷类型
- */
-export type BrushType = "raise" | "lower" | "smooth" | "flatten";
-
-/**
- * Brush settings.
- * 画刷设置
- */
-export interface BrushSettings {
-  type: BrushType;
-  radiusMeters: number;
-  strength: number;
-  falloff: number;
-}
-
-/**
- * Brush stroke event (for GPU processing).
- * 画刷笔触事件（用于 GPU 处理）
- */
-export interface BrushStroke {
-  worldX: number;
-  worldZ: number;
-  brush: BrushSettings;
-  dt: number;
-}
+export type { BrushSettings, BrushStroke, BrushType };
 
 /**
  * TerrainBrush: manages brush state and stroke generation.

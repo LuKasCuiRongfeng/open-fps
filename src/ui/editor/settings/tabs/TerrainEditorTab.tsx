@@ -2,11 +2,11 @@
 // TerrainEditorTab：地形编辑器设置标签
 
 import { useState, useEffect } from "react";
-import type { TerrainEditor, BrushType } from "@game/editor";
-import type { EditorMouseAction, GameSettings } from "@game/settings";
+import type { TerrainEditor, BrushType } from "@editor/runtime";
+import type { EditorAppSettings, EditorMouseAction } from "@editor/settings";
 import { useTerrainBrushSettings } from "../../hooks/useTerrainBrushSettings";
 
-type EditorMouseConfig = Pick<GameSettings["editor"], "leftButton" | "rightButton" | "middleButton">;
+type EditorMouseConfig = Pick<EditorAppSettings["editor"], "leftButton" | "rightButton" | "middleButton">;
 
 export type ActiveEditorType = "none" | "terrain" | "texture";
 

@@ -3,8 +3,8 @@
 
 import type { PerspectiveCamera } from "three/webgpu";
 import type { SplatBrushStroke } from "@game/world/terrain/gpu/SplatMapCompute";
-import type { TextureDefinition } from "./TextureData";
-import { getLayerIndexForLayer, getLayerNames } from "./TextureData";
+import type { TextureDefinition } from "@game/world/terrain/TextureData";
+import { getLayerIndexForLayer, getLayerNames } from "@game/world/terrain/TextureData";
 import { BrushRaycaster } from "../common/BrushRaycaster";
 
 /**

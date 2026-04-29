@@ -7,7 +7,7 @@ import {
   type TextureDefinition,
   type SplatMapData,
   createDefaultSplatMap,
-} from "./TextureData";
+} from "@game/world/terrain/TextureData";
 import {
   base64ToUint8Array,
   getSplatMapFilename,

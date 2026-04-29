@@ -7,7 +7,7 @@ import {
   type TextureDefinition,
   type SplatMapData,
   getSplatMapCount,
-} from "./TextureData";
+} from "@game/world/terrain/TextureData";
 import { TextureStorage } from "./TextureStorage";
 import { TextureBrush, type TextureBrushSettings } from "./TextureBrush";
 

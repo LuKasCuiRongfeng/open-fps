@@ -4,7 +4,7 @@
 // Mode switching, file operations moved to SettingsPanel.
 // 模式切换、文件操作已移至 SettingsPanel
 
-import type { TerrainEditor, BrushType } from "@game/editor";
+import type { TerrainEditor, BrushType } from "@editor/runtime";
 import { useTerrainBrushSettings } from "./hooks";
 
 interface Props {

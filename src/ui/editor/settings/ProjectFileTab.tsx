@@ -3,10 +3,10 @@
 
 import { useEffect, useState } from "react";
 import { getPlatform } from "@/platform";
-import type { EditorAppSession } from "@game/app";
-import type { TerrainEditor } from "@game/editor";
+import type { EditorAppSession } from "@editor/app";
+import type { TerrainEditor } from "@editor/runtime";
 import type { MapData } from "@project/MapData";
-import type { GameSettings } from "@game/settings";
+import type { EditorAppSettings } from "@editor/settings";
 import type { EditorWorkspaceController } from "../hooks/useEditorWorkspace";
 
 const platform = getPlatform();
@@ -16,7 +16,7 @@ type ProjectFileTabProps = {
   terrainEditor: TerrainEditor | null;
   editorWorkspace: EditorWorkspaceController;
   onLoadMap?: (mapData: MapData) => void;
-  onApplySettings?: (settings: GameSettings) => void;
+  onApplySettings?: (settings: EditorAppSettings) => void;
 };
 
 export function ProjectFileTab({

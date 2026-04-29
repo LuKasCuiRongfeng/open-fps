@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
-import type { EditorAppSession } from "@game/app";
-import type { TerrainEditor } from "@game/editor";
-import type { GameSettings } from "@game/settings";
+import type { EditorAppSession } from "@editor/app";
+import type { TerrainEditor } from "@editor/runtime";
+import {
+  mergeEditorAppSettingsWithDefaults,
+  type EditorAppSettings,
+} from "@editor/settings";
 import type { MapData } from "@project/MapData";
 import type { ProjectMetadata } from "@project/ProjectData";
 import {
@@ -19,7 +22,7 @@ import {
 
 export type TerrainMode = "editable" | "procedural";
 
-export type LoadedWorkspaceProject = LoadedProject;
+export type LoadedWorkspaceProject = LoadedProject<EditorAppSettings>;
 
 export type WorkspaceOperationResult = {
   ok: boolean;
@@ -31,7 +34,7 @@ type OpenProjectInAppOptions = {
   editorApp: EditorAppSession | null;
   terrainEditor: TerrainEditor | null;
   onLoadMap?: (mapData: MapData) => void;
-  onApplySettings?: (settings: GameSettings) => void;
+  onApplySettings?: (settings: EditorAppSettings) => void;
 };
 
 type OpenProjectMapInAppOptions = OpenProjectInAppOptions & {
@@ -50,7 +53,7 @@ type SaveProjectOptions = {
 export interface EditorWorkspaceController {
   showProjectScreen: boolean;
   pendingMapData: MapData | null;
-  pendingSettings: GameSettings | null;
+  pendingSettings: EditorAppSettings | null;
   terrainMode: TerrainMode;
   currentProjectPath: string | null;
   currentProjectMetadata: ProjectMetadata | null;
@@ -73,7 +76,7 @@ export interface EditorWorkspaceController {
 export function useEditorWorkspace(): EditorWorkspaceController {
   const [showProjectScreen, setShowProjectScreen] = useState(true);
   const [pendingMapData, setPendingMapData] = useState<MapData | null>(null);
-  const [pendingSettings, setPendingSettings] = useState<GameSettings | null>(null);
+  const [pendingSettings, setPendingSettings] = useState<EditorAppSettings | null>(null);
   const [terrainMode, setTerrainMode] = useState<TerrainMode>("procedural");
   const [currentProjectPath, setCurrentProjectPath] = useState<string | null>(null);
   const [currentProjectMetadata, setCurrentProjectMetadata] = useState<ProjectMetadata | null>(null);
@@ -119,7 +122,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
   };
 
   const openProjectRecord = async (projectPath: string): Promise<LoadedWorkspaceProject> => {
-    const project = await loadProjectMap(projectPath);
+    const project = await loadProjectMap(projectPath, undefined, mergeEditorAppSettingsWithDefaults);
     await refreshRecentProjects();
     return project;
   };
@@ -143,7 +146,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     editorApp: EditorAppSession,
     terrainEditor: TerrainEditor | null,
     onLoadMap?: (mapData: MapData) => void,
-    onApplySettings?: (settings: GameSettings) => void,
+    onApplySettings?: (settings: EditorAppSettings) => void,
   ): Promise<void> => {
     editorApp.applySettings(project.settings);
     onApplySettings?.(project.settings);
@@ -168,7 +171,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     onApplySettings,
   }: OpenProjectInAppOptions): Promise<WorkspaceOperationResult> => {
     if (!editorApp) {
-      return { ok: false, path: null, message: "✗ Open failed: no active game session" };
+      return { ok: false, path: null, message: "✗ Open failed: no active editor session" };
     }
 
     const project = await openProjectFromDialog();
@@ -193,14 +196,14 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     onApplySettings,
   }: OpenProjectMapInAppOptions): Promise<WorkspaceOperationResult> => {
     if (!editorApp) {
-      return { ok: false, path: null, message: "✗ Open failed: no active game session" };
+      return { ok: false, path: null, message: "✗ Open failed: no active editor session" };
     }
 
     if (!currentProjectPath) {
       return { ok: false, path: null, message: "✗ Open failed: no project open" };
     }
 
-    const project = await loadProjectMap(currentProjectPath, mapId);
+    const project = await loadProjectMap(currentProjectPath, mapId, mergeEditorAppSettingsWithDefaults);
     await applyProjectToEditor(project, editorApp, terrainEditor, onLoadMap, onApplySettings);
 
     return {
@@ -219,7 +222,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     createNewMap = false,
   }: SaveProjectOptions): Promise<WorkspaceOperationResult> => {
     if (!editorApp) {
-      return { ok: false, path: null, message: "✗ Save failed: no active game session" };
+      return { ok: false, path: null, message: "✗ Save failed: no active editor session" };
     }
 
     const mapData = editorApp.exportCurrentMapData();

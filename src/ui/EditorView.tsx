@@ -2,7 +2,7 @@
 // EditorView：编辑器专用运行时外壳
 
 import { useEffect, useState } from "react";
-import type { GameSettings, GameSettingsPatch } from "@game/settings";
+import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings";
 import type { ActiveEditorType } from "./editor/settings/tabs";
 import FpsCounter from "./FpsCounter";
 import LoadingOverlay, { type LoadingStep } from "./LoadingOverlay";
@@ -58,7 +58,7 @@ export default function EditorView() {
 		editorWorkspace.markEditableMode();
 	};
 
-	const handleApplySettings = (newSettings: GameSettings) => {
+	const handleApplySettings = (newSettings: EditorAppSettings) => {
 		setSettings(newSettings);
 	};
 
@@ -82,7 +82,7 @@ export default function EditorView() {
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, [settings, error]);
 
-	const applyPatch = (patch: GameSettingsPatch) => {
+	const applyPatch = (patch: EditorAppSettingsPatch) => {
 		const app = appRef.current;
 		if (!app) return;
 		app.updateSettings(patch);

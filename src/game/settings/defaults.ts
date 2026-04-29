@@ -13,12 +13,6 @@ export function createDefaultGameSettings(): GameSettings {
     camera: { ...cameraRuntimeConfig },
     render: { ...renderRuntimeConfig },
     sky: { ...skyRuntimeConfig },
-    editor: {
-      leftButton: "brush",
-      rightButton: "orbit",
-      middleButton: "pan",
-      stickyDrag: false,
-    },
     time: {
       timeOfDay: 12, // Noon / 正午
       timeSpeed: 60, // 1 game minute per real second / 每真实秒1游戏分钟

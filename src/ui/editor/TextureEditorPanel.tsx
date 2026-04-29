@@ -4,7 +4,7 @@
 // Displayed only in edit mode when texture editing is enabled.
 // 仅在启用纹理编辑的编辑模式下显示
 
-import type { TextureEditor } from "@game/editor/texture/TextureEditor";
+import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import { useTextureBrushSettings } from "./hooks";
 
 interface Props {

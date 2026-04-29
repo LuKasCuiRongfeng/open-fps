@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { TextureEditor } from "@game/editor/texture/TextureEditor";
+import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 
 export interface TextureBrushSettingsState {
   selectedLayer: string;

@@ -14,7 +14,7 @@ import {
   type Texture,
 } from "three/webgpu";
 import { getPlatform } from "@/platform";
-import type { TextureDefinition, TextureLayerDef } from "../../editor/texture/TextureData";
+import type { TextureDefinition, TextureLayerDef } from "./TextureData";
 
 const platform = getPlatform();
 
