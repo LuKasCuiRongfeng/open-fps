@@ -1,53 +1,208 @@
 ---
 name: js
-description: "JavaScript 与 TypeScript 实现规范。USE WHEN: 编写或修改 JavaScript、TypeScript、ESM、CJS、异步流程、浏览器脚本、Node.js 逻辑，或需要决定函数式、class、Worker、WASM 等实现策略。KEYWORDS: JavaScript, TypeScript, ECMAScript, ESM, CJS, async, Promise, event loop, Worker, Web Worker, worker_threads, WASM, Rust, TS, JS, 类型, 非阻塞, 异步, 事件循环"
-argument-hint: "[功能或模块目标] [性能目标] [运行时或约束]"
+description: "在处理 JavaScript、TypeScript 与相关运行时编码任务时使用。USE WHEN: JavaScript、TypeScript、ESM、CJS、异步流程、浏览器脚本、Node.js、Bun、Deno、函数式编程、class、Worker、WASM 实现判断。KEYWORDS: JavaScript, TypeScript, ECMAScript, ESM, CJS, async, Promise, event loop, Worker, Web Worker, worker_threads, WASM, Rust, Node.js, Bun, Deno, TS, JS, 类型, 非阻塞, 异步, 事件循环"
 ---
 
-# js
+**AI必须无条件严格遵守skill要求，且必须自检有没有遵守，强制执行。**
 
-聚焦现代 JavaScript / TypeScript 实现、异步非阻塞执行与高性能路径选择的技能卡。
+## 概述
+
+说明如何在不同 JavaScript 运行时中做现代实现、类型取舍、非阻塞设计和性能判断。
 
 ## 核心原则
 
-- 优先使用最新稳定的 ECMAScript 标准 API 和语法，避免过时写法与不必要的兼容性负担。
-- 在 TypeScript 场景下，优先使用官方内置类型和标准库类型，避免随意自造低价值类型包装。
-- 如果 TypeScript 已能从上下文清楚推导类型，就不要补多余的显式类型标注，例如明显的返回值类型。
-- 避免使用 `any`；`unknown` 只在确实需要延迟收窄时使用，并应尽快通过类型守卫或边界检查收窄。
-- 函数式、class 或更直接的局部实现都不是默认答案，应按问题规模、状态复杂度、复用需求和可读性自行选择。
-- 独立且被多个位置使用的工具函数应提取为公共函数或共享模块，不要在多个业务文件里各写一份近似实现。
-- 命名遵循 JavaScript / TypeScript 生态惯例；目录命名统一使用 kebab-case，例如 `some-books`。
-- 默认保持非阻塞，避免阻塞 event loop 或主线程。
-- 异步流程优先使用清晰可组合的 Promise / async / await 方案，并保证错误显式暴露。
-- 需要高性能时，先判断瓶颈是在算法、数据传输、主线程阻塞还是纯计算吞吐，再决定是否引入 Worker 或 WASM。
-- 需要 WASM 时，默认优先选择 Rust 编译链，除非项目已有明确标准或其他语言更合适。
+### 优先使用最新稳定的标准 API 和语法，避免过时写法与不必要的兼容性负担
 
-## 设计与执行流程
+默认先写现代、稳定、可直接维护的 JavaScript / TypeScript。只有在目标运行时明确受限时，才为兼容性回退。尽量使用新特性以获取更高的性能。
 
-使用此 skill 时，按以下顺序执行：
+### 在 TypeScript 场景下，优先使用官方内置类型和标准库类型，避免随意自造低价值类型包装
 
-1. 先确认运行时是浏览器、Node.js，还是两者共享环境，并识别可用的标准 API。
-2. 如果是 TypeScript，优先复用官方内置类型、DOM 类型、Node.js 类型或现有库导出的正式类型，再决定是否补充局部类型定义。
-3. 判断当前问题更适合函数式、class，还是保持简单局部实现，不为风格偏好硬套结构。
-4. 设计异步边界，确保 I/O、定时、并发任务和重计算不会阻塞主线程或 event loop。
-5. 如果存在性能目标，先识别瓶颈，再决定是否拆到 Web Worker、worker_threads 或 WASM。
-6. 如果引入 WASM，优先评估 Rust 方案，并控制 JS 与 WASM 之间的边界、序列化和调用开销。
-7. 代码完成后，运行与改动匹配的 lint、test、build 或最小运行验证，并说明剩余风险。
+能直接使用 `Record`、`Partial`、`Pick`、DOM 类型、Node 类型等标准类型时，就不要再包一层几乎等价的私有类型别名。
 
-## 输出与检查项
+### 尽量避免使用 `any` 和 `unknown`
 
-- 是否优先使用了当前可用的 ECMAScript 标准 API，而不是旧式或低价值封装。
-- 如果使用 TypeScript，是否优先使用了官方内置类型，并避免 `any` 或未被收窄的含糊 `unknown`。
-- 当前实现更适合函数式、class，还是无需额外抽象，理由是否成立。
-- 是否保持非阻塞，是否存在同步重计算、长循环或阻塞式调用压住主线程或 event loop。
-- 异步流程、并发控制和错误路径是否清晰。
-- 性能瓶颈是否真的需要 Worker 或 WASM，而不是先优化算法、数据结构或批处理方式。
-- 如果使用 WASM，Rust 是否是更合适的默认实现路径，以及边界成本是否可接受。
+只有在边界收窄前的极短路径里，`unknown` 才能作为临时输入类型存在；不要把 `any` 当成逃生口，也不要让 `unknown` 长期停留在业务逻辑里。
 
-## 示例输入
+```ts
+// 反例
+function getTotal(line: any): unknown {
+    return line.price * line.count;
+}
 
-- `用现代 JavaScript 重写这个旧模块，尽量使用最新 ECMAScript 标准 API。`
-- `这个 TypeScript 模块尽量使用官方内置类型，不要写 any，也不要保留含糊 unknown。`
-- `帮我判断这段逻辑更适合函数式、class，还是保持简单函数实现。`
-- `这段 JS 在高负载下卡主线程，判断是否应该拆到 Worker。`
-- `这个热点计算要不要上 WASM，如果上，优先按 Rust 方案评估。`
+// 正例
+type CartLine = {
+    price: number;
+    count: number;
+};
+
+function getTotal(line: CartLine) {
+    return line.price * line.count;
+}
+```
+
+### 模块管理只能使用 ESM
+
+新实现统一使用 `import` / `export`，不要引入 `require`、`module.exports`，也不要混用 ESM / CJS。
+
+```js
+// 反例
+const path = require("node:path");
+module.exports = {
+    resolveAsset(fileName) {
+        return path.join("assets", fileName);
+    },
+};
+
+// 正例
+import { join } from "node:path";
+
+export function resolveAsset(fileName) {
+    return join("assets", fileName);
+}
+```
+
+### 默认保持非阻塞，避免阻塞 event loop 或主线程
+
+默认不要在主线程或 event loop 上堆同步 I/O、长循环或重计算。读写文件、网络请求、密集计算都优先走异步或并行路径。
+
+```ts
+// 反例
+import { readFileSync } from "node:fs";
+
+const config = JSON.parse(readFileSync("config.json", "utf8"));
+for (let index = 0; index < 1_000_000_000; index += 1) {
+    // heavy compute on main thread
+}
+
+// 正例
+import { readFile } from "node:fs/promises";
+
+const configText = await readFile("config.json", "utf8");
+const worker = new Worker(new URL("./compute.worker.ts", import.meta.url), {
+    type: "module",
+});
+worker.postMessage(JSON.parse(configText));
+```
+
+### 异步流程优先使用清晰可组合的 Promise / async / await 方案，并保证错误显式暴露
+
+异步逻辑要优先可读、可组合、可追踪错误；不要把失败吞掉后返回模糊结果，让调用方误以为成功。
+
+```ts
+// 反例
+export function loadProfile() {
+    return fetch("/api/profile")
+        .then((response) => response.json())
+        .catch(() => null);
+}
+
+// 正例
+export async function loadProfile() {
+    const response = await fetch("/api/profile");
+
+    if (!response.ok) {
+        throw new Error(`Failed to load profile: ${response.status}`);
+    }
+
+    return response.json();
+}
+```
+
+### 默认优先使用 pnpm 作为包管理器
+
+新项目和日常依赖管理默认优先使用 `pnpm`，除非仓库已经明确固定在其他包管理器上。
+
+```bash
+# 反例
+npm install three
+yarn add typescript -D
+
+# 正例
+pnpm add three
+pnpm add -D typescript
+```
+
+### 默认使用具名导入导出
+
+默认优先使用具名导出和具名导入，降低重命名歧义，提升批量搜索、重构和自动补全的稳定性。
+
+```ts
+// 反例
+export default function formatPrice(price: number) {
+    return `￥${price.toFixed(2)}`;
+}
+
+import formatPrice from "./price";
+
+// 正例
+export function formatPrice(price: number) {
+    return `￥${price.toFixed(2)}`;
+}
+
+import { formatPrice } from "./price";
+```
+
+### 需要高性能时，考虑引入 Worker、WASM、compute shader 并行计算
+
+当瓶颈已经明确落在 CPU 密集计算、可并行任务或 GPU 计算场景时，考虑引入 Worker、WASM 或 compute shader；不要在没证明瓶颈前提前堆复杂度。不同瓶颈优先匹配不同手段：主线程 CPU 压力优先看 Worker，热点数值计算优先看 WASM，大规模 GPU 友好并行任务优先看 compute shader。
+
+```ts
+// 正例：把 CPU 密集批处理移到 Worker
+const worker = new Worker(new URL("./mesh-bake.worker.ts", import.meta.url), {
+    type: "module",
+});
+
+worker.postMessage({ vertices, faces });
+worker.onmessage = (event) => {
+    applyBakeResult(event.data);
+};
+```
+
+### 需要 WASM 时，默认优先选择 Rust 编译链
+
+如果确实需要 WASM，默认优先选择 Rust 编译链，以获得更成熟的生态、较强的性能边界和更清晰的类型建模能力。
+
+```ts
+// 正例：用 Rust/WASM 承担热点数值计算
+import init, { solveTerrainPath } from "@acme/pathfinding-wasm";
+
+await init();
+
+const path = solveTerrainPath(heightMap, start, end);
+```
+
+### 需要 compute shader 时，默认优先选择用 Three.js 的 TSL 写
+
+如果确实需要 compute shader，默认优先选择 Three.js 的 TSL 路径；只有在性能或底层控制需求仍然不满足时，再考虑直接写原生 WGSL。
+
+```ts
+// 正例：先用 TSL 组织 compute pass
+import { Fn, instanceIndex } from "three/tsl";
+
+// positionStorage 和 velocityStorage 代表已绑定好的 GPU storage buffers
+const updateParticles = Fn(() => {
+    const position = positionStorage.element(instanceIndex);
+    const velocity = velocityStorage.element(instanceIndex);
+
+    position.xyz.addAssign(velocity.xyz);
+})().compute(particleCount);
+
+await renderer.computeAsync(updateParticles);
+```
+
+### AI 写完代码后必须严格自检，并形成自我反馈
+
+代码完成后，AI 必须主动做严格自检，至少覆盖三件事：
+
+1. 有没有代码错误：根据改动风险检查语法、类型、lint、构建、测试或最小运行验证，而不是写完就结束。
+2. 有没有严格按照要求做事：检查是否满足用户要求、skill 约束、运行时边界、导入约束、风格约束和验证要求。
+3. 有没有形成自我反馈：把自检结果收敛成明确结论，发现偏差就继续修，不要把问题留给用户二次发现。
+
+```text
+自检反馈示例
+- typecheck: passed
+- build: passed
+- imports: only ESM named imports used
+- requirements: all requested constraints satisfied
+- remaining risk: runtime behavior not manually exercised in browser
+```
