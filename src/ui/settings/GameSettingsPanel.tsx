@@ -1,4 +1,15 @@
 import { useEffect, useState } from "react";
+import {
+  Camera,
+  CircleHelp,
+  Clock3,
+  CloudSun,
+  Footprints,
+  Gauge,
+  Monitor,
+  Palette,
+  UserRound,
+} from "lucide-react";
 import type { GameApp } from "@game/app";
 import type { GameSettings, GameSettingsPatch } from "@game/settings";
 import {
@@ -15,15 +26,15 @@ import {
 import { SettingsPanelFrame } from "./SettingsPanelFrame";
 
 const GAME_SETTINGS_TABS = [
-  { id: "help", label: "Help" },
-  { id: "appearance", label: "Appearance" },
-  { id: "render", label: "Render" },
-  { id: "camera", label: "Camera" },
-  { id: "time", label: "Time (日晷)" },
-  { id: "sky", label: "Sky" },
-  { id: "movement", label: "Movement" },
-  { id: "physics", label: "Physics" },
-  { id: "thirdPerson", label: "3rd Person" },
+  { id: "help", label: "Help", Icon: CircleHelp },
+  { id: "appearance", label: "Appearance", Icon: Palette },
+  { id: "render", label: "Render", Icon: Monitor },
+  { id: "camera", label: "Camera", Icon: Camera },
+  { id: "time", label: "Time", Icon: Clock3 },
+  { id: "sky", label: "Sky", Icon: CloudSun },
+  { id: "movement", label: "Movement", Icon: Footprints },
+  { id: "physics", label: "Physics", Icon: Gauge },
+  { id: "thirdPerson", label: "3rd Person", Icon: UserRound },
 ] as const;
 
 type GameSettingsTabId = (typeof GAME_SETTINGS_TABS)[number]["id"];
@@ -85,6 +96,7 @@ export function GameSettingsPanel({
       subtitle={gameApp ? "Applies immediately" : "Runtime unavailable"}
       tabs={GAME_SETTINGS_TABS}
       activeTab={tab}
+      variant="sidebar"
       onTabChange={setTab}
       onReset={onReset}
       onClose={onClose}

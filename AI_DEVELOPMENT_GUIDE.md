@@ -6,6 +6,7 @@ Project-specific supplement to `.github/copilot-instructions.md`.
 
 - Keep this document concise. Add only durable project rules, and prefer short bullets over explanations.
 - Add durable project rules here proactively when they emerge during development.
+- Keep all project UI in a compact, serious editor-style desktop application aesthetic; avoid web-page or card-grid presentation patterns.
 - Keep platform-specific behavior behind `src/platform/` capabilities; app code must not call native command names directly.
 - Store editable terrain as v3 map manifests plus per-chunk binary `float32le` files; do not add legacy map-format compatibility unless explicitly requested.
 - Use English for all new or modified project text: UI copy, docs, test names, logs, errors, config descriptions, fixture text, file names, and asset metadata.

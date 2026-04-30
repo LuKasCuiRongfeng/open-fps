@@ -24,8 +24,8 @@ export function AppearanceTab({ settings, onPatch }: AppearanceTabProps) {
   return (
     <SettingsPage>
       <SettingsSection title="Interface" description="Shared shell appearance for editor and game UI.">
-        <SettingRow label="Theme" description="Switches semantic surface, content, stroke, and status tokens.">
-          <div className="grid gap-2 sm:grid-cols-2">
+        <SettingRow label="Theme" description="Switches semantic surface, content, stroke, and status tokens." align="start">
+          <div className="space-y-1.5">
             {THEME_OPTIONS.map(({ id, label, description, Icon }) => {
               const active = settings.ui.theme === id;
               return (
@@ -33,7 +33,7 @@ export function AppearanceTab({ settings, onPatch }: AppearanceTabProps) {
                   key={id}
                   type="button"
                   onClick={() => onPatch({ ui: { theme: id } })}
-                  className={`flex min-h-14 items-center gap-2 rounded-md border px-2.5 py-2 text-left transition-colors ${
+                  className={`flex min-h-9 w-full items-center gap-2 rounded-md border px-2.5 py-1.5 text-left transition-colors ${
                     active
                       ? "border-accent-primary/60 bg-accent-primary/15 text-content-primary"
                       : "border-stroke-subtle bg-surface-control text-content-secondary hover:border-stroke-default hover:bg-surface-control-hover hover:text-content-primary"
@@ -46,7 +46,7 @@ export function AppearanceTab({ settings, onPatch }: AppearanceTabProps) {
                       {label}
                       {active && <SettingBadge tone="primary">Active</SettingBadge>}
                     </span>
-                    <span className="mt-0.5 block text-[11px] leading-4 text-content-muted">{description}</span>
+                    <span className="mt-0.5 block text-[11px] leading-3 text-content-muted">{description}</span>
                   </span>
                 </button>
               );

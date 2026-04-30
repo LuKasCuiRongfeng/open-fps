@@ -64,35 +64,42 @@ export default function FpsCounter({
   const chunkSize = terrainConfig.streaming.chunkSizeMeters;
 
   return (
-    <div className="overlay-panel absolute left-3 top-3 z-20 rounded-md border px-2 py-1 font-mono text-xs shadow-panel backdrop-blur-sm">
-      {/* FPS */}
-      <div className="text-status-success">{fps} FPS</div>
-      
+    <div className="overlay-panel absolute left-2 top-2 z-20 min-w-36 rounded-md border font-mono text-[11px] shadow-panel backdrop-blur-sm">
+      <div className="flex h-6 items-center justify-between gap-3 border-b border-stroke-subtle px-2">
+        <span className="text-content-muted">FPS</span>
+        <span className="text-status-success">{fps}</span>
+      </div>
+
       {/* Player info / 玩家信息 */}
       {playerPos && (
-        <>
-          <div className="mt-1 text-content-secondary">
-            Player XZ: ({playerPos.x.toFixed(1)}, {playerPos.z.toFixed(1)})
+        <div className="divide-y divide-stroke-subtle px-2">
+          <div className="flex min-h-5 items-center justify-between gap-3 text-content-secondary">
+            <span className="text-content-muted">XZ</span>
+            <span>({playerPos.x.toFixed(1)}, {playerPos.z.toFixed(1)})</span>
           </div>
-          <div className="text-content-secondary">
-            Altitude: {playerPos.y.toFixed(1)}m
+          <div className="flex min-h-5 items-center justify-between gap-3 text-content-secondary">
+            <span className="text-content-muted">ALT</span>
+            <span>{playerPos.y.toFixed(1)}m</span>
           </div>
-          <div className="text-status-info">
-            Chunk: ({Math.floor(playerPos.x / chunkSize)}, {Math.floor(playerPos.z / chunkSize)})
+          <div className="flex min-h-5 items-center justify-between gap-3 text-status-info">
+            <span className="text-content-muted">CHUNK</span>
+            <span>({Math.floor(playerPos.x / chunkSize)}, {Math.floor(playerPos.z / chunkSize)})</span>
           </div>
-        </>
+        </div>
       )}
 
       {/* Editor mode: mouse info / 编辑器模式：鼠标信息 */}
       {isEditorMode && mousePos && mouseValid && (
-        <>
-          <div className="mt-2 text-status-warning">
-            Mouse: ({mousePos.x.toFixed(1)}, {mousePos.y.toFixed(1)}, {mousePos.z.toFixed(1)})
+        <div className="border-t border-stroke-subtle px-2 text-status-warning">
+          <div className="flex min-h-5 items-center justify-between gap-3">
+            <span className="text-content-muted">MOUSE</span>
+            <span>({mousePos.x.toFixed(1)}, {mousePos.y.toFixed(1)}, {mousePos.z.toFixed(1)})</span>
           </div>
-          <div className="text-status-warning">
-            Chunk: ({Math.floor(mousePos.x / chunkSize)}, {Math.floor(mousePos.z / chunkSize)})
+          <div className="flex min-h-5 items-center justify-between gap-3">
+            <span className="text-content-muted">CHUNK</span>
+            <span>({Math.floor(mousePos.x / chunkSize)}, {Math.floor(mousePos.z / chunkSize)})</span>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

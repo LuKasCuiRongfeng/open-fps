@@ -117,7 +117,7 @@ export function SettingsPanelFrame<TTab extends string>({
       />
 
       <div className="absolute left-1/2 top-6 w-[min(860px,calc(100vw-2rem))] -translate-x-1/2">
-        <div className="overlay-panel rounded-xl border shadow-elevated backdrop-blur-sm">
+        <div className="overlay-panel rounded-md border shadow-elevated backdrop-blur-sm">
           <div className="flex items-start justify-between gap-4 border-b border-stroke-subtle p-4">
             <div>
               <div className="text-sm font-semibold tracking-wide">{title}</div>

@@ -85,7 +85,7 @@ export function TextureEditorTab({
       <SettingsSection title="Layer" actions={<SettingBadge tone="secondary">{layerNames.length} layers</SettingBadge>}>
         {layerNames.length > 0 ? (
           <SettingRow label="Active Layer" align="start">
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="space-y-1.5">
               {layerNames.map((name, index) => (
                 <Button
                   key={name}
@@ -93,7 +93,7 @@ export function TextureEditorTab({
                   variant={selectedLayer === name ? "secondary" : "default"}
                   onClick={() => setSelectedLayer(name)}
                   disabled={!isEditing}
-                  className="min-w-0 justify-start px-2"
+                  className="w-full min-w-0 justify-start px-2"
                 >
                   <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   <span className="min-w-0 truncate">{index + 1}. {name}</span>

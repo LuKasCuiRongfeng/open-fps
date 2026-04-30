@@ -2,6 +2,7 @@
 // HelpTab：帮助和控制信息标签
 
 import { inputConfig } from "@config/input";
+import { ReadonlyField, SettingRow, SettingsPage, SettingsSection } from "../SettingsLayout";
 
 function keyLabelFromCode(code: string) {
   if (code.startsWith("Key") && code.length === 4) return code.slice(3);
@@ -10,32 +11,49 @@ function keyLabelFromCode(code: string) {
 }
 
 export function HelpTab() {
-  return (
-    <div className="space-y-5">
-      <div>
-        <div className="text-sm font-semibold">Controls</div>
-        <div className="mt-2 space-y-1.5 text-sm text-content-secondary">
-          <div>Click the game view to lock pointer.</div>
-          <div>WASD / Arrow keys: Move</div>
-          <div>Shift: Sprint</div>
-          <div>Space: Jump</div>
-          <div>
-            {keyLabelFromCode(inputConfig.toggleCameraMode.codes[0])}: Toggle 1st / 3rd person
-          </div>
-          <div>
-            {keyLabelFromCode(inputConfig.toggleThirdPersonStyle.codes[0])}: Toggle OTS / Chase
-          </div>
-          <div>Escape: Open/Close Settings</div>
-        </div>
-      </div>
+  const cameraModeKey = keyLabelFromCode(inputConfig.toggleCameraMode.codes[0]);
+  const cameraStyleKey = keyLabelFromCode(inputConfig.toggleThirdPersonStyle.codes[0]);
 
-      <div>
-        <div className="text-sm font-semibold">Notes</div>
-        <div className="mt-2 space-y-1.5 text-sm text-content-secondary">
-          <div>Settings apply immediately.</div>
-          <div>Reset restores default values.</div>
-        </div>
-      </div>
-    </div>
+  return (
+    <SettingsPage>
+      <SettingsSection title="View Focus" description="Runtime input starts after the game view captures the pointer.">
+        <SettingRow label="Pointer Lock">
+          <ReadonlyField>Click game view</ReadonlyField>
+        </SettingRow>
+        <SettingRow label="Settings">
+          <ReadonlyField>Escape</ReadonlyField>
+        </SettingRow>
+      </SettingsSection>
+
+      <SettingsSection title="Movement">
+        <SettingRow label="Move">
+          <ReadonlyField>WASD / Arrow keys</ReadonlyField>
+        </SettingRow>
+        <SettingRow label="Sprint">
+          <ReadonlyField>Shift</ReadonlyField>
+        </SettingRow>
+        <SettingRow label="Jump">
+          <ReadonlyField>Space</ReadonlyField>
+        </SettingRow>
+      </SettingsSection>
+
+      <SettingsSection title="Camera">
+        <SettingRow label="Mode Toggle">
+          <ReadonlyField>{cameraModeKey}</ReadonlyField>
+        </SettingRow>
+        <SettingRow label="Style Toggle">
+          <ReadonlyField>{cameraStyleKey}</ReadonlyField>
+        </SettingRow>
+      </SettingsSection>
+
+      <SettingsSection title="Settings Behavior">
+        <SettingRow label="Apply">
+          <ReadonlyField>Immediate</ReadonlyField>
+        </SettingRow>
+        <SettingRow label="Reset">
+          <ReadonlyField>Default values</ReadonlyField>
+        </SettingRow>
+      </SettingsSection>
+    </SettingsPage>
   );
 }

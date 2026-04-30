@@ -2,12 +2,13 @@
 // TerrainEditorTab：地形编辑器设置标签
 
 import { useState, useEffect } from "react";
-import { Brush, MousePointer2 } from "lucide-react";
+import { Brush } from "lucide-react";
 import type { TerrainEditor, BrushType } from "@editor/runtime";
 import type { EditorAppSettings, EditorMouseAction } from "@editor/settings";
 import { useTerrainBrushSettings } from "../../hooks/useTerrainBrushSettings";
 import { RangeField } from "@ui/settings/RangeField";
 import { SettingBadge, SettingRow, SettingsButton, SettingsPage, SettingsSection } from "@ui/settings/SettingsLayout";
+import { Toggle } from "@ui/settings/Toggle";
 import { Button } from "@ui/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@ui/components/ui/select";
 
@@ -111,7 +112,7 @@ export function TerrainEditorTab({
 
       <SettingsSection title="Brush" description="Heightmap tool parameters used by the active terrain brush.">
         <SettingRow label="Brush Type">
-          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+          <div className="flex flex-wrap gap-1.5">
             {(["raise", "lower", "smooth", "flatten"] as BrushType[]).map((type) => (
               <Button
                 key={type}
@@ -119,7 +120,7 @@ export function TerrainEditorTab({
                 variant={brushType === type ? "success" : "default"}
                 onClick={() => setBrushType(type)}
                 disabled={!isEditing}
-                className="capitalize"
+                className="min-w-20 capitalize"
               >
                 {type}
               </Button>
@@ -209,17 +210,12 @@ export function TerrainEditorTab({
           </Select>
         </SettingRow>
 
-        <SettingRow label="Sticky Drag" description="Continue dragging when the pointer leaves the window.">
-          <Button
-            size="sm"
-            variant={stickyDrag ? "success" : "default"}
-            onClick={() => handleStickyDragChange(!stickyDrag)}
-            className="w-16 justify-between px-1.5"
-          >
-            <MousePointer2 className="h-3.5 w-3.5" aria-hidden="true" />
-            {stickyDrag ? "On" : "Off"}
-          </Button>
-        </SettingRow>
+        <Toggle
+          label="Sticky Drag"
+          description="Continue dragging when the pointer leaves the window."
+          checked={stickyDrag}
+          onChange={handleStickyDragChange}
+        />
         <SettingRow label="Wheel Input">
           <div className="text-[11px] text-content-muted">Scroll zooms the camera. Shift + scroll adjusts brush radius.</div>
         </SettingRow>

@@ -264,13 +264,12 @@ export function ProjectFileTab({
       </SettingsSection>
 
       <SettingsSection title="Operations">
-        <div className="grid gap-2 py-2 sm:grid-cols-3">
+        <div className="flex flex-wrap gap-2 py-2">
           <SettingsButton
             Icon={FolderOpen}
             onClick={handleOpenProject}
             disabled={processing}
             tone="secondary"
-            fullWidth
           >
             Open
           </SettingsButton>
@@ -279,7 +278,6 @@ export function ProjectFileTab({
             onClick={handleSave}
             disabled={processing}
             tone="primary"
-            fullWidth
           >
             {hasProject ? "Save" : "Save As"}
           </SettingsButton>
@@ -287,7 +285,6 @@ export function ProjectFileTab({
             Icon={SaveAll}
             onClick={handleSaveAs}
             disabled={processing}
-            fullWidth
           >
             Save Copy
           </SettingsButton>
@@ -340,13 +337,14 @@ export function ProjectFileTab({
         </div>
 
         <SettingRow label="Create Map">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+          <div className="flex min-w-0 gap-2">
             <Input
               type="text"
               value={newMapName}
               onChange={(e) => setNewMapName(e.target.value)}
               placeholder="New map name"
               disabled={!hasProject || processing}
+              className="min-w-0 flex-1"
             />
             <SettingsButton
               Icon={Plus}
