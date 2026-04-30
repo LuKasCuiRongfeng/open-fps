@@ -6,20 +6,15 @@ import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings
 import type { MapData } from "@project/MapData";
 import type { EditorWorkspaceController } from "@editor/ui/hooks/useEditorWorkspace";
 import {
-  HelpTab,
   RenderTab,
   CameraTab,
   SkyTab,
   TimeTab,
-  MovementTab,
-  PhysicsTab,
-  ThirdPersonTab,
 } from "@ui/settings/tabs";
 import { ProjectFileTab } from "./ProjectFileTab";
 import { TerrainEditorTab, TextureEditorTab, type ActiveEditorType } from "./tabs";
 
 export const EDITOR_SETTINGS_TABS = [
-  { id: "help", label: "Help" },
   { id: "file", label: "File" },
   { id: "terrainEditor", label: "Terrain Editor" },
   { id: "textureEditor", label: "Texture Editor" },
@@ -27,9 +22,6 @@ export const EDITOR_SETTINGS_TABS = [
   { id: "camera", label: "Camera" },
   { id: "time", label: "Time (日晷)" },
   { id: "sky", label: "Sky" },
-  { id: "movement", label: "Movement" },
-  { id: "physics", label: "Physics" },
-  { id: "thirdPerson", label: "3rd Person" },
 ] as const;
 
 export type EditorSettingsTabId = (typeof EDITOR_SETTINGS_TABS)[number]["id"];
@@ -56,11 +48,6 @@ type EditorSettingsTabDescriptor = {
 };
 
 export const EDITOR_SETTINGS_TAB_REGISTRY: Record<EditorSettingsTabId, EditorSettingsTabDescriptor> = {
-  help: {
-    id: "help",
-    label: "Help",
-    render: () => <HelpTab />,
-  },
   file: {
     id: "file",
     label: "File",
@@ -119,21 +106,6 @@ export const EDITOR_SETTINGS_TAB_REGISTRY: Record<EditorSettingsTabId, EditorSet
     id: "sky",
     label: "Sky",
     render: (props) => <SkyTab settings={props.settings} onPatch={props.onPatch} />,
-  },
-  movement: {
-    id: "movement",
-    label: "Movement",
-    render: (props) => <MovementTab settings={props.settings} onPatch={props.onPatch} />,
-  },
-  physics: {
-    id: "physics",
-    label: "Physics",
-    render: (props) => <PhysicsTab settings={props.settings} onPatch={props.onPatch} />,
-  },
-  thirdPerson: {
-    id: "thirdPerson",
-    label: "3rd Person",
-    render: (props) => <ThirdPersonTab settings={props.settings} onPatch={props.onPatch} />,
   },
 };
 

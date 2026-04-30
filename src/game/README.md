@@ -11,6 +11,7 @@
 - `gameplay/`: ECS, player systems, input, and prefabs
 - `settings/`: runtime settings data and patch helpers
 - `world/`: terrain, sky, and world-space systems
+- `workspace/`: read-only bundled project loading for standalone game data
 - `core/`: temporary compatibility layer for legacy imports and leftover utilities
 
 ## Why This Split
@@ -28,3 +29,4 @@
 - Game code must not import `@editor/*` or editor UI modules.
 - New code should prefer domain paths such as `@game/app/GameApp`, `@game/gpu`, or `@game/rendering`.
 - Project selection, save/import workflows, editor panels, and authoring controls belong under `src/editor/`.
+- Standalone game startup reads bundled project data; it must not open editor project-selection or save workflows.

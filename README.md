@@ -41,6 +41,7 @@ pnpm web build all
 ```
 
 The editor and game targets use separate HTML and TypeScript entries. The editor build writes `dist-editor/editor.html`; the game build writes `dist-game/game.html`.
+The standalone game target loads read-only project data from `/game-data/test_pro/`, copied from the workspace `test_pro/` folder during game builds.
 
 Desktop:
 

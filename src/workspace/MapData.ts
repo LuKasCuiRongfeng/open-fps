@@ -250,7 +250,12 @@ export function encodeHeightChunkBase64(heights: Float32Array, tileResolution: n
 }
 
 export function decodeHeightChunkBase64(base64: string, tileResolution: number): Float32Array {
-  const bytes = base64ToUint8Array(base64);
+  return decodeHeightChunkBytes(base64ToUint8Array(base64), tileResolution);
+}
+
+export function decodeHeightChunkBytes(bytes: Uint8Array, tileResolution: number): Float32Array {
+  // EN: Bundled game data is fetched as raw binary, while editor storage still uses base64 over native commands.
+  // 中文: 随游戏打包的数据以原始二进制读取，而编辑器存储仍通过原生命令传递 base64。
   const expectedByteLength = getExpectedHeightChunkByteLength(tileResolution);
   if (bytes.byteLength !== expectedByteLength) {
     throw new Error(`Invalid height chunk byte length: expected ${expectedByteLength}, got ${bytes.byteLength}`);

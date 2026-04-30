@@ -15,7 +15,7 @@ import { TerrainBrush, type BrushType, type BrushStroke, type BrushSettings } fr
  * Editor mode.
  * 编辑器模式
  */
-export type EditorMode = "play" | "edit";
+export type EditorMode = "edit";
 
 // Re-export mouse action type from settings.
 // 从设置重新导出鼠标操作类型
@@ -30,6 +30,8 @@ export interface EditorMouseConfig {
   rightButton: EditorMouseAction;
   middleButton: EditorMouseAction;
 }
+
+type EditorCameraAction = Extract<EditorMouseAction, "orbit" | "pan">;
 
 // Re-export types from TerrainBrush.
 // 从 TerrainBrush 重新导出类型
@@ -46,9 +48,9 @@ export class TerrainEditor {
   // 当前地图数据（编辑）
   private mapData: MapData;
 
-  // Editor mode.
-  // 编辑器模式
-  private _mode: EditorMode = "play";
+  // Editor mode stays edit-only; object selection is handled by the UI active editor state.
+  // 编辑器模式固定为纯编辑；具体编辑对象由 UI 的 active editor 状态处理。
+  private _mode: EditorMode = "edit";
 
   // Sub-components.
   // 子组件
@@ -73,7 +75,6 @@ export class TerrainEditor {
 
   // Callbacks.
   // 回调
-  private onModeChange?: (mode: EditorMode) => void;
   private onDirtyChange?: (dirty: boolean) => void;
 
   constructor(config: TerrainConfig) {
@@ -181,13 +182,8 @@ export class TerrainEditor {
   setMode(mode: EditorMode): void {
     if (this._mode !== mode) {
       this._mode = mode;
-      this.onModeChange?.(mode);
       this._brush.reset();
     }
-  }
-
-  toggleMode(): void {
-    this.setMode(this._mode === "play" ? "edit" : "play");
   }
 
   // --- Brush Control / 画刷控制 ---
@@ -218,17 +214,11 @@ export class TerrainEditor {
     camera: PerspectiveCamera,
     heightAt: (x: number, z: number) => number
   ): void {
-    if (this._mode !== "edit") {
-      this._brush.invalidateTarget();
-      return;
-    }
     this._brush.updateTarget(mouseX, mouseY, canvasWidth, canvasHeight, camera, heightAt);
   }
 
   startBrush(): void {
-    if (this._mode === "edit") {
-      this._brush.start();
-    }
+    this._brush.start();
   }
 
   endBrush(): void {
@@ -248,26 +238,36 @@ export class TerrainEditor {
 
   // --- Editor Camera Controls / 编辑器相机控制 ---
 
-  initCameraFromPlayer(playerX: number, playerY: number, playerZ: number): void {
-    this.orbitCamera.initFromPlayer(playerX, playerY, playerZ);
+  startCameraControl(button: number, mouseX: number, mouseY: number, screenWidth?: number, screenHeight?: number): void {
+    const action = this.getActionForButton(button);
+    if (action === "orbit" || action === "pan") {
+      this.startCameraAction(action, mouseX, mouseY, screenWidth, screenHeight);
+    }
   }
 
-  startCameraControl(button: number, mouseX: number, mouseY: number, screenWidth?: number, screenHeight?: number): void {
-    if (this._mode !== "edit") return;
-
-    const action = this.getActionForButton(button);
+  startCameraAction(action: EditorCameraAction, mouseX: number, mouseY: number, screenWidth?: number, screenHeight?: number): void {
     if (action === "orbit") {
       this.orbitCamera.startOrbit(mouseX, mouseY);
-    } else if (action === "pan") {
+    } else {
       this.orbitCamera.startPan(mouseX, mouseY, screenWidth, screenHeight);
     }
   }
 
+  frameCameraAt(targetX: number, targetY: number, targetZ: number, radius: number): void {
+    this.orbitCamera.frameTarget(targetX, targetY, targetZ, radius);
+  }
+
   endCameraControl(button: number): void {
     const action = this.getActionForButton(button);
+    if (action === "orbit" || action === "pan") {
+      this.endCameraAction(action);
+    }
+  }
+
+  endCameraAction(action: EditorCameraAction): void {
     if (action === "orbit") {
       this.orbitCamera.stopOrbit();
-    } else if (action === "pan") {
+    } else {
       this.orbitCamera.stopPan();
     }
   }
@@ -339,17 +339,14 @@ export class TerrainEditor {
   }
 
   updateCameraControl(mouseX: number, mouseY: number, screenWidth?: number, screenHeight?: number): void {
-    if (this._mode !== "edit") return;
     this.orbitCamera.updateFromMouse(mouseX, mouseY, screenWidth, screenHeight);
   }
 
   zoomCamera(delta: number): void {
-    if (this._mode !== "edit") return;
     this.orbitCamera.zoom(delta);
   }
 
   applyCameraState(camera: PerspectiveCamera): void {
-    if (this._mode !== "edit") return;
     this.orbitCamera.applyToCamera(camera);
   }
 
@@ -400,10 +397,6 @@ export class TerrainEditor {
   }
 
   // --- Callbacks / 回调 ---
-
-  setOnModeChange(callback: (mode: EditorMode) => void): void {
-    this.onModeChange = callback;
-  }
 
   setOnDirtyChange(callback: (dirty: boolean) => void): void {
     this.onDirtyChange = callback;

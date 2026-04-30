@@ -6,6 +6,7 @@ import type { EditorAppSession } from "@editor/app";
 import type { TerrainEditor } from "@editor/runtime";
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import type { ActiveEditorType } from "../settings/tabs/TerrainEditorTab";
+import type { EditorMouseAction } from "@editor/settings";
 
 interface UseEditorInputOptions {
   appRef: RefObject<EditorAppSession | null>;
@@ -30,12 +31,22 @@ export function useEditorInput({
 }: UseEditorInputOptions): EditorInputHandlers {
   const overlayRef = useRef<HTMLDivElement | null>(null);
 
+  const getEffectiveMouseAction = (button: number): EditorMouseAction | null => {
+    if (activeEditor === "none" && button === 0) {
+      return "pan";
+    }
+
+    return terrainEditor?.getActionForButton(button) ?? null;
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!terrainEditor || activeEditor === "none") return;
+    if (!terrainEditor) return;
+
+    const action = getEffectiveMouseAction(e.button);
+    if (!action) return;
 
     e.preventDefault();
 
-    const action = terrainEditor.getActionForButton(e.button);
     if (action === "brush") {
       if (activeEditor === "terrain") {
         terrainEditor.startBrush();
@@ -43,8 +54,8 @@ export function useEditorInput({
         textureEditor.startBrush();
       }
     } else if (action === "orbit" || action === "pan") {
-      terrainEditor.startCameraControl(
-        e.button,
+      terrainEditor.startCameraAction(
+        action,
         e.clientX,
         e.clientY,
         window.innerWidth,
@@ -56,7 +67,7 @@ export function useEditorInput({
   const handleMouseUp = (e: React.MouseEvent) => {
     if (!terrainEditor) return;
 
-    const action = terrainEditor.getActionForButton(e.button);
+    const action = getEffectiveMouseAction(e.button);
     if (action === "brush") {
       if (activeEditor === "terrain") {
         terrainEditor.endBrush();
@@ -64,17 +75,14 @@ export function useEditorInput({
         textureEditor?.endBrush();
       }
     } else if (action === "orbit" || action === "pan") {
-      terrainEditor.endCameraControl(e.button);
+      terrainEditor.endCameraAction(action);
     }
   };
 
   useEffect(() => {
-    if (!terrainEditor || activeEditor === "none") return;
+    if (!terrainEditor) return;
 
     const handleGlobalMouseMove = (e: MouseEvent) => {
-      const app = appRef.current;
-      if (!app) return;
-
       terrainEditor.updateCameraControl(
         e.clientX,
         e.clientY,
@@ -82,7 +90,8 @@ export function useEditorInput({
         window.innerHeight,
       );
 
-      if (!terrainEditor.isCameraControlActive) {
+      const app = appRef.current;
+      if (app && activeEditor !== "none" && !terrainEditor.isCameraControlActive) {
         const rect = hostRef.current?.getBoundingClientRect();
         if (rect) {
           const mouseX = e.clientX - rect.left;
@@ -102,10 +111,10 @@ export function useEditorInput({
   }, [terrainEditor, activeEditor, appRef, hostRef]);
 
   useEffect(() => {
-    if (!terrainEditor || activeEditor === "none" || terrainEditor.stickyDrag) return;
+    if (!terrainEditor || terrainEditor.stickyDrag) return;
 
     const handleGlobalMouseUp = (e: MouseEvent) => {
-      const action = terrainEditor.getActionForButton(e.button);
+      const action = getEffectiveMouseAction(e.button);
       if (action === "brush") {
         if (activeEditor === "terrain") {
           terrainEditor.endBrush();
@@ -113,7 +122,7 @@ export function useEditorInput({
           textureEditor?.endBrush();
         }
       } else if (action === "orbit" || action === "pan") {
-        terrainEditor.endCameraControl(e.button);
+        terrainEditor.endCameraAction(action);
       }
     };
 
@@ -123,12 +132,12 @@ export function useEditorInput({
 
   useEffect(() => {
     const overlay = overlayRef.current;
-    if (!overlay || !terrainEditor || activeEditor === "none") return;
+    if (!overlay || !terrainEditor) return;
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
 
-      if (e.shiftKey) {
+      if (e.shiftKey && activeEditor !== "none") {
         const delta = e.deltaY > 0 ? -2 : 2;
         if (activeEditor === "terrain") {
           const newRadius = terrainEditor.brushSettings.radiusMeters + delta;

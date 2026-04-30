@@ -4,18 +4,22 @@
 import { useEffect, useRef, useState } from "react";
 import { GameApp, type GameBootPhase } from "@game/app";
 import type { GameSettings } from "@game/settings";
+import { loadBundledGameProject } from "@game/workspace/loadBundledProject";
 import type { MapData } from "@project/MapData";
 
 interface UseGameAppOptions {
   /** Whether to start the game (false during project selection screen). */
   /** 是否启动游戏（在项目选择界面时为 false） */
   enabled: boolean;
-  /** Map data to load (null for procedural terrain). */
-  /** 要加载的地图数据（程序生成地形为 null） */
+  /** Optional map data to load when no bundled project URL is provided. */
+  /** 未提供随包项目 URL 时可选加载的地图数据 */
   pendingMapData: MapData | null;
   /** Settings to apply from loaded project. */
   /** 从加载的项目应用的设置 */
   pendingSettings: GameSettings | null;
+  /** Bundled read-only project URL for standalone game builds. */
+  /** 独立游戏构建使用的只读打包项目 URL */
+  bundledProjectUrl?: string | null;
 }
 
 interface UseGameAppReturn {
@@ -36,6 +40,7 @@ export function useGameApp({
   enabled,
   pendingMapData,
   pendingSettings,
+  bundledProjectUrl = null,
 }: UseGameAppOptions): UseGameAppReturn {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const appRef = useRef<GameApp | null>(null);
@@ -69,17 +74,37 @@ export function useGameApp({
           .then(async () => {
             if (disposed) return;
 
-            // If user opened a project with settings, apply them first.
-            // 如果用户打开了带有设置的项目，先应用设置
-            if (pendingSettings) {
-              app.applySettings(pendingSettings);
+            if (bundledProjectUrl || pendingMapData) {
+              setBootPhase("loading-map");
             }
 
-            // If user opened a project with map data, load it.
-            // 如果用户打开了带有地图数据的项目，则加载它
-            if (pendingMapData) {
-              setBootPhase("loading-map");
-              await app.loadMapData(pendingMapData);
+            const bundledProject = bundledProjectUrl
+              ? await loadBundledGameProject(bundledProjectUrl)
+              : null;
+            if (disposed) return;
+
+            const settingsToApply = bundledProject?.settings ?? pendingSettings;
+            const mapDataToLoad = bundledProject?.map ?? pendingMapData;
+
+            // Apply settings before loading data so terrain and sky use the packaged project values.
+            // 先应用设置，确保地形和天空使用随包项目的配置值。
+            if (settingsToApply) {
+              app.applySettings(settingsToApply);
+            }
+
+            // Load packaged map data instead of falling back to procedural terrain.
+            // 加载随包地图数据，而不是回退到程序生成地形。
+            if (mapDataToLoad) {
+              await app.loadMapData(mapDataToLoad);
+              if (disposed) return;
+            }
+
+            if (bundledProject) {
+              await app.loadTerrainTexturesFromMapDirectory(
+                bundledProject.mapDirectoryUrl,
+                bundledProject.textureDefinition,
+              );
+              if (disposed) return;
             }
 
             // All loading complete, show ready and enter game.
@@ -116,7 +141,7 @@ export function useGameApp({
       appRef.current?.dispose();
       appRef.current = null;
     };
-  }, [enabled, pendingMapData, pendingSettings]);
+  }, [enabled, pendingMapData, pendingSettings, bundledProjectUrl]);
 
   return {
     hostRef,

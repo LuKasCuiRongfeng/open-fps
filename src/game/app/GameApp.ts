@@ -2,11 +2,16 @@
 // GameApp：不包含编辑器编排的共享游戏运行时
 
 import {
+  ClampToEdgeWrapping,
   DirectionalLight,
   FogExp2,
   HemisphereLight,
+  LinearFilter,
+  NoColorSpace,
+  TextureLoader,
   type PerspectiveCamera,
   type Scene,
+  type Texture,
   type WebGPURenderer,
 } from "three/webgpu";
 import { renderStaticConfig } from "@config/render";
@@ -41,7 +46,18 @@ import {
 } from "../settings";
 import { setTerrainNormalSoftness } from "../world/terrain/material/terrainMaterialTexturedArray";
 import { timeToSunPosition, type SkySystem } from "../world/sky/SkySystem";
+import { TerrainTextureArrays } from "../world/terrain/TerrainTextureArrays";
+import { getSplatMapCount, getSplatMapFilename, type TextureDefinition } from "../world/terrain/TextureData";
 import type { MapData } from "@project/MapData";
+
+export interface GameAppOptions {
+  gameplayEnabled?: boolean;
+  initialTerrainTarget?: { x: number; z: number };
+}
+
+function normalizeDirectoryUrl(path: string): string {
+  return path.endsWith("/") ? path : `${path}/`;
+}
 
 /**
  * GameApp: coordinates game systems and lifecycle.
@@ -58,12 +74,25 @@ export class GameApp implements RuntimeAppSession {
   protected readonly sun: DirectionalLight;
   protected readonly hemi: HemisphereLight;
   protected readonly skySystem: SkySystem;
+  private readonly gameplayEnabled: boolean;
+  private readonly initialTerrainTarget: { x: number; z: number };
+  private readonly textureLoader = new TextureLoader();
   readonly ready: Promise<void>;
   protected disposed = false;
 
   protected onTimeUpdateCallback: ((timeOfDay: number) => void) | null = null;
 
-  constructor(container: HTMLElement, onBootPhase?: (phase: GameBootPhase) => void) {
+  constructor(
+    container: HTMLElement,
+    onBootPhase?: (phase: GameBootPhase) => void,
+    options: GameAppOptions = {},
+  ) {
+    this.gameplayEnabled = options.gameplayEnabled ?? true;
+    this.initialTerrainTarget = options.initialTerrainTarget ?? {
+      x: playerStaticConfig.spawnX,
+      z: playerStaticConfig.spawnZ,
+    };
+
     onBootPhase?.("checking-webgpu");
     onBootPhase?.("creating-renderer");
 
@@ -77,6 +106,7 @@ export class GameApp implements RuntimeAppSession {
 
     const rawInputState = createRawInputState();
     this.inputManager = new InputManager(this.gameRenderer.domElement, rawInputState);
+    this.inputManager.setPointerLockEnabled(this.gameplayEnabled);
 
     this.resources = {
       time: createTimeResource(),
@@ -108,6 +138,12 @@ export class GameApp implements RuntimeAppSession {
   }
 
   protected registerSystems(): void {
+    if (!this.gameplayEnabled) {
+      // EN: Editor runtimes reuse rendering and terrain without registering player simulation.
+      // 中文: 编辑器运行时复用渲染和地形，但不注册玩家模拟。
+      return;
+    }
+
     this.scheduler.register("input", "input", inputSystem);
     this.scheduler.register("cameraMode", "gameplay", cameraModeSystem);
     this.scheduler.register("look", "gameplay", lookSystem);
@@ -125,12 +161,14 @@ export class GameApp implements RuntimeAppSession {
 
     await this.resources.runtime.terrain.initGpu(
       this.gameRenderer.renderer,
-      playerStaticConfig.spawnX,
-      playerStaticConfig.spawnZ,
+      this.initialTerrainTarget.x,
+      this.initialTerrainTarget.z,
     );
     if (this.disposed) return;
 
-    createPlayer(this.ecs, this.resources);
+    if (this.gameplayEnabled) {
+      createPlayer(this.ecs, this.resources);
+    }
 
     await this.initRuntimeExtensions();
     if (this.disposed) return;
@@ -183,8 +221,10 @@ export class GameApp implements RuntimeAppSession {
 
     this.gameRenderer.camera.position.copy(originalPos);
     this.gameRenderer.camera.quaternion.copy(originalQuat);
-    cameraSystem(this.ecs.world, this.resources);
-    avatarSystem(this.ecs.world);
+    if (this.gameplayEnabled) {
+      cameraSystem(this.ecs.world, this.resources);
+      avatarSystem(this.ecs.world);
+    }
     this.gameRenderer.renderer.render(this.gameRenderer.scene, this.gameRenderer.camera);
   }
 
@@ -254,11 +294,69 @@ export class GameApp implements RuntimeAppSession {
     await this.afterLoadMapData(mapData);
   }
 
+  async loadTerrainTexturesFromMapDirectory(
+    mapDirectoryUrl: string,
+    textureDefinition: TextureDefinition | null,
+  ): Promise<void> {
+    const normalizedMapDirectoryUrl = normalizeDirectoryUrl(mapDirectoryUrl);
+    const textureArrays = await TerrainTextureArrays.getInstance().loadFromDefinition(
+      normalizedMapDirectoryUrl,
+      textureDefinition,
+    );
+    const splatMapTextures = textureDefinition
+      ? await this.loadSplatMapTextures(normalizedMapDirectoryUrl, getSplatMapCount(textureDefinition))
+      : [];
+
+    this.resources.runtime.terrain.setTextureData(textureArrays, splatMapTextures);
+  }
+
+  private loadSplatMapTextures(mapDirectoryUrl: string, splatMapCount: number): Promise<(Texture | null)[]> {
+    return Promise.all(
+      Array.from({ length: splatMapCount }, (_, index) => {
+        const url = new URL(getSplatMapFilename(index), mapDirectoryUrl).href;
+        return this.loadSplatMapTexture(url);
+      }),
+    );
+  }
+
+  private loadSplatMapTexture(url: string): Promise<Texture | null> {
+    return new Promise((resolve) => {
+      this.textureLoader.load(
+        url,
+        (texture) => {
+          texture.colorSpace = NoColorSpace;
+          texture.magFilter = LinearFilter;
+          texture.minFilter = LinearFilter;
+          texture.wrapS = ClampToEdgeWrapping;
+          texture.wrapT = ClampToEdgeWrapping;
+          texture.generateMipmaps = false;
+          texture.needsUpdate = true;
+          resolve(texture);
+        },
+        undefined,
+        (error) => {
+          console.warn(`[GameApp] Failed to load splat map: ${url}`, error);
+          resolve(null);
+        },
+      );
+    });
+  }
+
   markMapDataSaved(): void {
     this.resources.runtime.terrain.markMapDataSaved();
   }
 
-  protected async afterLoadMapData(_mapData: MapData): Promise<void> {}
+  protected async afterLoadMapData(_mapData: MapData): Promise<void> {
+    if (this.gameplayEnabled) {
+      this.snapPlayersToTerrain();
+    }
+  }
+
+  private snapPlayersToTerrain(): void {
+    for (const [, transform] of this.ecs.world.query("transform", "player")) {
+      transform.y = this.resources.runtime.terrain.heightAt(transform.x, transform.z);
+    }
+  }
 
   updateSettings(patch: GameSettingsPatch): void {
     applySettingsPatch(this.settings, patch);

@@ -70,17 +70,12 @@ export function TerrainEditorTab({
     terrainEditor?.setStickyDrag(enabled);
   };
 
-  const handleToggleMode = () => {
+  const handleSelectTerrain = () => {
     if (!canEdit) return;
 
-    if (isEditing) {
-      terrainEditor?.setMode("play");
-      onActiveEditorChange("none");
-    } else {
-      terrainEditor?.setMode("edit");
-      onActiveEditorChange("terrain");
-      onClose?.();
-    }
+    terrainEditor?.setMode("edit");
+    onActiveEditorChange("terrain");
+    onClose?.();
   };
 
   return (
@@ -93,21 +88,21 @@ export function TerrainEditorTab({
           </div>
         </div>
         <button
-          onClick={handleToggleMode}
-          disabled={!canEdit}
+          onClick={handleSelectTerrain}
+          disabled={!canEdit || isEditing}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             isEditing
-              ? "bg-green-600 hover:bg-green-700 text-white"
+              ? "bg-green-600 text-white cursor-default"
               : canEdit
                 ? "bg-blue-600 hover:bg-blue-700 text-white"
                 : "bg-gray-700 text-gray-500 cursor-not-allowed"
           }`}
         >
           {isEditing
-            ? "⬛ Stop Editing"
+            ? "Editing Terrain"
             : canEdit
-              ? "🏔️ Start Editing"
-              : "📁 Open Project First"}
+              ? "Edit Terrain"
+              : "Open Project First"}
         </button>
       </div>
 

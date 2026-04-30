@@ -54,14 +54,14 @@ export class EditorOrbitCamera {
   }
 
   /**
-   * Initialize camera position from player position.
-   * 从玩家位置初始化相机位置
+   * Frame the editor camera around a terrain target without relying on a player entity.
+   * 围绕地形目标构图编辑器相机，不依赖玩家实体。
    */
-  initFromPlayer(playerX: number, playerY: number, playerZ: number): void {
-    this.target.set(playerX, playerY, playerZ);
-    this.spherical.radius = 100;
+  frameTarget(targetX: number, targetY: number, targetZ: number, radius: number): void {
+    this.target.set(targetX, targetY, targetZ);
+    this.spherical.radius = MathUtils.clamp(radius, this.minRadius, this.maxRadius);
     this.spherical.phi = Math.PI / 3;
-    this.spherical.theta = 0;
+    this.spherical.theta = Math.PI / 4;
   }
 
   /**

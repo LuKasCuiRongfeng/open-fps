@@ -1,9 +1,5 @@
 const BASE64_CHUNK_SIZE = 0x8000;
 
-export function getSplatMapFilename(index: number): string {
-  return index === 0 ? "splatmap.png" : `splatmap_${index}.png`;
-}
-
 export function uint8ArrayToBase64(bytes: Uint8Array): string {
   const chunks: string[] = [];
 

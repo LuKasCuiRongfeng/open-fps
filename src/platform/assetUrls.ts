@@ -14,6 +14,10 @@ function loadCore(): Promise<TauriCore> {
 }
 
 export async function resolveAssetUrl(path: string): Promise<string> {
+  if (/^[a-z]+:\/\//i.test(path)) {
+    return path;
+  }
+
   if (!isDesktopRuntime()) {
     return path;
   }

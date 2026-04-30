@@ -36,15 +36,11 @@ export function TextureEditorTab({
   const isEditing = activeEditor === "texture";
   const layerNames = textureEditor?.layerNames ?? [];
 
-  const handleToggleMode = () => {
+  const handleSelectTexture = () => {
     if (!canEdit || !editingEnabled) return;
 
-    if (isEditing) {
-      onActiveEditorChange("none");
-    } else {
-      onActiveEditorChange("texture");
-      onClose?.();
-    }
+    onActiveEditorChange("texture");
+    onClose?.();
   };
 
   const canStartEditing = canEdit && editingEnabled;
@@ -63,23 +59,23 @@ export function TextureEditorTab({
           </div>
         </div>
         <button
-          onClick={handleToggleMode}
-          disabled={!canStartEditing}
+          onClick={handleSelectTexture}
+          disabled={!canStartEditing || isEditing}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             isEditing
-              ? "bg-purple-600 hover:bg-purple-700 text-white"
+              ? "bg-purple-600 text-white cursor-default"
               : canStartEditing
                 ? "bg-blue-600 hover:bg-blue-700 text-white"
                 : "bg-gray-700 text-gray-500 cursor-not-allowed"
           }`}
         >
           {isEditing
-            ? "⬛ Stop Editing"
+            ? "Editing Texture"
             : canStartEditing
-              ? "🎨 Start Editing"
+              ? "Edit Texture"
               : !canEdit
-                ? "📁 Open Project First"
-                : "📄 Add texture.json"}
+                ? "Open Project First"
+                : "Add texture.json"}
         </button>
       </div>
 

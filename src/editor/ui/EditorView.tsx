@@ -103,9 +103,7 @@ export default function EditorView() {
 		setActiveEditor(editor);
 		terrainEditor?.endBrush();
 		textureEditor?.endBrush();
-		if (terrainEditor) {
-			terrainEditor.setMode(editor !== "none" ? "edit" : "play");
-		}
+		terrainEditor?.setMode("edit");
 		const app = appRef.current;
 		if (app) {
 			app.setActiveEditorType(editor === "none" ? null : editor);
@@ -116,10 +114,10 @@ export default function EditorView() {
 		<div className="relative h-screen w-screen overflow-hidden bg-black text-white">
 			<div ref={hostRef} className="h-full w-full" />
 
-			{activeEditor !== "none" && (
+			{!loading && !error && !editorWorkspace.showProjectScreen && (
 				<div
 					ref={overlayRef}
-					className="absolute inset-0 cursor-crosshair"
+					className={`absolute inset-0 ${activeEditor === "none" ? "cursor-grab" : "cursor-crosshair"}`}
 					onMouseDown={handleMouseDown}
 					onMouseUp={handleMouseUp}
 				/>
@@ -129,7 +127,7 @@ export default function EditorView() {
 				visible={!loading && !error}
 				isEditorMode={activeEditor !== "none"}
 				getFps={() => appRef.current?.getFps() ?? 0}
-				getPlayerPosition={() => appRef.current?.getPlayerPosition() ?? null}
+				getPlayerPosition={() => null}
 				getMousePosition={() => appRef.current?.getMousePosition() ?? null}
 			/>
 

@@ -18,6 +18,10 @@ export const LAYERS_PER_SPLAT_MAP = 4;
  */
 export const MAX_SPLAT_MAPS = 4;
 
+export function getSplatMapFilename(index: number): string {
+  return index === 0 ? "splatmap.png" : `splatmap_${index}.png`;
+}
+
 /**
  * PBR texture layer definition.
  * Each layer can have multiple maps for physically-based rendering.

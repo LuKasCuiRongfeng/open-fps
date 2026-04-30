@@ -7,10 +7,10 @@ import {
   type TextureDefinition,
   type SplatMapData,
   createDefaultSplatMap,
+  getSplatMapFilename,
 } from "@game/world/terrain/TextureData";
 import {
   base64ToUint8Array,
-  getSplatMapFilename,
   uint8ArrayToBase64,
 } from "./storageUtils";
 

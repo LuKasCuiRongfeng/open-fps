@@ -6,7 +6,7 @@ import { BrushIndicatorSystem, type EditorBrushInfo, type ActiveEditorType } fro
 import { TerrainEditor } from "@editor/runtime/terrain/TerrainEditor";
 import { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import { TerrainTextureArrays } from "@game/world/terrain/TerrainTextureArrays";
-import type { MapData } from "@project/MapData";
+import { parseChunkKey, type MapData } from "@project/MapData";
 import {
   applyEditorSettingsPatch,
   cloneEditorSettings,
@@ -31,18 +31,17 @@ export class EditorApp extends GameApp implements EditorAppSession {
   }
 
   constructor(container: HTMLElement, onBootPhase?: (phase: GameBootPhase) => void) {
-    super(container, onBootPhase);
+    super(container, onBootPhase, {
+      gameplayEnabled: false,
+      initialTerrainTarget: { x: 0, z: 0 },
+    });
 
     this.brushIndicator.attach(this.scene);
-    this.terrainEditor.setOnModeChange((mode) => {
-      this.inputManager.setPointerLockEnabled(mode === "play");
-      if (mode === "edit") {
-        const pos = this.getPlayerPosition();
-        if (pos) {
-          this.terrainEditor.initCameraFromPlayer(pos.x, pos.y, pos.z);
-        }
-      }
-    });
+    this.terrainEditor.setMode("edit");
+  }
+
+  override getPlayerPosition(): null {
+    return null;
   }
 
   getTerrainEditor(): TerrainEditor {
@@ -106,6 +105,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
   protected override async initRuntimeExtensions(): Promise<void> {
     const splatWorldSize = terrainConfig.worldBounds.halfSizeMeters * 2;
     await this.textureEditor.init(this.renderer, splatWorldSize);
+    this.frameEditorCameraAt(0, 0, terrainConfig.streaming.chunkSizeMeters * 4);
   }
 
   override getSettingsSnapshot(): EditorAppSettings {
@@ -158,10 +158,6 @@ export class EditorApp extends GameApp implements EditorAppSession {
   }
 
   protected override getMousePositionInternal(): { x: number; y: number; z: number; valid: boolean } | null {
-    if (this.terrainEditor.mode !== "edit") {
-      return null;
-    }
-
     if (this.terrainEditor.brushTargetValid) {
       const x = this.terrainEditor.brushTargetX;
       const z = this.terrainEditor.brushTargetZ;
@@ -181,14 +177,10 @@ export class EditorApp extends GameApp implements EditorAppSession {
 
   protected override async afterLoadMapData(mapData: MapData): Promise<void> {
     this.terrainEditor.loadMapData(mapData);
+    this.frameEditorCameraForMap(mapData);
   }
 
   protected override runSimulationStep(): void {
-    if (this.terrainEditor.mode === "play") {
-      super.runSimulationStep();
-      return;
-    }
-
     this.terrainEditor.applyCameraState(this.camera);
   }
 
@@ -204,12 +196,8 @@ export class EditorApp extends GameApp implements EditorAppSession {
   }
 
   protected override resolveTerrainUpdateTarget(): { x: number; z: number } | null {
-    if (this.terrainEditor.mode === "edit") {
-      const target = this.terrainEditor.getCameraTarget();
-      return { x: target.x, z: target.z };
-    }
-
-    return super.resolveTerrainUpdateTarget();
+    const target = this.terrainEditor.getCameraTarget();
+    return { x: target.x, z: target.z };
   }
 
   protected override beforeDispose(): void {
@@ -218,8 +206,50 @@ export class EditorApp extends GameApp implements EditorAppSession {
     this.brushIndicator.dispose();
   }
 
+  private frameEditorCameraForMap(mapData: MapData): void {
+    const frame = this.resolveMapCameraFrame(mapData);
+    this.frameEditorCameraAt(frame.x, frame.z, frame.radius);
+  }
+
+  private frameEditorCameraAt(x: number, z: number, radius: number): void {
+    // EN: The editor has no player, so the camera must frame terrain from map data instead of spawn state.
+    // 中文: 编辑器没有玩家，因此相机必须根据地图数据构图，而不是依赖出生状态。
+    const y = this.resources.runtime.terrain.heightAt(x, z);
+    this.terrainEditor.frameCameraAt(x, y, z, radius);
+    this.terrainEditor.applyCameraState(this.camera);
+  }
+
+  private resolveMapCameraFrame(mapData: MapData): { x: number; z: number; radius: number } {
+    const keys = Object.keys(mapData.chunks);
+    if (keys.length === 0) {
+      return { x: 0, z: 0, radius: terrainConfig.streaming.chunkSizeMeters * 4 };
+    }
+
+    let minChunkX = Number.POSITIVE_INFINITY;
+    let maxChunkX = Number.NEGATIVE_INFINITY;
+    let minChunkZ = Number.POSITIVE_INFINITY;
+    let maxChunkZ = Number.NEGATIVE_INFINITY;
+
+    for (const key of keys) {
+      const { cx, cz } = parseChunkKey(key);
+      minChunkX = Math.min(minChunkX, cx);
+      maxChunkX = Math.max(maxChunkX, cx);
+      minChunkZ = Math.min(minChunkZ, cz);
+      maxChunkZ = Math.max(maxChunkZ, cz);
+    }
+
+    const chunkSize = mapData.chunkSizeMeters;
+    const spanX = (maxChunkX - minChunkX + 1) * chunkSize;
+    const spanZ = (maxChunkZ - minChunkZ + 1) * chunkSize;
+    const x = ((minChunkX + maxChunkX + 1) * chunkSize) / 2;
+    const z = ((minChunkZ + maxChunkZ + 1) * chunkSize) / 2;
+    const radius = Math.max(terrainConfig.streaming.chunkSizeMeters * 4, Math.hypot(spanX, spanZ) * 0.45);
+
+    return { x, z, radius };
+  }
+
   private updateBrushIndicator(): void {
-    if (this.terrainEditor.mode !== "edit" || !this.activeEditorType) {
+    if (!this.activeEditorType) {
       this.brushIndicator.hide();
       return;
     }

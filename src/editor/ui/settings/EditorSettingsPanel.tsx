@@ -46,14 +46,14 @@ export function EditorSettingsPanel({
   onReset,
   onClose,
 }: EditorSettingsPanelProps) {
-  const [tab, setTab] = useState<EditorSettingsTabId>("help");
+  const [tab, setTab] = useState<EditorSettingsTabId>("file");
 
   useEffect(() => {
     if (EDITOR_SETTINGS_TABS.some((entry) => entry.id === tab)) {
       return;
     }
 
-    setTab(EDITOR_SETTINGS_TABS[0]?.id ?? "help");
+    setTab(EDITOR_SETTINGS_TABS[0]?.id ?? "file");
   }, [tab]);
 
   return (

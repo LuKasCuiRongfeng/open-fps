@@ -18,6 +18,7 @@ import {
   computeLayerAssignments,
   getSplatMapCount,
 } from "./TextureData";
+import { resolveTerrainAssetPath } from "./assetPaths";
 
 /**
  * Texture array result - all PBR maps packed into texture arrays.
@@ -213,7 +214,7 @@ export class TerrainTextureArrays {
     relativePath: string,
     isSRGB: boolean,
   ): Promise<Uint8Array> {
-    const url = await resolveAssetUrl(`${projectPath}/${relativePath}`);
+    const url = await resolveAssetUrl(resolveTerrainAssetPath(projectPath, relativePath));
 
     try {
       const response = await fetch(url);
