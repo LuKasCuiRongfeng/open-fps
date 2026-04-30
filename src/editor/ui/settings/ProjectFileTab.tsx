@@ -2,14 +2,34 @@
 // ProjectFileTab：编辑器模式下的项目文件操作标签
 
 import { useEffect, useState } from "react";
+import { CheckCircle2, CircleAlert, FolderOpen, Layers, Plus, Save, SaveAll } from "lucide-react";
 import { getPlatform } from "@/platform";
 import type { EditorAppSession } from "@editor/app";
 import type { TerrainEditor } from "@editor/runtime";
 import type { MapData } from "@project/MapData";
 import type { EditorAppSettings } from "@editor/settings";
 import type { EditorWorkspaceController } from "../hooks/useEditorWorkspace";
+import {
+  ReadonlyField,
+  SettingBadge,
+  SettingRow,
+  SettingsButton,
+  SettingsPage,
+  SettingsSection,
+} from "@ui/settings/SettingsLayout";
+import { Input } from "@ui/components/ui/input";
 
 const platform = getPlatform();
+
+function getStatusTone(statusMessage: string): "success" | "warning" | "danger" {
+  if (statusMessage.startsWith("✓")) return "success";
+  if (statusMessage.toLowerCase().includes("cancelled")) return "warning";
+  return "danger";
+}
+
+function getCleanStatusMessage(statusMessage: string): string {
+  return statusMessage.replace(/^[✓✗⚠]\s*/, "");
+}
 
 type ProjectFileTabProps = {
   editorApp: EditorAppSession | null;
@@ -38,6 +58,8 @@ export function ProjectFileTab({
   const dirty = terrainDirty || textureDirty;
   const hasProject = editorWorkspace.currentProjectPath !== null;
   const mapList = editorWorkspace.currentProjectMetadata?.maps ?? [];
+  const statusTone = statusMessage ? getStatusTone(statusMessage) : "success";
+  const StatusIcon = statusTone === "success" ? CheckCircle2 : CircleAlert;
 
   useEffect(() => {
     setEditableProjectName(editorWorkspace.currentProjectMetadata?.name ?? "Untitled Project");
@@ -75,8 +97,8 @@ export function ProjectFileTab({
       });
       setStatusMessage(result.message);
       return result.ok;
-    } catch (e) {
-      setStatusMessage(`✗ Save failed: ${e}`);
+    } catch (error) {
+      setStatusMessage(`Save failed: ${error}`);
       return false;
     } finally {
       setProcessing(false);
@@ -110,8 +132,8 @@ export function ProjectFileTab({
         forceSaveAs: true,
       });
       setStatusMessage(result.message);
-    } catch (e) {
-      setStatusMessage(`✗ Save failed: ${e}`);
+    } catch (error) {
+      setStatusMessage(`Save failed: ${error}`);
     } finally {
       setProcessing(false);
     }
@@ -144,8 +166,8 @@ export function ProjectFileTab({
         onApplySettings,
       });
       setStatusMessage(result.message);
-    } catch (e) {
-      setStatusMessage(`✗ Open failed: ${e}`);
+    } catch (error) {
+      setStatusMessage(`Open failed: ${error}`);
     } finally {
       setProcessing(false);
     }
@@ -181,8 +203,8 @@ export function ProjectFileTab({
         onApplySettings,
       });
       setStatusMessage(result.message);
-    } catch (e) {
-      setStatusMessage(`✗ Open failed: ${e}`);
+    } catch (error) {
+      setStatusMessage(`Open failed: ${error}`);
     } finally {
       setProcessing(false);
     }
@@ -203,145 +225,152 @@ export function ProjectFileTab({
         createNewMap: true,
       });
       setStatusMessage(result.message);
-    } catch (e) {
-      setStatusMessage(`✗ Save failed: ${e}`);
+    } catch (error) {
+      setStatusMessage(`Save failed: ${error}`);
     } finally {
       setProcessing(false);
     }
   };
 
   return (
-    <div className="space-y-5">
-      <div className="panel-muted-surface rounded-md border p-3">
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-content-muted">Current Project</div>
-          {dirty && <span className="text-xs text-status-warning">● Unsaved changes</span>}
-        </div>
-        <div className="mt-2">
-          <label className="mb-1 block text-xs text-content-muted">Project Name</label>
-          <input
+    <SettingsPage>
+      <SettingsSection
+        title="Project"
+        description="Current editable workspace and map metadata."
+        actions={<SettingBadge tone={dirty ? "warning" : "success"}>{dirty ? "Unsaved" : "Clean"}</SettingBadge>}
+      >
+        <SettingRow label="Project Name">
+          <Input
             type="text"
             value={editableProjectName}
             onChange={(e) => setEditableProjectName(e.target.value)}
             placeholder="Untitled Project"
-            className="field-surface w-full rounded-md border px-3 py-1.5 text-sm outline-none transition-colors focus:border-focus-ring"
           />
-        </div>
-        <div className="mt-2">
-          <label className="mb-1 block text-xs text-content-muted">Current Map Name</label>
-          <input
+        </SettingRow>
+        <SettingRow label="Map Name">
+          <Input
             type="text"
             value={editableMapName}
             onChange={(e) => handleMapNameChange(e.target.value)}
             placeholder="Untitled Map"
-            className="field-surface w-full rounded-md border px-3 py-1.5 text-sm outline-none transition-colors focus:border-focus-ring"
           />
-        </div>
-        <div className="mt-2 text-xs text-content-muted">
-          Mode: {canEdit ? "✓ Project Open (Editable)" : "⚠ Procedural (View Only)"}
-        </div>
-        {editorWorkspace.currentProjectPath && (
-          <div className="mt-1 truncate text-xs text-content-muted" title={editorWorkspace.currentProjectPath}>
-            📁 {editorWorkspace.currentProjectPath}
-          </div>
-        )}
-      </div>
+        </SettingRow>
+        <SettingRow label="Mode">
+          <SettingBadge tone={canEdit ? "success" : "warning"}>{canEdit ? "Editable Project" : "Procedural View"}</SettingBadge>
+        </SettingRow>
+        <SettingRow label="Project Path" align="start">
+          <ReadonlyField>{editorWorkspace.currentProjectPath ?? "No project selected"}</ReadonlyField>
+        </SettingRow>
+      </SettingsSection>
 
-      <div>
-        <div className="mb-3 text-sm font-semibold">Project Operations</div>
-        <div className="grid grid-cols-2 gap-2">
-          <button
+      <SettingsSection title="Operations">
+        <div className="grid gap-2 py-2 sm:grid-cols-3">
+          <SettingsButton
+            Icon={FolderOpen}
             onClick={handleOpenProject}
             disabled={processing}
-            className="rounded-md bg-accent-secondary px-3 py-2 text-sm font-medium text-accent-secondary-content transition-colors hover:bg-accent-secondary-hover disabled:bg-surface-panel-strong disabled:text-content-disabled"
+            tone="secondary"
+            fullWidth
           >
-            📂 Open Project...
-          </button>
-          <button
+            Open
+          </SettingsButton>
+          <SettingsButton
+            Icon={Save}
             onClick={handleSave}
             disabled={processing}
-            className="rounded-md bg-accent-primary px-3 py-2 text-sm font-medium text-accent-primary-content transition-colors hover:bg-accent-primary-hover disabled:bg-surface-panel-strong disabled:text-content-disabled"
+            tone="primary"
+            fullWidth
           >
-            💾 {hasProject ? "Save" : "Save as Project..."}
-          </button>
-          <button
+            {hasProject ? "Save" : "Save As"}
+          </SettingsButton>
+          <SettingsButton
+            Icon={SaveAll}
             onClick={handleSaveAs}
             disabled={processing}
-            className="col-span-2 rounded-md border border-stroke-default bg-surface-control px-3 py-2 text-sm font-medium text-content-secondary transition-colors hover:bg-surface-control-hover hover:text-content-primary disabled:bg-surface-panel-strong disabled:text-content-disabled"
+            fullWidth
           >
-            📁 Save As...
-          </button>
+            Save Copy
+          </SettingsButton>
         </div>
-      </div>
+      </SettingsSection>
 
       {statusMessage && (
-        <div
-          className={`text-sm ${statusMessage.startsWith("✓") ? "text-status-success" : statusMessage.includes("cancelled") ? "text-status-warning" : "text-status-danger"}`}
-        >
-          {statusMessage}
-        </div>
+        <SettingsSection title="Last Operation">
+          <SettingRow label="Status">
+            <div className={`flex items-center gap-2 text-xs ${statusTone === "success" ? "text-status-success" : statusTone === "warning" ? "text-status-warning" : "text-status-danger"}`}>
+              <StatusIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span className="min-w-0 wrap-break-word">{getCleanStatusMessage(statusMessage)}</span>
+            </div>
+          </SettingRow>
+        </SettingsSection>
       )}
 
-      <div className="panel-muted-surface space-y-3 rounded-md border p-3">
-        <div className="flex items-center justify-between">
-          <div className="text-sm font-semibold">Maps</div>
-          {editorWorkspace.currentMapId && (
-            <span className="text-xs text-content-muted">Current: {editorWorkspace.currentMapId}</span>
-          )}
-        </div>
-
-        <div className="space-y-2">
+      <SettingsSection
+        title="Maps"
+        actions={editorWorkspace.currentMapId && <SettingBadge tone="primary">{editorWorkspace.currentMapId}</SettingBadge>}
+      >
+        <div className="py-2">
           {mapList.length > 0 ? (
-            mapList.map((mapRecord) => {
-              const active = mapRecord.id === editorWorkspace.currentMapId;
-              return (
-                <button
-                  key={mapRecord.id}
-                  onClick={() => void handleOpenMap(mapRecord.id)}
-                  disabled={processing || active}
-                  className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors ${
-                    active
-                      ? "border-accent-primary/45 bg-accent-primary/15 text-content-primary"
-                      : "border-stroke-subtle bg-surface-control text-content-secondary hover:border-stroke-default hover:bg-surface-control-hover hover:text-content-primary"
-                  } disabled:cursor-not-allowed disabled:opacity-70`}
-                >
-                  <span>{mapRecord.name}</span>
-                  <span className="text-xs text-content-muted">{mapRecord.id}</span>
-                </button>
-              );
-            })
+            <div className="space-y-1.5">
+              {mapList.map((mapRecord) => {
+                const active = mapRecord.id === editorWorkspace.currentMapId;
+                return (
+                  <button
+                    key={mapRecord.id}
+                    onClick={() => void handleOpenMap(mapRecord.id)}
+                    disabled={processing || active}
+                    className={`flex h-8 w-full items-center justify-between gap-2 rounded-md border px-2 text-left text-xs transition-colors ${
+                      active
+                        ? "border-accent-primary/45 bg-accent-primary/15 text-content-primary"
+                        : "border-stroke-subtle bg-surface-control text-content-secondary hover:border-stroke-default hover:bg-surface-control-hover hover:text-content-primary"
+                    } disabled:cursor-not-allowed disabled:opacity-70`}
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Layers className="h-3.5 w-3.5 shrink-0 text-content-muted" aria-hidden="true" />
+                      <span className="truncate">{mapRecord.name}</span>
+                    </span>
+                    <span className="shrink-0 font-mono text-[11px] text-content-muted">{mapRecord.id}</span>
+                  </button>
+                );
+              })}
+            </div>
           ) : (
             <div className="text-xs text-content-muted">No maps saved yet.</div>
           )}
         </div>
 
-        <div className="grid grid-cols-[1fr_auto] gap-2">
-          <input
-            type="text"
-            value={newMapName}
-            onChange={(e) => setNewMapName(e.target.value)}
-            placeholder="New map name"
-            disabled={!hasProject || processing}
-            className="field-surface w-full rounded-md border px-3 py-1.5 text-sm outline-none transition-colors focus:border-focus-ring disabled:text-content-disabled"
-          />
-          <button
-            onClick={handleCreateMap}
-            disabled={!hasProject || processing}
-            className="rounded-md bg-status-success px-3 py-2 text-sm font-medium text-status-success-content transition-colors hover:bg-status-success-hover disabled:bg-surface-panel-strong disabled:text-content-disabled"
-          >
-            New Map
-          </button>
-        </div>
-      </div>
+        <SettingRow label="Create Map">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+            <Input
+              type="text"
+              value={newMapName}
+              onChange={(e) => setNewMapName(e.target.value)}
+              placeholder="New map name"
+              disabled={!hasProject || processing}
+            />
+            <SettingsButton
+              Icon={Plus}
+              onClick={handleCreateMap}
+              disabled={!hasProject || processing}
+              tone="success"
+            >
+              New
+            </SettingsButton>
+          </div>
+        </SettingRow>
+      </SettingsSection>
 
-      <div className="rounded-lg border border-status-info/35 bg-status-info/15 p-3 text-xs text-content-secondary">
-        <strong>Tips:</strong>
-        <ul className="mt-1 list-disc list-inside space-y-1">
-          <li>Each project stores shared settings in the project root.</li>
-          <li>Each map stores its own terrain and texture data under maps/&lt;map-id&gt;.</li>
-          <li>Create a new map from the current editor state, then switch maps from the list above.</li>
-        </ul>
-      </div>
-    </div>
+      <SettingsSection title="Project Files">
+        <SettingRow label="Project Data">
+          <ReadonlyField>project.json</ReadonlyField>
+        </SettingRow>
+        <SettingRow label="Runtime Settings">
+          <ReadonlyField>settings.json</ReadonlyField>
+        </SettingRow>
+        <SettingRow label="Map Directory">
+          <ReadonlyField>maps/&lt;map-id&gt;/</ReadonlyField>
+        </SettingRow>
+      </SettingsSection>
+    </SettingsPage>
   );
 }

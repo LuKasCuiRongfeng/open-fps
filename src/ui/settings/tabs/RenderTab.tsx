@@ -3,6 +3,7 @@
 
 import { RangeField } from "../RangeField";
 import type { GameSettings, GameSettingsPatch } from "@game/settings";
+import { ReadonlyField, SettingRow, SettingsPage, SettingsSection } from "../SettingsLayout";
 
 type RenderTabProps = {
   settings: GameSettings;
@@ -17,37 +18,43 @@ export function RenderTab({ settings, onPatch }: RenderTabProps) {
   const renderHeight = Math.round(window.innerHeight * effectivePixelRatio);
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <RangeField
-        label="Max Pixel Ratio"
-        value={settings.render.maxPixelRatio}
-        min={0.5}
-        max={3}
-        step={0.05}
-        onChange={(v) => onPatch({ render: { maxPixelRatio: v } })}
-      />
-      <RangeField
-        label="Render Scale"
-        value={settings.render.renderScale}
-        min={0.25}
-        max={1}
-        step={0.05}
-        onChange={(v) => onPatch({ render: { renderScale: v } })}
-      />
-      <div className="panel-muted-surface col-span-2 rounded-md border p-3 text-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-content-muted">Effective Resolution / 有效分辨率</span>
-          <span className="font-mono text-content-primary">{renderWidth} × {renderHeight}</span>
-        </div>
-        <div className="mt-1 text-xs text-content-muted">
-          Window: {window.innerWidth} × {window.innerHeight} • DPR: {window.devicePixelRatio.toFixed(2)} • Effective: {effectivePixelRatio.toFixed(2)}
-        </div>
-      </div>
-      <div className="col-span-2 text-xs text-content-muted">
-        💡 Lower render scale for better performance on high-resolution displays (4K).
-        <br />
-        降低渲染缩放可在高分辨率显示器 (4K) 上获得更好的性能。
-      </div>
-    </div>
+    <SettingsPage>
+      <SettingsSection title="Output Scaling" description="Controls the renderer backbuffer size without changing the editor viewport.">
+        <RangeField
+          label="Max Pixel Ratio"
+          description="Caps device pixel ratio before render scale is applied."
+          value={settings.render.maxPixelRatio}
+          min={0.5}
+          max={3}
+          step={0.05}
+          onChange={(value) => onPatch({ render: { maxPixelRatio: value } })}
+        />
+        <RangeField
+          label="Render Scale"
+          description="Lower values reduce GPU cost on dense displays."
+          value={settings.render.renderScale}
+          min={0.25}
+          max={1}
+          step={0.05}
+          valueLabel={`${Math.round(settings.render.renderScale * 100)}%`}
+          onChange={(value) => onPatch({ render: { renderScale: value } })}
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Diagnostics">
+        <SettingRow label="Output Resolution">
+          <ReadonlyField align="right">{renderWidth} x {renderHeight}</ReadonlyField>
+        </SettingRow>
+        <SettingRow label="Window Size">
+          <ReadonlyField align="right">{window.innerWidth} x {window.innerHeight}</ReadonlyField>
+        </SettingRow>
+        <SettingRow label="Device Pixel Ratio">
+          <ReadonlyField align="right">{window.devicePixelRatio.toFixed(2)}</ReadonlyField>
+        </SettingRow>
+        <SettingRow label="Effective Ratio">
+          <ReadonlyField align="right">{effectivePixelRatio.toFixed(2)}</ReadonlyField>
+        </SettingRow>
+      </SettingsSection>
+    </SettingsPage>
   );
 }

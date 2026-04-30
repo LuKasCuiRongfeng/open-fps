@@ -63,6 +63,7 @@ export function EditorSettingsPanel({
       subtitle="Applies immediately"
       tabs={EDITOR_SETTINGS_TABS}
       activeTab={tab}
+      variant="sidebar"
       onTabChange={setTab}
       onReset={onReset}
       onClose={onClose}

@@ -4,13 +4,16 @@
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import type { ActiveEditorType } from "./TerrainEditorTab";
 import { useTextureBrushSettings } from "../../hooks/useTextureBrushSettings";
+import { Layers, Paintbrush } from "lucide-react";
+import { RangeField } from "@ui/settings/RangeField";
+import { ReadonlyField, SettingBadge, SettingRow, SettingsButton, SettingsPage, SettingsSection } from "@ui/settings/SettingsLayout";
+import { Button } from "@ui/components/ui/button";
 
 type TextureEditorTabProps = {
   textureEditor: TextureEditor | null;
   terrainMode: "editable" | "procedural";
   activeEditor: ActiveEditorType;
   onActiveEditorChange: (editor: ActiveEditorType) => void;
-  onClose?: () => void;
 };
 
 export function TextureEditorTab({
@@ -18,7 +21,6 @@ export function TextureEditorTab({
   terrainMode,
   activeEditor,
   onActiveEditorChange,
-  onClose,
 }: TextureEditorTabProps) {
   const {
     selectedLayer,
@@ -40,144 +42,122 @@ export function TextureEditorTab({
     if (!canEdit || !editingEnabled) return;
 
     onActiveEditorChange("texture");
-    onClose?.();
   };
 
   const canStartEditing = canEdit && editingEnabled;
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm font-semibold">Texture Painting</div>
-          <div className="text-xs text-content-muted">
-            {!canEdit
-              ? "Open a project to enable editing"
-              : !editingEnabled
-                ? "Add texture.json to enable"
-                : "Paint texture layers on terrain"}
-          </div>
-        </div>
-        <button
-          onClick={handleSelectTexture}
-          disabled={!canStartEditing || isEditing}
-          className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-            isEditing
-              ? "cursor-default bg-accent-secondary text-accent-secondary-content"
-              : canStartEditing
-                ? "bg-accent-primary text-accent-primary-content hover:bg-accent-primary-hover"
-                : "cursor-not-allowed bg-surface-panel-strong text-content-disabled"
-          }`}
+    <SettingsPage>
+      <SettingsSection
+        title="Mode"
+        description="Enables splatmap painting while keeping the settings sidebar open."
+        actions={<SettingBadge tone={isEditing ? "secondary" : canStartEditing ? "neutral" : "warning"}>{isEditing ? "Active" : canStartEditing ? "Ready" : "Locked"}</SettingBadge>}
+      >
+        <SettingRow
+          label="Texture Brush"
+          description={!canEdit ? "Open an editable project first." : !editingEnabled ? "Create texture.json to enable painting." : "Paint texture layers directly in the viewport."}
         >
-          {isEditing
-            ? "Editing Texture"
-            : canStartEditing
-              ? "Edit Texture"
-              : !canEdit
-                ? "Open Project First"
-                : "Add texture.json"}
-        </button>
-      </div>
+          <SettingsButton
+            Icon={Paintbrush}
+            onClick={handleSelectTexture}
+            disabled={!canStartEditing || isEditing}
+            tone={isEditing ? "secondary" : "primary"}
+          >
+            {isEditing
+              ? "Texture Active"
+              : canStartEditing
+                ? "Start Texture Brush"
+                : !canEdit
+                  ? "Open Project First"
+                  : "Add texture.json"}
+          </SettingsButton>
+        </SettingRow>
+      </SettingsSection>
 
       {canEdit && !editingEnabled && (
-        <div className="rounded-lg border border-status-warning/35 bg-status-warning/15 px-3 py-2 text-sm text-content-secondary">
-          Texture editing disabled. Create a <code className="rounded bg-surface-control px-1 text-status-warning">texture.json</code> file in your project to enable.
-        </div>
+        <SettingsSection title="Setup">
+          <SettingRow label="Missing File">
+            <div className="text-xs text-status-warning">Create texture.json in the project root to enable texture painting.</div>
+          </SettingRow>
+        </SettingsSection>
       )}
 
-      {isEditing && (
-        <>
-          {layerNames.length > 0 && (
-            <div>
-              <div className="text-sm font-semibold mb-3">Texture Layer</div>
-              <div className="grid grid-cols-2 gap-2">
-                {layerNames.map((name, index) => (
-                  <button
-                    key={name}
-                    onClick={() => setSelectedLayer(name)}
-                    className={`rounded-md px-3 py-2 text-xs font-medium transition-colors ${
-                      selectedLayer === name
-                        ? "bg-accent-secondary text-accent-secondary-content"
-                        : "bg-surface-control text-content-secondary hover:bg-surface-control-hover hover:text-content-primary"
-                    }`}
-                  >
-                    <span className="mr-1 text-content-muted">{index + 1}.</span>
-                    {name}
-                  </button>
-                ))}
-              </div>
+      <SettingsSection title="Layer" actions={<SettingBadge tone="secondary">{layerNames.length} layers</SettingBadge>}>
+        {layerNames.length > 0 ? (
+          <SettingRow label="Active Layer" align="start">
+            <div className="grid grid-cols-2 gap-1.5">
+              {layerNames.map((name, index) => (
+                <Button
+                  key={name}
+                  size="sm"
+                  variant={selectedLayer === name ? "secondary" : "default"}
+                  onClick={() => setSelectedLayer(name)}
+                  disabled={!isEditing}
+                  className="min-w-0 justify-start px-2"
+                >
+                  <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0 truncate">{index + 1}. {name}</span>
+                </Button>
+              ))}
             </div>
-          )}
+          </SettingRow>
+        ) : (
+          <SettingRow label="Active Layer">
+            <ReadonlyField>No layers defined</ReadonlyField>
+          </SettingRow>
+        )}
+      </SettingsSection>
 
-          {layerNames.length === 0 && (
-            <div className="text-sm italic text-content-muted">
-              No texture layers defined in texture.json
-            </div>
-          )}
+      <SettingsSection title="Brush" description="Splatmap brush parameters used by the active texture brush.">
+        <RangeField
+          label="Radius"
+          value={brushRadius}
+          min={1}
+          max={100}
+          step={1}
+          tone="secondary"
+          valueLabel={`${brushRadius.toFixed(0)} m`}
+          disabled={!isEditing}
+          onChange={setBrushRadius}
+        />
+        <RangeField
+          label="Strength"
+          value={brushStrength}
+          min={0.01}
+          max={1}
+          step={0.01}
+          tone="secondary"
+          valueLabel={`${(brushStrength * 100).toFixed(0)}%`}
+          disabled={!isEditing}
+          onChange={setBrushStrength}
+        />
+        <RangeField
+          label="Falloff"
+          value={brushFalloff}
+          min={0}
+          max={1}
+          step={0.01}
+          tone="secondary"
+          valueLabel={`${(brushFalloff * 100).toFixed(0)}%`}
+          disabled={!isEditing}
+          onChange={setBrushFalloff}
+        />
+      </SettingsSection>
 
-          <div className="space-y-3">
-            <div className="text-sm font-semibold">Brush Settings</div>
-
-            <div>
-              <div className="mb-1 flex items-center justify-between text-sm text-content-secondary">
-                <span>Radius</span>
-                <span>{brushRadius.toFixed(0)}m</span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="100"
-                step="1"
-                value={brushRadius}
-                onChange={(e) => setBrushRadius(Number(e.target.value))}
-                className="w-full accent-accent-secondary"
-              />
-            </div>
-
-            <div>
-              <div className="mb-1 flex items-center justify-between text-sm text-content-secondary">
-                <span>Strength</span>
-                <span>{(brushStrength * 100).toFixed(0)}%</span>
-              </div>
-              <input
-                type="range"
-                min="0.01"
-                max="1"
-                step="0.01"
-                value={brushStrength}
-                onChange={(e) => setBrushStrength(Number(e.target.value))}
-                className="w-full accent-accent-secondary"
-              />
-            </div>
-
-            <div>
-              <div className="mb-1 flex items-center justify-between text-sm text-content-secondary">
-                <span>Falloff</span>
-                <span>{(brushFalloff * 100).toFixed(0)}%</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={brushFalloff}
-                onChange={(e) => setBrushFalloff(Number(e.target.value))}
-                className="w-full accent-accent-secondary"
-              />
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-accent-secondary/35 bg-accent-secondary/15 p-3 text-xs text-content-secondary">
-            <strong>Controls:</strong>
-            <ul className="mt-1 list-disc list-inside space-y-1">
-              <li>Left click: Paint texture</li>
-              <li>Right drag: Rotate camera</li>
-              <li>Middle drag: Pan camera</li>
-              <li>Scroll: Zoom • Shift+Scroll: Brush radius</li>
-            </ul>
-          </div>
-        </>
-      )}
-    </div>
+      <SettingsSection title="Input">
+        <SettingRow label="Brush Stroke">
+          <ReadonlyField>Left button</ReadonlyField>
+        </SettingRow>
+        <SettingRow label="Orbit Camera">
+          <ReadonlyField>Right drag</ReadonlyField>
+        </SettingRow>
+        <SettingRow label="Pan Camera">
+          <ReadonlyField>Middle drag</ReadonlyField>
+        </SettingRow>
+        <SettingRow label="Brush Radius">
+          <ReadonlyField>Shift + scroll</ReadonlyField>
+        </SettingRow>
+      </SettingsSection>
+    </SettingsPage>
   );
 }

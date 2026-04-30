@@ -1,4 +1,14 @@
 import type { ReactNode } from "react";
+import {
+  Camera,
+  Clock3,
+  CloudSun,
+  FolderOpen,
+  Layers,
+  Monitor,
+  Mountain,
+  Palette,
+} from "lucide-react";
 import type { EditorAppSession } from "@editor/app";
 import type { TerrainEditor } from "@editor/runtime";
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
@@ -16,14 +26,14 @@ import { ProjectFileTab } from "./ProjectFileTab";
 import { TerrainEditorTab, TextureEditorTab, type ActiveEditorType } from "./tabs";
 
 export const EDITOR_SETTINGS_TABS = [
-  { id: "file", label: "File" },
-  { id: "appearance", label: "Appearance" },
-  { id: "terrainEditor", label: "Terrain Editor" },
-  { id: "textureEditor", label: "Texture Editor" },
-  { id: "render", label: "Render" },
-  { id: "camera", label: "Camera" },
-  { id: "time", label: "Time (日晷)" },
-  { id: "sky", label: "Sky" },
+  { id: "file", label: "File", Icon: FolderOpen },
+  { id: "appearance", label: "Appearance", Icon: Palette },
+  { id: "terrainEditor", label: "Terrain", Icon: Mountain },
+  { id: "textureEditor", label: "Texture", Icon: Layers },
+  { id: "render", label: "Render", Icon: Monitor },
+  { id: "camera", label: "Camera", Icon: Camera },
+  { id: "time", label: "Time", Icon: Clock3 },
+  { id: "sky", label: "Sky", Icon: CloudSun },
 ] as const;
 
 export type EditorSettingsTabId = (typeof EDITOR_SETTINGS_TABS)[number]["id"];
@@ -77,7 +87,6 @@ export const EDITOR_SETTINGS_TAB_REGISTRY: Record<EditorSettingsTabId, EditorSet
         terrainMode={props.terrainMode}
         activeEditor={props.activeEditor}
         onActiveEditorChange={props.onActiveEditorChange}
-        onClose={props.onClose}
       />
     ),
   },
@@ -90,7 +99,6 @@ export const EDITOR_SETTINGS_TAB_REGISTRY: Record<EditorSettingsTabId, EditorSet
         terrainMode={props.terrainMode}
         activeEditor={props.activeEditor}
         onActiveEditorChange={props.onActiveEditorChange}
-        onClose={props.onClose}
       />
     ),
   },

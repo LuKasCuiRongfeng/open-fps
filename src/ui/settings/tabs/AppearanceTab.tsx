@@ -3,6 +3,7 @@
 
 import { Moon, Sun } from "lucide-react";
 import type { GameSettings, GameSettingsPatch, UiTheme } from "@game/settings";
+import { SettingBadge, SettingRow, SettingsPage, SettingsSection } from "../SettingsLayout";
 
 type AppearanceTabProps = {
   settings: GameSettings;
@@ -21,36 +22,38 @@ const THEME_OPTIONS: ReadonlyArray<{
 
 export function AppearanceTab({ settings, onPatch }: AppearanceTabProps) {
   return (
-    <div className="space-y-4">
-      <div>
-        <div className="text-sm font-semibold">Theme</div>
-        <div className="text-xs text-content-muted">Applies to both editor and game UI.</div>
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-2">
-        {THEME_OPTIONS.map(({ id, label, description, Icon }) => {
-          const active = settings.ui.theme === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => onPatch({ ui: { theme: id } })}
-              className={`flex items-center gap-3 rounded-md border px-3 py-3 text-left transition-colors ${
-                active
-                  ? "border-accent-primary/60 bg-accent-primary/15 text-content-primary"
-                  : "border-stroke-subtle bg-surface-control text-content-secondary hover:border-stroke-default hover:bg-surface-control-hover hover:text-content-primary"
-              }`}
-              aria-pressed={active}
-            >
-              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span className="min-w-0">
-                <span className="block text-sm font-medium">{label}</span>
-                <span className="block text-xs text-content-muted">{description}</span>
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <SettingsPage>
+      <SettingsSection title="Interface" description="Shared shell appearance for editor and game UI.">
+        <SettingRow label="Theme" description="Switches semantic surface, content, stroke, and status tokens.">
+          <div className="grid gap-2 sm:grid-cols-2">
+            {THEME_OPTIONS.map(({ id, label, description, Icon }) => {
+              const active = settings.ui.theme === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => onPatch({ ui: { theme: id } })}
+                  className={`flex min-h-14 items-center gap-2 rounded-md border px-2.5 py-2 text-left transition-colors ${
+                    active
+                      ? "border-accent-primary/60 bg-accent-primary/15 text-content-primary"
+                      : "border-stroke-subtle bg-surface-control text-content-secondary hover:border-stroke-default hover:bg-surface-control-hover hover:text-content-primary"
+                  }`}
+                  aria-pressed={active}
+                >
+                  <Icon className={`h-4 w-4 shrink-0 ${active ? "text-accent-primary" : "text-content-muted"}`} aria-hidden="true" />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2 text-xs font-medium">
+                      {label}
+                      {active && <SettingBadge tone="primary">Active</SettingBadge>}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] leading-4 text-content-muted">{description}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </SettingRow>
+      </SettingsSection>
+    </SettingsPage>
   );
 }

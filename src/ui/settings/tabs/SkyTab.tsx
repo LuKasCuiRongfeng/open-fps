@@ -5,6 +5,7 @@ import { RangeField } from "../RangeField";
 import { Toggle } from "../Toggle";
 import { fogStaticConfig } from "@config/fog";
 import type { GameSettings, GameSettingsPatch } from "@game/settings";
+import { ReadonlyField, SettingRow, SettingsPage, SettingsSection } from "../SettingsLayout";
 
 type SkyTabProps = {
   settings: GameSettings;
@@ -13,178 +14,130 @@ type SkyTabProps = {
 
 export function SkyTab({ settings, onPatch }: SkyTabProps) {
   return (
-    <div className="space-y-6">
-      <div className="mb-4 text-xs text-content-muted">
-        Sky atmosphere, sun position, lighting, and fog settings.
-        <br />
-        天空大气、太阳位置、光照和雾设置。
-      </div>
+    <SettingsPage>
+      <SettingsSection title="Sun" description="Primary directional light and atmospheric disc.">
+        <RangeField
+          label="Elevation"
+          description="0 degrees is horizon, 90 degrees is overhead."
+          value={settings.sky.sunElevation}
+          min={-30}
+          max={90}
+          step={1}
+          valueLabel={`${Math.round(settings.sky.sunElevation)} deg`}
+          onChange={(value) => onPatch({ sky: { sunElevation: value } })}
+        />
+        <SettingRow label="Azimuth" description="Driven by time when time-linked sun is enabled.">
+          <ReadonlyField align="right">{Math.round(settings.sky.sunAzimuth)} deg</ReadonlyField>
+        </SettingRow>
+        <RangeField
+          label="Disc Size"
+          value={settings.sky.sunSize}
+          min={5}
+          max={50}
+          step={1}
+          onChange={(value) => onPatch({ sky: { sunSize: value } })}
+        />
+      </SettingsSection>
 
-      {/* Sun Position */}
-      <div>
-        <div className="mb-3 text-xs font-medium text-content-secondary">Sun Position / 太阳位置</div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <RangeField
-            label="Elevation (height)"
-            value={settings.sky.sunElevation}
-            min={-30}
-            max={90}
-            step={1}
-            onChange={(v) => onPatch({ sky: { sunElevation: v } })}
-          />
-          <div className="space-y-1">
-            <label className="block text-xs text-content-muted">Azimuth (direction)</label>
-            <div className="flex h-8 items-center rounded bg-surface-control px-3 text-sm text-content-muted">
-              {Math.round(settings.sky.sunAzimuth)}°
-            </div>
-            <div className="text-xs text-content-muted">Driven by time. Adjust via Time settings.</div>
-          </div>
-          <RangeField
-            label="Sun Size"
-            value={settings.sky.sunSize}
-            min={5}
-            max={50}
-            step={1}
-            onChange={(v) => onPatch({ sky: { sunSize: v } })}
-          />
-        </div>
-        <div className="mt-2 text-xs text-content-muted">
-          Elevation: -30° to 0° = night/twilight, 0° = horizon, 90° = overhead.
-        </div>
-      </div>
+      <SettingsSection title="Lighting">
+        <RangeField
+          label="Ambient Intensity"
+          value={settings.sky.ambientIntensity}
+          min={0}
+          max={3}
+          step={0.05}
+          onChange={(value) => onPatch({ sky: { ambientIntensity: value } })}
+        />
+        <RangeField
+          label="Sun Intensity"
+          value={settings.sky.sunIntensity}
+          min={0}
+          max={3}
+          step={0.05}
+          onChange={(value) => onPatch({ sky: { sunIntensity: value } })}
+        />
+        <Toggle
+          label="Shadows"
+          description="Enables directional shadowing from the sun."
+          checked={settings.sky.shadowsEnabled}
+          onChange={(value) => onPatch({ sky: { shadowsEnabled: value } })}
+        />
+      </SettingsSection>
 
-      {/* Lighting Intensity */}
-      <div>
-        <div className="mb-3 text-xs font-medium text-content-secondary">Lighting / 光照</div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <RangeField
-            label="Ambient Intensity"
-            value={settings.sky.ambientIntensity}
-            min={0}
-            max={3}
-            step={0.05}
-            onChange={(v) => onPatch({ sky: { ambientIntensity: v } })}
-          />
-          <RangeField
-            label="Sun Intensity"
-            value={settings.sky.sunIntensity}
-            min={0}
-            max={3}
-            step={0.05}
-            onChange={(v) => onPatch({ sky: { sunIntensity: v } })}
-          />
-        </div>
-        <div className="mt-3">
-          <Toggle
-            label="Shadows"
-            checked={settings.sky.shadowsEnabled}
-            onChange={(v) => onPatch({ sky: { shadowsEnabled: v } })}
-          />
-        </div>
-      </div>
-
-      {/* Terrain Shading */}
-      <div>
-        <div className="mb-3 text-xs font-medium text-content-secondary">Terrain Shading / 地形着色</div>
+      <SettingsSection title="Terrain Atmosphere">
         <RangeField
           label="Normal Softness"
+          description="Higher values flatten contrast in terrain shading."
           value={settings.sky.normalSoftness}
           min={0}
           max={1}
           step={0.05}
-          onChange={(v) => onPatch({ sky: { normalSoftness: v } })}
+          valueLabel={`${Math.round(settings.sky.normalSoftness * 100)}%`}
+          onChange={(value) => onPatch({ sky: { normalSoftness: value } })}
         />
-        <div className="mt-2 text-xs text-content-muted">
-          0 = sharp realistic shading, 1 = flat (no contrast). Try 0.3-0.5 for balanced look.
-        </div>
-      </div>
-
-      {/* Fog */}
-      <div>
-        <div className="mb-3 text-xs font-medium text-content-secondary">Fog / 雾</div>
         <RangeField
           label="Fog Density"
           value={settings.sky.fogDensity}
           min={fogStaticConfig.minDensity}
           max={fogStaticConfig.maxDensity}
           step={0.00001}
-          onChange={(v) => onPatch({ sky: { fogDensity: v } })}
+          onChange={(value) => onPatch({ sky: { fogDensity: value } })}
         />
-        <div className="mt-2 text-xs text-content-muted">
-          Visibility ≈ {Math.round(3.912 / settings.sky.fogDensity)}m
-        </div>
-      </div>
+        <SettingRow label="Approx. Visibility">
+          <ReadonlyField align="right">{Math.round(3.912 / settings.sky.fogDensity)} m</ReadonlyField>
+        </SettingRow>
+      </SettingsSection>
 
-      {/* Bloom */}
-      <div>
-        <div className="mb-3 text-xs font-medium text-content-secondary">Sun Bloom / 太阳泛光</div>
-        <div className="mb-3">
-          <Toggle
-            label="Enable bloom (sun glare effect)"
-            checked={settings.sky.bloomEnabled}
-            onChange={(v) => onPatch({ sky: { bloomEnabled: v } })}
-          />
-        </div>
-        {settings.sky.bloomEnabled && (
-          <div className="grid gap-4 md:grid-cols-3">
-            <RangeField
-              label="Threshold"
-              value={settings.sky.bloomThreshold}
-              min={0}
-              max={1}
-              step={0.01}
-              onChange={(v) => onPatch({ sky: { bloomThreshold: v } })}
-            />
-            <RangeField
-              label="Strength"
-              value={settings.sky.bloomStrength}
-              min={0}
-              max={2}
-              step={0.05}
-              onChange={(v) => onPatch({ sky: { bloomStrength: v } })}
-            />
-            <RangeField
-              label="Radius"
-              value={settings.sky.bloomRadius}
-              min={0}
-              max={1}
-              step={0.01}
-              onChange={(v) => onPatch({ sky: { bloomRadius: v } })}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Lens Flare */}
-      <div>
-        <div className="mb-3 text-xs font-medium text-content-secondary">Lens Flare / 镜头光斑</div>
-        <div className="mb-3">
-          <Toggle
-            label="Enable lens flare (camera effect)"
-            checked={settings.sky.lensflareEnabled}
-            onChange={(v) => onPatch({ sky: { lensflareEnabled: v } })}
-          />
-        </div>
-        <div className="mt-2 text-xs text-content-muted">
-          Simulates internal lens reflections when facing the sun. Creates ghost images radiating from the light source.
-        </div>
-      </div>
-
-      {/* Night Sky */}
-      <div>
-        <div className="mb-3 text-xs font-medium text-content-secondary">Night Sky / 夜空</div>
+      <SettingsSection title="Post Effects">
+        <Toggle
+          label="Sun Bloom"
+          description="Adds glare around bright sun pixels."
+          checked={settings.sky.bloomEnabled}
+          onChange={(value) => onPatch({ sky: { bloomEnabled: value } })}
+        />
+        <RangeField
+          label="Bloom Threshold"
+          value={settings.sky.bloomThreshold}
+          min={0}
+          max={1}
+          step={0.01}
+          disabled={!settings.sky.bloomEnabled}
+          onChange={(value) => onPatch({ sky: { bloomThreshold: value } })}
+        />
+        <RangeField
+          label="Bloom Strength"
+          value={settings.sky.bloomStrength}
+          min={0}
+          max={2}
+          step={0.05}
+          disabled={!settings.sky.bloomEnabled}
+          onChange={(value) => onPatch({ sky: { bloomStrength: value } })}
+        />
+        <RangeField
+          label="Bloom Radius"
+          value={settings.sky.bloomRadius}
+          min={0}
+          max={1}
+          step={0.01}
+          disabled={!settings.sky.bloomEnabled}
+          onChange={(value) => onPatch({ sky: { bloomRadius: value } })}
+        />
+        <Toggle
+          label="Lens Flare"
+          description="Shows lens artifacts when facing the sun."
+          checked={settings.sky.lensflareEnabled}
+          onChange={(value) => onPatch({ sky: { lensflareEnabled: value } })}
+        />
         <RangeField
           label="Star Brightness"
+          description="Visible when the sun is below the horizon."
           value={settings.sky.starBrightness}
           min={0}
           max={2}
           step={0.1}
-          onChange={(v) => onPatch({ sky: { starBrightness: v } })}
+          onChange={(value) => onPatch({ sky: { starBrightness: value } })}
         />
-        <div className="mt-2 text-xs text-content-muted">
-          Adjust the visibility of stars in the night sky. Set sun elevation below 0° to see the night sky.
-        </div>
-      </div>
-    </div>
+      </SettingsSection>
+    </SettingsPage>
   );
 }

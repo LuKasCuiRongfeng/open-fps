@@ -1,53 +1,54 @@
-// TimeTab: Chinese ancient sundial-style time settings with draggable gnomon shadow.
-// TimeTab：中国古代日晷风格的时间设置，可拖拽晷针阴影
+// TimeTab: compact time simulation settings with a draggable editor dial.
+// TimeTab：带可拖拽编辑器刻度盘的紧凑时间模拟设置。
 
 import { useRef, useState } from "react";
 import type { GameSettings, GameSettingsPatch } from "@game/settings";
 import { Toggle } from "../Toggle";
 import { RangeField } from "../RangeField";
+import { ReadonlyField, SettingBadge, SettingRow, SettingsPage, SettingsSection } from "../SettingsLayout";
 
-// Chinese traditional hour names (时辰), ordered for sundial display.
-// Noon (午) at top, Midnight (子) at bottom.
-// 中国传统时辰名称，按日晷显示顺序排列
-// 午时在上方，子时在下方
+const DIAL_CENTER = 110;
+const DIAL_LABEL_RADIUS = 88;
+const DIAL_TICK_OUTER_RADIUS = 96;
+const DIAL_TICK_INNER_RADIUS = 90;
+const SHADOW_RADIUS = 70;
+
 const SHICHEN = [
-  { name: "午", pinyin: "Wǔ", hour: 12 },    // 11:00-13:00, top
-  { name: "未", pinyin: "Wèi", hour: 14 },   // 13:00-15:00
-  { name: "申", pinyin: "Shēn", hour: 16 },  // 15:00-17:00
-  { name: "酉", pinyin: "Yǒu", hour: 18 },   // 17:00-19:00
-  { name: "戌", pinyin: "Xū", hour: 20 },    // 19:00-21:00
-  { name: "亥", pinyin: "Hài", hour: 22 },   // 21:00-23:00
-  { name: "子", pinyin: "Zǐ", hour: 0 },     // 23:00-01:00, bottom
-  { name: "丑", pinyin: "Chǒu", hour: 2 },   // 01:00-03:00
-  { name: "寅", pinyin: "Yín", hour: 4 },    // 03:00-05:00
-  { name: "卯", pinyin: "Mǎo", hour: 6 },    // 05:00-07:00
-  { name: "辰", pinyin: "Chén", hour: 8 },   // 07:00-09:00
-  { name: "巳", pinyin: "Sì", hour: 10 },    // 09:00-11:00
-];
+  { name: "午", pinyin: "Wu", hour: 12 },
+  { name: "未", pinyin: "Wei", hour: 14 },
+  { name: "申", pinyin: "Shen", hour: 16 },
+  { name: "酉", pinyin: "You", hour: 18 },
+  { name: "戌", pinyin: "Xu", hour: 20 },
+  { name: "亥", pinyin: "Hai", hour: 22 },
+  { name: "子", pinyin: "Zi", hour: 0 },
+  { name: "丑", pinyin: "Chou", hour: 2 },
+  { name: "寅", pinyin: "Yin", hour: 4 },
+  { name: "卯", pinyin: "Mao", hour: 6 },
+  { name: "辰", pinyin: "Chen", hour: 8 },
+  { name: "巳", pinyin: "Si", hour: 10 },
+] as const;
 
-// Get current Shichen from hour.
-// 根据小时获取当前时辰
+const TIME_SPEED_PRESETS = [
+  { label: "Paused", value: 0 },
+  { label: "1x", value: 1 },
+  { label: "60x", value: 60 },
+  { label: "360x", value: 360 },
+  { label: "1440x", value: 1440 },
+] as const;
+
 function getShichen(hour: number): (typeof SHICHEN)[number] {
-  // Adjust for Zi starting at 23:00.
-  // 调整子时从23:00开始
-  const adjusted = (hour + 1) % 24;
-  const index = Math.floor(adjusted / 2) % 12;
-  // Map to our reordered array (午 is index 0 in display, but hour 12).
-  // 映射到重新排序的数组
-  const displayIndex = (index + 6) % 12; // Shift so 午 (index 6 in original) becomes 0
+  const adjustedHour = (hour + 1) % 24;
+  const periodIndex = Math.floor(adjustedHour / 2) % 12;
+  const displayIndex = (periodIndex + 6) % 12;
   return SHICHEN[displayIndex];
 }
 
-// Format time as HH:MM.
-// 格式化时间为 HH:MM
 function formatTime(hours: number): string {
-  const h = Math.floor(hours) % 24;
-  const m = Math.floor((hours % 1) * 60);
-  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+  const hourPart = Math.floor(hours) % 24;
+  const minutePart = Math.floor((hours % 1) * 60);
+  return `${hourPart.toString().padStart(2, "0")}:${minutePart.toString().padStart(2, "0")}`;
 }
 
-// Get day period description (English only).
-// 获取时段描述（仅英文）
 function getDayPeriod(hour: number): string {
   if (hour >= 5 && hour < 7) return "Dawn";
   if (hour >= 7 && hour < 12) return "Morning";
@@ -56,6 +57,14 @@ function getDayPeriod(hour: number): string {
   if (hour >= 17 && hour < 19) return "Dusk";
   if (hour >= 19 && hour < 22) return "Evening";
   return "Night";
+}
+
+function getTimeSpeedLabel(timeSpeed: number): string {
+  if (timeSpeed === 0) return "Stopped";
+  if (timeSpeed === 1) return "Real time";
+  if (timeSpeed < 60) return `${timeSpeed} game seconds / real second`;
+  if (timeSpeed < 3600) return `${(timeSpeed / 60).toFixed(1)} game minutes / real second`;
+  return `${(timeSpeed / 3600).toFixed(1)} game hours / real second`;
 }
 
 type TimeTabProps = {
@@ -70,350 +79,191 @@ export function TimeTab({ settings, onPatch }: TimeTabProps) {
   const timeOfDay = settings.time.timeOfDay;
   const shichen = getShichen(timeOfDay);
 
-  // Convert time to angle for sundial.
-  // Noon (12:00) = top (-90°), Midnight (0:00) = bottom (90°).
-  // 将时间转换为日晷角度
-  // 正午(12:00) = 顶部(-90°)，午夜(0:00) = 底部(90°)
-  const timeToAngle = (t: number) => {
-    // Shift so noon is at top: (t - 12) maps noon to 0.
-    // Then scale to 360° and convert to radians, starting from top (-90°).
-    // 移位使正午在顶部
-    const shifted = t - 12;
-    return ((shifted / 24) * 360 - 90) * (Math.PI / 180);
+  const timeToAngle = (timeValue: number) => {
+    // EN: Noon is rendered at the top of the dial, matching the existing sun-time model.
+    // 中文: 正午显示在刻度盘顶部，以匹配现有太阳时间模型。
+    const shiftedTime = timeValue - 12;
+    return ((shiftedTime / 24) * 360 - 90) * (Math.PI / 180);
   };
+
   const shadowAngle = timeToAngle(timeOfDay);
+  const shadowTipX = DIAL_CENTER + SHADOW_RADIUS * Math.cos(shadowAngle);
+  const shadowTipY = DIAL_CENTER + SHADOW_RADIUS * Math.sin(shadowAngle);
 
-  // Handle pointer events for dragging the gnomon shadow.
-  // 处理拖拽晷针阴影的指针事件
-  const handlePointerDown = (e: React.PointerEvent) => {
-    e.preventDefault();
+  const handlePointerDown = (event: React.PointerEvent<SVGGElement>) => {
+    event.preventDefault();
     setIsDragging(true);
-    (e.target as Element).setPointerCapture(e.pointerId);
+    event.currentTarget.setPointerCapture(event.pointerId);
   };
 
-  const handlePointerMove = (e: React.PointerEvent) => {
+  const handlePointerMove = (event: React.PointerEvent<SVGGElement>) => {
     if (!isDragging || !svgRef.current) return;
 
     const svg = svgRef.current;
     const rect = svg.getBoundingClientRect();
-    const cx = rect.width / 2;
-    const cy = rect.height / 2;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const pointerX = event.clientX - rect.left - centerX;
+    const pointerY = event.clientY - rect.top - centerY;
+    let angle = Math.atan2(pointerY, pointerX) + Math.PI / 2;
 
-    // Calculate angle from center.
-    // 从中心计算角度
-    const x = e.clientX - rect.left - cx;
-    const y = e.clientY - rect.top - cy;
-    let angle = Math.atan2(y, x);
+    if (angle < 0) {
+      angle += Math.PI * 2;
+    }
 
-    // Convert angle to time.
-    // Top (-90° or -π/2) = noon (12:00).
-    // 将角度转换为时间
-    angle = angle + Math.PI / 2; // Now top is 0.
-    if (angle < 0) angle += Math.PI * 2;
-
-    // Map angle to time: 0 rad = noon (12), 2π rad = noon again.
-    // 映射角度到时间
-    const newTime = ((angle / (Math.PI * 2)) * 24 + 12) % 24;
-    onPatch({ time: { timeOfDay: newTime } });
+    const nextTime = ((angle / (Math.PI * 2)) * 24 + 12) % 24;
+    onPatch({ time: { timeOfDay: nextTime } });
   };
 
-  const handlePointerUp = (e: React.PointerEvent) => {
+  const handlePointerUp = (event: React.PointerEvent<SVGGElement>) => {
     setIsDragging(false);
-    (e.target as Element).releasePointerCapture(e.pointerId);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   };
-
-  // Speed presets.
-  // 速度预设
-  const speedPresets = [
-    { label: "Paused", value: 0 },
-    { label: "1x", value: 1 },
-    { label: "60x", value: 60 },
-    { label: "360x", value: 360 },
-    { label: "1440x", value: 1440 },
-  ];
 
   return (
-    <div className="space-y-6">
-      <div className="mb-4 text-xs text-content-muted">
-        Drag the shadow on the sundial to set time. Ancient Chinese sundial style.
-      </div>
+    <SettingsPage>
+      <SettingsSection
+        title="Time Preview"
+        actions={<SettingBadge tone={settings.time.timePaused ? "warning" : "success"}>{settings.time.timePaused ? "Paused" : "Running"}</SettingBadge>}
+      >
+        <SettingRow label="Current Time" description="Drag the dial handle or use the slider below." align="start">
+          <div className="grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)]">
+            <svg
+              ref={svgRef}
+              width="220"
+              height="220"
+              viewBox="0 0 220 220"
+              className="h-56 w-56 select-none text-content-muted"
+            >
+              <circle cx={DIAL_CENTER} cy={DIAL_CENTER} r="104" className="fill-surface-panel stroke-stroke-default" strokeWidth="1" />
+              <circle cx={DIAL_CENTER} cy={DIAL_CENTER} r="82" className="fill-surface-panel-muted stroke-stroke-subtle" strokeWidth="1" />
 
-      {/* Sundial SVG */}
-      <div className="flex justify-center">
-        <div className="relative">
-          <svg
-            ref={svgRef}
-            width="280"
-            height="280"
-            viewBox="0 0 280 280"
-            className="select-none"
-          >
-            {/* Definitions */}
-            <defs>
-              {/* Sundial plate gradient (bronze-like) */}
-              <radialGradient id="plateGradient" cx="50%" cy="30%" r="70%">
-                <stop offset="0%" stopColor="#d4a574" />
-                <stop offset="50%" stopColor="#8b6914" />
-                <stop offset="100%" stopColor="#4a3c1a" />
-              </radialGradient>
+              {Array.from({ length: 24 }, (_unused, hourIndex) => {
+                const hourAngle = ((hourIndex - 12) / 24) * 360 - 90;
+                const markerAngle = (hourAngle * Math.PI) / 180;
+                const tickInnerRadius = hourIndex % 2 === 0 ? DIAL_TICK_INNER_RADIUS - 6 : DIAL_TICK_INNER_RADIUS;
+                return (
+                  <line
+                    key={`tick-${hourIndex}`}
+                    x1={DIAL_CENTER + tickInnerRadius * Math.cos(markerAngle)}
+                    y1={DIAL_CENTER + tickInnerRadius * Math.sin(markerAngle)}
+                    x2={DIAL_CENTER + DIAL_TICK_OUTER_RADIUS * Math.cos(markerAngle)}
+                    y2={DIAL_CENTER + DIAL_TICK_OUTER_RADIUS * Math.sin(markerAngle)}
+                    className="stroke-content-muted"
+                    strokeWidth={hourIndex % 2 === 0 ? 1.5 : 1}
+                  />
+                );
+              })}
 
-              {/* Inner ring gradient */}
-              <radialGradient id="innerGradient" cx="50%" cy="30%" r="60%">
-                <stop offset="0%" stopColor="#c9a55c" />
-                <stop offset="100%" stopColor="#6b5a2a" />
-              </radialGradient>
-
-              {/* Shadow gradient */}
-              <linearGradient id="shadowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#1a1a2e" stopOpacity="0.9" />
-                <stop offset="100%" stopColor="#2d2d44" stopOpacity="0.6" />
-              </linearGradient>
-
-              {/* Gnomon (vertical pin) gradient */}
-              <linearGradient id="gnomonGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#8b7355" />
-                <stop offset="50%" stopColor="#d4c4a8" />
-                <stop offset="100%" stopColor="#6b5a3a" />
-              </linearGradient>
-
-              {/* Day/Night arc gradients */}
-              <linearGradient id="dayGradient" x1="0%" y1="100%" x2="0%" y2="0%">
-                <stop offset="0%" stopColor="#ffd700" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#ff8c00" stopOpacity="0.1" />
-              </linearGradient>
-              <linearGradient id="nightGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#1a1a3e" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="#0a0a1e" stopOpacity="0.2" />
-              </linearGradient>
-            </defs>
-
-            {/* Outer plate (bronze disc) */}
-            <circle cx="140" cy="140" r="135" fill="url(#plateGradient)" stroke="#3d2f1a" strokeWidth="3" />
-
-            {/* Decorative outer ring with engravings */}
-            <circle cx="140" cy="140" r="128" fill="none" stroke="#5a4a2a" strokeWidth="1" />
-            <circle cx="140" cy="140" r="120" fill="none" stroke="#5a4a2a" strokeWidth="2" />
-
-            {/* Day section (top half - noon area) */}
-            <path
-              d="M 140 25 A 115 115 0 0 1 140 255"
-              fill="url(#dayGradient)"
-            />
-
-            {/* Night section (bottom half - midnight area) */}
-            <path
-              d="M 140 25 A 115 115 0 0 0 140 255"
-              fill="url(#nightGradient)"
-            />
-
-            {/* Inner decorative circle */}
-            <circle cx="140" cy="140" r="105" fill="url(#innerGradient)" stroke="#4a3a1a" strokeWidth="2" />
-            <circle cx="140" cy="140" r="95" fill="none" stroke="#3d2f1a" strokeWidth="1" />
-
-            {/* Hour markings and Shichen labels */}
-            {SHICHEN.map((shi) => {
-              // Place character at middle hour of each Shichen.
-              // e.g., 午时 (11-13) → 12:00, 未时 (13-15) → 14:00
-              // 将汉字放在每个时辰的中间小时刻度上
-              // 例如：午时(11-13) → 12:00，未时(13-15) → 14:00
-              const hourAngle = ((shi.hour - 12) / 24) * 360 - 90;
-              const angle = (hourAngle * Math.PI) / 180;
-
-              // Label position (outer).
-              // 标签位置（外圈）
-              const labelR = 112;
-              const labelX = 140 + labelR * Math.cos(angle);
-              const labelY = 140 + labelR * Math.sin(angle);
-
-              return (
-                <g key={shi.name}>
-                  {/* Shichen character at middle hour */}
+              {SHICHEN.map((period) => {
+                const hourAngle = ((period.hour - 12) / 24) * 360 - 90;
+                const labelAngle = (hourAngle * Math.PI) / 180;
+                return (
                   <text
-                    x={labelX}
-                    y={labelY}
+                    key={period.name}
+                    x={DIAL_CENTER + DIAL_LABEL_RADIUS * Math.cos(labelAngle)}
+                    y={DIAL_CENTER + DIAL_LABEL_RADIUS * Math.sin(labelAngle)}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fill="#2a1f0a"
-                    fontSize="14"
-                    fontWeight="bold"
-                    fontFamily="serif"
-                    style={{ textShadow: "1px 1px 0 #c9a55c" }}
+                    className="fill-content-muted font-serif text-[10px]"
                   >
-                    {shi.name}
+                    {period.name}
                   </text>
-                </g>
-              );
-            })}
+                );
+              })}
 
-            {/* Minor tick marks (24 hours) */}
-            {Array.from({ length: 24 }).map((_, i) => {
-              // Hour 12 is at top, hour 0 is at bottom.
-              // 12点在顶部，0点在底部
-              const hourAngle = ((i - 12) / 24) * 360 - 90;
-              const angle = (hourAngle * Math.PI) / 180;
-              const innerR = i % 2 === 0 ? 92 : 95;
-              const outerR = 98;
-              return (
-                <line
-                  key={`tick-${i}`}
-                  x1={140 + innerR * Math.cos(angle)}
-                  y1={140 + innerR * Math.sin(angle)}
-                  x2={140 + outerR * Math.cos(angle)}
-                  y2={140 + outerR * Math.sin(angle)}
-                  stroke="#3d2f1a"
-                  strokeWidth={i % 2 === 0 ? 1.5 : 1}
-                />
-              );
-            })}
-
-            {/* Center decorative pattern */}
-            <circle cx="140" cy="140" r="25" fill="#3d2f1a" stroke="#5a4a2a" strokeWidth="2" />
-            <circle cx="140" cy="140" r="18" fill="#4a3a1a" stroke="#6b5a2a" strokeWidth="1" />
-            <circle cx="140" cy="140" r="8" fill="#c9a55c" stroke="#8b7a4a" strokeWidth="1" />
-
-            {/* Gnomon shadow (draggable) */}
-            <g
-              style={{ cursor: isDragging ? "grabbing" : "grab" }}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp}
-            >
-              {/* Shadow shape (triangular) */}
-              <polygon
-                points={`
-                  ${140 + 8 * Math.cos(shadowAngle + Math.PI / 2)},${140 + 8 * Math.sin(shadowAngle + Math.PI / 2)}
-                  ${140 + 8 * Math.cos(shadowAngle - Math.PI / 2)},${140 + 8 * Math.sin(shadowAngle - Math.PI / 2)}
-                  ${140 + 85 * Math.cos(shadowAngle)},${140 + 85 * Math.sin(shadowAngle)}
-                `}
-                fill="url(#shadowGradient)"
-                stroke="#0a0a1e"
-                strokeWidth="1"
-                opacity={isDragging ? 0.95 : 0.85}
-                style={{ transition: isDragging ? "none" : "opacity 0.2s" }}
+              <line
+                x1={DIAL_CENTER}
+                y1={DIAL_CENTER}
+                x2={shadowTipX}
+                y2={shadowTipY}
+                className="stroke-status-warning"
+                strokeWidth="3"
+                strokeLinecap="round"
               />
+              <circle cx={DIAL_CENTER} cy={DIAL_CENTER} r="5" className="fill-surface-control stroke-stroke-default" strokeWidth="1" />
 
-              {/* Shadow tip indicator */}
-              <circle
-                cx={140 + 75 * Math.cos(shadowAngle)}
-                cy={140 + 75 * Math.sin(shadowAngle)}
-                r="6"
-                fill="#2d2d44"
-                stroke="#4a4a6a"
-                strokeWidth="2"
-                className={isDragging ? "" : "animate-pulse"}
-              />
-            </g>
+              <g
+                className={isDragging ? "cursor-grabbing" : "cursor-grab"}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerLeave={handlePointerUp}
+              >
+                <circle cx={shadowTipX} cy={shadowTipY} r="10" className="fill-status-warning/20 stroke-status-warning" strokeWidth="2" />
+                <circle cx={shadowTipX} cy={shadowTipY} r="3" className="fill-status-warning" />
+              </g>
+            </svg>
 
-            {/* Central gnomon (vertical pin representation) */}
-            <ellipse cx="140" cy="140" rx="5" ry="5" fill="url(#gnomonGradient)" stroke="#4a3a2a" strokeWidth="1" />
-
-            {/* Decorative compass directions (Chinese characters kept) */}
-            <text x="140" y="18" textAnchor="middle" fill="#5a4a2a" fontSize="10" fontWeight="bold">南</text>
-            <text x="140" y="270" textAnchor="middle" fill="#5a4a2a" fontSize="10" fontWeight="bold">北</text>
-            <text x="268" y="144" textAnchor="middle" fill="#5a4a2a" fontSize="10" fontWeight="bold">西</text>
-            <text x="12" y="144" textAnchor="middle" fill="#5a4a2a" fontSize="10" fontWeight="bold">東</text>
-          </svg>
-
-          {/* Current time overlay */}
-          <div className="overlay-panel absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-lg border px-4 py-2 shadow-panel">
-            <div className="text-center">
-              <div className="font-mono text-2xl font-bold text-status-warning">{formatTime(timeOfDay)}</div>
-              <div className="font-serif text-sm text-status-warning">
-                {shichen.name}時 <span className="text-xs text-content-muted">({shichen.pinyin})</span>
-              </div>
+            <div className="space-y-2">
+              <ReadonlyField>{formatTime(timeOfDay)}</ReadonlyField>
+              <ReadonlyField>{getDayPeriod(timeOfDay)}</ReadonlyField>
+              <ReadonlyField>{shichen.name} / {shichen.pinyin}</ReadonlyField>
             </div>
           </div>
-        </div>
-      </div>
+        </SettingRow>
+      </SettingsSection>
 
-      {/* Day period indicator */}
-      <div className="mt-8 text-center text-sm text-content-secondary">
-        {getDayPeriod(timeOfDay)}
-      </div>
-
-      {/* Time Controls */}
-      <div className="mt-6 space-y-4">
-        <div className="mb-3 text-xs font-medium text-content-secondary">Time Flow</div>
-
-        {/* Pause toggle */}
+      <SettingsSection title="Simulation">
         <Toggle
           label="Pause Time"
+          description="Freezes the simulation clock at the current hour."
           checked={settings.time.timePaused}
-          onChange={(v) => onPatch({ time: { timePaused: v } })}
+          onChange={(value) => onPatch({ time: { timePaused: value } })}
         />
-
-        {/* Time-driven sun toggle */}
         <Toggle
-          label="Sun follows time"
+          label="Sun Follows Time"
+          description="Links sun azimuth to the time-of-day value."
           checked={settings.time.timeDrivenSun}
-          onChange={(v) => onPatch({ time: { timeDrivenSun: v } })}
+          onChange={(value) => onPatch({ time: { timeDrivenSun: value } })}
         />
-
-        {/* Speed presets */}
-        <div>
-          <div className="mb-2 text-xs text-content-muted">Speed Presets</div>
-          <div className="flex flex-wrap gap-2">
-            {speedPresets.map((preset) => (
-              <button
-                key={preset.label}
-                type="button"
-                onClick={() => onPatch({ time: { timeSpeed: preset.value, timePaused: preset.value === 0 } })}
-                className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${
-                  settings.time.timeSpeed === preset.value && !settings.time.timePaused
-                    ? "border-status-warning/50 bg-status-warning/20 text-status-warning"
-                    : preset.value === 0 && settings.time.timePaused
+        <SettingRow label="Speed Preset">
+          <div className="flex flex-wrap gap-1.5">
+            {TIME_SPEED_PRESETS.map((preset) => {
+              const active = settings.time.timeSpeed === preset.value && (preset.value !== 0 || settings.time.timePaused);
+              return (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => onPatch({ time: { timeSpeed: preset.value, timePaused: preset.value === 0 } })}
+                  className={`h-7 rounded-md border px-2 text-[11px] transition-colors ${
+                    active
                       ? "border-status-warning/50 bg-status-warning/20 text-status-warning"
-                      : "border-stroke-default bg-surface-control text-content-secondary hover:bg-surface-control-hover hover:text-content-primary"
-                }`}
-              >
-                {preset.label}
-              </button>
-            ))}
+                      : "border-stroke-default bg-surface-control text-content-muted hover:bg-surface-control-hover hover:text-content-primary"
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
           </div>
-        </div>
-
-        {/* Custom speed slider */}
+        </SettingRow>
         <RangeField
-          label="Time Speed Multiplier"
+          label="Speed Multiplier"
+          description={getTimeSpeedLabel(settings.time.timeSpeed)}
           value={settings.time.timeSpeed}
           min={0}
           max={3600}
           step={1}
-          onChange={(v) => onPatch({ time: { timeSpeed: v } })}
+          tone="warning"
+          onChange={(value) => onPatch({ time: { timeSpeed: value } })}
         />
-        <div className="text-xs text-content-muted">
-          {settings.time.timeSpeed === 0
-            ? "Time is stopped."
-            : settings.time.timeSpeed === 1
-              ? "Real-time (1 second = 1 second)"
-              : settings.time.timeSpeed < 60
-                ? `1 real second = ${settings.time.timeSpeed} game seconds`
-                : settings.time.timeSpeed < 3600
-                  ? `1 real second = ${(settings.time.timeSpeed / 60).toFixed(1)} game minutes`
-                  : `1 real second = ${(settings.time.timeSpeed / 3600).toFixed(1)} game hours`}
-        </div>
+      </SettingsSection>
 
-        {/* Direct time input */}
+      <SettingsSection title="Direct Control">
         <RangeField
-          label="Time of Day (hours)"
+          label="Time of Day"
           value={timeOfDay}
           min={0}
           max={24}
           step={0.1}
-          onChange={(v) => onPatch({ time: { timeOfDay: v % 24 } })}
+          tone="warning"
+          valueLabel={formatTime(timeOfDay)}
+          onChange={(value) => onPatch({ time: { timeOfDay: value % 24 } })}
         />
-      </div>
-
-      {/* Info about Shichen */}
-      <div className="panel-muted-surface mt-6 rounded-lg border p-3">
-        <div className="mb-2 text-xs font-medium text-status-warning">時辰 (Shíchén) - Traditional Chinese Hours</div>
-        <div className="text-xs leading-relaxed text-content-muted">
-          Ancient China divided the day into 12 two-hour periods called 時辰 (shíchén).
-          Each period is named after one of the 12 Earthly Branches (地支).
-          The current period is <span className="font-bold text-status-warning">{shichen.name}時</span>.
-        </div>
-      </div>
-    </div>
+      </SettingsSection>
+    </SettingsPage>
   );
 }

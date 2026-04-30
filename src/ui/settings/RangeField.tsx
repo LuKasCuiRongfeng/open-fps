@@ -1,49 +1,66 @@
 // RangeField: reusable range slider with numeric input component.
 // RangeField：可复用的范围滑块和数字输入组件
 
+import { SettingRow } from "./SettingsLayout";
+import { Input } from "@ui/components/ui/input";
+import { Slider } from "@ui/components/ui/slider";
+
 export type RangeFieldProps = {
   label: string;
+  description?: string;
   value: number;
   min: number;
   max: number;
   step: number;
   onChange: (value: number) => void;
   disabled?: boolean;
+  tone?: "primary" | "secondary" | "success" | "warning";
+  valueLabel?: string;
 };
 
-export function RangeField({ label, value, min, max, step, onChange, disabled }: RangeFieldProps) {
+export function RangeField({
+  label,
+  description,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  disabled,
+  tone = "primary",
+  valueLabel,
+}: RangeFieldProps) {
   const id = `setting-${label.replace(/\s+/g, "-").toLowerCase()}`;
+  const numericValue = Number.isFinite(value) ? value : 0;
 
   return (
-    <div className={`grid grid-cols-[1fr_140px] items-center gap-3 ${disabled ? "opacity-50" : ""}`}>
-      <label htmlFor={id} className="text-sm text-content-secondary">
-        {label}
-      </label>
-
+    <SettingRow label={label} description={description}>
       <div className="flex items-center gap-2">
-        <input
-          id={id}
-          className="h-2 w-full cursor-pointer accent-accent-primary disabled:cursor-not-allowed"
-          type="range"
+        <Slider
+          aria-label={label}
+          className="min-w-0 flex-1"
           min={min}
           max={max}
           step={step}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
+          value={[numericValue]}
+          tone={tone}
+          onValueChange={([nextValue]) => onChange(nextValue ?? numericValue)}
           disabled={disabled}
         />
 
-        <input
-          className="field-surface w-20 rounded-md border px-2 py-1 text-right text-xs tabular-nums outline-none transition-colors focus:border-focus-ring disabled:cursor-not-allowed disabled:text-content-disabled"
+        <Input
+          id={id}
+          className="w-20 text-right tabular-nums"
           type="number"
           min={min}
           max={max}
           step={step}
-          value={Number.isFinite(value) ? value : 0}
+          value={numericValue}
           onChange={(e) => onChange(Number(e.target.value))}
           disabled={disabled}
         />
+        {valueLabel && <span className="w-10 text-right text-[11px] tabular-nums text-content-muted">{valueLabel}</span>}
       </div>
-    </div>
+    </SettingRow>
   );
 }

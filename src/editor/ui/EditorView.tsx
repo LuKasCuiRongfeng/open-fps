@@ -8,8 +8,6 @@ import FpsCounter from "@ui/FpsCounter";
 import LoadingOverlay, { type LoadingStep } from "@ui/LoadingOverlay";
 import { useDocumentTheme } from "@ui/theme";
 import { ProjectScreen } from "./ProjectScreen";
-import { TerrainEditorPanel } from "./TerrainEditorPanel";
-import { TextureEditorPanel } from "./TextureEditorPanel";
 import { EditorSettingsPanel } from "./settings/EditorSettingsPanel";
 import { useCloseConfirmation, useEditorApp, useEditorInput, useEditorWorkspace } from "./hooks";
 
@@ -157,14 +155,6 @@ export default function EditorView() {
 					onReset={resetToDefaults}
 					onClose={() => setSettingsOpen(false)}
 				/>
-			)}
-
-			{!loading && !error && activeEditor === "terrain" && (
-				<TerrainEditorPanel editor={terrainEditor} />
-			)}
-
-			{!loading && !error && activeEditor === "texture" && textureEditor?.editingEnabled && (
-				<TextureEditorPanel editor={textureEditor} visible={true} />
 			)}
 
 			{error && (
