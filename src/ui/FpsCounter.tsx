@@ -64,20 +64,20 @@ export default function FpsCounter({
   const chunkSize = terrainConfig.streaming.chunkSizeMeters;
 
   return (
-    <div className="absolute left-3 top-3 z-20 rounded bg-black/60 px-2 py-1 font-mono text-xs text-white/90 backdrop-blur-sm">
+    <div className="overlay-panel absolute left-3 top-3 z-20 rounded-md border px-2 py-1 font-mono text-xs shadow-panel backdrop-blur-sm">
       {/* FPS */}
-      <div className="text-green-400">{fps} FPS</div>
+      <div className="text-status-success">{fps} FPS</div>
       
       {/* Player info / 玩家信息 */}
       {playerPos && (
         <>
-          <div className="text-white/70 mt-1">
+          <div className="mt-1 text-content-secondary">
             Player XZ: ({playerPos.x.toFixed(1)}, {playerPos.z.toFixed(1)})
           </div>
-          <div className="text-white/70">
+          <div className="text-content-secondary">
             Altitude: {playerPos.y.toFixed(1)}m
           </div>
-          <div className="text-cyan-300">
+          <div className="text-status-info">
             Chunk: ({Math.floor(playerPos.x / chunkSize)}, {Math.floor(playerPos.z / chunkSize)})
           </div>
         </>
@@ -86,10 +86,10 @@ export default function FpsCounter({
       {/* Editor mode: mouse info / 编辑器模式：鼠标信息 */}
       {isEditorMode && mousePos && mouseValid && (
         <>
-          <div className="text-yellow-400 mt-2">
+          <div className="mt-2 text-status-warning">
             Mouse: ({mousePos.x.toFixed(1)}, {mousePos.y.toFixed(1)}, {mousePos.z.toFixed(1)})
           </div>
-          <div className="text-yellow-300">
+          <div className="text-status-warning">
             Chunk: ({Math.floor(mousePos.x / chunkSize)}, {Math.floor(mousePos.z / chunkSize)})
           </div>
         </>

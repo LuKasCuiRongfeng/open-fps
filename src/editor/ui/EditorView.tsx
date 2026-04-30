@@ -6,6 +6,7 @@ import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings
 import type { ActiveEditorType } from "./settings/tabs";
 import FpsCounter from "@ui/FpsCounter";
 import LoadingOverlay, { type LoadingStep } from "@ui/LoadingOverlay";
+import { useDocumentTheme } from "@ui/theme";
 import { ProjectScreen } from "./ProjectScreen";
 import { TerrainEditorPanel } from "./TerrainEditorPanel";
 import { TextureEditorPanel } from "./TextureEditorPanel";
@@ -42,6 +43,8 @@ export default function EditorView() {
 		pendingSettings: editorWorkspace.pendingSettings,
 		currentMapDirectory: editorWorkspace.currentMapDirectory,
 	});
+
+	useDocumentTheme(settings?.ui.theme ?? editorWorkspace.pendingSettings?.ui.theme);
 
 	useCloseConfirmation({
 		appRef,
@@ -111,7 +114,7 @@ export default function EditorView() {
 	};
 
 	return (
-		<div className="relative h-screen w-screen overflow-hidden bg-black text-white">
+		<div className="app-root relative h-screen w-screen overflow-hidden">
 			<div ref={hostRef} className="h-full w-full" />
 
 			{!loading && !error && !editorWorkspace.showProjectScreen && (
@@ -166,9 +169,9 @@ export default function EditorView() {
 
 			{error && (
 				<div className="absolute inset-0 flex items-center justify-center p-6">
-					<div className="max-w-xl rounded bg-black/70 p-4 text-sm leading-relaxed">
+					<div className="overlay-panel max-w-xl rounded-md border p-4 text-sm leading-relaxed shadow-panel backdrop-blur-sm">
 						<div className="mb-2 font-semibold">WebGPU init failed</div>
-						<div className="opacity-90">{error}</div>
+						<div className="text-content-secondary">{error}</div>
 					</div>
 				</div>
 			)}

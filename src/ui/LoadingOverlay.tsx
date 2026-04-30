@@ -27,23 +27,23 @@ export default function LoadingOverlay({ steps, activeStepId, visible }: Loading
   const progress = (activeIndex + 1) / Math.max(1, steps.length);
 
   return (
-    <div className="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950">
+    <div className="app-root absolute inset-0 z-10 flex items-center justify-center">
       <div className="flex w-80 flex-col items-center gap-6">
         {/* Title / 标题 */}
-        <h1 className="text-lg font-medium tracking-tight text-zinc-50">
+        <h1 className="text-lg font-medium tracking-tight text-content-primary">
           Loading...
         </h1>
 
         {/* Progress bar (shadcn/ui style) / 进度条（shadcn/ui 风格） */}
-        <div className="relative h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+        <div className="relative h-2 w-full overflow-hidden rounded-full bg-surface-panel-strong">
           <div
-            className="h-full bg-zinc-50 transition-all duration-300 ease-out"
+            className="h-full bg-accent-primary transition-all duration-300 ease-out"
             style={{ width: `${progress * 100}%` }}
           />
         </div>
 
         {/* Current step / 当前步骤 */}
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-content-muted">
           {steps[activeIndex]?.label ?? "Initializing"}
         </p>
       </div>

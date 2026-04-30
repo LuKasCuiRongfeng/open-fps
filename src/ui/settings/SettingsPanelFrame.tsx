@@ -29,7 +29,7 @@ export function SettingsPanelFrame<TTab extends string>({
   return (
     <div className="absolute inset-0 z-20">
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="overlay-scrim absolute inset-0 backdrop-blur-sm"
         onClick={onClose}
         role="button"
         tabIndex={0}
@@ -39,23 +39,23 @@ export function SettingsPanelFrame<TTab extends string>({
       />
 
       <div className="absolute left-1/2 top-6 w-[min(860px,calc(100vw-2rem))] -translate-x-1/2">
-        <div className="rounded-xl border border-white/10 bg-black/70 text-white shadow-2xl">
-          <div className="flex items-start justify-between gap-4 border-b border-white/10 p-4">
+        <div className="overlay-panel rounded-xl border shadow-elevated backdrop-blur-sm">
+          <div className="flex items-start justify-between gap-4 border-b border-stroke-subtle p-4">
             <div>
               <div className="text-sm font-semibold tracking-wide">{title}</div>
-              <div className="text-xs text-white/60">{subtitle}</div>
+              <div className="text-xs text-content-muted">{subtitle}</div>
             </div>
 
             <div className="flex items-center gap-2">
               <button
-                className="rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+                className="rounded-md border border-stroke-default bg-surface-control px-3 py-1.5 text-xs text-content-secondary transition-colors hover:bg-surface-control-hover hover:text-content-primary"
                 type="button"
                 onClick={onReset}
               >
                 Reset
               </button>
               <button
-                className="rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+                className="rounded-md border border-stroke-default bg-surface-control px-3 py-1.5 text-xs text-content-secondary transition-colors hover:bg-surface-control-hover hover:text-content-primary"
                 type="button"
                 onClick={onClose}
               >
@@ -65,7 +65,7 @@ export function SettingsPanelFrame<TTab extends string>({
           </div>
 
           <div className="flex max-h-[78vh] min-h-105">
-            <div className="w-40 shrink-0 border-r border-white/10 p-3">
+            <div className="w-40 shrink-0 border-r border-stroke-subtle p-3">
               <div className="space-y-1.5">
                 {tabs.map((tab) => (
                   <TabButton

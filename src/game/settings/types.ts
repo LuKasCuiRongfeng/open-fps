@@ -38,6 +38,15 @@ export type TimeSettings = {
     timeDrivenSun: boolean;
 };
 
+// EN: UI settings are shared by the game and editor shells.
+// 中文: UI 设置由游戏和编辑器外壳共享。
+export type UiTheme = "dark" | "light";
+
+export type UiSettings = {
+    /** Active UI theme. / 当前 UI 主题 */
+    theme: UiTheme;
+};
+
 /**
  * Game settings - all values can be modified at runtime.
  * 游戏设置 - 所有值都可以在运行时修改
@@ -52,6 +61,7 @@ export type GameSettings = {
     render: RenderSettings;
     sky: SkySettings;
     time: TimeSettings;
+    ui: UiSettings;
 };
 
 /** Partial settings patch type (all fields optional). / 部分设置补丁类型（所有字段可选） */

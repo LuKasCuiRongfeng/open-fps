@@ -6,6 +6,7 @@ import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings
 import type { MapData } from "@project/MapData";
 import type { EditorWorkspaceController } from "@editor/ui/hooks/useEditorWorkspace";
 import {
+  AppearanceTab,
   RenderTab,
   CameraTab,
   SkyTab,
@@ -16,6 +17,7 @@ import { TerrainEditorTab, TextureEditorTab, type ActiveEditorType } from "./tab
 
 export const EDITOR_SETTINGS_TABS = [
   { id: "file", label: "File" },
+  { id: "appearance", label: "Appearance" },
   { id: "terrainEditor", label: "Terrain Editor" },
   { id: "textureEditor", label: "Texture Editor" },
   { id: "render", label: "Render" },
@@ -60,6 +62,11 @@ export const EDITOR_SETTINGS_TAB_REGISTRY: Record<EditorSettingsTabId, EditorSet
         onApplySettings={props.onApplySettings}
       />
     ),
+  },
+  appearance: {
+    id: "appearance",
+    label: "Appearance",
+    render: (props) => <AppearanceTab settings={props.settings} onPatch={props.onPatch} />,
   },
   terrainEditor: {
     id: "terrainEditor",

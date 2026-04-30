@@ -12,8 +12,8 @@ export function Toggle({ label, checked, onChange, disabled }: ToggleProps) {
   return (
     <label className={`flex items-center gap-3 cursor-pointer select-none ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
       <div
-        className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${
-          checked ? "bg-blue-500" : "bg-white/20"
+        className={`relative h-5 w-10 rounded-full border border-stroke-default transition-colors duration-200 ${
+          checked ? "bg-accent-primary" : "bg-surface-panel-strong"
         } ${disabled ? "cursor-not-allowed" : ""}`}
         onClick={() => !disabled && onChange(!checked)}
         onKeyDown={(e) => {
@@ -27,12 +27,12 @@ export function Toggle({ label, checked, onChange, disabled }: ToggleProps) {
         tabIndex={disabled ? -1 : 0}
       >
         <div
-          className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-md transition-transform duration-200 ${
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface-panel shadow-md transition-transform duration-200 ${
             checked ? "translate-x-5" : "translate-x-0.5"
           }`}
         />
       </div>
-      <span className="text-xs text-white/70">{label}</span>
+      <span className="text-xs text-content-muted">{label}</span>
     </label>
   );
 }

@@ -14,8 +14,8 @@ export function TabButton({ active, label, onClick }: TabButtonProps) {
       onClick={onClick}
       className={
         active
-          ? "w-full rounded-md border border-white/15 bg-white/10 px-3 py-2 text-left text-xs text-white"
-          : "w-full rounded-md border border-transparent bg-transparent px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 hover:text-white"
+          ? "w-full rounded-md border border-accent-primary/45 bg-accent-primary/15 px-3 py-2 text-left text-xs text-content-primary"
+          : "w-full rounded-md border border-transparent bg-transparent px-3 py-2 text-left text-xs text-content-muted transition-colors hover:bg-surface-control-hover hover:text-content-primary"
       }
     >
       {label}

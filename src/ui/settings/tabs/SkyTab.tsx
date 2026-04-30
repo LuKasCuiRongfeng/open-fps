@@ -14,7 +14,7 @@ type SkyTabProps = {
 export function SkyTab({ settings, onPatch }: SkyTabProps) {
   return (
     <div className="space-y-6">
-      <div className="text-xs text-white/60 mb-4">
+      <div className="mb-4 text-xs text-content-muted">
         Sky atmosphere, sun position, lighting, and fog settings.
         <br />
         天空大气、太阳位置、光照和雾设置。
@@ -22,7 +22,7 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
 
       {/* Sun Position */}
       <div>
-        <div className="text-xs font-medium text-white/80 mb-3">Sun Position / 太阳位置</div>
+        <div className="mb-3 text-xs font-medium text-content-secondary">Sun Position / 太阳位置</div>
         <div className="grid gap-4 md:grid-cols-2">
           <RangeField
             label="Elevation (height)"
@@ -33,11 +33,11 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
             onChange={(v) => onPatch({ sky: { sunElevation: v } })}
           />
           <div className="space-y-1">
-            <label className="block text-xs text-white/70">Azimuth (direction)</label>
-            <div className="flex items-center h-8 px-3 bg-white/5 rounded text-sm text-white/60">
+            <label className="block text-xs text-content-muted">Azimuth (direction)</label>
+            <div className="flex h-8 items-center rounded bg-surface-control px-3 text-sm text-content-muted">
               {Math.round(settings.sky.sunAzimuth)}°
             </div>
-            <div className="text-xs text-white/40">Driven by time. Adjust via Time settings.</div>
+            <div className="text-xs text-content-muted">Driven by time. Adjust via Time settings.</div>
           </div>
           <RangeField
             label="Sun Size"
@@ -48,14 +48,14 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
             onChange={(v) => onPatch({ sky: { sunSize: v } })}
           />
         </div>
-        <div className="text-xs text-white/40 mt-2">
+        <div className="mt-2 text-xs text-content-muted">
           Elevation: -30° to 0° = night/twilight, 0° = horizon, 90° = overhead.
         </div>
       </div>
 
       {/* Lighting Intensity */}
       <div>
-        <div className="text-xs font-medium text-white/80 mb-3">Lighting / 光照</div>
+        <div className="mb-3 text-xs font-medium text-content-secondary">Lighting / 光照</div>
         <div className="grid gap-4 md:grid-cols-2">
           <RangeField
             label="Ambient Intensity"
@@ -85,7 +85,7 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
 
       {/* Terrain Shading */}
       <div>
-        <div className="text-xs font-medium text-white/80 mb-3">Terrain Shading / 地形着色</div>
+        <div className="mb-3 text-xs font-medium text-content-secondary">Terrain Shading / 地形着色</div>
         <RangeField
           label="Normal Softness"
           value={settings.sky.normalSoftness}
@@ -94,14 +94,14 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
           step={0.05}
           onChange={(v) => onPatch({ sky: { normalSoftness: v } })}
         />
-        <div className="text-xs text-white/40 mt-2">
+        <div className="mt-2 text-xs text-content-muted">
           0 = sharp realistic shading, 1 = flat (no contrast). Try 0.3-0.5 for balanced look.
         </div>
       </div>
 
       {/* Fog */}
       <div>
-        <div className="text-xs font-medium text-white/80 mb-3">Fog / 雾</div>
+        <div className="mb-3 text-xs font-medium text-content-secondary">Fog / 雾</div>
         <RangeField
           label="Fog Density"
           value={settings.sky.fogDensity}
@@ -110,14 +110,14 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
           step={0.00001}
           onChange={(v) => onPatch({ sky: { fogDensity: v } })}
         />
-        <div className="text-xs text-white/40 mt-2">
+        <div className="mt-2 text-xs text-content-muted">
           Visibility ≈ {Math.round(3.912 / settings.sky.fogDensity)}m
         </div>
       </div>
 
       {/* Bloom */}
       <div>
-        <div className="text-xs font-medium text-white/80 mb-3">Sun Bloom / 太阳泛光</div>
+        <div className="mb-3 text-xs font-medium text-content-secondary">Sun Bloom / 太阳泛光</div>
         <div className="mb-3">
           <Toggle
             label="Enable bloom (sun glare effect)"
@@ -157,7 +157,7 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
 
       {/* Lens Flare */}
       <div>
-        <div className="text-xs font-medium text-white/80 mb-3">Lens Flare / 镜头光斑</div>
+        <div className="mb-3 text-xs font-medium text-content-secondary">Lens Flare / 镜头光斑</div>
         <div className="mb-3">
           <Toggle
             label="Enable lens flare (camera effect)"
@@ -165,14 +165,14 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
             onChange={(v) => onPatch({ sky: { lensflareEnabled: v } })}
           />
         </div>
-        <div className="text-xs text-white/40 mt-2">
+        <div className="mt-2 text-xs text-content-muted">
           Simulates internal lens reflections when facing the sun. Creates ghost images radiating from the light source.
         </div>
       </div>
 
       {/* Night Sky */}
       <div>
-        <div className="text-xs font-medium text-white/80 mb-3">Night Sky / 夜空</div>
+        <div className="mb-3 text-xs font-medium text-content-secondary">Night Sky / 夜空</div>
         <RangeField
           label="Star Brightness"
           value={settings.sky.starBrightness}
@@ -181,7 +181,7 @@ export function SkyTab({ settings, onPatch }: SkyTabProps) {
           step={0.1}
           onChange={(v) => onPatch({ sky: { starBrightness: v } })}
         />
-        <div className="text-xs text-white/40 mt-2">
+        <div className="mt-2 text-xs text-content-muted">
           Adjust the visibility of stars in the night sky. Set sun elevation below 0° to see the night sky.
         </div>
       </div>

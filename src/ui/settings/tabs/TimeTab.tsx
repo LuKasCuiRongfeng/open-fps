@@ -134,7 +134,7 @@ export function TimeTab({ settings, onPatch }: TimeTabProps) {
 
   return (
     <div className="space-y-6">
-      <div className="text-xs text-white/60 mb-4">
+      <div className="mb-4 text-xs text-content-muted">
         Drag the shadow on the sundial to set time. Ancient Chinese sundial style.
       </div>
 
@@ -147,7 +147,6 @@ export function TimeTab({ settings, onPatch }: TimeTabProps) {
             height="280"
             viewBox="0 0 280 280"
             className="select-none"
-            style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.5))" }}
           >
             {/* Definitions */}
             <defs>
@@ -317,11 +316,11 @@ export function TimeTab({ settings, onPatch }: TimeTabProps) {
           </svg>
 
           {/* Current time overlay */}
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black/80 rounded-lg px-4 py-2 border border-white/20">
+          <div className="overlay-panel absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-lg border px-4 py-2 shadow-panel">
             <div className="text-center">
-              <div className="text-2xl font-mono text-amber-400 font-bold">{formatTime(timeOfDay)}</div>
-              <div className="text-sm text-amber-300/80 font-serif">
-                {shichen.name}時 <span className="text-xs text-white/50">({shichen.pinyin})</span>
+              <div className="font-mono text-2xl font-bold text-status-warning">{formatTime(timeOfDay)}</div>
+              <div className="font-serif text-sm text-status-warning">
+                {shichen.name}時 <span className="text-xs text-content-muted">({shichen.pinyin})</span>
               </div>
             </div>
           </div>
@@ -329,13 +328,13 @@ export function TimeTab({ settings, onPatch }: TimeTabProps) {
       </div>
 
       {/* Day period indicator */}
-      <div className="text-center text-sm text-white/70 mt-8">
+      <div className="mt-8 text-center text-sm text-content-secondary">
         {getDayPeriod(timeOfDay)}
       </div>
 
       {/* Time Controls */}
-      <div className="space-y-4 mt-6">
-        <div className="text-xs font-medium text-white/80 mb-3">Time Flow</div>
+      <div className="mt-6 space-y-4">
+        <div className="mb-3 text-xs font-medium text-content-secondary">Time Flow</div>
 
         {/* Pause toggle */}
         <Toggle
@@ -353,19 +352,19 @@ export function TimeTab({ settings, onPatch }: TimeTabProps) {
 
         {/* Speed presets */}
         <div>
-          <div className="text-xs text-white/60 mb-2">Speed Presets</div>
+          <div className="mb-2 text-xs text-content-muted">Speed Presets</div>
           <div className="flex flex-wrap gap-2">
             {speedPresets.map((preset) => (
               <button
                 key={preset.label}
                 type="button"
                 onClick={() => onPatch({ time: { timeSpeed: preset.value, timePaused: preset.value === 0 } })}
-                className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${
+                className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${
                   settings.time.timeSpeed === preset.value && !settings.time.timePaused
-                    ? "bg-amber-600/30 border-amber-500/50 text-amber-300"
+                    ? "border-status-warning/50 bg-status-warning/20 text-status-warning"
                     : preset.value === 0 && settings.time.timePaused
-                      ? "bg-amber-600/30 border-amber-500/50 text-amber-300"
-                      : "bg-white/5 border-white/15 text-white/70 hover:bg-white/10"
+                      ? "border-status-warning/50 bg-status-warning/20 text-status-warning"
+                      : "border-stroke-default bg-surface-control text-content-secondary hover:bg-surface-control-hover hover:text-content-primary"
                 }`}
               >
                 {preset.label}
@@ -383,7 +382,7 @@ export function TimeTab({ settings, onPatch }: TimeTabProps) {
           step={1}
           onChange={(v) => onPatch({ time: { timeSpeed: v } })}
         />
-        <div className="text-xs text-white/40">
+        <div className="text-xs text-content-muted">
           {settings.time.timeSpeed === 0
             ? "Time is stopped."
             : settings.time.timeSpeed === 1
@@ -407,12 +406,12 @@ export function TimeTab({ settings, onPatch }: TimeTabProps) {
       </div>
 
       {/* Info about Shichen */}
-      <div className="mt-6 p-3 bg-white/5 rounded-lg border border-white/10">
-        <div className="text-xs font-medium text-amber-400/80 mb-2">時辰 (Shíchén) - Traditional Chinese Hours</div>
-        <div className="text-xs text-white/50 leading-relaxed">
+      <div className="panel-muted-surface mt-6 rounded-lg border p-3">
+        <div className="mb-2 text-xs font-medium text-status-warning">時辰 (Shíchén) - Traditional Chinese Hours</div>
+        <div className="text-xs leading-relaxed text-content-muted">
           Ancient China divided the day into 12 two-hour periods called 時辰 (shíchén).
           Each period is named after one of the 12 Earthly Branches (地支).
-          The current period is <span className="text-amber-300 font-bold">{shichen.name}時</span>.
+          The current period is <span className="font-bold text-status-warning">{shichen.name}時</span>.
         </div>
       </div>
     </div>

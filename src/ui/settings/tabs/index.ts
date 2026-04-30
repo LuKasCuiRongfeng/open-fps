@@ -2,6 +2,7 @@
 // 设置标签索引
 
 export { HelpTab } from "./HelpTab";
+export { AppearanceTab } from "./AppearanceTab";
 export { RenderTab } from "./RenderTab";
 export { CameraTab } from "./CameraTab";
 export { SkyTab } from "./SkyTab";

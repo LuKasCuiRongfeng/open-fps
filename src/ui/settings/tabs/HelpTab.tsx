@@ -14,7 +14,7 @@ export function HelpTab() {
     <div className="space-y-5">
       <div>
         <div className="text-sm font-semibold">Controls</div>
-        <div className="mt-2 space-y-1.5 text-sm text-white/75">
+        <div className="mt-2 space-y-1.5 text-sm text-content-secondary">
           <div>Click the game view to lock pointer.</div>
           <div>WASD / Arrow keys: Move</div>
           <div>Shift: Sprint</div>
@@ -31,7 +31,7 @@ export function HelpTab() {
 
       <div>
         <div className="text-sm font-semibold">Notes</div>
-        <div className="mt-2 space-y-1.5 text-sm text-white/75">
+        <div className="mt-2 space-y-1.5 text-sm text-content-secondary">
           <div>Settings apply immediately.</div>
           <div>Reset restores default values.</div>
         </div>

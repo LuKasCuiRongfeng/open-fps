@@ -1,10 +1,238 @@
 @import "tailwindcss";
 
-/* Custom scrollbar styles / 自定义滚动条样式 */
+/*
+  EN: Layer 1 defines theme-independent system scales used by Tailwind tokens.
+  中文: 第一层定义与主题无关的系统尺度，供 Tailwind token 使用。
+*/
+:root {
+  --sys-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --sys-font-mono: "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --sys-radius-xs: 0.125rem;
+  --sys-radius-sm: 0.25rem;
+  --sys-radius-md: 0.375rem;
+  --sys-radius-lg: 0.5rem;
+  --sys-radius-xl: 0.75rem;
+  --sys-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --sys-duration-fast: 120ms;
+  --sys-duration-standard: 180ms;
+  --sys-z-overlay: 20;
+  --sys-z-modal: 50;
+}
+
+/*
+  EN: Layer 2 defines theme-specific base variables. Dark is the default editor/game shell.
+  中文: 第二层定义主题相关基础变量。暗色是编辑器和游戏外壳的默认主题。
+*/
+:root,
+[data-theme="dark"],
+.dark {
+  color-scheme: dark;
+  --sys-surface-canvas: oklch(13.5% 0.014 255);
+  --sys-surface-shell: oklch(17.5% 0.016 255);
+  --sys-surface-panel: oklch(21.5% 0.017 255);
+  --sys-surface-panel-muted: oklch(25.5% 0.016 255);
+  --sys-surface-panel-strong: oklch(29% 0.018 255);
+  --sys-surface-control: oklch(24% 0.017 255);
+  --sys-surface-control-hover: oklch(30% 0.019 255);
+  --sys-surface-control-active: oklch(35% 0.022 255);
+  --sys-content-primary: oklch(95.5% 0.006 255);
+  --sys-content-secondary: oklch(80.5% 0.014 255);
+  --sys-content-muted: oklch(62.5% 0.018 255);
+  --sys-content-disabled: oklch(47% 0.016 255);
+  --sys-stroke-subtle: oklch(31% 0.018 255);
+  --sys-stroke-default: oklch(38% 0.022 255);
+  --sys-stroke-strong: oklch(49% 0.026 255);
+  --sys-overlay-scrim: oklch(8% 0.012 255 / 64%);
+  --sys-overlay-panel: oklch(18% 0.016 255 / 86%);
+  --sys-focus-ring: oklch(69% 0.135 240);
+  --sys-selection: oklch(62% 0.155 240 / 35%);
+  --sys-accent-primary: oklch(65% 0.155 245);
+  --sys-accent-primary-hover: oklch(70% 0.15 245);
+  --sys-accent-primary-content: oklch(12% 0.018 255);
+  --sys-accent-secondary: oklch(62% 0.145 294);
+  --sys-accent-secondary-hover: oklch(68% 0.14 294);
+  --sys-accent-secondary-content: oklch(97% 0.006 294);
+  --sys-success: oklch(67% 0.15 155);
+  --sys-success-hover: oklch(73% 0.145 155);
+  --sys-success-content: oklch(12% 0.02 155);
+  --sys-warning: oklch(76% 0.155 76);
+  --sys-warning-hover: oklch(82% 0.145 76);
+  --sys-warning-content: oklch(16% 0.03 76);
+  --sys-danger: oklch(64% 0.19 25);
+  --sys-danger-hover: oklch(70% 0.17 25);
+  --sys-danger-content: oklch(98% 0.005 25);
+  --sys-info: oklch(70% 0.13 220);
+  --sys-info-content: oklch(12% 0.018 220);
+  --sys-shadow-elevated: 0 22px 60px oklch(0% 0 0 / 42%);
+  --sys-shadow-panel: 0 10px 28px oklch(0% 0 0 / 28%);
+  --sys-scrollbar-thumb: oklch(72% 0.012 255 / 32%);
+  --sys-scrollbar-thumb-hover: oklch(82% 0.012 255 / 46%);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --sys-surface-canvas: oklch(96.5% 0.009 250);
+  --sys-surface-shell: oklch(93% 0.011 250);
+  --sys-surface-panel: oklch(99% 0.004 250);
+  --sys-surface-panel-muted: oklch(95.5% 0.008 250);
+  --sys-surface-panel-strong: oklch(90.5% 0.012 250);
+  --sys-surface-control: oklch(98% 0.005 250);
+  --sys-surface-control-hover: oklch(93.5% 0.012 250);
+  --sys-surface-control-active: oklch(88.5% 0.017 250);
+  --sys-content-primary: oklch(19% 0.02 250);
+  --sys-content-secondary: oklch(35% 0.025 250);
+  --sys-content-muted: oklch(50% 0.024 250);
+  --sys-content-disabled: oklch(68% 0.018 250);
+  --sys-stroke-subtle: oklch(86% 0.012 250);
+  --sys-stroke-default: oklch(79% 0.016 250);
+  --sys-stroke-strong: oklch(66% 0.024 250);
+  --sys-overlay-scrim: oklch(18% 0.02 250 / 36%);
+  --sys-overlay-panel: oklch(99% 0.004 250 / 94%);
+  --sys-focus-ring: oklch(55% 0.16 245);
+  --sys-selection: oklch(62% 0.155 240 / 22%);
+  --sys-accent-primary: oklch(54% 0.17 245);
+  --sys-accent-primary-hover: oklch(49% 0.17 245);
+  --sys-accent-primary-content: oklch(99% 0.005 245);
+  --sys-accent-secondary: oklch(52% 0.16 294);
+  --sys-accent-secondary-hover: oklch(47% 0.16 294);
+  --sys-accent-secondary-content: oklch(99% 0.005 294);
+  --sys-success: oklch(46% 0.14 155);
+  --sys-success-hover: oklch(40% 0.14 155);
+  --sys-success-content: oklch(99% 0.005 155);
+  --sys-warning: oklch(47% 0.13 76);
+  --sys-warning-hover: oklch(41% 0.13 76);
+  --sys-warning-content: oklch(99% 0.005 76);
+  --sys-danger: oklch(55% 0.19 25);
+  --sys-danger-hover: oklch(50% 0.19 25);
+  --sys-danger-content: oklch(99% 0.005 25);
+  --sys-info: oklch(48% 0.14 220);
+  --sys-info-content: oklch(99% 0.005 220);
+  --sys-shadow-elevated: 0 22px 60px oklch(34% 0.035 250 / 18%);
+  --sys-shadow-panel: 0 10px 28px oklch(34% 0.035 250 / 12%);
+  --sys-scrollbar-thumb: oklch(52% 0.02 250 / 30%);
+  --sys-scrollbar-thumb-hover: oklch(42% 0.025 250 / 46%);
+}
+
+/*
+  EN: Layer 3 exposes Tailwind tokens. These only reference Layer 1 and Layer 2 variables.
+  中文: 第三层暴露 Tailwind token，只引用第一层和第二层变量。
+*/
+@theme {
+  --font-sans: var(--sys-font-sans);
+  --font-mono: var(--sys-font-mono);
+  --radius-xs: var(--sys-radius-xs);
+  --radius-sm: var(--sys-radius-sm);
+  --radius-md: var(--sys-radius-md);
+  --radius-lg: var(--sys-radius-lg);
+  --radius-xl: var(--sys-radius-xl);
+  --ease-standard: var(--sys-ease-standard);
+  --color-surface-canvas: var(--sys-surface-canvas);
+  --color-surface-shell: var(--sys-surface-shell);
+  --color-surface-panel: var(--sys-surface-panel);
+  --color-surface-panel-muted: var(--sys-surface-panel-muted);
+  --color-surface-panel-strong: var(--sys-surface-panel-strong);
+  --color-surface-control: var(--sys-surface-control);
+  --color-surface-control-hover: var(--sys-surface-control-hover);
+  --color-surface-control-active: var(--sys-surface-control-active);
+  --color-content-primary: var(--sys-content-primary);
+  --color-content-secondary: var(--sys-content-secondary);
+  --color-content-muted: var(--sys-content-muted);
+  --color-content-disabled: var(--sys-content-disabled);
+  --color-stroke-subtle: var(--sys-stroke-subtle);
+  --color-stroke-default: var(--sys-stroke-default);
+  --color-stroke-strong: var(--sys-stroke-strong);
+  --color-overlay-scrim: var(--sys-overlay-scrim);
+  --color-overlay-panel: var(--sys-overlay-panel);
+  --color-focus-ring: var(--sys-focus-ring);
+  --color-selection: var(--sys-selection);
+  --color-accent-primary: var(--sys-accent-primary);
+  --color-accent-primary-hover: var(--sys-accent-primary-hover);
+  --color-accent-primary-content: var(--sys-accent-primary-content);
+  --color-accent-secondary: var(--sys-accent-secondary);
+  --color-accent-secondary-hover: var(--sys-accent-secondary-hover);
+  --color-accent-secondary-content: var(--sys-accent-secondary-content);
+  --color-status-success: var(--sys-success);
+  --color-status-success-hover: var(--sys-success-hover);
+  --color-status-success-content: var(--sys-success-content);
+  --color-status-warning: var(--sys-warning);
+  --color-status-warning-hover: var(--sys-warning-hover);
+  --color-status-warning-content: var(--sys-warning-content);
+  --color-status-danger: var(--sys-danger);
+  --color-status-danger-hover: var(--sys-danger-hover);
+  --color-status-danger-content: var(--sys-danger-content);
+  --color-status-info: var(--sys-info);
+  --color-status-info-content: var(--sys-info-content);
+  --shadow-elevated: var(--sys-shadow-elevated);
+  --shadow-panel: var(--sys-shadow-panel);
+}
+
+/*
+  EN: Layer 4 defines project utilities that compose only Tailwind-exposed tokens.
+  中文: 第四层定义项目 utility，只组合 Tailwind 暴露的 token。
+*/
+@utility app-root {
+  background-color: var(--color-surface-canvas);
+  color: var(--color-content-primary);
+}
+
+@utility shell-surface {
+  background-color: var(--color-surface-shell);
+  color: var(--color-content-primary);
+}
+
+@utility panel-surface {
+  background-color: var(--color-surface-panel);
+  color: var(--color-content-primary);
+  border-color: var(--color-stroke-subtle);
+}
+
+@utility panel-muted-surface {
+  background-color: var(--color-surface-panel-muted);
+  color: var(--color-content-secondary);
+  border-color: var(--color-stroke-subtle);
+}
+
+@utility field-surface {
+  background-color: var(--color-surface-control);
+  color: var(--color-content-primary);
+  border-color: var(--color-stroke-default);
+}
+
+@utility overlay-scrim {
+  background-color: var(--color-overlay-scrim);
+}
+
+@utility overlay-panel {
+  background-color: var(--color-overlay-panel);
+  color: var(--color-content-primary);
+  border-color: var(--color-stroke-subtle);
+}
+
+@utility focus-token {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-focus-ring);
+}
+
 @layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    background-color: var(--color-surface-canvas);
+    color: var(--color-content-primary);
+    font-family: var(--font-sans);
+  }
+
+  ::selection {
+    background-color: var(--color-selection);
+  }
+
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    scrollbar-color: var(--sys-scrollbar-thumb) transparent;
   }
 
   *::-webkit-scrollbar {
@@ -17,12 +245,12 @@
   }
 
   *::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--sys-scrollbar-thumb);
     border-radius: 3px;
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--sys-scrollbar-thumb-hover);
   }
 
   *::-webkit-scrollbar-corner {

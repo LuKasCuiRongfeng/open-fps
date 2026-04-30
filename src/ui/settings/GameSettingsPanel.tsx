@@ -3,6 +3,7 @@ import type { GameApp } from "@game/app";
 import type { GameSettings, GameSettingsPatch } from "@game/settings";
 import {
   HelpTab,
+  AppearanceTab,
   RenderTab,
   CameraTab,
   SkyTab,
@@ -15,6 +16,7 @@ import { SettingsPanelFrame } from "./SettingsPanelFrame";
 
 const GAME_SETTINGS_TABS = [
   { id: "help", label: "Help" },
+  { id: "appearance", label: "Appearance" },
   { id: "render", label: "Render" },
   { id: "camera", label: "Camera" },
   { id: "time", label: "Time (日晷)" },
@@ -55,6 +57,8 @@ export function GameSettingsPanel({
     switch (tab) {
       case "help":
         return <HelpTab />;
+      case "appearance":
+        return <AppearanceTab settings={settings} onPatch={onPatch} />;
       case "render":
         return <RenderTab settings={settings} onPatch={onPatch} />;
       case "camera":

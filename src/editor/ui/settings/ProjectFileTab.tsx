@@ -212,36 +212,36 @@ export function ProjectFileTab({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-md border border-white/10 p-3">
+      <div className="panel-muted-surface rounded-md border p-3">
         <div className="flex items-center justify-between">
-          <div className="text-xs text-white/60">Current Project</div>
-          {dirty && <span className="text-xs text-yellow-400">● Unsaved changes</span>}
+          <div className="text-xs text-content-muted">Current Project</div>
+          {dirty && <span className="text-xs text-status-warning">● Unsaved changes</span>}
         </div>
         <div className="mt-2">
-          <label className="mb-1 block text-xs text-white/50">Project Name</label>
+          <label className="mb-1 block text-xs text-content-muted">Project Name</label>
           <input
             type="text"
             value={editableProjectName}
             onChange={(e) => setEditableProjectName(e.target.value)}
             placeholder="Untitled Project"
-            className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30"
+            className="field-surface w-full rounded-md border px-3 py-1.5 text-sm outline-none transition-colors focus:border-focus-ring"
           />
         </div>
         <div className="mt-2">
-          <label className="mb-1 block text-xs text-white/50">Current Map Name</label>
+          <label className="mb-1 block text-xs text-content-muted">Current Map Name</label>
           <input
             type="text"
             value={editableMapName}
             onChange={(e) => handleMapNameChange(e.target.value)}
             placeholder="Untitled Map"
-            className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30"
+            className="field-surface w-full rounded-md border px-3 py-1.5 text-sm outline-none transition-colors focus:border-focus-ring"
           />
         </div>
-        <div className="mt-2 text-xs text-white/50">
+        <div className="mt-2 text-xs text-content-muted">
           Mode: {canEdit ? "✓ Project Open (Editable)" : "⚠ Procedural (View Only)"}
         </div>
         {editorWorkspace.currentProjectPath && (
-          <div className="mt-1 truncate text-xs text-white/40" title={editorWorkspace.currentProjectPath}>
+          <div className="mt-1 truncate text-xs text-content-muted" title={editorWorkspace.currentProjectPath}>
             📁 {editorWorkspace.currentProjectPath}
           </div>
         )}
@@ -253,21 +253,21 @@ export function ProjectFileTab({
           <button
             onClick={handleOpenProject}
             disabled={processing}
-            className="px-3 py-2 rounded-md text-sm font-medium bg-purple-600 hover:bg-purple-700 disabled:bg-gray-800 disabled:text-gray-500 transition-colors"
+            className="rounded-md bg-accent-secondary px-3 py-2 text-sm font-medium text-accent-secondary-content transition-colors hover:bg-accent-secondary-hover disabled:bg-surface-panel-strong disabled:text-content-disabled"
           >
             📂 Open Project...
           </button>
           <button
             onClick={handleSave}
             disabled={processing}
-            className="px-3 py-2 rounded-md text-sm font-medium bg-blue-600 hover:bg-blue-700 disabled:bg-gray-800 disabled:text-gray-500 transition-colors"
+            className="rounded-md bg-accent-primary px-3 py-2 text-sm font-medium text-accent-primary-content transition-colors hover:bg-accent-primary-hover disabled:bg-surface-panel-strong disabled:text-content-disabled"
           >
             💾 {hasProject ? "Save" : "Save as Project..."}
           </button>
           <button
             onClick={handleSaveAs}
             disabled={processing}
-            className="col-span-2 px-3 py-2 rounded-md text-sm font-medium bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 transition-colors"
+            className="col-span-2 rounded-md border border-stroke-default bg-surface-control px-3 py-2 text-sm font-medium text-content-secondary transition-colors hover:bg-surface-control-hover hover:text-content-primary disabled:bg-surface-panel-strong disabled:text-content-disabled"
           >
             📁 Save As...
           </button>
@@ -276,17 +276,17 @@ export function ProjectFileTab({
 
       {statusMessage && (
         <div
-          className={`text-sm ${statusMessage.startsWith("✓") ? "text-green-400" : statusMessage.includes("cancelled") ? "text-yellow-400" : "text-red-400"}`}
+          className={`text-sm ${statusMessage.startsWith("✓") ? "text-status-success" : statusMessage.includes("cancelled") ? "text-status-warning" : "text-status-danger"}`}
         >
           {statusMessage}
         </div>
       )}
 
-      <div className="space-y-3 rounded-md border border-white/10 p-3">
+      <div className="panel-muted-surface space-y-3 rounded-md border p-3">
         <div className="flex items-center justify-between">
           <div className="text-sm font-semibold">Maps</div>
           {editorWorkspace.currentMapId && (
-            <span className="text-xs text-white/45">Current: {editorWorkspace.currentMapId}</span>
+            <span className="text-xs text-content-muted">Current: {editorWorkspace.currentMapId}</span>
           )}
         </div>
 
@@ -301,17 +301,17 @@ export function ProjectFileTab({
                   disabled={processing || active}
                   className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors ${
                     active
-                      ? "border-blue-500/40 bg-blue-500/10 text-blue-200"
-                      : "border-white/10 bg-black/30 text-white hover:border-white/20 hover:bg-white/5"
+                      ? "border-accent-primary/45 bg-accent-primary/15 text-content-primary"
+                      : "border-stroke-subtle bg-surface-control text-content-secondary hover:border-stroke-default hover:bg-surface-control-hover hover:text-content-primary"
                   } disabled:cursor-not-allowed disabled:opacity-70`}
                 >
                   <span>{mapRecord.name}</span>
-                  <span className="text-xs text-white/40">{mapRecord.id}</span>
+                  <span className="text-xs text-content-muted">{mapRecord.id}</span>
                 </button>
               );
             })
           ) : (
-            <div className="text-xs text-white/45">No maps saved yet.</div>
+            <div className="text-xs text-content-muted">No maps saved yet.</div>
           )}
         </div>
 
@@ -322,19 +322,19 @@ export function ProjectFileTab({
             onChange={(e) => setNewMapName(e.target.value)}
             placeholder="New map name"
             disabled={!hasProject || processing}
-            className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30 disabled:text-white/40"
+            className="field-surface w-full rounded-md border px-3 py-1.5 text-sm outline-none transition-colors focus:border-focus-ring disabled:text-content-disabled"
           />
           <button
             onClick={handleCreateMap}
             disabled={!hasProject || processing}
-            className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:bg-gray-800 disabled:text-gray-500"
+            className="rounded-md bg-status-success px-3 py-2 text-sm font-medium text-status-success-content transition-colors hover:bg-status-success-hover disabled:bg-surface-panel-strong disabled:text-content-disabled"
           >
             New Map
           </button>
         </div>
       </div>
 
-      <div className="rounded-lg bg-blue-900/30 p-3 text-xs text-blue-200">
+      <div className="rounded-lg border border-status-info/35 bg-status-info/15 p-3 text-xs text-content-secondary">
         <strong>Tips:</strong>
         <ul className="mt-1 list-disc list-inside space-y-1">
           <li>Each project stores shared settings in the project root.</li>

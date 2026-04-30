@@ -3,6 +3,7 @@ import type { GameSettingsPatch } from "@game/settings";
 import FpsCounter from "@ui/FpsCounter";
 import LoadingOverlay, { type LoadingStep } from "@ui/LoadingOverlay";
 import { GameSettingsPanel } from "@ui/settings";
+import { useDocumentTheme } from "@ui/theme";
 import { DEFAULT_BUNDLED_PROJECT_URL } from "@game/workspace/loadBundledProject";
 import { useGameApp } from "./hooks";
 
@@ -32,6 +33,8 @@ export default function PlayerView() {
     pendingSettings: null,
     bundledProjectUrl: DEFAULT_BUNDLED_PROJECT_URL,
   });
+
+  useDocumentTheme(settings?.ui.theme);
 
   useEffect(() => {
     if (!settingsOpen || !document.pointerLockElement) {
@@ -69,7 +72,7 @@ export default function PlayerView() {
   };
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-black text-white">
+    <div className="app-root relative h-screen w-screen overflow-hidden">
       <div ref={hostRef} className="h-full w-full" />
 
       <FpsCounter
@@ -99,9 +102,9 @@ export default function PlayerView() {
 
       {error && (
         <div className="absolute inset-0 flex items-center justify-center p-6">
-          <div className="max-w-xl rounded bg-black/70 p-4 text-sm leading-relaxed">
+          <div className="overlay-panel max-w-xl rounded-md border p-4 text-sm leading-relaxed shadow-panel backdrop-blur-sm">
             <div className="mb-2 font-semibold">Game init failed</div>
-            <div className="opacity-90">{error}</div>
+            <div className="text-content-secondary">{error}</div>
           </div>
         </div>
       )}

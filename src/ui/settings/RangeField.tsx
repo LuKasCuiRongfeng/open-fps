@@ -16,14 +16,14 @@ export function RangeField({ label, value, min, max, step, onChange, disabled }:
 
   return (
     <div className={`grid grid-cols-[1fr_140px] items-center gap-3 ${disabled ? "opacity-50" : ""}`}>
-      <label htmlFor={id} className="text-sm text-white/80">
+      <label htmlFor={id} className="text-sm text-content-secondary">
         {label}
       </label>
 
       <div className="flex items-center gap-2">
         <input
           id={id}
-          className="h-2 w-full cursor-pointer accent-white disabled:cursor-not-allowed"
+          className="h-2 w-full cursor-pointer accent-accent-primary disabled:cursor-not-allowed"
           type="range"
           min={min}
           max={max}
@@ -34,7 +34,7 @@ export function RangeField({ label, value, min, max, step, onChange, disabled }:
         />
 
         <input
-          className="w-20 rounded-md border border-white/15 bg-black/40 px-2 py-1 text-right text-xs tabular-nums text-white outline-none focus:border-white/30 disabled:cursor-not-allowed"
+          className="field-surface w-20 rounded-md border px-2 py-1 text-right text-xs tabular-nums outline-none transition-colors focus:border-focus-ring disabled:cursor-not-allowed disabled:text-content-disabled"
           type="number"
           min={min}
           max={max}

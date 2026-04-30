@@ -4,6 +4,8 @@
 export type {
   DeepPartial,
   TimeSettings,
+  UiTheme,
+  UiSettings,
   GameSettings,
   GameSettingsPatch,
   // Re-export config-derived types for convenience.

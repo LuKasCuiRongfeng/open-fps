@@ -50,7 +50,7 @@ export function TextureEditorTab({
       <div className="flex items-center justify-between">
         <div>
           <div className="text-sm font-semibold">Texture Painting</div>
-          <div className="text-xs text-white/50">
+          <div className="text-xs text-content-muted">
             {!canEdit
               ? "Open a project to enable editing"
               : !editingEnabled
@@ -61,12 +61,12 @@ export function TextureEditorTab({
         <button
           onClick={handleSelectTexture}
           disabled={!canStartEditing || isEditing}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+          className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
             isEditing
-              ? "bg-purple-600 text-white cursor-default"
+              ? "cursor-default bg-accent-secondary text-accent-secondary-content"
               : canStartEditing
-                ? "bg-blue-600 hover:bg-blue-700 text-white"
-                : "bg-gray-700 text-gray-500 cursor-not-allowed"
+                ? "bg-accent-primary text-accent-primary-content hover:bg-accent-primary-hover"
+                : "cursor-not-allowed bg-surface-panel-strong text-content-disabled"
           }`}
         >
           {isEditing
@@ -80,8 +80,8 @@ export function TextureEditorTab({
       </div>
 
       {canEdit && !editingEnabled && (
-        <div className="rounded-lg bg-amber-500/20 px-3 py-2 text-sm text-amber-300">
-          Texture editing disabled. Create a <code className="rounded bg-black/30 px-1">texture.json</code> file in your project to enable.
+        <div className="rounded-lg border border-status-warning/35 bg-status-warning/15 px-3 py-2 text-sm text-content-secondary">
+          Texture editing disabled. Create a <code className="rounded bg-surface-control px-1 text-status-warning">texture.json</code> file in your project to enable.
         </div>
       )}
 
@@ -95,13 +95,13 @@ export function TextureEditorTab({
                   <button
                     key={name}
                     onClick={() => setSelectedLayer(name)}
-                    className={`px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                    className={`rounded-md px-3 py-2 text-xs font-medium transition-colors ${
                       selectedLayer === name
-                        ? "bg-purple-600"
-                        : "bg-gray-700 hover:bg-gray-600"
+                        ? "bg-accent-secondary text-accent-secondary-content"
+                        : "bg-surface-control text-content-secondary hover:bg-surface-control-hover hover:text-content-primary"
                     }`}
                   >
-                    <span className="text-gray-400 mr-1">{index + 1}.</span>
+                    <span className="mr-1 text-content-muted">{index + 1}.</span>
                     {name}
                   </button>
                 ))}
@@ -110,7 +110,7 @@ export function TextureEditorTab({
           )}
 
           {layerNames.length === 0 && (
-            <div className="text-sm text-gray-500 italic">
+            <div className="text-sm italic text-content-muted">
               No texture layers defined in texture.json
             </div>
           )}
@@ -119,7 +119,7 @@ export function TextureEditorTab({
             <div className="text-sm font-semibold">Brush Settings</div>
 
             <div>
-              <div className="flex items-center justify-between text-sm text-white/80 mb-1">
+              <div className="mb-1 flex items-center justify-between text-sm text-content-secondary">
                 <span>Radius</span>
                 <span>{brushRadius.toFixed(0)}m</span>
               </div>
@@ -130,12 +130,12 @@ export function TextureEditorTab({
                 step="1"
                 value={brushRadius}
                 onChange={(e) => setBrushRadius(Number(e.target.value))}
-                className="w-full accent-purple-500"
+                className="w-full accent-accent-secondary"
               />
             </div>
 
             <div>
-              <div className="flex items-center justify-between text-sm text-white/80 mb-1">
+              <div className="mb-1 flex items-center justify-between text-sm text-content-secondary">
                 <span>Strength</span>
                 <span>{(brushStrength * 100).toFixed(0)}%</span>
               </div>
@@ -146,12 +146,12 @@ export function TextureEditorTab({
                 step="0.01"
                 value={brushStrength}
                 onChange={(e) => setBrushStrength(Number(e.target.value))}
-                className="w-full accent-purple-500"
+                className="w-full accent-accent-secondary"
               />
             </div>
 
             <div>
-              <div className="flex items-center justify-between text-sm text-white/80 mb-1">
+              <div className="mb-1 flex items-center justify-between text-sm text-content-secondary">
                 <span>Falloff</span>
                 <span>{(brushFalloff * 100).toFixed(0)}%</span>
               </div>
@@ -162,12 +162,12 @@ export function TextureEditorTab({
                 step="0.01"
                 value={brushFalloff}
                 onChange={(e) => setBrushFalloff(Number(e.target.value))}
-                className="w-full accent-purple-500"
+                className="w-full accent-accent-secondary"
               />
             </div>
           </div>
 
-          <div className="rounded-lg bg-purple-900/30 p-3 text-xs text-purple-200">
+          <div className="rounded-lg border border-accent-secondary/35 bg-accent-secondary/15 p-3 text-xs text-content-secondary">
             <strong>Controls:</strong>
             <ul className="mt-1 list-disc list-inside space-y-1">
               <li>Left click: Paint texture</li>

@@ -33,43 +33,43 @@ export function TextureEditorPanel({ editor, visible }: Props) {
   const layerNames = editor.layerNames;
 
   return (
-    <div className="absolute top-4 right-4 w-64 bg-black/80 backdrop-blur-sm rounded-lg p-4 text-white text-sm">
-      <div className="flex items-center justify-between mb-4">
+    <div className="overlay-panel absolute right-4 top-4 w-64 rounded-lg border p-4 text-sm shadow-panel backdrop-blur-sm">
+      <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-bold">🎨 Texture Brush</h2>
-        <span className="px-2 py-1 rounded text-xs font-medium bg-purple-600">
+        <span className="rounded bg-accent-secondary px-2 py-1 text-xs font-medium text-accent-secondary-content">
           PAINTING
         </span>
       </div>
 
       <div className="mb-4">
-        <label className="block text-gray-400 mb-2">Texture Layer</label>
+        <label className="mb-2 block text-content-muted">Texture Layer</label>
         <div className="grid grid-cols-2 gap-2">
           {layerNames.map((layer, index) => (
             <button
               key={layer}
               onClick={() => setSelectedLayer(layer)}
-              className={`px-3 py-2 rounded text-xs font-medium transition-colors ${
+              className={`rounded px-3 py-2 text-xs font-medium transition-colors ${
                 selectedLayer === layer
-                  ? "bg-purple-600"
-                  : "bg-gray-700 hover:bg-gray-600"
+                  ? "bg-accent-secondary text-accent-secondary-content"
+                  : "bg-surface-control text-content-secondary hover:bg-surface-control-hover hover:text-content-primary"
               }`}
             >
-              <span className="text-gray-400 mr-1">{index + 1}.</span>
+              <span className="mr-1 text-content-muted">{index + 1}.</span>
               {layer}
             </button>
           ))}
         </div>
         {layerNames.length === 0 && (
-          <div className="text-gray-500 text-xs italic">
+          <div className="text-xs italic text-content-muted">
             No texture layers defined
           </div>
         )}
       </div>
 
       <div className="mb-3">
-        <label className="flex items-center justify-between text-gray-400 mb-1">
+        <label className="mb-1 flex items-center justify-between text-content-muted">
           <span>Radius</span>
-          <span className="text-white">{brushRadius.toFixed(0)}m</span>
+          <span className="text-content-primary">{brushRadius.toFixed(0)}m</span>
         </label>
         <input
           type="range"
@@ -78,14 +78,14 @@ export function TextureEditorPanel({ editor, visible }: Props) {
           step="1"
           value={brushRadius}
           onChange={(e) => setBrushRadius(Number(e.target.value))}
-          className="w-full accent-purple-500"
+          className="w-full accent-accent-secondary"
         />
       </div>
 
       <div className="mb-3">
-        <label className="flex items-center justify-between text-gray-400 mb-1">
+        <label className="mb-1 flex items-center justify-between text-content-muted">
           <span>Strength</span>
-          <span className="text-white">{(brushStrength * 100).toFixed(0)}%</span>
+          <span className="text-content-primary">{(brushStrength * 100).toFixed(0)}%</span>
         </label>
         <input
           type="range"
@@ -94,14 +94,14 @@ export function TextureEditorPanel({ editor, visible }: Props) {
           step="0.01"
           value={brushStrength}
           onChange={(e) => setBrushStrength(Number(e.target.value))}
-          className="w-full accent-purple-500"
+          className="w-full accent-accent-secondary"
         />
       </div>
 
       <div className="mb-3">
-        <label className="flex items-center justify-between text-gray-400 mb-1">
+        <label className="mb-1 flex items-center justify-between text-content-muted">
           <span>Falloff</span>
-          <span className="text-white">{(brushFalloff * 100).toFixed(0)}%</span>
+          <span className="text-content-primary">{(brushFalloff * 100).toFixed(0)}%</span>
         </label>
         <input
           type="range"
@@ -110,11 +110,11 @@ export function TextureEditorPanel({ editor, visible }: Props) {
           step="0.01"
           value={brushFalloff}
           onChange={(e) => setBrushFalloff(Number(e.target.value))}
-          className="w-full accent-purple-500"
+          className="w-full accent-accent-secondary"
         />
       </div>
 
-      <div className="mt-4 pt-3 border-t border-gray-700 text-xs text-gray-500">
+      <div className="mt-4 border-t border-stroke-subtle pt-3 text-xs text-content-muted">
         <p>Left click: Paint texture</p>
         <p>Right click: Orbit camera</p>
         <p>Middle click: Pan camera</p>

@@ -83,19 +83,19 @@ export function TerrainEditorTab({
       <div className="flex items-center justify-between">
         <div>
           <div className="text-sm font-semibold">Terrain Editing</div>
-          <div className="text-xs text-white/50">
+          <div className="text-xs text-content-muted">
             {canEdit ? "Edit terrain heightmap" : "Open a project to enable editing"}
           </div>
         </div>
         <button
           onClick={handleSelectTerrain}
           disabled={!canEdit || isEditing}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+          className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
             isEditing
-              ? "bg-green-600 text-white cursor-default"
+              ? "cursor-default bg-status-success text-status-success-content"
               : canEdit
-                ? "bg-blue-600 hover:bg-blue-700 text-white"
-                : "bg-gray-700 text-gray-500 cursor-not-allowed"
+                ? "bg-accent-primary text-accent-primary-content hover:bg-accent-primary-hover"
+                : "cursor-not-allowed bg-surface-panel-strong text-content-disabled"
           }`}
         >
           {isEditing
@@ -115,10 +115,10 @@ export function TerrainEditorTab({
                 <button
                   key={type}
                   onClick={() => setBrushType(type)}
-                  className={`px-3 py-2 rounded-md text-xs font-medium transition-colors capitalize ${
+                  className={`rounded-md px-3 py-2 text-xs font-medium capitalize transition-colors ${
                     brushType === type
-                      ? "bg-green-600"
-                      : "bg-gray-700 hover:bg-gray-600"
+                      ? "bg-status-success text-status-success-content"
+                      : "bg-surface-control text-content-secondary hover:bg-surface-control-hover hover:text-content-primary"
                   }`}
                 >
                   {type}
@@ -131,7 +131,7 @@ export function TerrainEditorTab({
             <div className="text-sm font-semibold">Brush Settings</div>
 
             <div>
-              <div className="flex items-center justify-between text-sm text-white/80 mb-1">
+              <div className="mb-1 flex items-center justify-between text-sm text-content-secondary">
                 <span>Radius</span>
                 <span>{brushRadius.toFixed(0)}m</span>
               </div>
@@ -142,12 +142,12 @@ export function TerrainEditorTab({
                 step="1"
                 value={brushRadius}
                 onChange={(e) => setBrushRadius(Number(e.target.value))}
-                className="w-full accent-green-500"
+                className="w-full accent-status-success"
               />
             </div>
 
             <div>
-              <div className="flex items-center justify-between text-sm text-white/80 mb-1">
+              <div className="mb-1 flex items-center justify-between text-sm text-content-secondary">
                 <span>Strength</span>
                 <span>{(brushStrength * 100).toFixed(0)}%</span>
               </div>
@@ -158,12 +158,12 @@ export function TerrainEditorTab({
                 step="0.05"
                 value={brushStrength}
                 onChange={(e) => setBrushStrength(Number(e.target.value))}
-                className="w-full accent-green-500"
+                className="w-full accent-status-success"
               />
             </div>
 
             <div>
-              <div className="flex items-center justify-between text-sm text-white/80 mb-1">
+              <div className="mb-1 flex items-center justify-between text-sm text-content-secondary">
                 <span>Falloff</span>
                 <span>{(brushFalloff * 100).toFixed(0)}%</span>
               </div>
@@ -174,7 +174,7 @@ export function TerrainEditorTab({
                 step="0.05"
                 value={brushFalloff}
                 onChange={(e) => setBrushFalloff(Number(e.target.value))}
-                className="w-full accent-green-500"
+                className="w-full accent-status-success"
               />
             </div>
           </div>
@@ -185,13 +185,13 @@ export function TerrainEditorTab({
         <div className="text-sm font-semibold mb-3">Mouse Controls</div>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <label className="text-sm text-white/80">Left Button</label>
+            <label className="text-sm text-content-secondary">Left Button</label>
             <select
               value={mouseConfig.leftButton}
               onChange={(e) =>
                 handleMouseConfigChange("leftButton", e.target.value as EditorMouseAction)
               }
-              className="rounded-md border border-white/15 bg-black/40 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30"
+              className="field-surface rounded-md border px-3 py-1.5 text-sm outline-none transition-colors focus:border-focus-ring"
             >
               <option value="brush">🖌️ Brush (Paint)</option>
               <option value="orbit">🔄 Orbit (Rotate)</option>
@@ -199,13 +199,13 @@ export function TerrainEditorTab({
             </select>
           </div>
           <div className="flex items-center justify-between">
-            <label className="text-sm text-white/80">Right Button</label>
+            <label className="text-sm text-content-secondary">Right Button</label>
             <select
               value={mouseConfig.rightButton}
               onChange={(e) =>
                 handleMouseConfigChange("rightButton", e.target.value as EditorMouseAction)
               }
-              className="rounded-md border border-white/15 bg-black/40 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30"
+              className="field-surface rounded-md border px-3 py-1.5 text-sm outline-none transition-colors focus:border-focus-ring"
             >
               <option value="brush">🖌️ Brush (Paint)</option>
               <option value="orbit">🔄 Orbit (Rotate)</option>
@@ -213,13 +213,13 @@ export function TerrainEditorTab({
             </select>
           </div>
           <div className="flex items-center justify-between">
-            <label className="text-sm text-white/80">Middle Button</label>
+            <label className="text-sm text-content-secondary">Middle Button</label>
             <select
               value={mouseConfig.middleButton}
               onChange={(e) =>
                 handleMouseConfigChange("middleButton", e.target.value as EditorMouseAction)
               }
-              className="rounded-md border border-white/15 bg-black/40 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30"
+              className="field-surface rounded-md border px-3 py-1.5 text-sm outline-none transition-colors focus:border-focus-ring"
             >
               <option value="brush">🖌️ Brush (Paint)</option>
               <option value="orbit">🔄 Orbit (Rotate)</option>
@@ -227,25 +227,25 @@ export function TerrainEditorTab({
             </select>
           </div>
         </div>
-        <div className="mt-2 text-xs text-white/50">
+        <div className="mt-2 text-xs text-content-muted">
           Scroll: Zoom camera • Shift+Scroll: Brush radius
         </div>
 
         <div className="mt-3 flex items-center justify-between">
           <div>
-            <div className="text-sm text-white/80">Sticky Drag</div>
-            <div className="text-xs text-white/50">
+            <div className="text-sm text-content-secondary">Sticky Drag</div>
+            <div className="text-xs text-content-muted">
               Continue dragging when mouse leaves window
             </div>
           </div>
           <button
             onClick={() => handleStickyDragChange(!stickyDrag)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              stickyDrag ? "bg-green-600" : "bg-gray-700"
+            className={`relative inline-flex h-6 w-11 items-center rounded-full border border-stroke-default transition-colors ${
+              stickyDrag ? "bg-status-success" : "bg-surface-panel-strong"
             }`}
           >
             <span
-              className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
+              className={`inline-block h-4 w-4 rounded-full bg-surface-panel shadow transition-transform ${
                 stickyDrag ? "translate-x-6" : "translate-x-1"
               }`}
             />

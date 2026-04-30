@@ -19,5 +19,8 @@ export function createDefaultGameSettings(): GameSettings {
       timePaused: false,
       timeDrivenSun: true,
     },
+    ui: {
+      theme: "dark",
+    },
   };
 }
