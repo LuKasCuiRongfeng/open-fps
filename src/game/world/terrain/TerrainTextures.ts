@@ -13,10 +13,8 @@ import {
   UnsignedByteType,
   type Texture,
 } from "three/webgpu";
-import { getPlatform } from "@/platform";
+import { resolveAssetUrl } from "@/platform/assetUrls";
 import type { TextureDefinition, TextureLayerDef } from "./TextureData";
-
-const platform = getPlatform();
 
 /**
  * Loaded PBR textures for a single layer.
@@ -122,7 +120,7 @@ export class TerrainTextures {
     projectPath: string,
     def: TextureLayerDef,
   ): Promise<PBRTextureSet> {
-    const resolvePath = (p: string) => platform.files.resolveAssetUrl(`${projectPath}/${p}`);
+    const resolvePath = (p: string) => resolveAssetUrl(`${projectPath}/${p}`);
 
     // Load diffuse (required).
     // 加载漫反射（必需）

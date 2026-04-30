@@ -3,7 +3,7 @@ mod commands;
 use commands::*;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
+pub fn run_editor() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -33,5 +33,15 @@ pub fn run() {
             write_png_rgba,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("error while running open-fps editor");
+}
+
+pub fn run_game() {
+    tauri::Builder::default()
+        .run(tauri::generate_context!())
+        .expect("error while running open-fps game");
+}
+
+pub fn run() {
+    run_editor();
 }

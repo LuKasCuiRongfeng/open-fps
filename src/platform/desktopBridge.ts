@@ -7,6 +7,7 @@ import type {
   PlatformPngRgbaData,
   PlatformSaveFileOptions,
 } from "./types";
+import { normalizeAssetPath } from "./pathUtils";
 
 type TauriCore = typeof import("@tauri-apps/api/core");
 type TauriDialog = typeof import("@tauri-apps/plugin-dialog");
@@ -55,49 +56,6 @@ async function invokeCommand<T>(command: string, args?: Record<string, unknown>)
 
 function singlePath(result: string | string[] | null): string | null {
   return typeof result === "string" ? result : null;
-}
-
-function normalizeAssetPath(path: string): string {
-  if (/^[a-z]+:\/\//i.test(path)) {
-    return path;
-  }
-
-  const unified = path.replace(/\\/g, "/");
-  const windowsDriveMatch = unified.match(/^[A-Za-z]:\//);
-
-  let prefix = "";
-  let remainder = unified;
-
-  if (windowsDriveMatch) {
-    prefix = windowsDriveMatch[0];
-    remainder = unified.slice(prefix.length);
-  } else if (unified.startsWith("//")) {
-    prefix = "//";
-    remainder = unified.slice(2);
-  } else if (unified.startsWith("/")) {
-    prefix = "/";
-    remainder = unified.slice(1);
-  }
-
-  const segments = remainder.split("/");
-  const normalized: string[] = [];
-
-  for (const segment of segments) {
-    if (!segment || segment === ".") {
-      continue;
-    }
-
-    if (segment === "..") {
-      if (normalized.length > 0 && normalized[normalized.length - 1] !== "..") {
-        normalized.pop();
-      }
-      continue;
-    }
-
-    normalized.push(segment);
-  }
-
-  return `${prefix}${normalized.join("/")}`;
 }
 
 export function createDesktopPlatform(): PlatformHost {

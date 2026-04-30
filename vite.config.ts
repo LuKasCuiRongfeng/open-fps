@@ -13,55 +13,60 @@ function resolveAppTarget(mode: string): AppTarget {
 }
 
 // https://vite.dev/config/
-export default defineConfig(async ({ mode }) => {
+export default defineConfig(({ mode }) => {
     const appTarget = resolveAppTarget(mode);
+    const appHtml = appTarget === "game" ? "game.html" : "editor.html";
 
-    return ({
-    plugins: [
-        react(),
-        babel({
-            presets: [reactCompilerPreset()],
-        }),
-        tailwindcss(),
-    ],
+    return {
+        plugins: [
+            react(),
+            babel({
+                presets: [reactCompilerPreset()],
+            }),
+            tailwindcss(),
+        ],
 
-    resolve: {
-        alias: {
-            "@": path.resolve(__dirname, "src"),
-            "@game": path.resolve(__dirname, "src/game"),
-            "@editor": path.resolve(__dirname, "src/editor"),
-            "@project": path.resolve(__dirname, "src/workspace"),
-            "@workspace": path.resolve(__dirname, "src/workspace"),
-            "@ui": path.resolve(__dirname, "src/ui"),
-            "@config": path.resolve(__dirname, "src/config"),
-            "@app-entry": path.resolve(__dirname, `src/app/entries/${appTarget}.tsx`),
+        resolve: {
+            alias: {
+                "@": path.resolve(__dirname, "src"),
+                "@game": path.resolve(__dirname, "src/game"),
+                "@editor": path.resolve(__dirname, "src/editor"),
+                "@project": path.resolve(__dirname, "src/workspace"),
+                "@workspace": path.resolve(__dirname, "src/workspace"),
+                "@ui": path.resolve(__dirname, "src/ui"),
+                "@config": path.resolve(__dirname, "src/config"),
+            },
         },
-    },
 
-    build: {
-        outDir: appTarget === "game" ? "dist-game" : "dist-editor",
-    },
-
-    // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
-    //
-    // 1. prevent Vite from obscuring rust errors
-    clearScreen: false,
-    // 2. tauri expects a fixed port, fail if that port is not available
-    server: {
-        port: 1420,
-        strictPort: true,
-        host: host || "127.0.0.1",
-        hmr: host
-            ? {
-                  protocol: "ws",
-                  host,
-                  port: 1421,
-              }
-            : undefined,
-        watch: {
-            // 3. tell Vite to ignore watching `src-tauri`
-            ignored: ["**/src-tauri/**"],
+        build: {
+            outDir: appTarget === "game" ? "dist-game" : "dist-editor",
+            rollupOptions: {
+                input: path.resolve(__dirname, appHtml),
+            },
         },
-    },
-    });
+
+        appType: "mpa",
+
+        // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
+        //
+        // 1. prevent Vite from obscuring rust errors
+        clearScreen: false,
+        // 2. tauri expects a fixed port, fail if that port is not available
+        server: {
+            port: 1420,
+            strictPort: true,
+            host: host || "127.0.0.1",
+            hmr: host
+                ? {
+                      protocol: "ws",
+                      host,
+                      port: 1421,
+                  }
+                : undefined,
+            watch: {
+                // 3. tell Vite to ignore watching `src-tauri`
+                ignored: ["**/src-tauri/**"],
+            },
+        },
+    };
 });

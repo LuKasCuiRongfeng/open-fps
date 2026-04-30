@@ -5,14 +5,16 @@
   "version": "../package.json",
   "identifier": "open-fps.editor",
   "build": {
-    "beforeDevCommand": "pnpm dev:editor",
+    "beforeDevCommand": "pnpm web dev editor",
     "devUrl": "http://127.0.0.1:1420",
-    "beforeBuildCommand": "pnpm build:editor",
+    "beforeBuildCommand": "pnpm web build editor",
     "frontendDist": "../dist-editor"
   },
   "app": {
     "windows": [
       {
+        "label": "editor",
+        "url": "editor.html",
         "title": "open-fps editor",
         "width": 1200,
         "height": 800,

@@ -3,11 +3,14 @@
 
 import { useEffect, useState } from "react";
 import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings";
-import type { ActiveEditorType } from "./editor/settings/tabs";
-import FpsCounter from "./FpsCounter";
-import LoadingOverlay, { type LoadingStep } from "./LoadingOverlay";
-import { EditorSettingsPanel, ProjectScreen, TerrainEditorPanel, TextureEditorPanel } from "./editor";
-import { useCloseConfirmation, useEditorApp, useEditorInput, useEditorWorkspace } from "./editor/hooks";
+import type { ActiveEditorType } from "./settings/tabs";
+import FpsCounter from "@ui/FpsCounter";
+import LoadingOverlay, { type LoadingStep } from "@ui/LoadingOverlay";
+import { ProjectScreen } from "./ProjectScreen";
+import { TerrainEditorPanel } from "./TerrainEditorPanel";
+import { TextureEditorPanel } from "./TextureEditorPanel";
+import { EditorSettingsPanel } from "./settings/EditorSettingsPanel";
+import { useCloseConfirmation, useEditorApp, useEditorInput, useEditorWorkspace } from "./hooks";
 
 const LOADING_STEPS: LoadingStep[] = [
 	{ id: "checking-webgpu", label: "Checking WebGPU" },

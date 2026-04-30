@@ -5,14 +5,16 @@
   "version": "../package.json",
   "identifier": "open-fps.game",
   "build": {
-    "beforeDevCommand": "pnpm dev:game",
+    "beforeDevCommand": "pnpm web dev game",
     "devUrl": "http://127.0.0.1:1420",
-    "beforeBuildCommand": "pnpm build:game",
+    "beforeBuildCommand": "pnpm web build game",
     "frontendDist": "../dist-game"
   },
   "app": {
     "windows": [
       {
+        "label": "game",
+        "url": "game.html",
         "title": "open-fps game",
         "width": 1200,
         "height": 800,

@@ -2,21 +2,15 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const COMMANDS = {
-    dev: { tauriCommand: "dev", defaultArgs: [] },
-    build: { tauriCommand: "build", defaultArgs: [] },
-    debug: { tauriCommand: "build", defaultArgs: ["--debug", "--no-bundle"] },
-    release: { tauriCommand: "build", defaultArgs: ["--ci", "--no-sign"] },
-};
-
+const COMMANDS = ["dev", "build"];
 const TARGETS = ["editor", "game"];
 const [, , command, target, ...extraArgs] = process.argv;
 
 function printUsage() {
-    console.error("Usage: node scripts/run-tauri-target.mjs <dev|build|debug|release> <editor|game|all> [...tauriArgs]");
+    console.error("Usage: node scripts/run-web-target.mjs <dev|build> <editor|game|all> [...viteArgs]");
 }
 
-if (!command || !target || !(command in COMMANDS) || ![...TARGETS, "all"].includes(target)) {
+if (!command || !target || !COMMANDS.includes(command) || ![...TARGETS, "all"].includes(target)) {
     printUsage();
     process.exit(1);
 }
@@ -39,14 +33,10 @@ function quoteArg(value) {
     return `"${value.replace(/"/g, '\\"')}"`;
 }
 
-function runPnpm(args, cargoTargetDir) {
+function runPnpm(args) {
     const sharedOptions = {
         cwd: workspaceRoot,
         stdio: "inherit",
-        env: {
-            ...process.env,
-            CARGO_TARGET_DIR: cargoTargetDir,
-        },
     };
 
     const child = process.platform === "win32"
@@ -63,30 +53,30 @@ function runPnpm(args, cargoTargetDir) {
     });
 }
 
-async function runTarget(currentTarget) {
-    const { tauriCommand, defaultArgs } = COMMANDS[command];
-    const tauriConfig = path.join("src-tauri", `tauri.${currentTarget}.conf.json`);
-    const cargoTargetDir = path.join(workspaceRoot, "src-tauri", `target-${currentTarget}`);
-    const targetBinary = `open-fps-${currentTarget}`;
-    const devRunnerArgs = tauriCommand === "dev" ? ["--", "--bin", targetBinary] : [];
+async function runVite(currentTarget) {
+    const viteArgs = command === "dev"
+        ? ["vite", "--mode", currentTarget, ...extraArgs]
+        : ["vite", "build", "--mode", currentTarget, ...extraArgs];
 
-    const tauriArgs = [
-        "tauri",
-        tauriCommand,
-        "--config",
-        tauriConfig,
-        ...defaultArgs,
-        ...extraArgs,
-        ...devRunnerArgs,
-    ];
+    return runPnpm(viteArgs);
+}
 
-    return runPnpm(tauriArgs, cargoTargetDir);
+if (command === "build") {
+    const { code, signal } = await runPnpm(["tsc"]);
+
+    if (signal) {
+        process.kill(process.pid, signal);
+    }
+
+    if (code !== 0) {
+        process.exit(code);
+    }
 }
 
 const selectedTargets = target === "all" ? TARGETS : [target];
 
 for (const currentTarget of selectedTargets) {
-    const { code, signal } = await runTarget(currentTarget);
+    const { code, signal } = await runVite(currentTarget);
 
     if (signal) {
         process.kill(process.pid, signal);

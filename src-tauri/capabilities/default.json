@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
-  "identifier": "default",
-  "description": "Capability for the main window",
-  "windows": ["main"],
+  "identifier": "editor",
+  "description": "Capability for the editor window",
+  "windows": ["editor"],
   "permissions": [
     "core:default",
     "core:window:default",

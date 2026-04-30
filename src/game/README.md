@@ -3,6 +3,8 @@
 ## Recommended Layout
 
 - `app/`: high-level bootstrapping and runtime composition
+- `main.tsx`: standalone game frontend application entry
+- `ui/`: standalone player shell and game boot hooks
 - `rendering/`: renderer lifecycle and frame instrumentation
 - `gpu/`: low-level WebGPU and atlas helpers
 - `scheduling/`: system execution orchestration
@@ -21,7 +23,8 @@
 - `world/` keeps terrain and sky together as environment systems.
 - `core/` should shrink over time until only shims or truly cross-domain leftovers remain.
 
-## Compatibility Rule
+## Boundary Rule
 
-- Old root-level entry files can remain as thin re-export shims during migration.
+- Game code must not import `@editor/*` or editor UI modules.
 - New code should prefer domain paths such as `@game/app/GameApp`, `@game/gpu`, or `@game/rendering`.
+- Project selection, save/import workflows, editor panels, and authoring controls belong under `src/editor/`.

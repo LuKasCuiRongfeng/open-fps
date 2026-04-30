@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { GameSettingsPatch } from "@game/settings";
-import FpsCounter from "./FpsCounter";
-import LoadingOverlay, { type LoadingStep } from "./LoadingOverlay";
-import { GameSettingsPanel } from "./settings";
+import FpsCounter from "@ui/FpsCounter";
+import LoadingOverlay, { type LoadingStep } from "@ui/LoadingOverlay";
+import { GameSettingsPanel } from "@ui/settings";
 import { useGameApp } from "./hooks";
 
 const LOADING_STEPS: LoadingStep[] = [

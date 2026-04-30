@@ -32,7 +32,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build frontend target
-        run: pnpm run ci:frontend:${{ matrix.target }}
+        run: pnpm web build ${{ matrix.target }}
 
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v4
@@ -67,7 +67,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Validate Tauri target
-        run: pnpm run ci:tauri:${{ matrix.target }}
+        run: pnpm desktop build ${{ matrix.target }} -- --ci --no-bundle
 
       - name: Upload native artifact
         uses: actions/upload-artifact@v4

@@ -11,15 +11,13 @@ import {
   RGBAFormat,
   UnsignedByteType,
 } from "three/webgpu";
-import { getPlatform } from "@/platform";
+import { resolveAssetUrl } from "@/platform/assetUrls";
 import {
   type TextureDefinition,
   type LayerAssignment,
   computeLayerAssignments,
   getSplatMapCount,
 } from "./TextureData";
-
-const platform = getPlatform();
 
 /**
  * Texture array result - all PBR maps packed into texture arrays.
@@ -215,7 +213,7 @@ export class TerrainTextureArrays {
     relativePath: string,
     isSRGB: boolean,
   ): Promise<Uint8Array> {
-    const url = await platform.files.resolveAssetUrl(`${projectPath}/${relativePath}`);
+    const url = await resolveAssetUrl(`${projectPath}/${relativePath}`);
 
     try {
       const response = await fetch(url);

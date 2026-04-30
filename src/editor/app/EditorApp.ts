@@ -1,4 +1,5 @@
 import { terrainConfig } from "@config/terrain";
+import { getPlatform } from "@/platform";
 import { GameApp, type GameBootPhase } from "@game/app";
 import type { EditorAppSession } from "./types";
 import { BrushIndicatorSystem, type EditorBrushInfo, type ActiveEditorType } from "@editor/runtime/common";
@@ -15,6 +16,8 @@ import {
   type EditorAppSettingsPatch,
   type EditorSettings,
 } from "@editor/settings";
+
+const platform = getPlatform();
 
 export class EditorApp extends GameApp implements EditorAppSession {
   private readonly editorSettings = createDefaultEditorSettings();
@@ -90,7 +93,10 @@ export class EditorApp extends GameApp implements EditorAppSession {
     const textureArrays = await TerrainTextureArrays.getInstance().loadFromDefinition(mapDirectory, textureDef);
     const splatMapTextures = this.textureEditor.getAllSplatTextures();
     this.resources.runtime.terrain.setTextureData(textureArrays, splatMapTextures);
-    await this.skySystem.loadStarTexture(this.getProjectDirectoryFromMapDirectory(mapDirectory));
+    await this.skySystem.loadStarTexture(
+      this.getProjectDirectoryFromMapDirectory(mapDirectory),
+      platform.files.readBinaryBase64,
+    );
   }
 
   async saveTexturesToMapDirectory(mapDirectory: string): Promise<void> {

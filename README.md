@@ -6,8 +6,10 @@ Rendering uses Three.js WebGPU. The frontend uses React, TypeScript, Tailwind, a
 
 ## Project Layout
 
-- `src/`: frontend, rendering, gameplay, editor
-- `src/game/`: ECS, systems, world, GPU runtime
+- `editor.html`: editor frontend entry
+- `game.html`: game frontend entry
+- `src/editor/`: editor app entry, UI, authoring runtime, and editor settings
+- `src/game/`: game app entry, UI, ECS, systems, world, and GPU runtime
 - `src/config/`: shared constants and tunables
 - `src/platform/`: browser and desktop platform boundary
 - `src-tauri/`: Tauri backend and native integration
@@ -33,20 +35,34 @@ Use `/git-push` to inspect current git changes, prepare a commit message, commit
 Frontend:
 
 ```bash
-pnpm dev:editor
-pnpm dev:game
-pnpm build:editor
-pnpm build:game
+pnpm web dev editor
+pnpm web dev game
+pnpm web build all
 ```
+
+The editor and game targets use separate HTML and TypeScript entries. The editor build writes `dist-editor/editor.html`; the game build writes `dist-game/game.html`.
 
 Desktop:
 
 ```bash
-pnpm tauri:dev:editor
-pnpm tauri:dev:game
-pnpm tauri:build:editor
-pnpm tauri:build:game
+pnpm dev
+pnpm dev:game
+pnpm desktop build editor
+pnpm desktop build game
+pnpm build
 ```
+
+Desktop packaging uses separate Tauri configs, window labels, binary names, and Rust entrypoints for editor and game.
+Run the target-specific desktop wrapper instead of raw `pnpm tauri dev`; Cargo needs it to select either `open-fps-editor` or `open-fps-game`.
+
+Target wrappers:
+
+```bash
+pnpm web <dev|build> <editor|game|all>
+pnpm desktop <dev|build|debug|release> <editor|game|all>
+```
+
+`all` is supported for build-style commands, not dev servers.
 
 Validation:
 

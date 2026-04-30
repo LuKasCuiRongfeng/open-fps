@@ -34,41 +34,41 @@ jobs:
           - target: editor
             platform: windows
             runs_on: windows-latest
-            release_command: pnpm run tauri:release:editor
+            release_command: pnpm desktop release editor
             asset_glob: |
               src-tauri/target-editor/release/bundle/nsis/*.exe
               src-tauri/target-editor/release/bundle/msi/*.msi
           - target: game
             platform: windows
             runs_on: windows-latest
-            release_command: pnpm run tauri:release:game
+            release_command: pnpm desktop release game
             asset_glob: |
               src-tauri/target-game/release/bundle/nsis/*.exe
               src-tauri/target-game/release/bundle/msi/*.msi
           - target: editor
             platform: linux
             runs_on: ubuntu-22.04
-            release_command: node scripts/run-tauri-target.mjs build editor --ci --bundles appimage,deb
+            release_command: pnpm desktop release editor -- --bundles appimage,deb
             asset_glob: |
               src-tauri/target-editor/release/bundle/appimage/*.AppImage
               src-tauri/target-editor/release/bundle/deb/*.deb
           - target: game
             platform: linux
             runs_on: ubuntu-22.04
-            release_command: node scripts/run-tauri-target.mjs build game --ci --bundles appimage,deb
+            release_command: pnpm desktop release game -- --bundles appimage,deb
             asset_glob: |
               src-tauri/target-game/release/bundle/appimage/*.AppImage
               src-tauri/target-game/release/bundle/deb/*.deb
           - target: editor
             platform: macos
             runs_on: macos-latest
-            release_command: node scripts/run-tauri-target.mjs build editor --ci --no-sign --bundles dmg
+            release_command: pnpm desktop release editor -- --bundles dmg
             asset_glob: |
               src-tauri/target-editor/release/bundle/dmg/*.dmg
           - target: game
             platform: macos
             runs_on: macos-latest
-            release_command: node scripts/run-tauri-target.mjs build game --ci --no-sign --bundles dmg
+            release_command: pnpm desktop release game -- --bundles dmg
             asset_glob: |
               src-tauri/target-game/release/bundle/dmg/*.dmg
 

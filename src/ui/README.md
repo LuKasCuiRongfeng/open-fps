@@ -2,16 +2,14 @@
 
 ## Purpose
 
-`src/ui/` contains the React shells for editor and game targets, shared overlays, settings panels, and editor-facing workflow UI.
+`src/ui/` contains shared React overlays and settings panels used by the editor and game targets.
 
 ## Key Entry Points
 
-- `EditorView.tsx`: editor runtime shell and the entry point for editor-only workflow UI
-- `PlayerView.tsx`: standalone game shell
-- `GameView.tsx`: compatibility wrapper that currently re-exports the editor shell
-- `editor/`: editor-only panels, project screens, tabs, and editor hooks
+- `../editor/ui/EditorView.tsx`: editor runtime shell and editor-only workflow UI
+- `../game/ui/PlayerView.tsx`: standalone game shell
 - `settings/`: shared runtime settings UI
-- `hooks/`: shared app boot hooks such as the standalone game app hook
+- `FpsCounter.tsx` and `LoadingOverlay.tsx`: shared runtime overlays
 
 ## Boundaries
 
@@ -23,7 +21,7 @@
 
 ## Common Changes
 
-- Change editor project workflow: start from `editor/hooks/useEditorWorkspace.ts` and the components that consume its controller.
-- Change editor boot or runtime interaction: inspect `EditorView.tsx`, `useEditorApp.ts`, and related editor hooks together.
-- Change standalone game behavior: start from `PlayerView.tsx` and shared game hooks, not editor screens.
+- Change editor project workflow: start from `../editor/ui/hooks/useEditorWorkspace.ts` and the components that consume its controller.
+- Change editor boot or runtime interaction: inspect `../editor/ui/EditorView.tsx`, `useEditorApp.ts`, and related editor hooks together.
+- Change standalone game behavior: start from `../game/ui/PlayerView.tsx` and game hooks, not editor screens.
 - Add a new panel or settings surface: keep target-specific UI in the correct subtree and reuse shared settings UI only when the workflow is shared.

@@ -4,7 +4,7 @@ import type { TerrainEditor } from "@editor/runtime";
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings";
 import type { MapData } from "@project/MapData";
-import type { EditorWorkspaceController } from "@ui/editor/hooks/useEditorWorkspace";
+import type { EditorWorkspaceController } from "@editor/ui/hooks/useEditorWorkspace";
 import type { ActiveEditorType } from "./tabs";
 import {
   EDITOR_SETTINGS_TABS,

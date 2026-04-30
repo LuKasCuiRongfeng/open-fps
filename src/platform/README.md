@@ -18,6 +18,7 @@
 - Do not call Tauri command names outside `src/platform/desktopBridge.ts`.
 - Prefer replacing capability methods per host instead of branching host logic across callers.
 - Keep asset URL resolution, dialogs, file access, project workspace, and window lifecycle concerns inside the platform layer.
+- Keep native command registration target-specific: the editor Tauri binary owns project/file/PNG authoring commands, while the game binary should stay free of editor project commands.
 
 ## Common Changes
 
