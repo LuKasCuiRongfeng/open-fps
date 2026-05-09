@@ -21,6 +21,8 @@ artifacts/game
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tailwind-v4.css-data.json
 .idea
 .DS_Store
 *.suo

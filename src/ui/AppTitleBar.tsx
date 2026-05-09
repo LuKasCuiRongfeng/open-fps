@@ -40,6 +40,7 @@ function WindowActionButton({ label, danger = false, icon, onClick }: WindowActi
             title={label}
             aria-label={label}
             onMouseDown={(event) => event.stopPropagation()}
+            onDoubleClick={(event) => event.stopPropagation()}
             onClick={onClick}
         >
             <Icon className="h-3.5 w-3.5" aria-hidden="true" />
@@ -75,6 +76,7 @@ export function AppTitleBar({ title, icon }: AppTitleBarProps) {
 
     function handleDragStart(event: MouseEvent<HTMLElement>): void {
         if (event.button !== 0) return;
+        if (event.detail > 1) return;
         runWindowAction(() => platform.window.startDragging());
     }
 
@@ -85,6 +87,13 @@ export function AppTitleBar({ title, icon }: AppTitleBarProps) {
         });
     }
 
+    function handleTitleDoubleClick(event: MouseEvent<HTMLElement>): void {
+        if (event.button !== 0) return;
+
+        event.preventDefault();
+        handleToggleMaximize();
+    }
+
     const MaximizeIcon = maximized ? Copy : Square;
     const maximizeLabel = maximized ? "Restore" : "Maximize";
 
@@ -92,6 +101,7 @@ export function AppTitleBar({ title, icon }: AppTitleBarProps) {
         <header
             className="shell-surface relative flex h-9 shrink-0 select-none items-center border-b border-stroke-subtle text-xs"
             onMouseDown={handleDragStart}
+            onDoubleClick={handleTitleDoubleClick}
         >
             <div className="pointer-events-none absolute inset-0 flex min-w-0 items-center justify-center px-36">
                 <div className="flex min-w-0 items-center gap-2 font-semibold text-content-primary">
