@@ -2,8 +2,10 @@
 // EditorView：编辑器专用运行时外壳
 
 import { useEffect, useState } from "react";
+import { Boxes } from "lucide-react";
 import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings";
 import type { ActiveEditorType } from "./settings/tabs";
+import { AppTitleBar } from "@ui/AppTitleBar";
 import FpsCounter from "@ui/FpsCounter";
 import LoadingOverlay, { type LoadingStep } from "@ui/LoadingOverlay";
 import { useDocumentTheme } from "@ui/theme";
@@ -112,63 +114,67 @@ export default function EditorView() {
 	};
 
 	return (
-		<div className="app-root relative h-screen w-screen overflow-hidden">
-			<div ref={hostRef} className="h-full w-full" />
+		<div className="app-root flex h-screen w-screen flex-col overflow-hidden">
+			<AppTitleBar title="Open FPS Editor" icon={Boxes} />
 
-			{!loading && !error && !editorWorkspace.showProjectScreen && (
-				<div
-					ref={overlayRef}
-					className={`absolute inset-0 ${activeEditor === "none" ? "cursor-grab" : "cursor-crosshair"}`}
-					onMouseDown={handleMouseDown}
-					onMouseUp={handleMouseUp}
+			<div className="relative min-h-0 flex-1 overflow-hidden">
+				<div ref={hostRef} className="h-full w-full" />
+
+				{!loading && !error && !editorWorkspace.showProjectScreen && (
+					<div
+						ref={overlayRef}
+						className={`absolute inset-0 ${activeEditor === "none" ? "cursor-grab" : "cursor-crosshair"}`}
+						onMouseDown={handleMouseDown}
+						onMouseUp={handleMouseUp}
+					/>
+				)}
+
+				<FpsCounter
+					visible={!loading && !error}
+					isEditorMode={activeEditor !== "none"}
+					getFps={() => appRef.current?.getFps() ?? 0}
+					getPlayerPosition={() => null}
+					getMousePosition={() => appRef.current?.getMousePosition() ?? null}
 				/>
-			)}
 
-			<FpsCounter
-				visible={!loading && !error}
-				isEditorMode={activeEditor !== "none"}
-				getFps={() => appRef.current?.getFps() ?? 0}
-				getPlayerPosition={() => null}
-				getMousePosition={() => appRef.current?.getMousePosition() ?? null}
-			/>
-
-			<LoadingOverlay
-				steps={LOADING_STEPS}
-				activeStepId={bootPhase}
-				visible={loading && !error}
-			/>
-
-			{settings && (
-				<EditorSettingsPanel
-					open={settingsOpen}
-					settings={settings}
-					editorApp={appRef.current}
-					terrainEditor={terrainEditor}
-					textureEditor={appRef.current?.getTextureEditor() ?? null}
-					editorWorkspace={editorWorkspace}
-					terrainMode={editorWorkspace.terrainMode}
-					activeEditor={activeEditor}
-					onActiveEditorChange={handleActiveEditorChange}
-					onLoadMap={handleLoadMap}
-					onApplySettings={handleApplySettings}
-					onPatch={applyPatch}
-					onReset={resetToDefaults}
-					onClose={() => setSettingsOpen(false)}
+				<LoadingOverlay
+					steps={LOADING_STEPS}
+					activeStepId={bootPhase}
+					visible={loading && !error}
 				/>
-			)}
 
-			{error && (
-				<div className="pointer-events-none absolute inset-0 p-3">
-					<div className="overlay-panel pointer-events-auto max-w-xl rounded-md border text-sm shadow-panel backdrop-blur-sm">
-						<div className="border-b border-stroke-subtle px-3 py-2 text-xs font-semibold text-content-primary">WebGPU Init Failed</div>
-						<div className="px-3 py-2 text-xs leading-relaxed text-content-secondary">{error}</div>
+				{settings && (
+					<EditorSettingsPanel
+						open={settingsOpen}
+						settings={settings}
+						editorApp={appRef.current}
+						terrainEditor={terrainEditor}
+						textureEditor={appRef.current?.getTextureEditor() ?? null}
+						editorWorkspace={editorWorkspace}
+						terrainMode={editorWorkspace.terrainMode}
+						activeEditor={activeEditor}
+						onActiveEditorChange={handleActiveEditorChange}
+						onLoadMap={handleLoadMap}
+						onApplySettings={handleApplySettings}
+						onPatch={applyPatch}
+						onReset={resetToDefaults}
+						onClose={() => setSettingsOpen(false)}
+					/>
+				)}
+
+				{error && (
+					<div className="pointer-events-none absolute inset-0 p-3">
+						<div className="overlay-panel pointer-events-auto max-w-xl rounded-md border text-sm shadow-panel backdrop-blur-sm">
+							<div className="border-b border-stroke-subtle px-3 py-2 text-xs font-semibold text-content-primary">WebGPU Init Failed</div>
+							<div className="px-3 py-2 text-xs leading-relaxed text-content-secondary">{error}</div>
+						</div>
 					</div>
-				</div>
-			)}
+				)}
 
-			{editorWorkspace.showProjectScreen && (
-				<ProjectScreen workspace={editorWorkspace} />
-			)}
+				{editorWorkspace.showProjectScreen && (
+					<ProjectScreen workspace={editorWorkspace} />
+				)}
+			</div>
 		</div>
 	);
 }

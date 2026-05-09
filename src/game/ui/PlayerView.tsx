@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Crosshair } from "lucide-react";
 import type { GameSettingsPatch } from "@game/settings";
+import { AppTitleBar } from "@ui/AppTitleBar";
 import FpsCounter from "@ui/FpsCounter";
 import LoadingOverlay, { type LoadingStep } from "@ui/LoadingOverlay";
 import { GameSettingsPanel } from "@ui/settings";
@@ -72,42 +74,46 @@ export default function PlayerView() {
   };
 
   return (
-    <div className="app-root relative h-screen w-screen overflow-hidden">
-      <div ref={hostRef} className="h-full w-full" />
+    <div className="app-root flex h-screen w-screen flex-col overflow-hidden">
+      <AppTitleBar title="Open FPS Game" icon={Crosshair} />
 
-      <FpsCounter
-        visible={!loading && !error}
-        isEditorMode={false}
-        getFps={() => appRef.current?.getFps() ?? 0}
-        getPlayerPosition={() => appRef.current?.getPlayerPosition() ?? null}
-        getMousePosition={() => null}
-      />
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        <div ref={hostRef} className="h-full w-full" />
 
-      <LoadingOverlay
-        steps={LOADING_STEPS}
-        activeStepId={bootPhase}
-        visible={loading && !error}
-      />
-
-      {settings && (
-        <GameSettingsPanel
-          open={settingsOpen}
-          settings={settings}
-          gameApp={appRef.current}
-          onPatch={applyPatch}
-          onReset={resetToDefaults}
-          onClose={() => setSettingsOpen(false)}
+        <FpsCounter
+          visible={!loading && !error}
+          isEditorMode={false}
+          getFps={() => appRef.current?.getFps() ?? 0}
+          getPlayerPosition={() => appRef.current?.getPlayerPosition() ?? null}
+          getMousePosition={() => null}
         />
-      )}
 
-      {error && (
-        <div className="pointer-events-none absolute inset-0 p-3">
-          <div className="overlay-panel pointer-events-auto max-w-xl rounded-md border text-sm shadow-panel backdrop-blur-sm">
-            <div className="border-b border-stroke-subtle px-3 py-2 text-xs font-semibold text-content-primary">Game Init Failed</div>
-            <div className="px-3 py-2 text-xs leading-relaxed text-content-secondary">{error}</div>
+        <LoadingOverlay
+          steps={LOADING_STEPS}
+          activeStepId={bootPhase}
+          visible={loading && !error}
+        />
+
+        {settings && (
+          <GameSettingsPanel
+            open={settingsOpen}
+            settings={settings}
+            gameApp={appRef.current}
+            onPatch={applyPatch}
+            onReset={resetToDefaults}
+            onClose={() => setSettingsOpen(false)}
+          />
+        )}
+
+        {error && (
+          <div className="pointer-events-none absolute inset-0 p-3">
+            <div className="overlay-panel pointer-events-auto max-w-xl rounded-md border text-sm shadow-panel backdrop-blur-sm">
+              <div className="border-b border-stroke-subtle px-3 py-2 text-xs font-semibold text-content-primary">Game Init Failed</div>
+              <div className="px-3 py-2 text-xs leading-relaxed text-content-secondary">{error}</div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

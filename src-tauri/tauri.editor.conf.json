@@ -15,9 +15,10 @@
       {
         "label": "editor",
         "url": "editor.html",
-        "title": "open-fps editor",
+        "title": "Open FPS Editor",
         "width": 1200,
         "height": 800,
+        "decorations": false,
         "closable": true
       }
     ],

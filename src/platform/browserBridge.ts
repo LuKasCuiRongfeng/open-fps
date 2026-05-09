@@ -299,8 +299,28 @@ export function createBrowserPlatform(): PlatformHost {
         return () => window.removeEventListener("beforeunload", listener);
       },
 
+      async requestClose(): Promise<void> {
+        window.close();
+      },
+
       async close(): Promise<void> {
         window.close();
+      },
+
+      async isMaximized(): Promise<boolean> {
+        return false;
+      },
+
+      async minimize(): Promise<void> {
+      },
+
+      async toggleMaximize(): Promise<void> {
+      },
+
+      async startDragging(): Promise<void> {
+      },
+
+      async setDecorations(): Promise<void> {
       },
     },
   };

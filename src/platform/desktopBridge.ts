@@ -205,9 +205,39 @@ export function createDesktopPlatform(): PlatformHost {
         return getCurrentWindow().onCloseRequested(handler);
       },
 
+      async requestClose(): Promise<void> {
+        const { getCurrentWindow } = await loadWindow();
+        await getCurrentWindow().close();
+      },
+
       async close(): Promise<void> {
         const { getCurrentWindow } = await loadWindow();
         await getCurrentWindow().destroy();
+      },
+
+      async isMaximized(): Promise<boolean> {
+        const { getCurrentWindow } = await loadWindow();
+        return getCurrentWindow().isMaximized();
+      },
+
+      async minimize(): Promise<void> {
+        const { getCurrentWindow } = await loadWindow();
+        await getCurrentWindow().minimize();
+      },
+
+      async toggleMaximize(): Promise<void> {
+        const { getCurrentWindow } = await loadWindow();
+        await getCurrentWindow().toggleMaximize();
+      },
+
+      async startDragging(): Promise<void> {
+        const { getCurrentWindow } = await loadWindow();
+        await getCurrentWindow().startDragging();
+      },
+
+      async setDecorations(visible: boolean): Promise<void> {
+        const { getCurrentWindow } = await loadWindow();
+        await getCurrentWindow().setDecorations(visible);
       },
     },
   };

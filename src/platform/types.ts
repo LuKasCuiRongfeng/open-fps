@@ -89,7 +89,13 @@ export interface PlatformProjects {
 
 export interface PlatformWindow {
     onCloseRequested(handler: (event: PlatformCloseRequest) => void | Promise<void>): Promise<() => void>;
+    requestClose(): Promise<void>;
     close(): Promise<void>;
+    isMaximized(): Promise<boolean>;
+    minimize(): Promise<void>;
+    toggleMaximize(): Promise<void>;
+    startDragging(): Promise<void>;
+    setDecorations(visible: boolean): Promise<void>;
 }
 
 export interface PlatformHost {

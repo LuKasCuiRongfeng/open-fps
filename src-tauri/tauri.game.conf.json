@@ -15,9 +15,10 @@
       {
         "label": "game",
         "url": "game.html",
-        "title": "open-fps game",
+        "title": "Open FPS Game",
         "width": 1200,
         "height": 800,
+        "decorations": false,
         "closable": true
       }
     ],
