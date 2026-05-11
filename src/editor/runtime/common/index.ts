@@ -5,3 +5,4 @@ export * from "./BrushIndicator";
 export * from "./BrushIndicatorMesh";
 export * from "./BrushIndicatorSystem";
 export * from "./BrushRaycaster";
+export * from "./TerrainSurfaceRaycaster";

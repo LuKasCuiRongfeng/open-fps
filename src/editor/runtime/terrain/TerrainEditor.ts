@@ -31,7 +31,9 @@ export interface EditorMouseConfig {
   middleButton: EditorMouseAction;
 }
 
-type EditorCameraAction = Extract<EditorMouseAction, "orbit" | "pan">;
+export type EditorCameraAction = Extract<EditorMouseAction, "orbit" | "pan">;
+type TerrainHeightAt = (x: number, z: number) => number;
+type TerrainHeightAvailability = (x: number, z: number) => boolean;
 
 // Re-export types from TerrainBrush.
 // 从 TerrainBrush 重新导出类型
@@ -238,18 +240,36 @@ export class TerrainEditor {
 
   // --- Editor Camera Controls / 编辑器相机控制 ---
 
-  startCameraControl(button: number, mouseX: number, mouseY: number, screenWidth?: number, screenHeight?: number): void {
+  startCameraControl(
+    button: number,
+    mouseX: number,
+    mouseY: number,
+    screenWidth?: number,
+    screenHeight?: number,
+    camera?: PerspectiveCamera,
+    heightAt?: TerrainHeightAt,
+    hasHeightAt?: TerrainHeightAvailability
+  ): void {
     const action = this.getActionForButton(button);
     if (action === "orbit" || action === "pan") {
-      this.startCameraAction(action, mouseX, mouseY, screenWidth, screenHeight);
+      this.startCameraAction(action, mouseX, mouseY, screenWidth, screenHeight, camera, heightAt, hasHeightAt);
     }
   }
 
-  startCameraAction(action: EditorCameraAction, mouseX: number, mouseY: number, screenWidth?: number, screenHeight?: number): void {
+  startCameraAction(
+    action: EditorCameraAction,
+    mouseX: number,
+    mouseY: number,
+    screenWidth?: number,
+    screenHeight?: number,
+    camera?: PerspectiveCamera,
+    heightAt?: TerrainHeightAt,
+    hasHeightAt?: TerrainHeightAvailability
+  ): void {
     if (action === "orbit") {
       this.orbitCamera.startOrbit(mouseX, mouseY);
     } else {
-      this.orbitCamera.startPan(mouseX, mouseY, screenWidth, screenHeight);
+      this.orbitCamera.startPan(mouseX, mouseY, screenWidth, screenHeight, camera, heightAt, hasHeightAt);
     }
   }
 
@@ -338,16 +358,24 @@ export class TerrainEditor {
     return -1;
   }
 
-  updateCameraControl(mouseX: number, mouseY: number, screenWidth?: number, screenHeight?: number): void {
-    this.orbitCamera.updateFromMouse(mouseX, mouseY, screenWidth, screenHeight);
+  updateCameraControl(
+    mouseX: number,
+    mouseY: number,
+    screenWidth?: number,
+    screenHeight?: number,
+    camera?: PerspectiveCamera,
+    heightAt?: TerrainHeightAt,
+    hasHeightAt?: TerrainHeightAvailability
+  ): void {
+    this.orbitCamera.updateFromMouse(mouseX, mouseY, screenWidth, screenHeight, camera, heightAt, hasHeightAt);
   }
 
   zoomCamera(delta: number): void {
     this.orbitCamera.zoom(delta);
   }
 
-  applyCameraState(camera: PerspectiveCamera): void {
-    this.orbitCamera.applyToCamera(camera);
+  applyCameraState(camera: PerspectiveCamera, heightAt?: TerrainHeightAt, hasHeightAt?: TerrainHeightAvailability): void {
+    this.orbitCamera.applyToCamera(camera, heightAt, hasHeightAt);
   }
 
   getCameraTarget(): { x: number; y: number; z: number } {

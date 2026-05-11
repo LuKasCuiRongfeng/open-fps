@@ -2,8 +2,8 @@
 // TerrainBrush：地形画刷状态和笔触生成
 
 import type { PerspectiveCamera } from "three/webgpu";
-import { Raycaster, Vector2 } from "three/webgpu";
 import type { BrushSettings, BrushStroke, BrushType } from "@game/world/terrain/brushTypes";
+import { TerrainSurfaceRaycaster } from "../common/TerrainSurfaceRaycaster";
 
 export type { BrushSettings, BrushStroke, BrushType };
 
@@ -33,8 +33,7 @@ export class TerrainBrush {
 
   // Raycaster for terrain picking.
   // 用于地形拾取的射线投射器
-  private readonly raycaster = new Raycaster();
-  private readonly mouseNdc = new Vector2();
+  private readonly terrainRaycaster = new TerrainSurfaceRaycaster();
 
   // Pending brush strokes for GPU processing.
   // 待 GPU 处理的画刷笔触
@@ -97,93 +96,12 @@ export class TerrainBrush {
     camera: PerspectiveCamera,
     heightAt: (x: number, z: number) => number
   ): void {
-    // Convert mouse to NDC.
-    // 将鼠标转换为 NDC
-    this.mouseNdc.x = (mouseX / canvasWidth) * 2 - 1;
-    this.mouseNdc.y = -(mouseY / canvasHeight) * 2 + 1;
+    const result = this.terrainRaycaster.cast(mouseX, mouseY, canvasWidth, canvasHeight, camera, heightAt);
 
-    // Cast ray from camera.
-    // 从相机投射射线
-    this.raycaster.setFromCamera(this.mouseNdc, camera);
-
-    const ray = this.raycaster.ray;
-    const origin = ray.origin;
-    const direction = ray.direction;
-
-    // Adaptive step ray marching for terrain intersection.
-    // 自适应步长射线行进以检测地形交点
-    const maxDist = 1000;
-    const minStep = 0.5; // Minimum step size for accuracy / 最小步长以保证精度
-    const maxStep = 5.0; // Maximum step size for performance / 最大步长以保证性能
-
-    let t = 0;
-    let prevT = 0;
-    let prevAboveGround = true;
-    let hitX = 0;
-    let hitZ = 0;
-    let found = false;
-
-    // Initial sample to check if we're above ground.
-    // 初始采样检查是否在地面上方
-    {
-      const x = origin.x + direction.x * t;
-      const y = origin.y + direction.y * t;
-      const z = origin.z + direction.z * t;
-      const terrainY = heightAt(x, z);
-      prevAboveGround = y > terrainY;
-    }
-
-    while (t < maxDist) {
-      // Adaptive step: smaller near camera, larger far away.
-      // 自适应步长：靠近相机时较小，远离时较大
-      const step = Math.min(maxStep, Math.max(minStep, t * 0.02 + minStep));
-      t += step;
-
-      const x = origin.x + direction.x * t;
-      const y = origin.y + direction.y * t;
-      const z = origin.z + direction.z * t;
-      const terrainY = heightAt(x, z);
-      const aboveGround = y > terrainY;
-
-      // Detect crossing from above to below ground (first intersection).
-      // 检测从地面上方到下方的穿越（第一个交点）
-      if (prevAboveGround && !aboveGround) {
-        // Binary search to refine intersection point.
-        // 二分搜索细化交点
-        let lo = prevT;
-        let hi = t;
-
-        for (let i = 0; i < 12; i++) {
-          const mid = (lo + hi) * 0.5;
-          const mx = origin.x + direction.x * mid;
-          const my = origin.y + direction.y * mid;
-          const mz = origin.z + direction.z * mid;
-          const mTerrainY = heightAt(mx, mz);
-
-          if (my > mTerrainY) {
-            lo = mid;
-          } else {
-            hi = mid;
-          }
-        }
-
-        // Use the point just above the terrain.
-        // 使用刚好在地形上方的点
-        const finalT = (lo + hi) * 0.5;
-        hitX = origin.x + direction.x * finalT;
-        hitZ = origin.z + direction.z * finalT;
-        found = true;
-        break;
-      }
-
-      prevT = t - step;
-      prevAboveGround = aboveGround;
-    }
-
-    this._targetValid = found;
-    if (found) {
-      this._targetX = hitX;
-      this._targetZ = hitZ;
+    this._targetValid = result.valid;
+    if (result.valid) {
+      this._targetX = result.x;
+      this._targetZ = result.z;
     }
   }
 

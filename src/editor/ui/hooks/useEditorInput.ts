@@ -22,6 +22,13 @@ interface EditorInputHandlers {
   handleMouseUp: (e: React.MouseEvent) => void;
 }
 
+interface ViewportPointer {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export function useEditorInput({
   appRef,
   hostRef,
@@ -39,6 +46,18 @@ export function useEditorInput({
     return terrainEditor?.getActionForButton(button) ?? null;
   };
 
+  const getViewportPointer = (clientX: number, clientY: number): ViewportPointer | null => {
+    const rect = hostRef.current?.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return null;
+
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+      width: rect.width,
+      height: rect.height,
+    };
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!terrainEditor) return;
 
@@ -54,12 +73,16 @@ export function useEditorInput({
         textureEditor.startBrush();
       }
     } else if (action === "orbit" || action === "pan") {
-      terrainEditor.startCameraAction(
+      const pointer = getViewportPointer(e.clientX, e.clientY);
+      const app = appRef.current;
+      if (!pointer || !app) return;
+
+      app.startEditorCameraAction(
         action,
-        e.clientX,
-        e.clientY,
-        window.innerWidth,
-        window.innerHeight,
+        pointer.x,
+        pointer.y,
+        pointer.width,
+        pointer.height,
       );
     }
   };
@@ -75,6 +98,12 @@ export function useEditorInput({
         textureEditor?.endBrush();
       }
     } else if (action === "orbit" || action === "pan") {
+      const pointer = getViewportPointer(e.clientX, e.clientY);
+      const app = appRef.current;
+      if (pointer && app) {
+        app.updateEditorCameraControl(pointer.x, pointer.y, pointer.width, pointer.height);
+      }
+
       terrainEditor.endCameraAction(action);
     }
   };
@@ -83,24 +112,19 @@ export function useEditorInput({
     if (!terrainEditor) return;
 
     const handleGlobalMouseMove = (e: MouseEvent) => {
-      terrainEditor.updateCameraControl(
-        e.clientX,
-        e.clientY,
-        window.innerWidth,
-        window.innerHeight,
-      );
-
+      const pointer = getViewportPointer(e.clientX, e.clientY);
       const app = appRef.current;
-      if (app && activeEditor !== "none" && !terrainEditor.isCameraControlActive) {
-        const rect = hostRef.current?.getBoundingClientRect();
-        if (rect) {
-          const mouseX = e.clientX - rect.left;
-          const mouseY = e.clientY - rect.top;
 
+      if (pointer && app) {
+        app.updateEditorCameraControl(pointer.x, pointer.y, pointer.width, pointer.height);
+      }
+
+      if (app && activeEditor !== "none" && !terrainEditor.isCameraControlActive) {
+        if (pointer) {
           if (activeEditor === "terrain") {
-            app.updateEditorBrushTarget(mouseX, mouseY);
+            app.updateEditorBrushTarget(pointer.x, pointer.y);
           } else if (activeEditor === "texture") {
-            app.updateTextureBrushTarget(mouseX, mouseY);
+            app.updateTextureBrushTarget(pointer.x, pointer.y);
           }
         }
       }
@@ -122,13 +146,19 @@ export function useEditorInput({
           textureEditor?.endBrush();
         }
       } else if (action === "orbit" || action === "pan") {
+        const pointer = getViewportPointer(e.clientX, e.clientY);
+        const app = appRef.current;
+        if (pointer && app) {
+          app.updateEditorCameraControl(pointer.x, pointer.y, pointer.width, pointer.height);
+        }
+
         terrainEditor.endCameraAction(action);
       }
     };
 
     window.addEventListener("mouseup", handleGlobalMouseUp);
     return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
-  }, [terrainEditor, textureEditor, activeEditor]);
+  }, [terrainEditor, textureEditor, activeEditor, appRef, hostRef]);
 
   useEffect(() => {
     const overlay = overlayRef.current;
@@ -147,13 +177,13 @@ export function useEditorInput({
           textureEditor.setBrushRadius(newRadius);
         }
       } else {
-        terrainEditor.zoomCamera(e.deltaY);
+        appRef.current?.zoomEditorCamera(e.deltaY);
       }
     };
 
     overlay.addEventListener("wheel", handleWheel, { passive: false });
     return () => overlay.removeEventListener("wheel", handleWheel);
-  }, [terrainEditor, textureEditor, activeEditor]);
+  }, [terrainEditor, textureEditor, activeEditor, appRef]);
 
   return {
     overlayRef,

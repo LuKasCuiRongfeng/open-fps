@@ -4,6 +4,7 @@ import { GameApp, type GameBootPhase } from "@game/app";
 import type { EditorAppSession } from "./types";
 import { BrushIndicatorSystem, type EditorBrushInfo, type ActiveEditorType } from "@editor/runtime/common";
 import { TerrainEditor } from "@editor/runtime/terrain/TerrainEditor";
+import type { EditorCameraAction } from "@editor/runtime/terrain/TerrainEditor";
 import { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import { TerrainTextureArrays } from "@game/world/terrain/TerrainTextureArrays";
 import { parseChunkKey, type MapData } from "@project/MapData";
@@ -60,6 +61,43 @@ export class EditorApp extends GameApp implements EditorAppSession {
     }
 
     this.brushIndicator.hide();
+  }
+
+  startEditorCameraAction(
+    action: EditorCameraAction,
+    mouseX: number,
+    mouseY: number,
+    viewportWidth: number,
+    viewportHeight: number
+  ): void {
+    this.applyEditorCameraState();
+    this.terrainEditor.startCameraAction(
+      action,
+      mouseX,
+      mouseY,
+      viewportWidth,
+      viewportHeight,
+      this.camera,
+      this.resources.runtime.terrain.heightAt,
+      this.resources.runtime.terrain.hasHeightAt,
+    );
+  }
+
+  updateEditorCameraControl(mouseX: number, mouseY: number, viewportWidth: number, viewportHeight: number): void {
+    this.terrainEditor.updateCameraControl(
+      mouseX,
+      mouseY,
+      viewportWidth,
+      viewportHeight,
+      this.camera,
+      this.resources.runtime.terrain.heightAt,
+      this.resources.runtime.terrain.hasHeightAt,
+    );
+  }
+
+  zoomEditorCamera(delta: number): void {
+    this.terrainEditor.zoomCamera(delta);
+    this.applyEditorCameraState();
   }
 
   updateEditorBrushTarget(mouseX: number, mouseY: number): void {
@@ -181,7 +219,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
   }
 
   protected override runSimulationStep(): void {
-    this.terrainEditor.applyCameraState(this.camera);
+    this.applyEditorCameraState();
   }
 
   protected override afterFrame(dt: number): void {
@@ -216,7 +254,15 @@ export class EditorApp extends GameApp implements EditorAppSession {
     // 中文: 编辑器没有玩家，因此相机必须根据地图数据构图，而不是依赖出生状态。
     const y = this.resources.runtime.terrain.heightAt(x, z);
     this.terrainEditor.frameCameraAt(x, y, z, radius);
-    this.terrainEditor.applyCameraState(this.camera);
+    this.applyEditorCameraState();
+  }
+
+  private applyEditorCameraState(): void {
+    this.terrainEditor.applyCameraState(
+      this.camera,
+      this.resources.runtime.terrain.heightAt,
+      this.resources.runtime.terrain.hasHeightAt,
+    );
   }
 
   private resolveMapCameraFrame(mapData: MapData): { x: number; z: number; radius: number } {

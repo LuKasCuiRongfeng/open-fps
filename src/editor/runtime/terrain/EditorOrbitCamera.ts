@@ -2,7 +2,13 @@
 // EditorOrbitCamera：地形编辑器的轨道相机控制
 
 import type { PerspectiveCamera } from "three/webgpu";
-import { Vector3, Spherical, MathUtils, Raycaster, Vector2, Plane } from "three/webgpu";
+import { Vector3, Spherical, MathUtils, Quaternion } from "three/webgpu";
+import { TerrainSurfaceRaycaster } from "../common/TerrainSurfaceRaycaster";
+
+type TerrainHeightAt = (x: number, z: number) => number;
+type TerrainHeightAvailability = (x: number, z: number) => boolean;
+
+const MIN_PLANE_RAY_DENOMINATOR = 0.000001;
 
 /**
  * Orbit camera state and controls for editor mode.
@@ -14,6 +20,11 @@ export class EditorOrbitCamera {
   private readonly spherical = new Spherical(100, Math.PI / 3, 0);
   private readonly target = new Vector3(0, 0, 0);
   private readonly tempVec = new Vector3();
+  private readonly currentPanHit = new Vector3();
+  private readonly panStartTarget = new Vector3();
+  private readonly panStartCameraPosition = new Vector3();
+  private readonly panStartCameraQuaternion = new Quaternion();
+  private readonly panRayDirection = new Vector3();
 
   // Camera drag state.
   // 相机拖拽状态
@@ -25,10 +36,14 @@ export class EditorOrbitCamera {
   // Pan: world-space anchor point for "sticky" panning.
   // 平移：用于"跟手"平移的世界空间锚点
   private readonly panAnchor = new Vector3();
-  private readonly raycaster = new Raycaster();
-  private readonly groundPlane = new Plane(new Vector3(0, 1, 0), 0);
-  private readonly mouseNDC = new Vector2();
+  private readonly terrainRaycaster = new TerrainSurfaceRaycaster();
   private camera: PerspectiveCamera | null = null;
+  private heightAt: TerrainHeightAt | null = null;
+  private hasHeightAt: TerrainHeightAvailability | null = null;
+  private panStartFovRadians = Math.PI / 3;
+  private panStartAspect = 1;
+  private panAnchorY = 0;
+  private panHasAnchor = false;
 
   // Sensitivity settings.
   // 灵敏度设置
@@ -103,26 +118,43 @@ export class EditorOrbitCamera {
    * @param screenWidth Viewport width
    * @param screenHeight Viewport height
    */
-  startPan(mouseX: number, mouseY: number, screenWidth?: number, screenHeight?: number): void {
+  startPan(
+    mouseX: number,
+    mouseY: number,
+    screenWidth?: number,
+    screenHeight?: number,
+    camera?: PerspectiveCamera,
+    heightAt?: TerrainHeightAt,
+    hasHeightAt?: TerrainHeightAvailability
+  ): void {
+    this.updateRuntimeReferences(camera, heightAt, hasHeightAt);
     this._panActive = true;
     this._lastMouseX = mouseX;
     this._lastMouseY = mouseY;
+    this.panHasAnchor = false;
 
     // Calculate world-space anchor point under mouse.
     // 计算鼠标下的世界空间锚点
-    if (this.camera && screenWidth && screenHeight) {
-      // Update ground plane to pass through current target Y.
-      // 更新地面平面使其通过当前目标 Y
-      this.groundPlane.constant = -this.target.y;
-
-      const hitPoint = this.raycastToGround(mouseX, mouseY, screenWidth, screenHeight);
-      if (hitPoint) {
-        this.panAnchor.copy(hitPoint);
+    if (this.camera && this.heightAt && screenWidth && screenHeight) {
+      this.syncTargetToTerrain(this.heightAt);
+      if (this.raycastToTerrain(mouseX, mouseY, screenWidth, screenHeight, this.currentPanHit)) {
+        this.panAnchor.copy(this.currentPanHit);
       } else {
-        // Fallback: use target as anchor.
-        // 后备：使用目标作为锚点
-        this.panAnchor.copy(this.target);
+        // EN: Missing loaded terrain under the press point means pan must not start, otherwise fallback math can jump to distant chunks.
+        // 中文: 按下点没有命中已加载地形时不能启动平移，否则回退解算会跳到远处 chunk。
+        this._panActive = false;
+        return;
       }
+
+      // EN: Freeze the start pose for deterministic pan math; movement no longer feeds back through current terrain height.
+      // 中文: 冻结起始位姿用于确定性的平移计算，移动过程不再通过当前地形高度反向反馈。
+      this.panStartTarget.copy(this.target);
+      this.panStartCameraPosition.copy(this.camera.position);
+      this.panStartCameraQuaternion.copy(this.camera.quaternion);
+      this.panStartFovRadians = MathUtils.degToRad(this.camera.fov);
+      this.panStartAspect = this.camera.aspect;
+      this.panAnchorY = this.panAnchor.y;
+      this.panHasAnchor = true;
     }
   }
 
@@ -132,6 +164,10 @@ export class EditorOrbitCamera {
    */
   stopPan(): void {
     this._panActive = false;
+    this.panHasAnchor = false;
+    if (this.heightAt) {
+      this.syncTargetToTerrain(this.heightAt);
+    }
   }
 
   /**
@@ -143,7 +179,16 @@ export class EditorOrbitCamera {
    * @param screenWidth Viewport width (needed for pan)
    * @param screenHeight Viewport height (needed for pan)
    */
-  updateFromMouse(mouseX: number, mouseY: number, screenWidth?: number, screenHeight?: number): void {
+  updateFromMouse(
+    mouseX: number,
+    mouseY: number,
+    screenWidth?: number,
+    screenHeight?: number,
+    camera?: PerspectiveCamera,
+    heightAt?: TerrainHeightAt,
+    hasHeightAt?: TerrainHeightAvailability
+  ): void {
+    this.updateRuntimeReferences(camera, heightAt, hasHeightAt);
     const dx = mouseX - this._lastMouseX;
     const dy = mouseY - this._lastMouseY;
     this._lastMouseX = mouseX;
@@ -153,7 +198,7 @@ export class EditorOrbitCamera {
       this.orbit(dx, dy);
     }
 
-    if (this._panActive && screenWidth && screenHeight) {
+    if (this._panActive && screenWidth && screenHeight && this.camera && this.heightAt) {
       this.pan(mouseX, mouseY, screenWidth, screenHeight);
     }
   }
@@ -181,37 +226,77 @@ export class EditorOrbitCamera {
    * 在整个拖动过程中保持在鼠标下
    */
   private pan(mouseX: number, mouseY: number, screenWidth: number, screenHeight: number): void {
-    if (!this.camera) return;
+    if (!this.camera || !this.heightAt || !this.panHasAnchor) return;
 
-    // Raycast current mouse position to ground plane.
-    // 将当前鼠标位置射线投射到地面平面
-    const currentHit = this.raycastToGround(mouseX, mouseY, screenWidth, screenHeight);
-    if (!currentHit) return;
+    if (!this.raycastStartCameraToPanPlane(mouseX, mouseY, screenWidth, screenHeight, this.currentPanHit)) return;
 
-    // Move target so that panAnchor would be at currentHit.
-    // 移动目标使 panAnchor 位于 currentHit
-    // target_new = target_old + (panAnchor - currentHit)
-    this.target.x += this.panAnchor.x - currentHit.x;
-    this.target.z += this.panAnchor.z - currentHit.z;
+    const dx = this.panAnchor.x - this.currentPanHit.x;
+    const dz = this.panAnchor.z - this.currentPanHit.z;
+
+    this.target.x = this.panStartTarget.x + dx;
+    this.target.z = this.panStartTarget.z + dz;
+    this.syncTargetToTerrain(this.heightAt);
+    this.applyToCamera(this.camera, this.heightAt);
   }
 
   /**
-   * Raycast from screen position to ground plane.
-   * 从屏幕位置射线投射到地面平面
+   * Raycast from the frozen pan-start camera to the fixed plane through the original terrain anchor.
+   * 从冻结的平移起始相机射线投射到穿过原始地形锚点的固定平面。
    */
-  private raycastToGround(mouseX: number, mouseY: number, screenWidth: number, screenHeight: number): Vector3 | null {
-    if (!this.camera) return null;
+  private raycastStartCameraToPanPlane(
+    mouseX: number,
+    mouseY: number,
+    screenWidth: number,
+    screenHeight: number,
+    out: Vector3
+  ): boolean {
+    const ndcX = (mouseX / screenWidth) * 2 - 1;
+    const ndcY = -(mouseY / screenHeight) * 2 + 1;
+    const tanHalfFov = Math.tan(this.panStartFovRadians * 0.5);
 
-    // Convert to NDC [-1, 1].
-    // 转换为 NDC [-1, 1]
-    this.mouseNDC.x = (mouseX / screenWidth) * 2 - 1;
-    this.mouseNDC.y = -(mouseY / screenHeight) * 2 + 1;
+    this.panRayDirection.set(
+      ndcX * this.panStartAspect * tanHalfFov,
+      ndcY * tanHalfFov,
+      -1
+    );
+    this.panRayDirection.normalize().applyQuaternion(this.panStartCameraQuaternion);
 
-    this.raycaster.setFromCamera(this.mouseNDC, this.camera);
+    const denominator = this.panRayDirection.y;
+    if (Math.abs(denominator) < MIN_PLANE_RAY_DENOMINATOR) return false;
 
-    const hitPoint = new Vector3();
-    const hit = this.raycaster.ray.intersectPlane(this.groundPlane, hitPoint);
-    return hit ? hitPoint : null;
+    const distance = (this.panAnchorY - this.panStartCameraPosition.y) / denominator;
+    if (distance <= 0 || !Number.isFinite(distance)) return false;
+
+    out.copy(this.panStartCameraPosition).addScaledVector(this.panRayDirection, distance);
+    return Number.isFinite(out.x) && Number.isFinite(out.y) && Number.isFinite(out.z);
+  }
+
+  /**
+   * Raycast from screen position to terrain surface.
+   * 从屏幕位置射线投射到地形表面
+   */
+  private raycastToTerrain(
+    mouseX: number,
+    mouseY: number,
+    screenWidth: number,
+    screenHeight: number,
+    out: Vector3
+  ): boolean {
+    if (!this.camera || !this.heightAt) return false;
+
+    const result = this.terrainRaycaster.cast(
+      mouseX,
+      mouseY,
+      screenWidth,
+      screenHeight,
+      this.camera,
+      this.heightAt,
+      this.hasHeightAt ?? undefined
+    );
+    if (!result.valid) return false;
+
+    out.set(result.x, result.y, result.z);
+    return true;
   }
 
   /**
@@ -232,13 +317,48 @@ export class EditorOrbitCamera {
    * Apply camera state to actual camera.
    * 将相机状态应用到实际相机
    */
-  applyToCamera(camera: PerspectiveCamera): void {
+  applyToCamera(camera: PerspectiveCamera, heightAt?: TerrainHeightAt, hasHeightAt?: TerrainHeightAvailability): void {
+    this.updateRuntimeReferences(camera, heightAt, hasHeightAt);
+
     // Store camera reference for pan raycasting.
     // 存储相机引用用于平移射线投射
     this.camera = camera;
 
+    if (this.heightAt && !this._panActive) {
+      this.syncTargetToTerrain(this.heightAt);
+    }
+
     this.tempVec.setFromSpherical(this.spherical);
     camera.position.copy(this.target).add(this.tempVec);
+
+    if (this.heightAt) {
+      // EN: Only lift the camera when it would enter terrain; normal orbit height remains unconstrained.
+      // 中文: 仅在相机会进入地形时抬高相机，正常轨道高度不做固定约束。
+      const terrainY = this.heightAt(camera.position.x, camera.position.z);
+      const minCameraY = terrainY + camera.near;
+      camera.position.y = Math.max(camera.position.y, minCameraY);
+    }
+
     camera.lookAt(this.target);
+  }
+
+  private updateRuntimeReferences(
+    camera?: PerspectiveCamera,
+    heightAt?: TerrainHeightAt,
+    hasHeightAt?: TerrainHeightAvailability
+  ): void {
+    if (camera) {
+      this.camera = camera;
+    }
+    if (heightAt) {
+      this.heightAt = heightAt;
+    }
+    if (hasHeightAt) {
+      this.hasHeightAt = hasHeightAt;
+    }
+  }
+
+  private syncTargetToTerrain(heightAt: TerrainHeightAt): void {
+    this.target.y = heightAt(this.target.x, this.target.z);
   }
 }

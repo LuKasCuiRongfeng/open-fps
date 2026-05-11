@@ -14,6 +14,7 @@ import type { TerrainTextureArrayResult } from "./TerrainTextureArrays";
 export type TerrainSystemResource = {
   root: Group;
   heightAt: (xMeters: number, zMeters: number) => number;
+  hasHeightAt: (xMeters: number, zMeters: number) => boolean;
   floatingOrigin: FloatingOrigin;
   initGpu: (renderer: WebGPURenderer, spawnX?: number, spawnZ?: number) => Promise<void>;
   update: (playerWorldX: number, playerWorldZ: number, camera: PerspectiveCamera) => void;
@@ -82,6 +83,17 @@ export function createTerrainSystem(
    */
   const heightAt = (xMeters: number, zMeters: number): number => {
     return TerrainHeightSampler.heightAt(xMeters, zMeters, config);
+  };
+
+  /**
+   * Check whether a world position has loaded height data instead of fallback base height.
+   * 检查世界坐标是否有已加载高度数据，而不是回退到基础高度。
+   */
+  const hasHeightAt = (xMeters: number, zMeters: number): boolean => {
+    const chunkSize = config.streaming.chunkSizeMeters;
+    const cx = Math.floor(xMeters / chunkSize);
+    const cz = Math.floor(zMeters / chunkSize);
+    return TerrainHeightSampler.hasChunkData(cx, cz);
   };
 
   const initGpu = async (r: WebGPURenderer, spawnX = 32, spawnZ = 32): Promise<void> => {
@@ -240,6 +252,7 @@ export function createTerrainSystem(
   return {
     root,
     heightAt,
+    hasHeightAt,
     floatingOrigin,
     initGpu,
     update,
