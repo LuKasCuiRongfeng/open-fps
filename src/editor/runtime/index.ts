@@ -15,3 +15,7 @@ export * from "./terrain/TerrainBrush";
 // 纹理编辑
 export * from "./texture/TextureStorage";
 export * from "./texture/TextureEditor";
+
+// Vegetation editing.
+// 植被编辑
+export * from "./vegetation";

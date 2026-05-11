@@ -54,6 +54,13 @@ export const BRUSH_INDICATOR_STYLES = {
     activeColor: { r: 0.5, g: 1.0, b: 1.0 },
     opacity: 0.9,
   },
+  /** Vegetation placement (green). / 植被摆放（绿色） */
+  vegetation: {
+    outerColor: { r: 0.2, g: 0.95, b: 0.35 },
+    innerColor: { r: 0.5, g: 1.0, b: 0.45 },
+    activeColor: { r: 0.85, g: 1.0, b: 0.35 },
+    opacity: 0.9,
+  },
 } as const satisfies Record<string, BrushIndicatorStyle>;
 
 export type BrushIndicatorType = keyof typeof BRUSH_INDICATOR_STYLES;

@@ -14,3 +14,7 @@ export {
   useTextureBrushSettings,
   type TextureBrushSettingsState,
 } from "./useTextureBrushSettings";
+export {
+  useVegetationBrushSettings,
+  type VegetationBrushSettingsState,
+} from "./useVegetationBrushSettings";

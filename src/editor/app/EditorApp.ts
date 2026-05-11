@@ -6,6 +6,7 @@ import { BrushIndicatorSystem, type EditorBrushInfo, type ActiveEditorType } fro
 import { TerrainEditor } from "@editor/runtime/terrain/TerrainEditor";
 import type { EditorCameraAction } from "@editor/runtime/terrain/TerrainEditor";
 import { TextureEditor } from "@editor/runtime/texture/TextureEditor";
+import { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
 import { TerrainTextureArrays } from "@game/world/terrain/TerrainTextureArrays";
 import { parseChunkKey, type MapData } from "@project/MapData";
 import {
@@ -24,6 +25,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
   private readonly editorSettings = createDefaultEditorSettings();
   private readonly terrainEditor = new TerrainEditor(terrainConfig);
   private readonly textureEditor = new TextureEditor();
+  private readonly vegetationEditor = new VegetationEditor(this.vegetationScene);
   private readonly brushIndicator = new BrushIndicatorSystem();
   private activeEditorType: ActiveEditorType = null;
 
@@ -51,6 +53,10 @@ export class EditorApp extends GameApp implements EditorAppSession {
 
   getTextureEditor(): TextureEditor {
     return this.textureEditor;
+  }
+
+  getVegetationEditor(): VegetationEditor {
+    return this.vegetationEditor;
   }
 
   setActiveEditorType(type: ActiveEditorType): void {
@@ -124,6 +130,19 @@ export class EditorApp extends GameApp implements EditorAppSession {
     );
   }
 
+  updateVegetationBrushTarget(mouseX: number, mouseY: number): void {
+    const canvas = this.gameRenderer.domElement;
+    this.vegetationEditor.updateBrushTarget(
+      mouseX,
+      mouseY,
+      canvas.clientWidth,
+      canvas.clientHeight,
+      this.camera,
+      this.resources.runtime.terrain.heightAt,
+      this.resources.runtime.terrain.hasHeightAt,
+    );
+  }
+
   async loadTexturesFromMapDirectory(mapDirectory: string): Promise<void> {
     await this.textureEditor.loadFromMapDirectory(mapDirectory);
     const textureDef = this.textureEditor.textureDefinition;
@@ -138,6 +157,14 @@ export class EditorApp extends GameApp implements EditorAppSession {
 
   async saveTexturesToMapDirectory(mapDirectory: string): Promise<void> {
     await this.textureEditor.saveToMapDirectory(mapDirectory);
+  }
+
+  async loadVegetationFromMapDirectory(mapDirectory: string): Promise<void> {
+    await this.vegetationEditor.loadFromMapDirectory(mapDirectory);
+  }
+
+  async saveVegetationToMapDirectory(mapDirectory: string): Promise<void> {
+    await this.vegetationEditor.saveToMapDirectory(mapDirectory);
   }
 
   protected override async initRuntimeExtensions(): Promise<void> {
@@ -210,6 +237,13 @@ export class EditorApp extends GameApp implements EditorAppSession {
       return { x, y, z, valid: true };
     }
 
+    if (this.vegetationEditor.brushTargetValid) {
+      const x = this.vegetationEditor.brushTargetX;
+      const z = this.vegetationEditor.brushTargetZ;
+      const y = this.resources.runtime.terrain.heightAt(x, z);
+      return { x, y, z, valid: true };
+    }
+
     return { x: 0, y: 0, z: 0, valid: false };
   }
 
@@ -230,6 +264,11 @@ export class EditorApp extends GameApp implements EditorAppSession {
     }
 
     void this.textureEditor.applyBrush(dt);
+    this.vegetationEditor.applyBrush(
+      dt,
+      this.resources.runtime.terrain.heightAt,
+      this.resources.runtime.terrain.hasHeightAt,
+    );
     this.updateBrushIndicator();
   }
 
@@ -241,6 +280,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
   protected override beforeDispose(): void {
     this.terrainEditor.dispose();
     this.textureEditor.dispose();
+    this.vegetationEditor.dispose();
     this.brushIndicator.dispose();
   }
 
@@ -328,6 +368,20 @@ export class EditorApp extends GameApp implements EditorAppSession {
             falloff: this.textureEditor.brushSettings.falloff,
             strength: this.textureEditor.brushSettings.strength,
             active: this.textureEditor.brushActive,
+          };
+        }
+        break;
+
+      case "vegetation":
+        if (this.vegetationEditor.brushTargetValid) {
+          brushInfo = {
+            targetValid: true,
+            targetX: this.vegetationEditor.brushTargetX,
+            targetZ: this.vegetationEditor.brushTargetZ,
+            radius: this.vegetationEditor.brushSettings.radius,
+            falloff: 0.5,
+            strength: this.vegetationEditor.brushSettings.mode === "erase" ? 0.85 : 0.45,
+            active: this.vegetationEditor.brushActive,
           };
         }
         break;

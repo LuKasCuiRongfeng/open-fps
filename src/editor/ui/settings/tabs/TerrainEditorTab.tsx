@@ -2,8 +2,9 @@
 // TerrainEditorTab：地形编辑器设置标签
 
 import { useState, useEffect } from "react";
-import { Brush } from "lucide-react";
+import { Brush, Square } from "lucide-react";
 import type { TerrainEditor, BrushType } from "@editor/runtime";
+import type { ActiveEditorType as RuntimeActiveEditorType } from "@editor/runtime/common";
 import type { EditorAppSettings, EditorMouseAction } from "@editor/settings";
 import { useTerrainBrushSettings } from "../../hooks/useTerrainBrushSettings";
 import { RangeField } from "@ui/settings/RangeField";
@@ -14,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 type EditorMouseConfig = Pick<EditorAppSettings["editor"], "leftButton" | "rightButton" | "middleButton">;
 
-export type ActiveEditorType = "none" | "terrain" | "texture";
+export type ActiveEditorType = NonNullable<RuntimeActiveEditorType> | "none";
 
 type TerrainEditorTabProps = {
   terrainEditor: TerrainEditor | null;
@@ -87,6 +88,11 @@ export function TerrainEditorTab({
     onActiveEditorChange("terrain");
   };
 
+  const handleStopEditing = () => {
+    terrainEditor?.endBrush();
+    onActiveEditorChange("none");
+  };
+
   return (
     <SettingsPage>
       <SettingsSection
@@ -96,13 +102,13 @@ export function TerrainEditorTab({
       >
         <SettingRow label="Terrain Brush" description={canEdit ? "Paint height changes directly in the viewport." : "Open an editable project first."}>
           <SettingsButton
-            Icon={Brush}
-            onClick={handleSelectTerrain}
-            disabled={!canEdit || isEditing}
-            tone={isEditing ? "success" : "primary"}
+            Icon={isEditing ? Square : Brush}
+            onClick={isEditing ? handleStopEditing : handleSelectTerrain}
+            disabled={!canEdit}
+            tone={isEditing ? "warning" : "primary"}
           >
             {isEditing
-              ? "Terrain Active"
+              ? "Stop Editing"
               : canEdit
                 ? "Start Terrain Brush"
                 : "Open Project First"}

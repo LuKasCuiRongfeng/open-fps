@@ -36,6 +36,7 @@ export default function EditorView() {
 		settings,
 		terrainEditor,
 		textureEditor,
+		vegetationEditor,
 		setSettings,
 	} = useEditorApp({
 		enabled: !editorWorkspace.showProjectScreen,
@@ -57,6 +58,7 @@ export default function EditorView() {
 		hostRef,
 		terrainEditor,
 		textureEditor,
+		vegetationEditor,
 		activeEditor,
 	});
 
@@ -106,6 +108,7 @@ export default function EditorView() {
 		setActiveEditor(editor);
 		terrainEditor?.endBrush();
 		textureEditor?.endBrush();
+		vegetationEditor?.endBrush();
 		terrainEditor?.setMode("edit");
 		const app = appRef.current;
 		if (app) {
@@ -150,6 +153,7 @@ export default function EditorView() {
 						editorApp={appRef.current}
 						terrainEditor={terrainEditor}
 						textureEditor={appRef.current?.getTextureEditor() ?? null}
+						vegetationEditor={appRef.current?.getVegetationEditor() ?? null}
 						editorWorkspace={editorWorkspace}
 						terrainMode={editorWorkspace.terrainMode}
 						activeEditor={activeEditor}

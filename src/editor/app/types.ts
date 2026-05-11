@@ -2,11 +2,13 @@ import type { RuntimeAppSession } from "@game/app";
 import type { ActiveEditorType } from "@editor/runtime/common";
 import type { EditorCameraAction, TerrainEditor } from "@editor/runtime/terrain/TerrainEditor";
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
+import type { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
 import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings";
 
 export interface EditorAppSession extends RuntimeAppSession<EditorAppSettings, EditorAppSettingsPatch> {
   getTerrainEditor(): TerrainEditor;
   getTextureEditor(): TextureEditor;
+  getVegetationEditor(): VegetationEditor;
   setActiveEditorType(type: ActiveEditorType): void;
   startEditorCameraAction(
     action: EditorCameraAction,
@@ -19,6 +21,9 @@ export interface EditorAppSession extends RuntimeAppSession<EditorAppSettings, E
   zoomEditorCamera(delta: number): void;
   updateEditorBrushTarget(mouseX: number, mouseY: number): void;
   updateTextureBrushTarget(mouseX: number, mouseY: number): void;
+  updateVegetationBrushTarget(mouseX: number, mouseY: number): void;
   loadTexturesFromMapDirectory(mapDirectory: string): Promise<void>;
   saveTexturesToMapDirectory(mapDirectory: string): Promise<void>;
+  loadVegetationFromMapDirectory(mapDirectory: string): Promise<void>;
+  saveVegetationToMapDirectory(mapDirectory: string): Promise<void>;
 }

@@ -158,6 +158,8 @@ export function useEditorWorkspace(): EditorWorkspaceController {
       onLoadMap?.(project.map);
     }
 
+    await editorApp.loadVegetationFromMapDirectory(project.activeMapDirectory);
+
     setPendingMapData(project.map);
     setPendingSettings(project.settings);
     terrainEditor?.markClean();
@@ -247,6 +249,10 @@ export function useEditorWorkspace(): EditorWorkspaceController {
       await editorApp.saveTexturesToMapDirectory(savedProject.activeMapDirectory);
     }
 
+    if (editorApp.getVegetationEditor().shouldSave) {
+      await editorApp.saveVegetationToMapDirectory(savedProject.activeMapDirectory);
+    }
+
     editorApp.markMapDataSaved();
     terrainEditor?.markClean();
 
@@ -284,6 +290,10 @@ export function useEditorWorkspace(): EditorWorkspaceController {
 
     if (app.getTextureEditor().editingEnabled) {
       await app.saveTexturesToMapDirectory(savedProject.activeMapDirectory);
+    }
+
+    if (app.getVegetationEditor().shouldSave) {
+      await app.saveVegetationToMapDirectory(savedProject.activeMapDirectory);
     }
 
     app.markMapDataSaved();

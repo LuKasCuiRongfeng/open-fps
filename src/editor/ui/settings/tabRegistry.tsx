@@ -8,10 +8,12 @@ import {
   Monitor,
   Mountain,
   Palette,
+  Trees,
 } from "lucide-react";
 import type { EditorAppSession } from "@editor/app";
 import type { TerrainEditor } from "@editor/runtime";
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
+import type { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
 import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings";
 import type { MapData } from "@project/MapData";
 import type { EditorWorkspaceController } from "@editor/ui/hooks/useEditorWorkspace";
@@ -23,13 +25,14 @@ import {
   TimeTab,
 } from "@ui/settings/tabs";
 import { ProjectFileTab } from "./ProjectFileTab";
-import { TerrainEditorTab, TextureEditorTab, type ActiveEditorType } from "./tabs";
+import { TerrainEditorTab, TextureEditorTab, VegetationEditorTab, type ActiveEditorType } from "./tabs";
 
 export const EDITOR_SETTINGS_TABS = [
   { id: "file", label: "File", Icon: FolderOpen },
   { id: "appearance", label: "Appearance", Icon: Palette },
   { id: "terrainEditor", label: "Terrain", Icon: Mountain },
   { id: "textureEditor", label: "Texture", Icon: Layers },
+  { id: "vegetationEditor", label: "Vegetation", Icon: Trees },
   { id: "render", label: "Render", Icon: Monitor },
   { id: "camera", label: "Camera", Icon: Camera },
   { id: "time", label: "Time", Icon: Clock3 },
@@ -43,6 +46,7 @@ export type EditorSettingsTabRenderProps = {
   editorApp: EditorAppSession | null;
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;
+  vegetationEditor: VegetationEditor | null;
   editorWorkspace: EditorWorkspaceController;
   terrainMode: "editable" | "procedural";
   activeEditor: ActiveEditorType;
@@ -96,6 +100,18 @@ export const EDITOR_SETTINGS_TAB_REGISTRY: Record<EditorSettingsTabId, EditorSet
     render: (props) => (
       <TextureEditorTab
         textureEditor={props.textureEditor}
+        terrainMode={props.terrainMode}
+        activeEditor={props.activeEditor}
+        onActiveEditorChange={props.onActiveEditorChange}
+      />
+    ),
+  },
+  vegetationEditor: {
+    id: "vegetationEditor",
+    label: "Vegetation Editor",
+    render: (props) => (
+      <VegetationEditorTab
+        vegetationEditor={props.vegetationEditor}
         terrainMode={props.terrainMode}
         activeEditor={props.activeEditor}
         onActiveEditorChange={props.onActiveEditorChange}

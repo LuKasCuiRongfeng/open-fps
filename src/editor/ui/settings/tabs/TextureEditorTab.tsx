@@ -4,7 +4,7 @@
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import type { ActiveEditorType } from "./TerrainEditorTab";
 import { useTextureBrushSettings } from "../../hooks/useTextureBrushSettings";
-import { Layers, Paintbrush } from "lucide-react";
+import { Layers, Paintbrush, Square } from "lucide-react";
 import { RangeField } from "@ui/settings/RangeField";
 import { ReadonlyField, SettingBadge, SettingRow, SettingsButton, SettingsPage, SettingsSection } from "@ui/settings/SettingsLayout";
 import { Button } from "@ui/components/ui/button";
@@ -44,6 +44,11 @@ export function TextureEditorTab({
     onActiveEditorChange("texture");
   };
 
+  const handleStopEditing = () => {
+    textureEditor?.endBrush();
+    onActiveEditorChange("none");
+  };
+
   const canStartEditing = canEdit && editingEnabled;
 
   return (
@@ -58,13 +63,13 @@ export function TextureEditorTab({
           description={!canEdit ? "Open an editable project first." : !editingEnabled ? "Create texture.json to enable painting." : "Paint texture layers directly in the viewport."}
         >
           <SettingsButton
-            Icon={Paintbrush}
-            onClick={handleSelectTexture}
-            disabled={!canStartEditing || isEditing}
-            tone={isEditing ? "secondary" : "primary"}
+            Icon={isEditing ? Square : Paintbrush}
+            onClick={isEditing ? handleStopEditing : handleSelectTexture}
+            disabled={!canStartEditing}
+            tone={isEditing ? "warning" : "primary"}
           >
             {isEditing
-              ? "Texture Active"
+              ? "Stop Editing"
               : canStartEditing
                 ? "Start Texture Brush"
                 : !canEdit

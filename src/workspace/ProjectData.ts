@@ -35,6 +35,7 @@ export const PROJECT_FILES = {
   map: "map.json",
   settings: "settings.json",
   texture: "texture.json",
+  vegetation: "vegetation.json",
 } as const;
 
 export function createProjectMetadata(name: string, initialMapName = "Main Map"): ProjectMetadata {

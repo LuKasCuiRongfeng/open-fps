@@ -16,6 +16,7 @@ import {
 } from "@project/ProjectData";
 import { mergeSettingsWithDefaults, type GameSettings } from "@game/settings";
 import type { TextureDefinition } from "@game/world/terrain/TextureData";
+import { deserializeVegetationData, type VegetationMapData } from "@game/world/vegetation";
 
 export const DEFAULT_BUNDLED_PROJECT_URL = "/game-data/test_pro/";
 
@@ -27,6 +28,7 @@ export interface BundledGameProject {
   map: MapData;
   settings: GameSettings;
   textureDefinition: TextureDefinition | null;
+  vegetationData: VegetationMapData | null;
 }
 
 function normalizeDirectoryUrl(path: string): string {
@@ -83,10 +85,11 @@ export async function loadBundledGameProject(
   const activeMap = getCurrentProjectMapRecord(metadata);
   const mapDirectoryUrl = normalizeDirectoryUrl(resolveProjectUrl(projectBaseUrl, `maps/${activeMap.id}/`));
 
-  const [manifestJson, settingsJson, textureJson] = await Promise.all([
+  const [manifestJson, settingsJson, textureJson, vegetationJson] = await Promise.all([
     fetchRequiredText(resolveProjectUrl(mapDirectoryUrl, "map.json"), "map manifest"),
     fetchOptionalText(resolveProjectUrl(projectBaseUrl, "settings.json")),
     fetchOptionalText(resolveProjectUrl(mapDirectoryUrl, "texture.json")),
+    fetchOptionalText(resolveProjectUrl(mapDirectoryUrl, "vegetation.json")),
   ]);
 
   const manifest = deserializeMapManifest(manifestJson);
@@ -101,6 +104,7 @@ export async function loadBundledGameProject(
   const map = createMapDataFromManifest(manifest, chunks);
   const settings = mergeSettingsWithDefaults(settingsJson);
   const textureDefinition = textureJson ? JSON.parse(textureJson) as TextureDefinition : null;
+  const vegetationData = vegetationJson ? deserializeVegetationData(vegetationJson) : null;
 
   return {
     projectBaseUrl,
@@ -110,5 +114,6 @@ export async function loadBundledGameProject(
     map,
     settings,
     textureDefinition,
+    vegetationData,
   };
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { EditorApp, type EditorAppSession, type GameBootPhase } from "@editor/app";
 import type { TerrainEditor } from "@editor/runtime";
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
+import type { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
 import type { EditorAppSettings } from "@editor/settings";
 import type { MapData } from "@project/MapData";
 
@@ -21,6 +22,7 @@ interface UseEditorAppReturn {
   settings: EditorAppSettings | null;
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;
+  vegetationEditor: VegetationEditor | null;
   setSettings: React.Dispatch<React.SetStateAction<EditorAppSettings | null>>;
 }
 
@@ -38,6 +40,7 @@ export function useEditorApp({
   const [settings, setSettings] = useState<EditorAppSettings | null>(null);
   const [terrainEditor, setTerrainEditor] = useState<TerrainEditor | null>(null);
   const [textureEditor, setTextureEditor] = useState<TextureEditor | null>(null);
+  const [vegetationEditor, setVegetationEditor] = useState<VegetationEditor | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -75,10 +78,15 @@ export function useEditorApp({
               await app.loadMapData(pendingMapData);
             }
 
+            if (currentMapDirectory) {
+              await app.loadVegetationFromMapDirectory(currentMapDirectory);
+            }
+
             setBootPhase("ready");
             setSettings(app.getSettingsSnapshot());
             setTerrainEditor(app.getTerrainEditor());
             setTextureEditor(app.getTextureEditor());
+            setVegetationEditor(app.getVegetationEditor());
 
             app.setOnTimeUpdate((timeOfDay) => {
               setSettings((prev) => {
@@ -118,6 +126,7 @@ export function useEditorApp({
     settings,
     terrainEditor,
     textureEditor,
+    vegetationEditor,
     setSettings,
   };
 }

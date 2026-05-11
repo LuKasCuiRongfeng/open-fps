@@ -105,6 +105,12 @@ export function useGameApp({
                 bundledProject.textureDefinition,
               );
               if (disposed) return;
+
+              await app.loadVegetationFromMapDirectory(
+                bundledProject.mapDirectoryUrl,
+                bundledProject.vegetationData,
+              );
+              if (disposed) return;
             }
 
             // All loading complete, show ready and enter game.

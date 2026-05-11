@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { EditorAppSession } from "@editor/app";
 import type { TerrainEditor } from "@editor/runtime";
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
+import type { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
 import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings";
 import type { MapData } from "@project/MapData";
 import type { EditorWorkspaceController } from "@editor/ui/hooks/useEditorWorkspace";
@@ -19,6 +20,7 @@ type EditorSettingsPanelProps = {
   editorApp: EditorAppSession | null;
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;
+  vegetationEditor: VegetationEditor | null;
   editorWorkspace: EditorWorkspaceController;
   terrainMode: "editable" | "procedural";
   activeEditor: ActiveEditorType;
@@ -36,6 +38,7 @@ export function EditorSettingsPanel({
   editorApp,
   terrainEditor,
   textureEditor,
+  vegetationEditor,
   editorWorkspace,
   terrainMode,
   activeEditor,
@@ -73,6 +76,7 @@ export function EditorSettingsPanel({
         editorApp,
         terrainEditor,
         textureEditor,
+        vegetationEditor,
         editorWorkspace,
         terrainMode,
         activeEditor,

@@ -48,6 +48,7 @@ import { setTerrainNormalSoftness } from "../world/terrain/material/terrainMater
 import { timeToSunPosition, type SkySystem } from "../world/sky/SkySystem";
 import { TerrainTextureArrays } from "../world/terrain/TerrainTextureArrays";
 import { getSplatMapCount, getSplatMapFilename, type TextureDefinition } from "../world/terrain/TextureData";
+import { VegetationScene, type VegetationMapData } from "../world/vegetation";
 import type { MapData } from "@project/MapData";
 
 export interface GameAppOptions {
@@ -74,6 +75,7 @@ export class GameApp implements RuntimeAppSession {
   protected readonly sun: DirectionalLight;
   protected readonly hemi: HemisphereLight;
   protected readonly skySystem: SkySystem;
+  protected readonly vegetationScene = new VegetationScene();
   private readonly gameplayEnabled: boolean;
   private readonly initialTerrainTarget: { x: number; z: number };
   private readonly textureLoader = new TextureLoader();
@@ -103,6 +105,7 @@ export class GameApp implements RuntimeAppSession {
     this.sun = world.sun;
     this.hemi = world.hemi;
     this.skySystem = world.skySystem;
+    this.vegetationScene.attach(this.gameRenderer.scene);
 
     const rawInputState = createRawInputState();
     this.inputManager = new InputManager(this.gameRenderer.domElement, rawInputState);
@@ -233,6 +236,7 @@ export class GameApp implements RuntimeAppSession {
     this.disposed = true;
 
     this.beforeDispose();
+    this.vegetationScene.dispose();
     this.inputManager.dispose();
     this.resources.runtime.terrain.dispose();
     this.gameRenderer.dispose();
@@ -308,6 +312,13 @@ export class GameApp implements RuntimeAppSession {
       : [];
 
     this.resources.runtime.terrain.setTextureData(textureArrays, splatMapTextures);
+  }
+
+  async loadVegetationFromMapDirectory(
+    mapDirectoryUrl: string,
+    vegetationData: VegetationMapData | null,
+  ): Promise<void> {
+    await this.vegetationScene.setData(mapDirectoryUrl, vegetationData);
   }
 
   private loadSplatMapTextures(mapDirectoryUrl: string, splatMapCount: number): Promise<(Texture | null)[]> {
@@ -443,6 +454,7 @@ export class GameApp implements RuntimeAppSession {
     this.runSimulationStep();
     this.updateTerrainStreaming();
     this.afterFrame(dt);
+    this.vegetationScene.update(this.gameRenderer.camera);
     this.ecs.flushDestroyed();
     this.skySystem.update();
 
