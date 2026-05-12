@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import {
+  Activity,
   Camera,
   Clock3,
   CloudSun,
@@ -25,7 +26,7 @@ import {
   TimeTab,
 } from "@ui/settings/tabs";
 import { ProjectFileTab } from "./ProjectFileTab";
-import { TerrainEditorTab, TextureEditorTab, VegetationEditorTab, type ActiveEditorType } from "./tabs";
+import { ProfilerTab, TerrainEditorTab, TextureEditorTab, VegetationEditorTab, type ActiveEditorType } from "./tabs";
 
 export const EDITOR_SETTINGS_TABS = [
   { id: "file", label: "File", Icon: FolderOpen },
@@ -33,6 +34,7 @@ export const EDITOR_SETTINGS_TABS = [
   { id: "terrainEditor", label: "Terrain", Icon: Mountain },
   { id: "textureEditor", label: "Texture", Icon: Layers },
   { id: "vegetationEditor", label: "Vegetation", Icon: Trees },
+  { id: "profiler", label: "Profiler", Icon: Activity },
   { id: "render", label: "Render", Icon: Monitor },
   { id: "camera", label: "Camera", Icon: Camera },
   { id: "time", label: "Time", Icon: Clock3 },
@@ -117,6 +119,11 @@ export const EDITOR_SETTINGS_TAB_REGISTRY: Record<EditorSettingsTabId, EditorSet
         onActiveEditorChange={props.onActiveEditorChange}
       />
     ),
+  },
+  profiler: {
+    id: "profiler",
+    label: "Profiler",
+    render: (props) => <ProfilerTab editorApp={props.editorApp} />,
   },
   render: {
     id: "render",

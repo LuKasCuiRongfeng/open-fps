@@ -17,7 +17,7 @@ import {
 import { renderStaticConfig } from "@config/render";
 import { playerStaticConfig } from "@config/player";
 import { createWorld } from "./createWorld";
-import type { GameBootPhase, RuntimeAppSession } from "./types";
+import type { GameBootPhase, RuntimeAppSession, RuntimeProfilerSnapshot } from "./types";
 import { FpsCounter, GameRenderer } from "../rendering";
 import { SystemScheduler } from "../scheduling";
 import { GameEcs } from "../ecs/GameEcs";
@@ -56,6 +56,19 @@ export interface GameAppOptions {
   initialTerrainTarget?: { x: number; z: number };
 }
 
+type RendererInfoLike = {
+  render?: {
+    calls?: number;
+    triangles?: number;
+    lines?: number;
+    points?: number;
+  };
+  memory?: {
+    geometries?: number;
+    textures?: number;
+  };
+};
+
 function normalizeDirectoryUrl(path: string): string {
   return path.endsWith("/") ? path : `${path}/`;
 }
@@ -79,6 +92,9 @@ export class GameApp implements RuntimeAppSession {
   private readonly gameplayEnabled: boolean;
   private readonly initialTerrainTarget: { x: number; z: number };
   private readonly textureLoader = new TextureLoader();
+  private lastFrameMs = 0;
+  private lastUpdateMs = 0;
+  private lastRenderMs = 0;
   readonly ready: Promise<void>;
   protected disposed = false;
 
@@ -281,6 +297,26 @@ export class GameApp implements RuntimeAppSession {
     return this.fpsCounter.fps;
   }
 
+  getProfilerSnapshot(): RuntimeProfilerSnapshot {
+    const rendererInfo = this.gameRenderer.renderer.info as RendererInfoLike;
+
+    return {
+      fps: this.fpsCounter.fps,
+      frameMs: this.lastFrameMs,
+      updateMs: this.lastUpdateMs,
+      renderMs: this.lastRenderMs,
+      renderer: {
+        drawCalls: rendererInfo.render?.calls ?? 0,
+        triangles: rendererInfo.render?.triangles ?? 0,
+        lines: rendererInfo.render?.lines ?? 0,
+        points: rendererInfo.render?.points ?? 0,
+        geometries: rendererInfo.memory?.geometries ?? 0,
+        textures: rendererInfo.memory?.textures ?? 0,
+      },
+      vegetation: this.vegetationScene.getProfilerSnapshot(),
+    };
+  }
+
   getMousePosition(): { x: number; y: number; z: number; valid: boolean } | null {
     return this.getMousePositionInternal();
   }
@@ -440,6 +476,7 @@ export class GameApp implements RuntimeAppSession {
   protected readonly onFrame = (): void => {
     if (this.disposed) return;
 
+    const frameStartedAt = performance.now();
     this.gameRenderer.clock.update();
     const rawDt = this.gameRenderer.clock.getDelta();
     const dt = Math.min(renderStaticConfig.maxDeltaSeconds, rawDt);
@@ -458,11 +495,15 @@ export class GameApp implements RuntimeAppSession {
     this.ecs.flushDestroyed();
     this.skySystem.update();
 
+    const renderStartedAt = performance.now();
+    this.lastUpdateMs = renderStartedAt - frameStartedAt;
     if (this.skySystem.shouldUsePostProcessing()) {
       this.skySystem.render();
     } else {
       this.gameRenderer.renderer.render(this.gameRenderer.scene, this.gameRenderer.camera);
     }
+    this.lastRenderMs = performance.now() - renderStartedAt;
+    this.lastFrameMs = performance.now() - frameStartedAt;
   };
 
   protected runSimulationStep(): void {

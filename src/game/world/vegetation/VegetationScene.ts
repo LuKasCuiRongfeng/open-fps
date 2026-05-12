@@ -4,6 +4,7 @@
 import {
   Box3,
   BufferGeometry,
+  Frustum,
   Group,
   InstancedMesh,
   Material,
@@ -11,6 +12,7 @@ import {
   Mesh,
   Object3D,
   Quaternion,
+  Sphere,
   Vector3,
   type PerspectiveCamera,
 } from "three/webgpu";
@@ -47,6 +49,7 @@ type LoadedVegetationModelLevel = {
   templates: ModelMeshTemplate[];
   sourceHeightMeters: number;
   sourceMinY: number;
+  sourceBoundsRadiusMeters: number;
   stats: VegetationModelLevelStats;
 };
 
@@ -54,16 +57,75 @@ type LoadedVegetationModel = {
   definition: VegetationModelDefinition;
   signature: string;
   levels: LoadedVegetationModelLevel[];
+  maxNormalizedBoundsRadius: number;
 };
 
 type VegetationRenderBatch = {
   modelId: string;
   levelIndex: number;
   castsShadow: boolean;
+  modelCastsShadow: boolean;
   capacity: number;
   visibleCount: number;
   meshes: InstancedMesh[];
 };
+
+type VegetationSpatialCell = {
+  modelId: string;
+  instances: VegetationInstance[];
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+  minZ: number;
+  maxZ: number;
+  maxInstanceRadius: number;
+  centerX: number;
+  centerY: number;
+  centerZ: number;
+  radius: number;
+};
+
+export interface VegetationVisibilityOptions {
+  maxVisibleDistanceScale: number;
+  shadowsEnabled: boolean;
+  cellFrustumCulling: boolean;
+}
+
+export interface VegetationProfilerLevelSnapshot {
+  modelId: string;
+  modelName: string;
+  label: string;
+  visibleInstances: number;
+  shadowInstances: number;
+  drawCalls: number;
+  shadowDrawCalls: number;
+  verticesPerInstance: number;
+  trianglesPerInstance: number;
+  visibleVertices: number;
+  visibleTriangles: number;
+  shadowTriangles: number;
+}
+
+export interface VegetationProfilerSnapshot {
+  totalModels: number;
+  totalInstances: number;
+  spatialCells: number;
+  visibleCells: number;
+  culledCells: number;
+  visibleInstances: number;
+  shadowInstances: number;
+  drawCalls: number;
+  shadowDrawCalls: number;
+  visibleVertices: number;
+  visibleTriangles: number;
+  shadowTriangles: number;
+  visibilityUpdateMs: number;
+  maxVisibleDistanceScale: number;
+  shadowsEnabled: boolean;
+  cellFrustumCulling: boolean;
+  levels: VegetationProfilerLevelSnapshot[];
+}
 
 type GltfJsonResource = {
   uri?: unknown;
@@ -76,10 +138,36 @@ type GltfJsonDocument = {
 
 const MIN_SOURCE_HEIGHT_METERS = 0.001;
 const MIN_INSTANCE_CAPACITY = 32;
+const VEGETATION_CELL_SIZE_METERS = 32;
 const VISIBILITY_UPDATE_DISTANCE_METERS = 3;
 const VISIBILITY_UPDATE_DISTANCE_SQ = VISIBILITY_UPDATE_DISTANCE_METERS * VISIBILITY_UPDATE_DISTANCE_METERS;
+const VISIBILITY_UPDATE_ROTATION_RADIANS = Math.PI / 180;
+const VISIBILITY_UPDATE_ROTATION_DOT = Math.cos(VISIBILITY_UPDATE_ROTATION_RADIANS * 0.5);
+const CELL_FRUSTUM_PADDING_METERS = 32;
 const Y_AXIS = new Vector3(0, 1, 0);
 const ABSOLUTE_URI_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
+
+function createEmptyVegetationProfilerSnapshot(): VegetationProfilerSnapshot {
+  return {
+    totalModels: 0,
+    totalInstances: 0,
+    spatialCells: 0,
+    visibleCells: 0,
+    culledCells: 0,
+    visibleInstances: 0,
+    shadowInstances: 0,
+    drawCalls: 0,
+    shadowDrawCalls: 0,
+    visibleVertices: 0,
+    visibleTriangles: 0,
+    shadowTriangles: 0,
+    visibilityUpdateMs: 0,
+    maxVisibleDistanceScale: 1,
+    shadowsEnabled: true,
+    cellFrustumCulling: true,
+    levels: [],
+  };
+}
 
 function normalizeDirectoryPath(path: string): string {
   return path.endsWith("/") ? path : `${path}/`;
@@ -254,12 +342,26 @@ export class VegetationScene {
   private readonly offsetMatrix = new Matrix4();
   private readonly baseMatrix = new Matrix4();
   private readonly finalMatrix = new Matrix4();
+  private readonly viewProjectionMatrix = new Matrix4();
+  private readonly cameraFrustum = new Frustum();
+  private readonly cellBoundsSphere = new Sphere();
+  private readonly spatialCells: VegetationSpatialCell[] = [];
   private readonly lastVisibilityCameraPosition = new Vector3(Number.NaN, Number.NaN, Number.NaN);
+  private readonly lastVisibilityCameraQuaternion = new Quaternion();
   private readonly changeSubscribers = new Set<() => void>();
   private mapDirectory = "";
   private data: VegetationMapData | null = null;
   private revision = 0;
   private visibilityDirty = true;
+  private spatialIndexDirty = true;
+  private profilerSnapshot = createEmptyVegetationProfilerSnapshot();
+  private maxVisibleDistanceScale = 1;
+  private vegetationShadowsEnabled = true;
+  private cellFrustumCulling = true;
+  private lastVisibilityCameraFov = Number.NaN;
+  private lastVisibilityCameraAspect = Number.NaN;
+  private lastVisibilityCameraNear = Number.NaN;
+  private lastVisibilityCameraFar = Number.NaN;
 
   constructor() {
     this.root.name = "vegetation-root";
@@ -293,6 +395,13 @@ export class VegetationScene {
     };
   }
 
+  getProfilerSnapshot(): VegetationProfilerSnapshot {
+    return {
+      ...this.profilerSnapshot,
+      levels: this.profilerSnapshot.levels.map((level) => ({ ...level })),
+    };
+  }
+
   async setData(mapDirectory: string, data: VegetationMapData | null): Promise<void> {
     this.mapDirectory = mapDirectory;
     this.data = data;
@@ -301,6 +410,29 @@ export class VegetationScene {
 
   requestRebuild(): void {
     void this.rebuildAsync();
+  }
+
+  configureVisibility(options: Partial<VegetationVisibilityOptions>): void {
+    if (options.maxVisibleDistanceScale !== undefined) {
+      const nextScale = Math.max(1, options.maxVisibleDistanceScale);
+      if (this.maxVisibleDistanceScale !== nextScale) {
+        this.maxVisibleDistanceScale = nextScale;
+        this.visibilityDirty = true;
+      }
+    }
+
+    if (options.cellFrustumCulling !== undefined && this.cellFrustumCulling !== options.cellFrustumCulling) {
+      this.cellFrustumCulling = options.cellFrustumCulling;
+      this.visibilityDirty = true;
+    }
+
+    if (options.shadowsEnabled !== undefined && this.vegetationShadowsEnabled !== options.shadowsEnabled) {
+      this.vegetationShadowsEnabled = options.shadowsEnabled;
+      this.updateBatchShadowFlags();
+      this.visibilityDirty = true;
+    }
+
+    this.syncProfilerOptions();
   }
 
   syncInstances(modelId?: string): void {
@@ -315,23 +447,39 @@ export class VegetationScene {
       }
     }
 
+    this.spatialIndexDirty = true;
     this.visibilityDirty = true;
   }
 
   update(camera: PerspectiveCamera): void {
     const cameraPosition = camera.position;
     const movedDistanceSq = this.lastVisibilityCameraPosition.distanceToSquared(cameraPosition);
-    if (!this.visibilityDirty && movedDistanceSq < VISIBILITY_UPDATE_DISTANCE_SQ) {
+    const rotated = Math.abs(this.lastVisibilityCameraQuaternion.dot(camera.quaternion)) < VISIBILITY_UPDATE_ROTATION_DOT;
+    const projectionChanged = this.hasCameraProjectionChanged(camera);
+
+    if (!this.visibilityDirty && movedDistanceSq < VISIBILITY_UPDATE_DISTANCE_SQ && !rotated && !projectionChanged) {
       return;
     }
 
+    // EN: Rotation and FOV changes affect cell frustum culling even when the camera position is stable.
+    // 中文: 即使相机位置不变，旋转和 FOV 变化也会影响 cell 级视锥剔除。
+    camera.updateMatrixWorld();
+    camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+    this.viewProjectionMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    this.cameraFrustum.setFromProjectionMatrix(this.viewProjectionMatrix);
     this.lastVisibilityCameraPosition.copy(cameraPosition);
+    this.lastVisibilityCameraQuaternion.copy(camera.quaternion);
+    this.lastVisibilityCameraFov = camera.fov;
+    this.lastVisibilityCameraAspect = camera.aspect;
+    this.lastVisibilityCameraNear = camera.near;
+    this.lastVisibilityCameraFar = camera.far;
     this.updateVisibleInstances();
   }
 
   clear(): void {
     this.data = null;
     this.clearRenderedMeshes();
+    this.resetProfilerSnapshot();
   }
 
   dispose(): void {
@@ -415,6 +563,9 @@ export class VegetationScene {
       definition,
       signature,
       levels,
+      maxNormalizedBoundsRadius: Math.max(
+        ...levels.map((level) => level.sourceBoundsRadiusMeters / level.sourceHeightMeters),
+      ),
     };
     this.loadedModels.set(definition.id, loaded);
     return loaded;
@@ -433,6 +584,10 @@ export class VegetationScene {
 
     const bounds = new Box3().setFromObject(root);
     const sourceHeightMeters = Math.max(MIN_SOURCE_HEIGHT_METERS, bounds.max.y - bounds.min.y);
+    const sourceBoundsSphere = bounds.getBoundingSphere(new Sphere());
+    const sourceBoundsRadiusMeters = Number.isFinite(sourceBoundsSphere.radius)
+      ? Math.max(MIN_SOURCE_HEIGHT_METERS, sourceBoundsSphere.radius)
+      : sourceHeightMeters;
     const templates: ModelMeshTemplate[] = [];
 
     root.traverse((object) => {
@@ -456,6 +611,7 @@ export class VegetationScene {
       templates,
       sourceHeightMeters,
       sourceMinY: Number.isFinite(bounds.min.y) ? bounds.min.y : 0,
+      sourceBoundsRadiusMeters,
       stats: buildLevelStats(config, templates, sourceHeightMeters),
     };
   }
@@ -514,6 +670,7 @@ export class VegetationScene {
           modelId,
           levelIndex: level.config.level,
           castsShadow,
+          modelCastsShadow: model.definition.castShadow,
           capacity,
           visibleCount: 0,
           meshes: [],
@@ -522,9 +679,9 @@ export class VegetationScene {
         for (const template of level.templates) {
           const mesh = new InstancedMesh(template.geometry, template.material, capacity);
           mesh.name = `vegetation-${modelId}-${level.config.label.toLowerCase()}-${castsShadow ? "shadow" : "unshadowed"}`;
-          mesh.castShadow = template.castShadow && castsShadow;
+          mesh.castShadow = this.vegetationShadowsEnabled && template.castShadow && castsShadow;
           mesh.receiveShadow = template.receiveShadow;
-          mesh.frustumCulled = true;
+          mesh.frustumCulled = false;
           mesh.count = 0;
           this.root.add(mesh);
           batch.meshes.push(mesh);
@@ -566,9 +723,14 @@ export class VegetationScene {
   }
 
   private updateVisibleInstances(): void {
+    const updateStartedAt = performance.now();
     const data = this.data;
     if (!data || Number.isNaN(this.lastVisibilityCameraPosition.x)) {
       return;
+    }
+
+    if (this.spatialIndexDirty) {
+      this.rebuildSpatialIndex(data);
     }
 
     for (const batches of this.modelBatches.values()) {
@@ -580,39 +742,250 @@ export class VegetationScene {
       }
     }
 
-    for (const instance of data.instances) {
-      const model = this.loadedModels.get(instance.modelId);
+    let visibleCells = 0;
+    let culledCells = 0;
+    for (const cell of this.spatialCells) {
+      const model = this.loadedModels.get(cell.modelId);
       if (!model) continue;
 
-      const distanceMeters = this.getHorizontalCameraDistance(instance);
-      if (distanceMeters > model.definition.maxVisibleDistanceMeters) {
+      if (!this.isSpatialCellVisible(model, cell)) {
+        culledCells += 1;
         continue;
       }
 
-      const level = this.resolveLodLevel(model, distanceMeters);
-      const castsShadow = model.definition.castShadow && distanceMeters <= model.definition.shadowDistanceMeters;
-      const batch = this.getRenderBatch(instance.modelId, level.config.level, castsShadow);
-      if (!batch || batch.visibleCount >= batch.capacity) continue;
+      visibleCells += 1;
+      for (const instance of cell.instances) {
+        const distanceMeters = this.getHorizontalCameraDistance(instance);
+        if (distanceMeters > this.getEffectiveMaxVisibleDistance(model.definition.maxVisibleDistanceMeters)) {
+          continue;
+        }
 
-      for (let index = 0; index < batch.meshes.length; index += 1) {
-        this.writeInstanceMatrix(level, level.templates[index], instance, batch.meshes[index], batch.visibleCount);
+        const level = this.resolveLodLevel(model, distanceMeters);
+        const castsShadow = this.vegetationShadowsEnabled
+          && model.definition.castShadow
+          && distanceMeters <= model.definition.shadowDistanceMeters;
+        const batch = this.getRenderBatch(instance.modelId, level.config.level, castsShadow);
+        if (!batch || batch.visibleCount >= batch.capacity) continue;
+
+        for (let index = 0; index < batch.meshes.length; index += 1) {
+          this.writeInstanceMatrix(level, level.templates[index], instance, batch.meshes[index], batch.visibleCount);
+        }
+        batch.visibleCount += 1;
       }
-      batch.visibleCount += 1;
     }
+
+    const levelSnapshots = new Map<string, VegetationProfilerLevelSnapshot>();
+    let visibleInstances = 0;
+    let shadowInstances = 0;
+    let drawCalls = 0;
+    let shadowDrawCalls = 0;
+    let visibleVertices = 0;
+    let visibleTriangles = 0;
+    let shadowTriangles = 0;
 
     for (const batches of this.modelBatches.values()) {
       for (const batch of batches) {
+        const model = this.loadedModels.get(batch.modelId);
+        const level = model?.levels.find((entry) => entry.config.level === batch.levelIndex);
+        const batchDrawCalls = batch.visibleCount > 0 ? batch.meshes.length : 0;
+        const batchShadowDrawCalls = batch.castsShadow && this.vegetationShadowsEnabled ? batchDrawCalls : 0;
+
+        visibleInstances += batch.visibleCount;
+        drawCalls += batchDrawCalls;
+        shadowDrawCalls += batchShadowDrawCalls;
+
+        if (batch.castsShadow) {
+          shadowInstances += batch.visibleCount;
+        }
+
+        if (model && level) {
+          const batchVertices = level.stats.vertices * batch.visibleCount;
+          const batchTriangles = level.stats.triangles * batch.visibleCount;
+          visibleVertices += batchVertices;
+          visibleTriangles += batchTriangles;
+
+          if (batch.castsShadow) {
+            shadowTriangles += batchTriangles;
+          }
+
+          if (batch.visibleCount > 0) {
+            this.addProfilerLevelSnapshot(
+              levelSnapshots,
+              model,
+              level,
+              batch,
+              batchDrawCalls,
+              batchShadowDrawCalls,
+              batchVertices,
+              batchTriangles,
+            );
+          }
+        }
+
         for (const mesh of batch.meshes) {
           mesh.count = batch.visibleCount;
           mesh.instanceMatrix.needsUpdate = true;
-          if (batch.visibleCount > 0) {
-            mesh.computeBoundingSphere();
-          }
         }
       }
     }
 
+    this.profilerSnapshot = {
+      totalModels: Object.keys(data.models).length,
+      totalInstances: data.instances.length,
+      spatialCells: this.spatialCells.length,
+      visibleCells,
+      culledCells,
+      visibleInstances,
+      shadowInstances,
+      drawCalls,
+      shadowDrawCalls,
+      visibleVertices,
+      visibleTriangles,
+      shadowTriangles,
+      visibilityUpdateMs: performance.now() - updateStartedAt,
+      maxVisibleDistanceScale: this.maxVisibleDistanceScale,
+      shadowsEnabled: this.vegetationShadowsEnabled,
+      cellFrustumCulling: this.cellFrustumCulling,
+      levels: Array.from(levelSnapshots.values()),
+    };
+
     this.visibilityDirty = false;
+  }
+
+  private addProfilerLevelSnapshot(
+    snapshots: Map<string, VegetationProfilerLevelSnapshot>,
+    model: LoadedVegetationModel,
+    level: LoadedVegetationModelLevel,
+    batch: VegetationRenderBatch,
+    batchDrawCalls: number,
+    batchShadowDrawCalls: number,
+    batchVertices: number,
+    batchTriangles: number,
+  ): void {
+    const key = `${batch.modelId}:${batch.levelIndex}`;
+    let snapshot = snapshots.get(key);
+    if (!snapshot) {
+      snapshot = {
+        modelId: batch.modelId,
+        modelName: model.definition.name,
+        label: level.config.label,
+        visibleInstances: 0,
+        shadowInstances: 0,
+        drawCalls: 0,
+        shadowDrawCalls: 0,
+        verticesPerInstance: level.stats.vertices,
+        trianglesPerInstance: level.stats.triangles,
+        visibleVertices: 0,
+        visibleTriangles: 0,
+        shadowTriangles: 0,
+      };
+      snapshots.set(key, snapshot);
+    }
+
+    snapshot.visibleInstances += batch.visibleCount;
+    snapshot.drawCalls += batchDrawCalls;
+    snapshot.visibleVertices += batchVertices;
+    snapshot.visibleTriangles += batchTriangles;
+
+    if (batch.castsShadow) {
+      snapshot.shadowInstances += batch.visibleCount;
+      snapshot.shadowDrawCalls += batchShadowDrawCalls;
+      snapshot.shadowTriangles += batchTriangles;
+    }
+  }
+
+  private hasCameraProjectionChanged(camera: PerspectiveCamera): boolean {
+    return camera.fov !== this.lastVisibilityCameraFov
+      || camera.aspect !== this.lastVisibilityCameraAspect
+      || camera.near !== this.lastVisibilityCameraNear
+      || camera.far !== this.lastVisibilityCameraFar;
+  }
+
+  private rebuildSpatialIndex(data: VegetationMapData): void {
+    const cells = new Map<string, VegetationSpatialCell>();
+
+    for (const instance of data.instances) {
+      const model = this.loadedModels.get(instance.modelId);
+      if (!model) continue;
+
+      const cellX = Math.floor(instance.x / VEGETATION_CELL_SIZE_METERS);
+      const cellZ = Math.floor(instance.z / VEGETATION_CELL_SIZE_METERS);
+      const key = `${instance.modelId}:${cellX}:${cellZ}`;
+      const instanceRadius = this.getInstanceBoundsRadius(model, instance);
+      let cell = cells.get(key);
+
+      if (!cell) {
+        cell = {
+          modelId: instance.modelId,
+          instances: [],
+          minX: instance.x,
+          maxX: instance.x,
+          minY: instance.y,
+          maxY: instance.y,
+          minZ: instance.z,
+          maxZ: instance.z,
+          maxInstanceRadius: instanceRadius,
+          centerX: instance.x,
+          centerY: instance.y,
+          centerZ: instance.z,
+          radius: instanceRadius,
+        };
+        cells.set(key, cell);
+      }
+
+      cell.instances.push(instance);
+      cell.minX = Math.min(cell.minX, instance.x);
+      cell.maxX = Math.max(cell.maxX, instance.x);
+      cell.minY = Math.min(cell.minY, instance.y);
+      cell.maxY = Math.max(cell.maxY, instance.y);
+      cell.minZ = Math.min(cell.minZ, instance.z);
+      cell.maxZ = Math.max(cell.maxZ, instance.z);
+      cell.maxInstanceRadius = Math.max(cell.maxInstanceRadius, instanceRadius);
+    }
+
+    this.spatialCells.length = 0;
+    for (const cell of cells.values()) {
+      const halfX = (cell.maxX - cell.minX) * 0.5;
+      const halfY = (cell.maxY - cell.minY) * 0.5;
+      const halfZ = (cell.maxZ - cell.minZ) * 0.5;
+      cell.centerX = (cell.minX + cell.maxX) * 0.5;
+      cell.centerY = (cell.minY + cell.maxY) * 0.5;
+      cell.centerZ = (cell.minZ + cell.maxZ) * 0.5;
+      // EN: Cull conservatively at cell level; individual trees inside accepted cells stay visible to avoid editor pop-out.
+      // 中文: 以 cell 为单位保守剔除；通过检测的 cell 内单棵树保持可见，避免编辑器里突然消失。
+      cell.radius = Math.hypot(halfX, halfY, halfZ) + cell.maxInstanceRadius + CELL_FRUSTUM_PADDING_METERS;
+      this.spatialCells.push(cell);
+    }
+
+    this.spatialIndexDirty = false;
+  }
+
+  private isSpatialCellVisible(model: LoadedVegetationModel, cell: VegetationSpatialCell): boolean {
+    const dx = cell.centerX - this.lastVisibilityCameraPosition.x;
+    const dz = cell.centerZ - this.lastVisibilityCameraPosition.z;
+    const maxDistance = this.getEffectiveMaxVisibleDistance(model.definition.maxVisibleDistanceMeters) + cell.radius;
+    if (Math.hypot(dx, dz) > maxDistance) {
+      return false;
+    }
+
+    if (!this.cellFrustumCulling) {
+      return true;
+    }
+
+    this.cellBoundsSphere.center.set(cell.centerX, cell.centerY, cell.centerZ);
+    this.cellBoundsSphere.radius = cell.radius;
+    return this.cameraFrustum.intersectsSphere(this.cellBoundsSphere);
+  }
+
+  private getInstanceBoundsRadius(model: LoadedVegetationModel, instance: VegetationInstance): number {
+    return model.maxNormalizedBoundsRadius
+      * model.definition.targetHeightMeters
+      * model.definition.baseScale
+      * instance.scale;
+  }
+
+  private getEffectiveMaxVisibleDistance(distanceMeters: number): number {
+    return distanceMeters * this.maxVisibleDistanceScale;
   }
 
   private getHorizontalCameraDistance(instance: VegetationInstance): number {
@@ -671,6 +1044,29 @@ export class VegetationScene {
       }
     }
     this.modelBatches.clear();
+    this.spatialCells.length = 0;
+    this.spatialIndexDirty = true;
+  }
+
+  private updateBatchShadowFlags(): void {
+    for (const batches of this.modelBatches.values()) {
+      for (const batch of batches) {
+        for (const mesh of batch.meshes) {
+          mesh.castShadow = this.vegetationShadowsEnabled && batch.modelCastsShadow && batch.castsShadow;
+        }
+      }
+    }
+  }
+
+  private resetProfilerSnapshot(): void {
+    this.profilerSnapshot = createEmptyVegetationProfilerSnapshot();
+    this.syncProfilerOptions();
+  }
+
+  private syncProfilerOptions(): void {
+    this.profilerSnapshot.maxVisibleDistanceScale = this.maxVisibleDistanceScale;
+    this.profilerSnapshot.shadowsEnabled = this.vegetationShadowsEnabled;
+    this.profilerSnapshot.cellFrustumCulling = this.cellFrustumCulling;
   }
 
   private disposeUnusedModels(data: VegetationMapData): void {
