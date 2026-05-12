@@ -148,21 +148,6 @@ export function TextureEditorTab({
           onChange={setBrushFalloff}
         />
       </SettingsSection>
-
-      <SettingsSection title="Input">
-        <SettingRow label="Brush Stroke">
-          <ReadonlyField>Left button</ReadonlyField>
-        </SettingRow>
-        <SettingRow label="Orbit Camera">
-          <ReadonlyField>Right drag</ReadonlyField>
-        </SettingRow>
-        <SettingRow label="Pan Camera">
-          <ReadonlyField>Middle drag</ReadonlyField>
-        </SettingRow>
-        <SettingRow label="Brush Radius">
-          <ReadonlyField>Shift + scroll</ReadonlyField>
-        </SettingRow>
-      </SettingsSection>
     </SettingsPage>
   );
 }

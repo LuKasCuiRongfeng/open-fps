@@ -3,7 +3,7 @@
 
 import type { PerspectiveCamera } from "three/webgpu";
 import type { TerrainConfig } from "@game/world/terrain/terrain";
-import type { EditorMouseAction } from "@editor/settings";
+import type { EditorMouseAction, EditorMouseButtonAction } from "@editor/settings";
 import {
   createEmptyMapData,
   type MapData,
@@ -26,12 +26,12 @@ export type { EditorMouseAction };
  * 编辑器鼠标按钮配置
  */
 export interface EditorMouseConfig {
-  leftButton: EditorMouseAction;
-  rightButton: EditorMouseAction;
-  middleButton: EditorMouseAction;
+  leftButton: EditorMouseButtonAction;
+  rightButton: EditorMouseButtonAction;
+  middleButton: EditorMouseButtonAction;
 }
 
-export type EditorCameraAction = Extract<EditorMouseAction, "orbit" | "pan">;
+export type EditorCameraAction = Extract<EditorMouseAction, "orbit" | "pan" | "zoom">;
 type TerrainHeightAt = (x: number, z: number) => number;
 type TerrainHeightAvailability = (x: number, z: number) => boolean;
 
@@ -66,7 +66,7 @@ export class TerrainEditor {
   // Mouse button configuration.
   // 鼠标按钮配置
   private _mouseConfig: EditorMouseConfig = {
-    leftButton: "brush",
+    leftButton: "pan",
     rightButton: "orbit",
     middleButton: "pan",
   };
@@ -166,7 +166,7 @@ export class TerrainEditor {
     this._mouseConfig.middleButton = temp;
   }
 
-  getActionForButton(button: number): EditorMouseAction | null {
+  getActionForButton(button: number): EditorMouseButtonAction | null {
     switch (button) {
       case 0:
         return this._mouseConfig.leftButton;
@@ -251,7 +251,7 @@ export class TerrainEditor {
     hasHeightAt?: TerrainHeightAvailability
   ): void {
     const action = this.getActionForButton(button);
-    if (action === "orbit" || action === "pan") {
+    if (action === "orbit" || action === "pan" || action === "zoom") {
       this.startCameraAction(action, mouseX, mouseY, screenWidth, screenHeight, camera, heightAt, hasHeightAt);
     }
   }
@@ -268,8 +268,10 @@ export class TerrainEditor {
   ): void {
     if (action === "orbit") {
       this.orbitCamera.startOrbit(mouseX, mouseY);
-    } else {
+    } else if (action === "pan") {
       this.orbitCamera.startPan(mouseX, mouseY, screenWidth, screenHeight, camera, heightAt, hasHeightAt);
+    } else {
+      this.orbitCamera.startZoom(mouseX, mouseY);
     }
   }
 
@@ -279,7 +281,7 @@ export class TerrainEditor {
 
   endCameraControl(button: number): void {
     const action = this.getActionForButton(button);
-    if (action === "orbit" || action === "pan") {
+    if (action === "orbit" || action === "pan" || action === "zoom") {
       this.endCameraAction(action);
     }
   }
@@ -287,8 +289,10 @@ export class TerrainEditor {
   endCameraAction(action: EditorCameraAction): void {
     if (action === "orbit") {
       this.orbitCamera.stopOrbit();
-    } else {
+    } else if (action === "pan") {
       this.orbitCamera.stopPan();
+    } else {
+      this.orbitCamera.stopZoom();
     }
   }
 
@@ -333,17 +337,23 @@ export class TerrainEditor {
       }
     }
 
-    // Check brush (usually left button).
-    // 检查画刷（通常是左键）
-    if (this._brush.active) {
-      const brushButton = this.getButtonForAction("brush");
+    // Check zoom control.
+    // 检查缩放控制
+    if (this.orbitCamera.zoomActive) {
+      const zoomButton = this.getButtonForAction("zoom");
       const shouldBeActive =
-        (brushButton === 0 && leftPressed) ||
-        (brushButton === 1 && middlePressed) ||
-        (brushButton === 2 && rightPressed);
+        (zoomButton === 0 && leftPressed) ||
+        (zoomButton === 1 && middlePressed) ||
+        (zoomButton === 2 && rightPressed);
       if (!shouldBeActive) {
-        this._brush.end();
+        this.orbitCamera.stopZoom();
       }
+    }
+
+    // EN: Brush strokes are an editor-mode override and always belong to the left button.
+    // 中文: 画刷笔触是编辑模式覆盖逻辑，始终绑定左键。
+    if (this._brush.active && !leftPressed) {
+      this._brush.end();
     }
   }
 
@@ -351,7 +361,7 @@ export class TerrainEditor {
    * Get which button is assigned to an action.
    * 获取分配给某个动作的按钮
    */
-  private getButtonForAction(action: EditorMouseAction): number {
+  private getButtonForAction(action: EditorMouseButtonAction): number {
     if (this._mouseConfig.leftButton === action) return 0;
     if (this._mouseConfig.middleButton === action) return 1;
     if (this._mouseConfig.rightButton === action) return 2;

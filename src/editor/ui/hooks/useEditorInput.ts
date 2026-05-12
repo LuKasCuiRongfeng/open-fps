@@ -42,8 +42,8 @@ export function useEditorInput({
   const overlayRef = useRef<HTMLDivElement | null>(null);
 
   const getEffectiveMouseAction = (button: number): EditorMouseAction | null => {
-    if (activeEditor === "none" && button === 0) {
-      return "pan";
+    if (activeEditor !== "none" && button === 0) {
+      return "brush";
     }
 
     return terrainEditor?.getActionForButton(button) ?? null;
@@ -77,7 +77,7 @@ export function useEditorInput({
       } else if (activeEditor === "vegetation") {
         vegetationEditor?.startBrush();
       }
-    } else if (action === "orbit" || action === "pan") {
+    } else if (action === "orbit" || action === "pan" || action === "zoom") {
       const pointer = getViewportPointer(e.clientX, e.clientY);
       const app = appRef.current;
       if (!pointer || !app) return;
@@ -104,7 +104,7 @@ export function useEditorInput({
       } else if (activeEditor === "vegetation") {
         vegetationEditor?.endBrush();
       }
-    } else if (action === "orbit" || action === "pan") {
+    } else if (action === "orbit" || action === "pan" || action === "zoom") {
       const pointer = getViewportPointer(e.clientX, e.clientY);
       const app = appRef.current;
       if (pointer && app) {
@@ -156,7 +156,7 @@ export function useEditorInput({
         } else if (activeEditor === "vegetation") {
           vegetationEditor?.endBrush();
         }
-      } else if (action === "orbit" || action === "pan") {
+      } else if (action === "orbit" || action === "pan" || action === "zoom") {
         const pointer = getViewportPointer(e.clientX, e.clientY);
         const app = appRef.current;
         if (pointer && app) {

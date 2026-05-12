@@ -13,18 +13,24 @@ type CameraTabProps = {
 export function CameraTab({ settings, onPatch }: CameraTabProps) {
   return (
     <SettingsPage>
-      <SettingsSection title="Viewport Camera" description="Controls perspective projection used by the active view.">
-        <RangeField
-          label="Field of View"
-          description="Vertical perspective angle in degrees."
-          value={settings.camera.fovDegrees}
-          min={40}
-          max={110}
-          step={1}
-          valueLabel={`${Math.round(settings.camera.fovDegrees)} deg`}
-          onChange={(value) => onPatch({ camera: { fovDegrees: value } })}
-        />
-      </SettingsSection>
+      <CameraProjectionSection settings={settings} onPatch={onPatch} />
     </SettingsPage>
+  );
+}
+
+export function CameraProjectionSection({ settings, onPatch }: CameraTabProps) {
+  return (
+    <SettingsSection title="Viewport Camera" description="Controls perspective projection used by the active view.">
+      <RangeField
+        label="Field of View"
+        description="Vertical perspective angle in degrees."
+        value={settings.camera.fovDegrees}
+        min={40}
+        max={110}
+        step={1}
+        valueLabel={`${Math.round(settings.camera.fovDegrees)} deg`}
+        onChange={(value) => onPatch({ camera: { fovDegrees: value } })}
+      />
+    </SettingsSection>
   );
 }

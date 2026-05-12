@@ -21,12 +21,11 @@ import type { EditorWorkspaceController } from "@editor/ui/hooks/useEditorWorksp
 import {
   AppearanceTab,
   RenderTab,
-  CameraTab,
   SkyTab,
   TimeTab,
 } from "@ui/settings/tabs";
 import { ProjectFileTab } from "./ProjectFileTab";
-import { ProfilerTab, TerrainEditorTab, TextureEditorTab, VegetationEditorTab, type ActiveEditorType } from "./tabs";
+import { EditorCameraTab, ProfilerTab, TerrainEditorTab, TextureEditorTab, VegetationEditorTab, type ActiveEditorType } from "./tabs";
 
 export const EDITOR_SETTINGS_TABS = [
   { id: "file", label: "File", Icon: FolderOpen },
@@ -133,7 +132,7 @@ export const EDITOR_SETTINGS_TAB_REGISTRY: Record<EditorSettingsTabId, EditorSet
   camera: {
     id: "camera",
     label: "Camera",
-    render: (props) => <CameraTab settings={props.settings} onPatch={props.onPatch} />,
+    render: (props) => <EditorCameraTab settings={props.settings} onPatch={props.onPatch} />,
   },
   time: {
     id: "time",

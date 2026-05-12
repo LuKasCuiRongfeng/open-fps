@@ -12,14 +12,15 @@ import {
 
 // Editor mouse action type.
 // 编辑器鼠标动作类型
-export type EditorMouseAction = "brush" | "orbit" | "pan";
+export type EditorMouseButtonAction = "orbit" | "pan" | "zoom";
+export type EditorMouseAction = EditorMouseButtonAction | "brush";
 
 // Editor-only settings.
 // 仅编辑器使用的设置
 export type EditorSettings = {
-  leftButton: EditorMouseAction;
-  rightButton: EditorMouseAction;
-  middleButton: EditorMouseAction;
+  leftButton: EditorMouseButtonAction;
+  rightButton: EditorMouseButtonAction;
+  middleButton: EditorMouseButtonAction;
   /** When true, drag operations continue even if mouse leaves window. / 为 true 时，拖拽操作在鼠标离开窗口后继续 */
   stickyDrag: boolean;
 };
@@ -34,11 +35,15 @@ export type EditorAppSettingsPatch = GameSettingsPatch & {
 
 export function createDefaultEditorSettings(): EditorSettings {
   return {
-    leftButton: "brush",
+    leftButton: "pan",
     rightButton: "orbit",
     middleButton: "pan",
     stickyDrag: false,
   };
+}
+
+function isEditorMouseButtonAction(action: unknown): action is EditorMouseButtonAction {
+  return action === "orbit" || action === "pan" || action === "zoom";
 }
 
 export function createDefaultEditorAppSettings(): EditorAppSettings {
@@ -60,13 +65,13 @@ export function applyEditorSettingsPatch(
   settings: EditorSettings,
   patch: DeepPartial<EditorSettings>,
 ): void {
-  if (patch.leftButton !== undefined) {
+  if (isEditorMouseButtonAction(patch.leftButton)) {
     settings.leftButton = patch.leftButton;
   }
-  if (patch.rightButton !== undefined) {
+  if (isEditorMouseButtonAction(patch.rightButton)) {
     settings.rightButton = patch.rightButton;
   }
-  if (patch.middleButton !== undefined) {
+  if (isEditorMouseButtonAction(patch.middleButton)) {
     settings.middleButton = patch.middleButton;
   }
   if (patch.stickyDrag !== undefined) {

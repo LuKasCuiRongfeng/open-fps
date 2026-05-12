@@ -30,6 +30,7 @@ export class EditorOrbitCamera {
   // 相机拖拽状态
   private _orbitActive = false;
   private _panActive = false;
+  private _zoomActive = false;
   private _lastMouseX = 0;
   private _lastMouseY = 0;
 
@@ -48,6 +49,7 @@ export class EditorOrbitCamera {
   // Sensitivity settings.
   // 灵敏度设置
   private readonly orbitSensitivity = 0.01;
+  private readonly zoomDragSensitivity = 0.005;
 
   // Angle limits.
   // 角度限制
@@ -57,7 +59,7 @@ export class EditorOrbitCamera {
   private readonly maxRadius = 1000;
 
   get isControlActive(): boolean {
-    return this._orbitActive || this._panActive;
+    return this._orbitActive || this._panActive || this._zoomActive;
   }
 
   get orbitActive(): boolean {
@@ -66,6 +68,10 @@ export class EditorOrbitCamera {
 
   get panActive(): boolean {
     return this._panActive;
+  }
+
+  get zoomActive(): boolean {
+    return this._zoomActive;
   }
 
   /**
@@ -171,6 +177,24 @@ export class EditorOrbitCamera {
   }
 
   /**
+   * Start zoom control.
+   * 开始缩放控制。
+   */
+  startZoom(mouseX: number, mouseY: number): void {
+    this._zoomActive = true;
+    this._lastMouseX = mouseX;
+    this._lastMouseY = mouseY;
+  }
+
+  /**
+   * Stop zoom control.
+   * 停止缩放控制。
+   */
+  stopZoom(): void {
+    this._zoomActive = false;
+  }
+
+  /**
    * Update camera from mouse movement.
    * 从鼠标移动更新相机
    *
@@ -200,6 +224,10 @@ export class EditorOrbitCamera {
 
     if (this._panActive && screenWidth && screenHeight && this.camera && this.heightAt) {
       this.pan(mouseX, mouseY, screenWidth, screenHeight);
+    }
+
+    if (this._zoomActive) {
+      this.zoomByDrag(dy);
     }
   }
 
@@ -306,6 +334,19 @@ export class EditorOrbitCamera {
   zoom(delta: number): void {
     const zoomFactor = delta > 0 ? 1.1 : 0.9;
     this.spherical.radius *= zoomFactor;
+    this.spherical.radius = MathUtils.clamp(
+      this.spherical.radius,
+      this.minRadius,
+      this.maxRadius
+    );
+  }
+
+  /**
+   * Zoom from pointer drag. Positive vertical movement zooms out, negative movement zooms in.
+   * 根据指针拖拽缩放。垂直正向移动拉远，负向移动拉近。
+   */
+  private zoomByDrag(dy: number): void {
+    this.spherical.radius *= Math.exp(dy * this.zoomDragSensitivity);
     this.spherical.radius = MathUtils.clamp(
       this.spherical.radius,
       this.minRadius,

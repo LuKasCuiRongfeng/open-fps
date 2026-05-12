@@ -4,7 +4,7 @@
 export { HelpTab } from "./HelpTab";
 export { AppearanceTab } from "./AppearanceTab";
 export { RenderTab } from "./RenderTab";
-export { CameraTab } from "./CameraTab";
+export { CameraTab, CameraProjectionSection } from "./CameraTab";
 export { SkyTab } from "./SkyTab";
 export { TimeTab } from "./TimeTab";
 export { MovementTab } from "./MovementTab";
