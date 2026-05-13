@@ -269,6 +269,25 @@ function createModelSignature(definition: VegetationModelDefinition): string {
   return getModelLodConfigs(definition).map((config) => `${config.level}:${config.path}`).join("|");
 }
 
+function syncLoadedModelDefinition(model: LoadedVegetationModel, definition: VegetationModelDefinition): void {
+  model.definition = definition;
+
+  // EN: LOD distances and shadow flags are editable without changing asset paths, so keep cached levels in sync.
+  // 中文: LOD 距离和阴影开关可在不改变资产路径时编辑，因此需要同步已缓存的层级配置。
+  const configsByLevel = new Map(getModelLodConfigs(definition).map((config) => [config.level, config]));
+  for (const level of model.levels) {
+    const nextConfig = configsByLevel.get(level.config.level);
+    if (nextConfig) {
+      level.config = nextConfig;
+    }
+
+    for (const template of level.templates) {
+      template.castShadow = definition.castShadow;
+      template.receiveShadow = definition.receiveShadow;
+    }
+  }
+}
+
 function getModelInstanceCount(data: VegetationMapData, modelId: string): number {
   let count = 0;
   for (const instance of data.instances) {
@@ -523,7 +542,7 @@ export class VegetationScene {
     const signature = createModelSignature(definition);
     const existing = this.loadedModels.get(definition.id);
     if (existing?.signature === signature) {
-      existing.definition = definition;
+      syncLoadedModelDefinition(existing, definition);
       return existing;
     }
 

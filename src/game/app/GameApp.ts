@@ -57,8 +57,11 @@ export interface GameAppOptions {
 }
 
 type RendererInfoLike = {
+  reset?: () => void;
   render?: {
     calls?: number;
+    drawCalls?: number;
+    frameCalls?: number;
     triangles?: number;
     lines?: number;
     points?: number;
@@ -306,7 +309,9 @@ export class GameApp implements RuntimeAppSession {
       updateMs: this.lastUpdateMs,
       renderMs: this.lastRenderMs,
       renderer: {
-        drawCalls: rendererInfo.render?.calls ?? 0,
+        // EN: WebGPU keeps render.calls as a lifetime counter; drawCalls is the per-frame metric.
+        // 中文: WebGPU 的 render.calls 是生命周期累计值；drawCalls 才是逐帧指标。
+          drawCalls: rendererInfo.render?.drawCalls ?? rendererInfo.render?.calls ?? 0,
         triangles: rendererInfo.render?.triangles ?? 0,
         lines: rendererInfo.render?.lines ?? 0,
         points: rendererInfo.render?.points ?? 0,
@@ -497,6 +502,7 @@ export class GameApp implements RuntimeAppSession {
 
     const renderStartedAt = performance.now();
     this.lastUpdateMs = renderStartedAt - frameStartedAt;
+    this.resetRendererProfilerInfo();
     if (this.skySystem.shouldUsePostProcessing()) {
       this.skySystem.render();
     } else {
@@ -505,6 +511,13 @@ export class GameApp implements RuntimeAppSession {
     this.lastRenderMs = performance.now() - renderStartedAt;
     this.lastFrameMs = performance.now() - frameStartedAt;
   };
+
+  private resetRendererProfilerInfo(): void {
+    // EN: WebGPU renderer info can accumulate across frames unless reset before the render pass.
+    // 中文: WebGPU renderer info 若不在渲染前重置，可能跨帧累加。
+    const rendererInfo = this.gameRenderer.renderer.info as RendererInfoLike;
+    rendererInfo.reset?.();
+  }
 
   protected runSimulationStep(): void {
     this.scheduler.execute(this.ecs.world, this.resources);

@@ -5,9 +5,9 @@
       "id": "quiver-tree-02",
       "name": "Quiver Tree 02",
       "path": "../../assets/model/quiver_tree_02_1k.gltf/quiver_tree_02_1k.gltf",
-      "lod1Path": "",
+      "lod1Path": "../../assets/model/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf",
       "lod1DistanceMeters": 70,
-      "lod2Path": "",
+      "lod2Path": "../../assets/model/quiver_tree_02_1k.gltf/lod2/quiver_tree_02_lod2.gltf",
       "lod2DistanceMeters": 130,
       "targetHeightMeters": 8,
       "baseScale": 1,
@@ -15,6 +15,21 @@
       "receiveShadow": true,
       "maxVisibleDistanceMeters": 220,
       "shadowDistanceMeters": 55
+    },
+    "fern-02": {
+      "id": "fern-02",
+      "name": "Fern 02",
+      "path": "../../assets/model/fern_02_1k.gltf/fern_02_1k.gltf",
+      "lod1Path": "../../assets/model/fern_02_1k.gltf/lod1/fern_02_lod1.gltf",
+      "lod1DistanceMeters": 30,
+      "lod2Path": "../../assets/model/fern_02_1k.gltf/lod2/fern_02_lod2.gltf",
+      "lod2DistanceMeters": 70,
+      "targetHeightMeters": 0.45,
+      "baseScale": 1,
+      "castShadow": false,
+      "receiveShadow": true,
+      "maxVisibleDistanceMeters": 120,
+      "shadowDistanceMeters": 0
     }
   },
   "instances": []
