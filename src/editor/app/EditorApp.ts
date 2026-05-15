@@ -1,4 +1,5 @@
 import { terrainConfig, type TerrainConfig } from "@config/terrain";
+import { vegetationRenderConfig } from "@config/vegetation";
 import { getPlatform } from "@/platform";
 import { GameApp, type GameBootPhase } from "@game/app";
 import type { EditorAppSession } from "./types";
@@ -54,10 +55,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
 
     // EN: Orbit editing often views vegetation from far above; keep it visible and skip tree shadow passes for responsive painting.
     // 中文: 轨道编辑常从远处俯视植被；放宽可见距离并跳过树木阴影 pass，保证刷植被时响应更稳。
-    this.vegetationScene.configureVisibility({
-      maxVisibleDistanceScale: 5,
-      shadowsEnabled: false,
-    });
+    this.vegetationScene.configureVisibility(vegetationRenderConfig.editor);
     this.brushIndicator.attach(this.scene);
     this.terrainEditor.setMode("edit");
   }

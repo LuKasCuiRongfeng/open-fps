@@ -26,6 +26,10 @@ export { inputConfig, type InputConfig, isKeyDown, isKeyJustPressed } from "./in
 // 渲染
 export { renderRuntimeConfig, renderStaticConfig } from "./render";
 
+// Vegetation.
+// 植被
+export { vegetationRenderConfig } from "./vegetation";
+
 // Fog.
 // 雾
 export { fogRuntimeConfig, fogStaticConfig } from "./fog";

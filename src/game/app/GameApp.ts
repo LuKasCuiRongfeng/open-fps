@@ -16,6 +16,7 @@ import {
 } from "three/webgpu";
 import { renderStaticConfig } from "@config/render";
 import { playerStaticConfig } from "@config/player";
+import { vegetationRenderConfig } from "@config/vegetation";
 import type { TerrainConfig } from "@config/terrain";
 import { createWorld } from "./createWorld";
 import type { GameBootPhase, RuntimeAppSession, RuntimeProfilerSnapshot } from "./types";
@@ -128,6 +129,7 @@ export class GameApp implements RuntimeAppSession {
     this.hemi = world.hemi;
     this.skySystem = world.skySystem;
     this.vegetationScene.attach(this.gameRenderer.scene);
+    this.vegetationScene.configureVisibility(vegetationRenderConfig.game);
 
     const rawInputState = createRawInputState();
     this.inputManager = new InputManager(this.gameRenderer.domElement, rawInputState);
