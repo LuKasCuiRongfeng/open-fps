@@ -1,8 +1,16 @@
 // VegetationData: editable vegetation model and placement data.
 // VegetationData：可编辑植被模型与摆放数据。
 
-export const VEGETATION_DATA_VERSION = 1;
+import { chunkKey, parseChunkKey } from "@project/MapData";
+
+export const VEGETATION_DATA_VERSION = 2;
 export const VEGETATION_FILE_NAME = "vegetation.json";
+export const VEGETATION_CHUNKS_DIRECTORY = "vegetation";
+export const VEGETATION_INSTANCE_FORMAT = "chunked-f32le-v1";
+
+// EN: v2 keeps model metadata in JSON and stores dense per-chunk instance records as little-endian binary.
+// 中文: v2 将模型元数据保留在 JSON 中，并把密集的逐 chunk 实例记录保存为小端二进制。
+export const VEGETATION_INSTANCE_RECORD_BYTE_LENGTH = 24;
 export const DEFAULT_VEGETATION_TARGET_HEIGHT_METERS = 8;
 export const DEFAULT_VEGETATION_LOD1_DISTANCE_METERS = 70;
 export const DEFAULT_VEGETATION_LOD2_DISTANCE_METERS = 130;
@@ -62,6 +70,31 @@ export interface VegetationMapData {
   instances: VegetationInstance[];
 }
 
+export interface VegetationChunkReference {
+  path: string;
+  count: number;
+  byteLength: number;
+}
+
+export interface VegetationInstanceManifest {
+  format: typeof VEGETATION_INSTANCE_FORMAT;
+  chunkSizeMeters: number;
+  modelIds: string[];
+  chunks: Record<string, VegetationChunkReference>;
+}
+
+export interface VegetationManifest {
+  version: typeof VEGETATION_DATA_VERSION;
+  models: Record<string, VegetationModelDefinition>;
+  instances: VegetationInstanceManifest;
+}
+
+export interface VegetationChunkPayload {
+  key: string;
+  path: string;
+  bytes: Uint8Array;
+}
+
 type JsonRecord = Record<string, unknown>;
 
 export function createEmptyVegetationData(): VegetationMapData {
@@ -82,26 +115,26 @@ export function cloneVegetationData(data: VegetationMapData): VegetationMapData 
   };
 }
 
-export function serializeVegetationData(data: VegetationMapData): string {
-  return `${JSON.stringify(cloneVegetationData(data), null, 2)}\n`;
+export function serializeVegetationManifest(manifest: VegetationManifest): string {
+  return `${JSON.stringify(manifest, null, 2)}\n`;
 }
 
-export function deserializeVegetationData(json: string): VegetationMapData {
+export function deserializeVegetationManifest(json: string): VegetationManifest {
   const parsed = JSON.parse(json) as unknown;
   if (!isRecord(parsed)) {
-    throw new Error("Vegetation data must be a JSON object");
+    throw new Error("Vegetation manifest must be a JSON object");
   }
 
   if (parsed.version !== VEGETATION_DATA_VERSION) {
-    throw new Error(`Vegetation data version ${String(parsed.version ?? "unknown")} is not supported`);
+    throw new Error(`Vegetation manifest version ${String(parsed.version ?? "unknown")} is not supported`);
   }
 
   if (!isRecord(parsed.models)) {
-    throw new Error("Vegetation data must contain model definitions");
+    throw new Error("Vegetation manifest must contain model definitions");
   }
 
-  if (!Array.isArray(parsed.instances)) {
-    throw new Error("Vegetation data must contain instances");
+  if (!isRecord(parsed.instances)) {
+    throw new Error("Vegetation manifest must contain chunked instance metadata");
   }
 
   const models: Record<string, VegetationModelDefinition> = {};
@@ -109,8 +142,96 @@ export function deserializeVegetationData(json: string): VegetationMapData {
     models[id] = normalizeModelDefinition(id, value);
   }
 
-  const instances = parsed.instances.map((value, index) => normalizeInstance(value, index));
+  const instances = normalizeInstanceManifest(parsed.instances, models);
   return { version: VEGETATION_DATA_VERSION, models, instances };
+}
+
+export function createVegetationStoragePayload(
+  data: VegetationMapData,
+  chunkSizeMeters: number,
+): { manifest: VegetationManifest; chunks: VegetationChunkPayload[] } {
+  if (!Number.isFinite(chunkSizeMeters) || chunkSizeMeters <= 0) {
+    throw new Error("Vegetation chunk size must be a positive finite number");
+  }
+
+  const models = cloneVegetationModels(data.models);
+  const modelIds = Object.keys(models).sort();
+  if (modelIds.length > 0xffff) {
+    throw new Error("Vegetation model count exceeds binary format capacity");
+  }
+
+  const modelIndexById = new Map(modelIds.map((id, index) => [id, index]));
+  const groupedInstances = new Map<string, VegetationInstance[]>();
+
+  // EN: Chunking mirrors terrain streaming so saves and future streaming can touch only the edited footprint.
+  // 中文: 分块方式对齐地形流式加载，使保存和未来流式植被只需要触碰编辑过的区域。
+  for (const instance of data.instances) {
+    if (!modelIndexById.has(instance.modelId)) {
+      throw new Error(`Vegetation instance '${instance.id}' references unknown model '${instance.modelId}'`);
+    }
+
+    const key = getVegetationChunkKey(instance.x, instance.z, chunkSizeMeters);
+    const group = groupedInstances.get(key);
+    if (group) {
+      group.push(instance);
+    } else {
+      groupedInstances.set(key, [instance]);
+    }
+  }
+
+  const chunks: VegetationChunkPayload[] = [];
+  const references: Record<string, VegetationChunkReference> = {};
+  for (const key of Array.from(groupedInstances.keys()).sort(compareChunkKeys)) {
+    const instances = groupedInstances.get(key) ?? [];
+    const { cx, cz } = parseChunkKey(key);
+    const path = getVegetationChunkPath(cx, cz);
+    const bytes = encodeVegetationChunkInstances(instances, modelIndexById);
+    references[key] = {
+      path,
+      count: instances.length,
+      byteLength: bytes.byteLength,
+    };
+    chunks.push({ key, path, bytes });
+  }
+
+  return {
+    manifest: {
+      version: VEGETATION_DATA_VERSION,
+      models,
+      instances: {
+        format: VEGETATION_INSTANCE_FORMAT,
+        chunkSizeMeters,
+        modelIds,
+        chunks: references,
+      },
+    },
+    chunks,
+  };
+}
+
+export function createVegetationDataFromManifest(
+  manifest: VegetationManifest,
+  chunks: Record<string, Uint8Array>,
+): VegetationMapData {
+  const instances: VegetationInstance[] = [];
+  const chunkReferences = manifest.instances.chunks;
+  const modelIds = manifest.instances.modelIds;
+
+  for (const key of Object.keys(chunkReferences).sort(compareChunkKeys)) {
+    const reference = chunkReferences[key];
+    const bytes = chunks[key];
+    if (!bytes) {
+      throw new Error(`Vegetation chunk '${key}' is missing binary data`);
+    }
+
+    instances.push(...decodeVegetationChunkInstances(key, reference, modelIds, bytes));
+  }
+
+  return {
+    version: VEGETATION_DATA_VERSION,
+    models: cloneVegetationModels(manifest.models),
+    instances,
+  };
 }
 
 export function createVegetationModelDefinition(
@@ -187,28 +308,6 @@ function normalizeModelDefinition(id: string, value: unknown): VegetationModelDe
   };
 }
 
-function normalizeInstance(value: unknown, index: number): VegetationInstance {
-  if (!isRecord(value)) {
-    throw new Error(`Vegetation instance ${index} must be an object`);
-  }
-
-  const id = normalizeName(readString(value.id), `vegetation-${index + 1}`);
-  const modelId = normalizeName(readString(value.modelId), "");
-  if (!modelId) {
-    throw new Error(`Vegetation instance '${id}' is missing modelId`);
-  }
-
-  return {
-    id,
-    modelId,
-    x: readFiniteNumber(value.x, 0),
-    y: readFiniteNumber(value.y, 0),
-    z: readFiniteNumber(value.z, 0),
-    rotationY: readFiniteNumber(value.rotationY, 0),
-    scale: clampNumber(value.scale, 0.001, 1000, 1),
-  };
-}
-
 function createUniqueVegetationModelId(name: string, existingIds: Iterable<string>): string {
   const existing = new Set(existingIds);
   const base = sanitizeId(name) || "vegetation-model";
@@ -270,4 +369,178 @@ function readFiniteNumber(value: unknown, fallback: number): number {
 
 function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
   return Math.min(max, Math.max(min, readFiniteNumber(value, fallback)));
+}
+
+function normalizeInstanceManifest(
+  value: JsonRecord,
+  models: Record<string, VegetationModelDefinition>,
+): VegetationInstanceManifest {
+  if (value.format !== VEGETATION_INSTANCE_FORMAT) {
+    throw new Error(`Vegetation instance format '${String(value.format ?? "unknown")}' is not supported`);
+  }
+
+  const chunkSizeMeters = readFiniteNumber(value.chunkSizeMeters, 0);
+  if (chunkSizeMeters <= 0) {
+    throw new Error("Vegetation instance manifest has invalid chunk size");
+  }
+
+  if (!Array.isArray(value.modelIds) || !value.modelIds.every((id) => typeof id === "string")) {
+    throw new Error("Vegetation instance manifest must contain model id order");
+  }
+
+  const modelIds = [...value.modelIds];
+  const uniqueModelIds = new Set(modelIds);
+  if (uniqueModelIds.size !== modelIds.length) {
+    throw new Error("Vegetation instance manifest contains duplicate model ids");
+  }
+
+  for (const modelId of modelIds) {
+    if (!models[modelId]) {
+      throw new Error(`Vegetation instance manifest references unknown model '${modelId}'`);
+    }
+  }
+
+  if (!isRecord(value.chunks)) {
+    throw new Error("Vegetation instance manifest must contain chunk references");
+  }
+
+  const chunks: Record<string, VegetationChunkReference> = {};
+  for (const [key, reference] of Object.entries(value.chunks)) {
+    parseChunkKey(key);
+    if (!isRecord(reference)) {
+      throw new Error(`Vegetation chunk '${key}' must be an object`);
+    }
+
+    const path = readString(reference.path) ?? "";
+    const count = readFiniteNumber(reference.count, -1);
+    const byteLength = readFiniteNumber(reference.byteLength, -1);
+    if (!path.startsWith(`${VEGETATION_CHUNKS_DIRECTORY}/`)) {
+      throw new Error(`Vegetation chunk '${key}' has an invalid path`);
+    }
+
+    if (!Number.isInteger(count) || count < 0) {
+      throw new Error(`Vegetation chunk '${key}' has invalid instance count`);
+    }
+
+    const expectedByteLength = count * VEGETATION_INSTANCE_RECORD_BYTE_LENGTH;
+    if (byteLength !== expectedByteLength) {
+      throw new Error(`Vegetation chunk '${key}' has invalid byte length ${byteLength}`);
+    }
+
+    chunks[key] = { path, count, byteLength };
+  }
+
+  return {
+    format: VEGETATION_INSTANCE_FORMAT,
+    chunkSizeMeters,
+    modelIds,
+    chunks,
+  };
+}
+
+function cloneVegetationModels(
+  models: Record<string, VegetationModelDefinition>,
+): Record<string, VegetationModelDefinition> {
+  return Object.fromEntries(
+    Object.entries(models).map(([id, model]) => [id, { ...model }]),
+  );
+}
+
+function getVegetationChunkKey(x: number, z: number, chunkSizeMeters: number): string {
+  return chunkKey(Math.floor(x / chunkSizeMeters), Math.floor(z / chunkSizeMeters));
+}
+
+function getVegetationChunkPath(cx: number, cz: number): string {
+  return `${VEGETATION_CHUNKS_DIRECTORY}/${formatChunkCoordinate(cx)}_${formatChunkCoordinate(cz)}.instances.bin`;
+}
+
+function encodeVegetationChunkInstances(
+  instances: readonly VegetationInstance[],
+  modelIndexById: ReadonlyMap<string, number>,
+): Uint8Array {
+  const bytes = new Uint8Array(instances.length * VEGETATION_INSTANCE_RECORD_BYTE_LENGTH);
+  const view = new DataView(bytes.buffer);
+
+  for (let index = 0; index < instances.length; index += 1) {
+    const instance = instances[index];
+    const modelIndex = modelIndexById.get(instance.modelId);
+    if (modelIndex === undefined) {
+      throw new Error(`Vegetation instance '${instance.id}' references unknown model '${instance.modelId}'`);
+    }
+
+    const offset = index * VEGETATION_INSTANCE_RECORD_BYTE_LENGTH;
+    view.setUint16(offset, modelIndex, true);
+    view.setUint16(offset + 2, 0, true);
+    view.setFloat32(offset + 4, instance.x, true);
+    view.setFloat32(offset + 8, instance.y, true);
+    view.setFloat32(offset + 12, instance.z, true);
+    view.setFloat32(offset + 16, instance.rotationY, true);
+    view.setFloat32(offset + 20, instance.scale, true);
+  }
+
+  return bytes;
+}
+
+function decodeVegetationChunkInstances(
+  chunkKeyValue: string,
+  reference: VegetationChunkReference,
+  modelIds: readonly string[],
+  bytes: Uint8Array,
+): VegetationInstance[] {
+  if (bytes.byteLength !== reference.byteLength) {
+    throw new Error(
+      `Vegetation chunk '${chunkKeyValue}' byte length mismatch: expected ${reference.byteLength}, got ${bytes.byteLength}`,
+    );
+  }
+
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const instances: VegetationInstance[] = [];
+  for (let index = 0; index < reference.count; index += 1) {
+    const offset = index * VEGETATION_INSTANCE_RECORD_BYTE_LENGTH;
+    const modelIndex = view.getUint16(offset, true);
+    const modelId = modelIds[modelIndex];
+    if (!modelId) {
+      throw new Error(`Vegetation chunk '${chunkKeyValue}' references unknown model index ${modelIndex}`);
+    }
+
+    instances.push({
+      id: createLoadedInstanceId(chunkKeyValue, index),
+      modelId,
+      x: readChunkFloat(view, offset + 4, chunkKeyValue),
+      y: readChunkFloat(view, offset + 8, chunkKeyValue),
+      z: readChunkFloat(view, offset + 12, chunkKeyValue),
+      rotationY: readChunkFloat(view, offset + 16, chunkKeyValue),
+      scale: Math.max(0.001, readChunkFloat(view, offset + 20, chunkKeyValue)),
+    });
+  }
+
+  return instances;
+}
+
+function readChunkFloat(view: DataView, offset: number, chunkKeyValue: string): number {
+  const value = view.getFloat32(offset, true);
+  if (!Number.isFinite(value)) {
+    throw new Error(`Vegetation chunk '${chunkKeyValue}' contains a non-finite instance value`);
+  }
+
+  return value;
+}
+
+function createLoadedInstanceId(chunkKeyValue: string, index: number): string {
+  const safeChunkKey = chunkKeyValue.replace(/-/g, "m").replace(/,/g, "_");
+  return `vegetation-${safeChunkKey}-${index.toString(36)}`;
+}
+
+function compareChunkKeys(left: string, right: string): number {
+  const a = parseChunkKey(left);
+  const b = parseChunkKey(right);
+  return a.cz - b.cz || a.cx - b.cx;
+}
+
+function formatChunkCoordinate(value: number): string {
+  if (!Number.isInteger(value)) {
+    throw new Error(`Vegetation chunk coordinate must be an integer: ${value}`);
+  }
+
+  return value < 0 ? `m${Math.abs(value)}` : String(value);
 }

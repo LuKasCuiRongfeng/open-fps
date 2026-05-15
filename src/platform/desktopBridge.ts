@@ -103,6 +103,10 @@ export function createDesktopPlatform(): PlatformHost {
         await invokeCommand<void>("write_text_file", { path, content });
       },
 
+      async deleteFile(path: string): Promise<void> {
+        await invokeCommand<void>("delete_file", { path });
+      },
+
       async rename(oldPath: string, newPath: string): Promise<void> {
         const { rename } = await loadFs();
         await rename(oldPath, newPath);

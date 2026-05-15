@@ -12,6 +12,7 @@ const GAME_DATA_SOURCE_DIR = path.resolve(__dirname, "test_pro");
 const GAME_DATA_OUTPUT_DIR = path.join("game-data", "test_pro");
 
 const MIME_TYPES: Record<string, string> = {
+    ".bin": "application/octet-stream",
     ".f32": "application/octet-stream",
     ".jpg": "image/jpeg",
     ".json": "application/json; charset=utf-8",

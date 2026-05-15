@@ -62,6 +62,7 @@ export interface PlatformDialogs {
 export interface PlatformFiles {
     readText(path: string): Promise<string>;
     writeText(path: string, content: string): Promise<void>;
+    deleteFile(path: string): Promise<void>;
     rename(oldPath: string, newPath: string): Promise<void>;
     readBinaryBase64(path: string): Promise<string>;
     writeBinaryBase64(path: string, base64: string): Promise<void>;

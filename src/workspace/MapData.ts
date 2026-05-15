@@ -1,6 +1,8 @@
 // MapData: terrain editor map data types and manifest helpers.
 // MapData：地形编辑器地图数据类型和清单辅助函数
 
+import { base64ToUint8Array, uint8ArrayToBase64 } from "@/lib/base64";
+
 /**
  * Chunk height data: full height data for a single chunk.
  * Chunk 高度数据：单个 chunk 的完整高度数据
@@ -317,25 +319,3 @@ function formatChunkCoordinate(value: number): string {
   return value < 0 ? `m${Math.abs(value)}` : String(value);
 }
 
-function uint8ArrayToBase64(bytes: Uint8Array): string {
-  const chunks: string[] = [];
-  const chunkSize = 0x8000;
-
-  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-    const slice = bytes.subarray(offset, offset + chunkSize);
-    chunks.push(String.fromCharCode(...slice));
-  }
-
-  return btoa(chunks.join(""));
-}
-
-function base64ToUint8Array(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-
-  return bytes;
-}

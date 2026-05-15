@@ -374,6 +374,22 @@ pub async fn write_text_file(path: String, content: String) -> Result<(), String
     safe_write(&path, content.as_bytes()).map_err(|e| format!("Failed to write file: {}", e))
 }
 
+/// Delete a single file from disk.
+/// 从磁盘删除单个文件
+#[tauri::command]
+pub async fn delete_file(path: String) -> Result<(), String> {
+    let path = PathBuf::from(&path);
+    if !path.exists() {
+        return Ok(());
+    }
+
+    if !path.is_file() {
+        return Err("Path is not a file".to_string());
+    }
+
+    fs::remove_file(&path).map_err(|e| format!("Failed to delete file: {}", e))
+}
+
 /// Read a binary file from disk as base64.
 /// 从磁盘读取二进制文件为 base64
 #[tauri::command]

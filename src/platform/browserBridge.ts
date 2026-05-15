@@ -192,6 +192,10 @@ export function createBrowserPlatform(): PlatformHost {
         unsupported("Browser path writing");
       },
 
+      async deleteFile(): Promise<void> {
+        unsupported("Browser path deletion");
+      },
+
       async rename(): Promise<void> {
         unsupported("Browser path rename");
       },

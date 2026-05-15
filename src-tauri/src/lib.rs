@@ -26,6 +26,7 @@ pub fn run_editor() {
             // Generic file operations / 通用文件操作
             read_text_file,
             write_text_file,
+            delete_file,
             read_binary_file_base64,
             write_binary_file_base64,
             // PNG operations (bypass browser premultiplied alpha) / PNG 操作（绕过浏览器预乘 alpha）

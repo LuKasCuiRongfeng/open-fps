@@ -16,7 +16,11 @@ import {
 } from "@project/ProjectData";
 import { mergeSettingsWithDefaults, type GameSettings } from "@game/settings";
 import type { TextureDefinition } from "@game/world/terrain/TextureData";
-import { deserializeVegetationData, type VegetationMapData } from "@game/world/vegetation";
+import {
+  createVegetationDataFromManifest,
+  deserializeVegetationManifest,
+  type VegetationMapData,
+} from "@game/world/vegetation";
 
 export const DEFAULT_BUNDLED_PROJECT_URL = "/game-data/test_pro/";
 
@@ -104,7 +108,9 @@ export async function loadBundledGameProject(
   const map = createMapDataFromManifest(manifest, chunks);
   const settings = mergeSettingsWithDefaults(settingsJson);
   const textureDefinition = textureJson ? JSON.parse(textureJson) as TextureDefinition : null;
-  const vegetationData = vegetationJson ? deserializeVegetationData(vegetationJson) : null;
+  const vegetationData = vegetationJson
+    ? await loadBundledVegetationData(mapDirectoryUrl, vegetationJson)
+    : null;
 
   return {
     projectBaseUrl,
@@ -116,4 +122,22 @@ export async function loadBundledGameProject(
     textureDefinition,
     vegetationData,
   };
+}
+
+async function loadBundledVegetationData(
+  mapDirectoryUrl: string,
+  vegetationJson: string,
+): Promise<VegetationMapData> {
+  const manifest = deserializeVegetationManifest(vegetationJson);
+  const chunkEntries = await Promise.all(
+    Object.entries(manifest.instances.chunks).map(async ([key, reference]) => {
+      const bytes = await fetchRequiredBytes(
+        resolveProjectUrl(mapDirectoryUrl, reference.path),
+        `vegetation chunk ${key}`,
+      );
+      return [key, bytes] as const;
+    }),
+  );
+
+  return createVegetationDataFromManifest(manifest, Object.fromEntries(chunkEntries));
 }
