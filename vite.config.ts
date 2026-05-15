@@ -142,8 +142,9 @@ export default defineConfig(({ mode }) => {
                   }
                 : undefined,
             watch: {
-                // 3. tell Vite to ignore watching `src-tauri`
-                ignored: ["**/src-tauri/**"],
+                // 3. tell Vite to ignore native build output and editable project data
+                // 3. 告诉 Vite 忽略原生构建输出和可编辑项目数据
+                ignored: ["**/src-tauri/**", "**/test_pro/**"],
             },
         },
     };

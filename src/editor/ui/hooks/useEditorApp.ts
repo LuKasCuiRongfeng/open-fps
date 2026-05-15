@@ -34,6 +34,9 @@ export function useEditorApp({
 }: UseEditorAppOptions): UseEditorAppReturn {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const appRef = useRef<EditorAppSession | null>(null);
+  // EN: Project data here is only for boot; later saves or map-directory state updates must not recreate the editor runtime.
+  // 中文: 这里的项目数据只用于启动；后续保存或地图目录状态更新不能重建编辑器运行时。
+  const bootInputsRef = useRef({ pendingMapData, pendingSettings, currentMapDirectory });
   const [error, setError] = useState<string | null>(null);
   const [bootPhase, setBootPhase] = useState<GameBootPhase>("checking-webgpu");
   const [loading, setLoading] = useState(true);
@@ -41,6 +44,8 @@ export function useEditorApp({
   const [terrainEditor, setTerrainEditor] = useState<TerrainEditor | null>(null);
   const [textureEditor, setTextureEditor] = useState<TextureEditor | null>(null);
   const [vegetationEditor, setVegetationEditor] = useState<VegetationEditor | null>(null);
+
+  bootInputsRef.current = { pendingMapData, pendingSettings, currentMapDirectory };
 
   useEffect(() => {
     if (!enabled) return;
@@ -64,22 +69,23 @@ export function useEditorApp({
         app.ready
           .then(async () => {
             if (disposed) return;
+            const bootInputs = bootInputsRef.current;
 
-            if (pendingSettings) {
-              app.applySettings(pendingSettings);
+            if (bootInputs.pendingSettings) {
+              app.applySettings(bootInputs.pendingSettings);
             }
 
-            if (currentMapDirectory) {
-              await app.loadTexturesFromMapDirectory(currentMapDirectory);
+            if (bootInputs.currentMapDirectory) {
+              await app.loadTexturesFromMapDirectory(bootInputs.currentMapDirectory);
             }
 
-            if (pendingMapData) {
+            if (bootInputs.pendingMapData) {
               setBootPhase("loading-map");
-              await app.loadMapData(pendingMapData);
+              await app.loadMapData(bootInputs.pendingMapData);
             }
 
-            if (currentMapDirectory) {
-              await app.loadVegetationFromMapDirectory(currentMapDirectory);
+            if (bootInputs.currentMapDirectory) {
+              await app.loadVegetationFromMapDirectory(bootInputs.currentMapDirectory);
             }
 
             setBootPhase("ready");
@@ -115,7 +121,7 @@ export function useEditorApp({
       appRef.current?.dispose();
       appRef.current = null;
     };
-  }, [enabled, pendingMapData, pendingSettings, currentMapDirectory]);
+  }, [enabled]);
 
   return {
     hostRef,

@@ -6,6 +6,8 @@ Project-specific supplement to `.github/copilot-instructions.md`.
 
 - Keep this document concise. Add only durable project rules, and prefer short bullets over explanations.
 - Add durable project rules here proactively when they emerge during development.
+- When legacy code or feature design is materially flawed, AI agents may redesign and refactor it when that yields better correctness, maintainability, or workflow boundaries; do not preserve the old design merely because it exists.
+- Keep AI-led redesigns focused: explain the design change, preserve intended user-facing behavior, and verify the affected workflows.
 - Keep all project UI in a compact, serious editor-style desktop application aesthetic; avoid web-page or card-grid presentation patterns.
 - Keep platform-specific behavior behind `src/platform/` capabilities; app code must not call native command names directly.
 - Store editable terrain as v3 map manifests plus per-chunk binary `float32le` files; do not add legacy map-format compatibility unless explicitly requested.

@@ -262,8 +262,17 @@ export function useEditorWorkspace(): EditorWorkspaceController {
       console.warn("[useEditorWorkspace] Failed to add recent project entry", error);
     }
 
-    setPendingMapData(savedProject.map);
-    setPendingSettings(settings);
+    const savedProjectPathChanged = savedProject.projectPath !== currentProjectPath;
+    const savedMapChanged = savedProject.activeMap.id !== currentMapId;
+    const savedMapDirectoryChanged = savedProject.activeMapDirectory !== currentMapDirectory;
+    const shouldReloadProjectRuntime =
+      createNewProject || createNewMap || savedProjectPathChanged || savedMapChanged || savedMapDirectoryChanged;
+    if (shouldReloadProjectRuntime) {
+      // EN: Only path-changing saves refresh boot data; ordinary Save must not restart the editor runtime and drop live sidecar state.
+      // 中文: 只有路径变化的保存才刷新启动数据；普通保存不能重启编辑器运行时并丢掉实时 sidecar 状态。
+      setPendingMapData(savedProject.map);
+      setPendingSettings(settings);
+    }
     syncProjectState(savedProject);
     await refreshRecentProjects();
 

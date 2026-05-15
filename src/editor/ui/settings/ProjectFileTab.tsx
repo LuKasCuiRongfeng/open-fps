@@ -51,11 +51,15 @@ export function ProjectFileTab({
   const [newMapName, setNewMapName] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [, setDirtyRevision] = useState(0);
 
   const canEdit = editorWorkspace.terrainMode === "editable";
   const terrainDirty = terrainEditor?.dirty ?? false;
-  const textureDirty = editorApp?.getTextureEditor()?.dirty ?? false;
-  const dirty = terrainDirty || textureDirty;
+  const textureEditor = editorApp?.getTextureEditor() ?? null;
+  const vegetationEditor = editorApp?.getVegetationEditor() ?? null;
+  const textureDirty = textureEditor?.dirty ?? false;
+  const vegetationDirty = vegetationEditor?.dirty ?? false;
+  const dirty = terrainDirty || textureDirty || vegetationDirty;
   const hasProject = editorWorkspace.currentProjectPath !== null;
   const mapList = editorWorkspace.currentProjectMetadata?.maps ?? [];
   const statusTone = statusMessage ? getStatusTone(statusMessage) : "success";
@@ -74,6 +78,21 @@ export function ProjectFileTab({
   useEffect(() => {
     setNewMapName(`Map ${mapList.length + 1}`);
   }, [mapList.length]);
+
+  useEffect(() => {
+    // EN: Dirty flags live outside React; subscribe so save badges and switch prompts include sidecar edits.
+    // 中文: 脏状态存在于 React 外部；订阅变化以便保存标记和切换提示包含 sidecar 编辑。
+    const markDirtyStateChanged = () => setDirtyRevision((revision) => revision + 1);
+    terrainEditor?.setOnDirtyChange(markDirtyStateChanged);
+    textureEditor?.setOnDirtyChange(markDirtyStateChanged);
+    vegetationEditor?.setOnDirtyChange(markDirtyStateChanged);
+
+    return () => {
+      terrainEditor?.setOnDirtyChange(() => {});
+      textureEditor?.setOnDirtyChange(() => {});
+      vegetationEditor?.setOnDirtyChange(() => {});
+    };
+  }, [terrainEditor, textureEditor, vegetationEditor]);
 
   const handleMapNameChange = (name: string) => {
     setEditableMapName(name);

@@ -77,6 +77,28 @@ export function createTerrainSystem(
   // 使用配置初始化高度采样器
   TerrainHeightSampler.init(config);
 
+  const createMapDataShell = (source: MapData): MapData => ({
+    version: source.version,
+    seed: source.seed,
+    tileResolution: source.tileResolution,
+    chunkSizeMeters: source.chunkSizeMeters,
+    chunks: {},
+    metadata: { ...source.metadata },
+  });
+
+  const cloneMapData = (source: MapData): MapData => {
+    const clone = createMapDataShell(source);
+    for (const key of Object.keys(source.chunks)) {
+      const { cx, cz } = parseChunkKey(key);
+      const chunkData = getChunkData(source, cx, cz);
+      if (chunkData) {
+        setChunkData(clone, cx, cz, chunkData.heights);
+      }
+    }
+
+    return clone;
+  };
+
   /**
    * CPU-side height query (from GPU-readback cache).
    * CPU 侧高度查询（来自 GPU 回读缓存）
@@ -140,6 +162,35 @@ export function createTerrainSystem(
    * 导出当前地形为 MapData（用于保存）
    */
   const exportCurrentMapData = (): MapData => {
+    const dirtyChunkKeys = TerrainHeightSampler.getDirtyChunkKeys();
+    const dirtyChunkKeySet = new Set(dirtyChunkKeys);
+
+    if (originalMapData && hasChunks(originalMapData)) {
+      const mapData = createMapDataShell(originalMapData);
+      const exportChunkKeys = new Set([
+        ...Object.keys(originalMapData.chunks),
+        ...dirtyChunkKeys,
+      ]);
+
+      // EN: Streamed procedural chunks are cache entries, not project data; only original chunks and edited chunks belong in saves.
+      // 中文: 流式加载的程序 chunk 只是缓存，不是项目数据；保存时只纳入原始 chunk 和被编辑过的 chunk。
+      for (const key of exportChunkKeys) {
+        const { cx, cz } = parseChunkKey(key);
+        const originalChunk = getChunkData(originalMapData, cx, cz);
+        const cachedHeightData = TerrainHeightSampler.getChunkHeightData(cx, cz);
+        const heights = dirtyChunkKeySet.has(key)
+          ? cachedHeightData ?? originalChunk?.heights
+          : originalChunk?.heights ?? cachedHeightData;
+
+        if (heights) {
+          setChunkData(mapData, cx, cz, heights);
+        }
+      }
+
+      mapData.dirtyChunkKeys = dirtyChunkKeys;
+      return mapData;
+    }
+
     const mapData = createEmptyMapData(
       config.height.seed,
       config.gpuCompute.tileResolution,
@@ -158,7 +209,7 @@ export function createTerrainSystem(
       }
     }
 
-    mapData.dirtyChunkKeys = TerrainHeightSampler.getDirtyChunkKeys();
+    mapData.dirtyChunkKeys = dirtyChunkKeys;
 
     return mapData;
   };
@@ -169,6 +220,10 @@ export function createTerrainSystem(
    */
   const loadMapData = async (mapData: MapData): Promise<void> => {
     if (!chunkManager) return;
+
+    // EN: Loading a project map replaces the terrain cache so stale procedural chunks cannot leak into later saves.
+    // 中文: 加载项目地图时替换地形缓存，避免旧的程序 chunk 泄漏到后续保存中。
+    TerrainHeightSampler.clearCache();
 
     // Verify config matches.
     // 验证配置匹配
@@ -192,7 +247,7 @@ export function createTerrainSystem(
 
     // Store original map data for reset.
     // 存储原始地图数据用于重置
-    originalMapData = mapData;
+    originalMapData = cloneMapData(mapData);
 
     // Re-upload all loaded chunks to GPU.
     // 重新上传所有已加载的 chunk 到 GPU

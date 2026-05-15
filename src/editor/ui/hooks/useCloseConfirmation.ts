@@ -29,7 +29,8 @@ export function useCloseConfirmation({
 
         const terrainDirty = appRef.current?.getTerrainEditor()?.dirty ?? false;
         const textureDirty = appRef.current?.getTextureEditor()?.dirty ?? false;
-        if (!terrainDirty && !textureDirty) {
+        const vegetationDirty = appRef.current?.getVegetationEditor()?.dirty ?? false;
+        if (!terrainDirty && !textureDirty && !vegetationDirty) {
           return;
         }
 
