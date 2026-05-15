@@ -36,6 +36,19 @@ export const terrainConfig = {
     ] as const,
   },
 
+  // Render-only far terrain clipmaps that keep the horizon filled without loading high-detail chunks.
+  // 仅渲染的远景地形 clipmap，用于填满地平线且不加载高精度 chunk。
+  farTerrain: {
+    enabled: true,
+    rings: [
+      { widthMeters: 512, cellSizeMeters: 16 },
+      { widthMeters: 1024, cellSizeMeters: 32 },
+      { widthMeters: 2048, cellSizeMeters: 64 },
+      { widthMeters: 4096, cellSizeMeters: 128 },
+      { widthMeters: 8192, cellSizeMeters: 256 },
+    ] as const,
+  },
+
   // GPU compute pipeline configuration.
   // GPU 计算管线配置
   gpuCompute: {

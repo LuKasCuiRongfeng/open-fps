@@ -5,6 +5,7 @@ import { Group, type Texture } from "three/webgpu";
 import type { Scene, WebGPURenderer, PerspectiveCamera } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
 import { ChunkManager } from "./ChunkManager";
+import { FarTerrainSystem } from "./FarTerrainSystem";
 import { FloatingOrigin } from "../common/FloatingOrigin";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
 import type { BrushStroke } from "./brushTypes";
@@ -66,6 +67,7 @@ export function createTerrainSystem(
 
   const floatingOrigin = new FloatingOrigin(config);
   let chunkManager: ChunkManager | null = null;
+  let farTerrain: FarTerrainSystem | null = null;
 
   // Track which chunks have been modified by brush (need re-upload).
   // 跟踪哪些 chunk 被画刷修改过（需要重新上传）
@@ -138,6 +140,12 @@ export function createTerrainSystem(
     // Force load chunks around spawn point.
     // 强制加载出生点周围的 chunk
     await chunkManager.forceLoadAround(spawnX, spawnZ);
+
+    if (config.farTerrain.enabled) {
+      farTerrain = new FarTerrainSystem(config, floatingOrigin);
+      root.add(farTerrain.root);
+      farTerrain.update(spawnX, spawnZ);
+    }
   };
 
   const update = (playerWorldX: number, playerWorldZ: number, camera: PerspectiveCamera): void => {
@@ -151,6 +159,8 @@ export function createTerrainSystem(
     // 检查浮动原点重置
     const playerLocal = floatingOrigin.worldToLocal(playerWorldX, 0, playerWorldZ);
     floatingOrigin.checkAndRebase(playerLocal.x, playerLocal.z);
+
+    farTerrain?.update(playerWorldX, playerWorldZ);
   };
 
   /**
@@ -305,6 +315,8 @@ export function createTerrainSystem(
   };
 
   const dispose = (): void => {
+    farTerrain?.dispose();
+    farTerrain = null;
     chunkManager?.dispose();
     chunkManager = null;
     TerrainHeightSampler.clearCache();

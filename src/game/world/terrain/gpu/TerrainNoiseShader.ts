@@ -12,7 +12,6 @@ import {
   Fn,
   floor,
   fract,
-  If,
   mix,
   uint,
   mod,
@@ -73,22 +72,12 @@ type FbmLayerConfig = {
   symmetric?: boolean; // If true, remap [0,1] -> [-1,1] / 若为 true，映射 [0,1] -> [-1,1]
 };
 
-/**
- * Build terrain height compute shader.
- * 构建地形高度计算着色器
- */
-export function buildHeightComputeShader(
+export function buildTerrainHeightNode(
   config: TerrainConfig,
-  heightTexture: StorageTexture,
   hashTexture: DataTexture,
-  chunkOffsetX: UniformNode<"float", number>,
-  chunkOffsetZ: UniformNode<"float", number>,
-  tileX: UniformNode<"float", number>,
-  tileZ: UniformNode<"float", number>
-): ComputeNode {
-  const tileRes = config.gpuCompute.tileResolution;
-  const chunkSize = float(config.streaming.chunkSizeMeters);
-
+  inputWorldX: FloatNode,
+  inputWorldZ: FloatNode,
+): FloatNode {
   const hashTex = texture(hashTexture);
 
   // Hash function using texture lookup.
@@ -128,24 +117,122 @@ export function buildHeightComputeShader(
     worldX: FloatNode, worldZ: FloatNode, seed: FloatNode,
     cfg: FbmLayerConfig, seedBase: number
   ): FloatNode => {
-    const sum = float(0).toVar();
-    const amp = float(1).toVar();
-    const freq = float(cfg.frequencyPerMeter).toVar();
-    const maxAmp = float(0).toVar();
+    let sum: FloatNode = float(0);
+    let amp: FloatNode = float(1);
+    let freq: FloatNode = float(cfg.frequencyPerMeter);
+    let maxAmp: FloatNode = float(0);
 
     for (let i = 0; i < cfg.octaves; i++) {
       const n01 = valueNoise2D(worldX.mul(freq), worldZ.mul(freq), seed.add(seedBase + i * 1013));
       const n = cfg.symmetric ? n01.mul(2).sub(1) : n01;
-      sum.addAssign(n.mul(amp));
-      maxAmp.addAssign(amp);
-      freq.mulAssign(float(cfg.lacunarity));
-      amp.mulAssign(float(cfg.gain));
+      sum = sum.add(n.mul(amp));
+      maxAmp = maxAmp.add(amp);
+      freq = freq.mul(float(cfg.lacunarity));
+      amp = amp.mul(float(cfg.gain));
     }
 
     const normalized = sum.div(maxAmp);
     const power = cfg.powerCurve ?? 1.0;
     return power === 1.0 ? normalized : normalized.pow(float(power));
   };
+
+  const seed = float(config.height.seed);
+  let sampleWorldX = inputWorldX;
+  let sampleWorldZ = inputWorldZ;
+
+  // Domain warp.
+  // 域扭曲
+  const warpCfg = config.height.warp;
+  if (warpCfg.enabled) {
+    const warpFreq = float(warpCfg.frequencyPerMeter);
+    const warpAmp = float(warpCfg.amplitudeMeters);
+    const wn1 = valueNoise2D(sampleWorldX.mul(warpFreq), sampleWorldZ.mul(warpFreq), seed.add(9001));
+    const wn2 = valueNoise2D(sampleWorldX.mul(warpFreq), sampleWorldZ.mul(warpFreq), seed.add(9002));
+    sampleWorldX = sampleWorldX.add(wn1.mul(2).sub(1).mul(warpAmp));
+    sampleWorldZ = sampleWorldZ.add(wn2.mul(2).sub(1).mul(warpAmp));
+  }
+
+  let height: FloatNode = float(config.height.baseHeightMeters);
+
+  // --- fBm noise layers / fBm 噪声层 ---
+  const { continental, mountain, hills, detail } = config.height;
+
+  if (continental.enabled) {
+    height = height.add(fBm(sampleWorldX, sampleWorldZ, seed, continental, 1000).mul(float(continental.amplitudeMeters)));
+  }
+
+  if (mountain.enabled) {
+    height = height.add(fBm(sampleWorldX, sampleWorldZ, seed, mountain, 2000).mul(float(mountain.amplitudeMeters)));
+  }
+
+  if (hills.enabled) {
+    height = height.add(fBm(sampleWorldX, sampleWorldZ, seed, hills, 3000).mul(float(hills.amplitudeMeters)));
+  }
+
+  if (detail.enabled) {
+    const detailCfg = { ...detail, symmetric: true };
+    height = height.add(fBm(sampleWorldX, sampleWorldZ, seed, detailCfg, 4000).mul(float(detail.amplitudeMeters)));
+  }
+
+  // Plains flattening.
+  // 平原压平
+  const plainsCfg = config.height.plains;
+  if (plainsCfg.enabled) {
+    const threshold = float(plainsCfg.thresholdMeters);
+    const transition = float(plainsCfg.transitionMeters);
+    const t = height.sub(threshold.sub(transition)).div(transition.mul(2)).clamp(0, 1);
+    const smoothT = t.mul(t).mul(float(3).sub(t.mul(2)));
+    const flattenFactor = float(1).sub(smoothT).mul(float(plainsCfg.strength));
+    height = mix(height, float(config.height.baseHeightMeters), flattenFactor);
+  }
+
+  // Valley carving.
+  // 山谷雕刻
+  const valCfg = config.height.valleys;
+  if (valCfg.enabled) {
+    const valFbmCfg: FbmLayerConfig = { ...valCfg, lacunarity: 2.0, gain: 0.5, symmetric: true };
+    const valleyNoise = fBm(sampleWorldX, sampleWorldZ, seed, valFbmCfg, 5000);
+    const valleyShape = float(1).sub(valleyNoise.abs().mul(2).clamp(0, 1));
+    const valleyDepth = valleyShape.mul(valleyShape).mul(float(valCfg.amplitudeMeters));
+    const fadeT = height.sub(float(valCfg.heightFadeStartMeters))
+      .div(float(valCfg.heightFadeEndMeters - valCfg.heightFadeStartMeters)).clamp(0, 1);
+    height = height.sub(valleyDepth.mul(float(1).sub(fadeT)));
+  }
+
+  // Erosion detail.
+  // 侵蚀细节
+  const erosionCfg = config.height.erosion;
+  if (erosionCfg.enabled) {
+    const erosionFbm: FbmLayerConfig = {
+      enabled: true,
+      octaves: 2,
+      frequencyPerMeter: erosionCfg.detailFrequency,
+      lacunarity: 2.0,
+      gain: 0.5,
+      amplitudeMeters: erosionCfg.detailAmplitude,
+      symmetric: true,
+    };
+    height = height.add(fBm(sampleWorldX, sampleWorldZ, seed, erosionFbm, 6000).mul(float(erosionCfg.detailAmplitude)));
+  }
+
+  return height;
+}
+
+/**
+ * Build terrain height compute shader.
+ * 构建地形高度计算着色器
+ */
+export function buildHeightComputeShader(
+  config: TerrainConfig,
+  heightTexture: StorageTexture,
+  hashTexture: DataTexture,
+  chunkOffsetX: UniformNode<"float", number>,
+  chunkOffsetZ: UniformNode<"float", number>,
+  tileX: UniformNode<"float", number>,
+  tileZ: UniformNode<"float", number>
+): ComputeNode {
+  const tileRes = config.gpuCompute.tileResolution;
+  const chunkSize = float(config.streaming.chunkSizeMeters);
 
   // Main compute function with all noise inlined.
   // 主计算函数，所有噪声内联
@@ -168,85 +255,7 @@ export function buildHeightComputeShader(
     const worldX = float(chunkOffsetX).mul(chunkSize).add(localU.mul(chunkSize)).toVar();
     const worldZ = float(chunkOffsetZ).mul(chunkSize).add(localV.mul(chunkSize)).toVar();
 
-    const seed = float(config.height.seed);
-
-    // Domain warp.
-    // 域扭曲
-    const warpCfg = config.height.warp;
-    If(float(warpCfg.enabled ? 1 : 0).greaterThan(0.5), () => {
-      const warpFreq = float(warpCfg.frequencyPerMeter);
-      const warpAmp = float(warpCfg.amplitudeMeters);
-      const wn1 = valueNoise2D(worldX.mul(warpFreq), worldZ.mul(warpFreq), seed.add(9001));
-      const wn2 = valueNoise2D(worldX.mul(warpFreq), worldZ.mul(warpFreq), seed.add(9002));
-      worldX.addAssign(wn1.mul(2).sub(1).mul(warpAmp));
-      worldZ.addAssign(wn2.mul(2).sub(1).mul(warpAmp));
-    });
-
-    const height = float(config.height.baseHeightMeters).toVar();
-
-    // --- fBm noise layers / fBm 噪声层 ---
-    const { continental, mountain, hills, detail } = config.height;
-
-    // Continental layer (fBm with power curve).
-    // 大陆层（fBm 带幂曲线）
-    if (continental.enabled) {
-      height.addAssign(fBm(worldX, worldZ, seed, continental, 1000).mul(float(continental.amplitudeMeters)));
-    }
-
-    // Mountain layer (fBm with power curve).
-    // 山地层（fBm 带幂曲线）
-    if (mountain.enabled) {
-      height.addAssign(fBm(worldX, worldZ, seed, mountain, 2000).mul(float(mountain.amplitudeMeters)));
-    }
-
-    // Hills layer (fBm with power curve).
-    // 丘陵层（fBm 带幂曲线）
-    if (hills.enabled) {
-      height.addAssign(fBm(worldX, worldZ, seed, hills, 3000).mul(float(hills.amplitudeMeters)));
-    }
-
-    // Detail layer (fBm - symmetric).
-    // 细节层（fBm - 对称）
-    if (detail.enabled) {
-      const detailCfg = { ...detail, symmetric: true };
-      height.addAssign(fBm(worldX, worldZ, seed, detailCfg, 4000).mul(float(detail.amplitudeMeters)));
-    }
-
-    // Plains flattening.
-    // 平原压平
-    const plainsCfg = config.height.plains;
-    if (plainsCfg.enabled) {
-      const threshold = float(plainsCfg.thresholdMeters);
-      const transition = float(plainsCfg.transitionMeters);
-      const t = height.sub(threshold.sub(transition)).div(transition.mul(2)).clamp(0, 1);
-      const smoothT = t.mul(t).mul(float(3).sub(t.mul(2)));
-      const flattenFactor = float(1).sub(smoothT).mul(float(plainsCfg.strength));
-      height.assign(mix(height, float(config.height.baseHeightMeters), flattenFactor));
-    }
-
-    // Valley carving (uses fBm but needs custom post-processing).
-    // 山谷雕刻（使用 fBm 但需要自定义后处理）
-    const valCfg = config.height.valleys;
-    if (valCfg.enabled) {
-      const valFbmCfg: FbmLayerConfig = { ...valCfg, lacunarity: 2.0, gain: 0.5, symmetric: true };
-      const valleyNoise = fBm(worldX, worldZ, seed, valFbmCfg, 5000);
-      const valleyShape = float(1).sub(valleyNoise.abs().mul(2).clamp(0, 1));
-      const valleyDepth = valleyShape.mul(valleyShape).mul(float(valCfg.amplitudeMeters));
-      const fadeT = height.sub(float(valCfg.heightFadeStartMeters))
-        .div(float(valCfg.heightFadeEndMeters - valCfg.heightFadeStartMeters)).clamp(0, 1);
-      height.subAssign(valleyDepth.mul(float(1).sub(fadeT)));
-    }
-
-    // Erosion detail.
-    // 侵蚀细节
-    const erosionCfg = config.height.erosion;
-    if (erosionCfg.enabled) {
-      const erosionFbm: FbmLayerConfig = {
-        enabled: true, octaves: 2, frequencyPerMeter: erosionCfg.detailFrequency,
-        lacunarity: 2.0, gain: 0.5, amplitudeMeters: erosionCfg.detailAmplitude, symmetric: true
-      };
-      height.addAssign(fBm(worldX, worldZ, seed, erosionFbm, 6000).mul(float(erosionCfg.detailAmplitude)));
-    }
+    const height = buildTerrainHeightNode(config, hashTexture, worldX, worldZ);
 
     // Write to atlas.
     // 写入图集
