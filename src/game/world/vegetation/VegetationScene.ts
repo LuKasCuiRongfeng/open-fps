@@ -92,6 +92,8 @@ export interface VegetationVisibilityOptions {
   cellFrustumCulling: boolean;
 }
 
+export type VegetationTerrainAvailability = (xMeters: number, zMeters: number) => boolean;
+
 export interface VegetationProfilerLevelSnapshot {
   modelId: string;
   modelName: string;
@@ -377,6 +379,7 @@ export class VegetationScene {
   private maxVisibleDistanceScale = 1;
   private vegetationShadowsEnabled = true;
   private cellFrustumCulling = true;
+  private terrainAvailability: VegetationTerrainAvailability | null = null;
   private lastVisibilityCameraFov = Number.NaN;
   private lastVisibilityCameraAspect = Number.NaN;
   private lastVisibilityCameraNear = Number.NaN;
@@ -452,6 +455,15 @@ export class VegetationScene {
     }
 
     this.syncProfilerOptions();
+  }
+
+  setTerrainAvailability(predicate: VegetationTerrainAvailability | null): void {
+    this.terrainAvailability = predicate;
+    this.visibilityDirty = true;
+  }
+
+  invalidateVisibility(): void {
+    this.visibilityDirty = true;
   }
 
   syncInstances(modelId?: string): void {
@@ -774,6 +786,12 @@ export class VegetationScene {
 
       visibleCells += 1;
       for (const instance of cell.instances) {
+        // EN: Hide instances whose terrain chunk has streamed out; height cache can outlive rendered terrain.
+        // 中文: 隐藏对应地形 chunk 已卸载的实例；高度缓存可能比可渲染地形活得更久。
+        if (this.terrainAvailability && !this.terrainAvailability(instance.x, instance.z)) {
+          continue;
+        }
+
         const distanceMeters = this.getHorizontalCameraDistance(instance);
         if (distanceMeters > this.getEffectiveMaxVisibleDistance(model.definition.maxVisibleDistanceMeters)) {
           continue;

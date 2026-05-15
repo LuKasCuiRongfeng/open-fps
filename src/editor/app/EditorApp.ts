@@ -1,4 +1,4 @@
-import { terrainConfig } from "@config/terrain";
+import { terrainConfig, type TerrainConfig } from "@config/terrain";
 import { getPlatform } from "@/platform";
 import { GameApp, type GameBootPhase } from "@game/app";
 import type { EditorAppSession } from "./types";
@@ -21,9 +21,21 @@ import {
 
 const platform = getPlatform();
 
+// EN: Editor orbit navigation needs a wider streamed terrain footprint than gameplay spawn-side streaming.
+// 中文: 编辑器轨道导航需要比游戏出生点流式加载更大的地形覆盖范围。
+const editorTerrainConfig: TerrainConfig = {
+  ...terrainConfig,
+  streaming: {
+    ...terrainConfig.streaming,
+    viewDistanceChunks: 8,
+    hysteresisChunks: 3,
+    maxChunkOpsPerFrame: 2,
+  },
+};
+
 export class EditorApp extends GameApp implements EditorAppSession {
   private readonly editorSettings = createDefaultEditorSettings();
-  private readonly terrainEditor = new TerrainEditor(terrainConfig);
+  private readonly terrainEditor = new TerrainEditor(editorTerrainConfig);
   private readonly textureEditor = new TextureEditor();
   private readonly vegetationEditor = new VegetationEditor(this.vegetationScene);
   private readonly brushIndicator = new BrushIndicatorSystem();
@@ -37,6 +49,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
     super(container, onBootPhase, {
       gameplayEnabled: false,
       initialTerrainTarget: { x: 0, z: 0 },
+      terrainConfig: editorTerrainConfig,
     });
 
     // EN: Orbit editing often views vegetation from far above; keep it visible and skip tree shadow passes for responsive painting.

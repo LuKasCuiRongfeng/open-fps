@@ -355,4 +355,16 @@ export const terrainConfig = {
   },
 } as const;
 
-export type TerrainConfig = typeof terrainConfig;
+type WidenLiteral<T> = T extends number
+  ? number
+  : T extends string
+    ? string
+    : T extends boolean
+      ? boolean
+      : T extends readonly (infer Item)[]
+        ? readonly WidenLiteral<Item>[]
+        : T extends object
+          ? { readonly [Key in keyof T]: WidenLiteral<T[Key]> }
+          : T;
+
+export type TerrainConfig = WidenLiteral<typeof terrainConfig>;

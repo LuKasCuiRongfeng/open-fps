@@ -5,13 +5,14 @@ import {
   Scene,
 } from "three/webgpu";
 import { terrainConfig } from "@config/terrain";
+import type { TerrainConfig } from "@config/terrain";
 import { fogRuntimeConfig, fogStaticConfig } from "@config/fog";
 import { skyRuntimeConfig, skyStaticConfig } from "@config/sky";
 import { createTerrainSystem } from "../world/terrain/terrain";
 import { SkySystem } from "../world/sky/SkySystem";
 import { createDefaultGameSettings } from "../settings";
 
-export function createWorld(scene: Scene) {
+export function createWorld(scene: Scene, config: TerrainConfig = terrainConfig) {
   const skySettings = createDefaultGameSettings().sky;
   const sunPos = skyStaticConfig.sunPosition;
   const sunDist = Math.sqrt(sunPos[0] ** 2 + sunPos[1] ** 2 + sunPos[2] ** 2);
@@ -22,7 +23,7 @@ export function createWorld(scene: Scene) {
 
   scene.fog = new FogExp2(fogStaticConfig.colorHex, fogRuntimeConfig.densityPerMeter);
 
-  const terrain = createTerrainSystem(terrainConfig, scene);
+  const terrain = createTerrainSystem(config, scene);
   scene.add(terrain.root);
 
   const hemi = new HemisphereLight(

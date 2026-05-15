@@ -15,6 +15,8 @@ export type TerrainSystemResource = {
   root: Group;
   heightAt: (xMeters: number, zMeters: number) => number;
   hasHeightAt: (xMeters: number, zMeters: number) => boolean;
+  hasRenderableChunkAt: (xMeters: number, zMeters: number) => boolean;
+  getStreamingRevision: () => number;
   floatingOrigin: FloatingOrigin;
   initGpu: (renderer: WebGPURenderer, spawnX?: number, spawnZ?: number) => Promise<void>;
   update: (playerWorldX: number, playerWorldZ: number, camera: PerspectiveCamera) => void;
@@ -117,6 +119,12 @@ export function createTerrainSystem(
     const cz = Math.floor(zMeters / chunkSize);
     return TerrainHeightSampler.hasChunkData(cx, cz);
   };
+
+  const hasRenderableChunkAt = (xMeters: number, zMeters: number): boolean => (
+    chunkManager?.hasChunkAtWorldPosition(xMeters, zMeters) ?? false
+  );
+
+  const getStreamingRevision = (): number => chunkManager?.getStreamingRevision() ?? 0;
 
   const initGpu = async (r: WebGPURenderer, spawnX = 32, spawnZ = 32): Promise<void> => {
     // Create GPU chunk manager.
@@ -308,6 +316,8 @@ export function createTerrainSystem(
     root,
     heightAt,
     hasHeightAt,
+    hasRenderableChunkAt,
+    getStreamingRevision,
     floatingOrigin,
     initGpu,
     update,

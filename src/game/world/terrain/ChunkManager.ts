@@ -67,6 +67,10 @@ export class ChunkManager {
   // GPU 初始化状态
   private gpuReady = false;
 
+  // Active chunk set revision for render systems that depend on terrain availability.
+  // 活跃 chunk 集合版本号，供依赖地形可用性的渲染系统使用。
+  private streamingRevision = 0;
+
   // Texture array data for terrain materials (from texture.json).
   // 地形材质的纹理数组数据（来自 texture.json）
   private textureArrays: TerrainTextureArrayResult | null = null;
@@ -120,6 +124,15 @@ export class ChunkManager {
       cx: Math.floor(worldX / size),
       cz: Math.floor(worldZ / size),
     };
+  }
+
+  hasChunkAtWorldPosition(worldX: number, worldZ: number): boolean {
+    const { cx, cz } = this.worldToChunk(worldX, worldZ);
+    return this.chunks.has(this.chunkKey(cx, cz));
+  }
+
+  getStreamingRevision(): number {
+    return this.streamingRevision;
   }
 
   private chunkKey(cx: number, cz: number): string {
@@ -313,6 +326,7 @@ export class ChunkManager {
 
     this.chunks.set(key, chunk);
     this.scene.add(chunk.mesh);
+    this.streamingRevision += 1;
   }
 
   private unloadChunk(key: string): void {
@@ -334,6 +348,7 @@ export class ChunkManager {
     this.scene.remove(chunk.mesh);
     chunk.dispose();
     this.chunks.delete(key);
+    this.streamingRevision += 1;
   }
 
   /**

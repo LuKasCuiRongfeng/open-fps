@@ -16,6 +16,7 @@ import {
 } from "three/webgpu";
 import { renderStaticConfig } from "@config/render";
 import { playerStaticConfig } from "@config/player";
+import type { TerrainConfig } from "@config/terrain";
 import { createWorld } from "./createWorld";
 import type { GameBootPhase, RuntimeAppSession, RuntimeProfilerSnapshot } from "./types";
 import { FpsCounter, GameRenderer } from "../rendering";
@@ -54,6 +55,7 @@ import type { MapData } from "@project/MapData";
 export interface GameAppOptions {
   gameplayEnabled?: boolean;
   initialTerrainTarget?: { x: number; z: number };
+  terrainConfig?: TerrainConfig;
 }
 
 type RendererInfoLike = {
@@ -98,6 +100,7 @@ export class GameApp implements RuntimeAppSession {
   private lastFrameMs = 0;
   private lastUpdateMs = 0;
   private lastRenderMs = 0;
+  private lastVegetationTerrainRevision = -1;
   readonly ready: Promise<void>;
   protected disposed = false;
 
@@ -120,7 +123,7 @@ export class GameApp implements RuntimeAppSession {
     this.gameRenderer = new GameRenderer(container);
 
     onBootPhase?.("creating-world");
-    const world = createWorld(this.gameRenderer.scene);
+    const world = createWorld(this.gameRenderer.scene, options.terrainConfig);
     this.sun = world.sun;
     this.hemi = world.hemi;
     this.skySystem = world.skySystem;
@@ -144,6 +147,7 @@ export class GameApp implements RuntimeAppSession {
         settings: this.settings,
       },
     };
+    this.vegetationScene.setTerrainAvailability((x, z) => this.resources.runtime.terrain.hasRenderableChunkAt(x, z));
 
     onBootPhase?.("creating-ecs");
 
@@ -496,6 +500,7 @@ export class GameApp implements RuntimeAppSession {
     this.runSimulationStep();
     this.updateTerrainStreaming();
     this.afterFrame(dt);
+    this.syncVegetationTerrainVisibility();
     this.vegetationScene.update(this.gameRenderer.camera);
     this.ecs.flushDestroyed();
     this.skySystem.update();
@@ -560,6 +565,18 @@ export class GameApp implements RuntimeAppSession {
     if (target) {
       terrain.update(target.x, target.z, this.gameRenderer.camera);
     }
+  }
+
+  private syncVegetationTerrainVisibility(): void {
+    const revision = this.resources.runtime.terrain.getStreamingRevision();
+    if (revision === this.lastVegetationTerrainRevision) {
+      return;
+    }
+
+    // EN: Vegetation visibility depends on active terrain chunks, which can change after async streaming finishes.
+    // 中文: 植被可见性依赖活跃地形 chunk，而异步流式加载完成后这个集合会变化。
+    this.lastVegetationTerrainRevision = revision;
+    this.vegetationScene.invalidateVisibility();
   }
 
   protected resolveTerrainUpdateTarget(): { x: number; z: number } | null {
