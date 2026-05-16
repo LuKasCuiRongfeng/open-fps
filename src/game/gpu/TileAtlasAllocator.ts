@@ -13,7 +13,7 @@ export class TileAtlasAllocator {
   readonly tileResolution: number;
   readonly atlasResolution: number;
 
-  private readonly chunkToTile = new Map<string, number>();
+  private readonly pageToTile = new Map<string, number>();
   private readonly freeTiles: number[] = [];
 
   constructor(tileResolution: number, tilesPerSide: number) {
@@ -32,17 +32,17 @@ export class TileAtlasAllocator {
   }
 
   hasTile(cx: number, cz: number): boolean {
-    return this.chunkToTile.has(this.makeKey(cx, cz));
+    return this.pageToTile.has(this.makeKey(cx, cz));
   }
 
   getTileIndex(cx: number, cz: number): number | undefined {
-    return this.chunkToTile.get(this.makeKey(cx, cz));
+    return this.pageToTile.get(this.makeKey(cx, cz));
   }
 
   allocate(cx: number, cz: number): number {
     const key = this.makeKey(cx, cz);
 
-    const existing = this.chunkToTile.get(key);
+    const existing = this.pageToTile.get(key);
     if (existing !== undefined) {
       return existing;
     }
@@ -53,15 +53,15 @@ export class TileAtlasAllocator {
     }
 
     const tileIndex = this.freeTiles.pop()!;
-    this.chunkToTile.set(key, tileIndex);
+    this.pageToTile.set(key, tileIndex);
     return tileIndex;
   }
 
   free(cx: number, cz: number): void {
     const key = this.makeKey(cx, cz);
-    const tileIndex = this.chunkToTile.get(key);
+    const tileIndex = this.pageToTile.get(key);
     if (tileIndex !== undefined) {
-      this.chunkToTile.delete(key);
+      this.pageToTile.delete(key);
       this.freeTiles.push(tileIndex);
     }
   }
@@ -72,12 +72,12 @@ export class TileAtlasAllocator {
     return { tileX, tileZ };
   }
 
-  getChunkTileUV(cx: number, cz: number): { uOffset: number; vOffset: number; uvScale: number } {
+  getPageTileUV(cx: number, cz: number): { uOffset: number; vOffset: number; uvScale: number } {
     const key = this.makeKey(cx, cz);
-    const tileIndex = this.chunkToTile.get(key);
+    const tileIndex = this.pageToTile.get(key);
 
     if (tileIndex === undefined) {
-      console.error(`[TileAtlasAllocator] No tile allocated for chunk (${cx}, ${cz})`);
+      console.error(`[TileAtlasAllocator] No tile allocated for page (${cx}, ${cz})`);
       return { uOffset: 0, vOffset: 0, uvScale: 1 / this.tilesPerSide };
     }
 
@@ -99,7 +99,7 @@ export class TileAtlasAllocator {
   }
 
   get allocatedCount(): number {
-    return this.chunkToTile.size;
+    return this.pageToTile.size;
   }
 
   get freeCount(): number {

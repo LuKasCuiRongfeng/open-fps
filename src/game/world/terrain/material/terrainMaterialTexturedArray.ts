@@ -53,13 +53,26 @@ export interface TerrainMaterialArrayParams {
   normalTexture: StorageTexture;
   tileUvOffset: { x: number; y: number };
   tileUvScale: number;
-  chunkWorldX: number;
-  chunkWorldZ: number;
-  chunkSize: number;
+  pageWorldX: number;
+  pageWorldZ: number;
+  pageSize: number;
   /** Array of splat map textures (one per 4 layers; missing maps use the unpainted green material). */
   splatMaps?: (Texture | null)[];
   /** Texture array result from TerrainTextureArrays loader */
   textureArrays?: TerrainTextureArrayResult | null;
+}
+
+export interface TerrainMaterialUniformControls {
+  tileOffsetU: { value: number };
+  tileOffsetV: { value: number };
+  tileScale: { value: number };
+  pageWorldX: { value: number };
+  pageWorldZ: { value: number };
+}
+
+export interface TerrainMaterialWithControls {
+  material: MeshStandardNodeMaterial;
+  controls: TerrainMaterialUniformControls;
 }
 
 /** Check whether a map has authored paint data that needs the heavier PBR material path. / 检查地图是否有需要较重 PBR 材质路径的已创作绘制数据。 */
@@ -91,16 +104,32 @@ export function createTexturedArrayTerrainMaterial(
   cfg: TerrainConfig,
   params: TerrainMaterialArrayParams,
 ): MeshStandardNodeMaterial {
+  return createControlledTexturedArrayTerrainMaterial(cfg, params).material;
+}
+
+export function createControlledTexturedArrayTerrainMaterial(
+  cfg: TerrainConfig,
+  params: TerrainMaterialArrayParams,
+): TerrainMaterialWithControls {
   const mat = new MeshStandardNodeMaterial();
   mat.fog = true;
   mat.side = DoubleSide;
 
-  // Uniforms for chunk positioning.
-  // Chunk 定位的 uniform
+  // Uniforms for page positioning.
+  // Page 定位的 uniform。
   const tileOffsetU = uniform(params.tileUvOffset.x);
   const tileOffsetV = uniform(params.tileUvOffset.y);
   const tileScale = uniform(params.tileUvScale);
-  const chunkSize = uniform(params.chunkSize);
+  const pageSize = uniform(params.pageSize);
+  const pageWorldX = uniform(params.pageWorldX);
+  const pageWorldZ = uniform(params.pageWorldZ);
+  const controls: TerrainMaterialUniformControls = {
+    tileOffsetU,
+    tileOffsetV,
+    tileScale,
+    pageWorldX,
+    pageWorldZ,
+  };
 
   // Height and normal textures.
   // 高度和法线纹理
@@ -110,8 +139,8 @@ export function createTexturedArrayTerrainMaterial(
   // Vertex Displacement
   // 顶点位移
   // ============================================================================
-  const localU = positionLocal.x.div(chunkSize).add(0.5);
-  const localV = positionLocal.z.div(chunkSize).add(0.5);
+  const localU = positionLocal.x.div(pageSize).add(0.5);
+  const localV = positionLocal.z.div(pageSize).add(0.5);
 
   const tilePixels = float(cfg.gpuCompute.tileResolution);
   const halfPixel = float(0.5).div(tilePixels);
@@ -130,8 +159,8 @@ export function createTexturedArrayTerrainMaterial(
     positionLocal.z,
   );
 
-  // Sample the precomputed terrain normal atlas to keep chunk seams continuous.
-  // 采样预计算地形法线图集以保持 chunk 接缝连续
+  // Sample the precomputed terrain normal atlas to keep page seams continuous.
+  // 采样预计算地形法线图集以保持 page 接缝连续。
   const rawNormal = normalize(normalTex.sample(atlasUv).xyz);
 
   // Soften normal for lighting.
@@ -143,23 +172,21 @@ export function createTexturedArrayTerrainMaterial(
   const splatMaps = params.splatMaps ?? [];
 
   if (!hasAuthoredTerrainTextureData(textureArrays, splatMaps)) {
-    // EN: Missing texture.json means no authored paint data; keep this path tiny because every streamed chunk builds it.
-    // 中文: 缺少 texture.json 表示没有已创作绘制数据；该路径会被每个流式 chunk 构建，因此必须保持很轻。
+    // EN: Missing texture.json means no authored paint data; keep this path tiny because every streamed page builds it.
+    // 中文: 缺少 texture.json 表示没有已创作绘制数据；该路径会被每个流式 page 构建，因此必须保持很轻。
     mat.colorNode = vec3(0.15, 0.42, 0.12);
     mat.normalNode = transformNormalToView(terrainNormal);
     mat.roughnessNode = float(1.0);
     mat.metalnessNode = float(0.0);
-    return mat;
+    return { material: mat, controls };
   }
 
   const authoredTextureArrays = textureArrays!;
-  const chunkWorldX = uniform(params.chunkWorldX);
-  const chunkWorldZ = uniform(params.chunkWorldZ);
 
   // World position for texture sampling.
   // 用于纹理采样的世界位置
-  const worldX = chunkWorldX.add(positionLocal.x);
-  const worldZ = chunkWorldZ.add(positionLocal.z);
+  const worldX = pageWorldX.add(positionLocal.x);
+  const worldZ = pageWorldZ.add(positionLocal.z);
   const worldY = height;
   const worldPos = vec3(worldX, worldY, worldZ);
 
@@ -330,5 +357,5 @@ export function createTexturedArrayTerrainMaterial(
   mat.roughnessNode = finalRoughness;
   mat.metalnessNode = finalMetallic;
 
-  return mat;
+  return { material: mat, controls };
 }

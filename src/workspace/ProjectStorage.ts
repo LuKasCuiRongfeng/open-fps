@@ -10,6 +10,7 @@ import {
   decodeHeightPageBase64,
   deserializeMapManifest,
   encodeHeightPageBase64,
+  getHeightPageKeys,
   getHeightPagePathForKey,
   sortPageKeys,
   type MapManifest,
@@ -422,7 +423,7 @@ async function createPartialSaveManifest(
     return nextManifest;
   }
 
-  const exportedPageKeys = new Set(Object.keys(mapData.heightPages));
+  const exportedPageKeys = new Set(getHeightPageKeys(mapData));
   const pageKeys = new Set<string>();
 
   for (const key of existingManifest.terrain.height.pageKeys) {

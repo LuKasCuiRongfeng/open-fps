@@ -6,9 +6,9 @@ export type { TerrainConfig } from "@config/terrain";
 // Export GPU-first system components.
 // 导出 GPU-first 系统组件
 export { createTerrainSystem, type TerrainSystemResource } from "./TerrainSystem";
-export { ChunkManager } from "./ChunkManager";
+export { TerrainPageManager } from "./TerrainPageManager";
 export { FloatingOrigin } from "../common/FloatingOrigin";
-export { TerrainChunk } from "./TerrainChunk";
+export { TerrainClipmapRenderer } from "./TerrainClipmapRenderer";
 export { TerrainHeightSampler } from "./TerrainHeightSampler";
 
 // Export GPU compute modules.

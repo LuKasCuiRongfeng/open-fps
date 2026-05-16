@@ -9,7 +9,7 @@ import type { EditorCameraAction } from "@editor/runtime/terrain/TerrainEditor";
 import { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
 import { TerrainTextureArrays } from "@game/world/terrain/TerrainTextureArrays";
-import { parsePageKey, type MapData } from "@project/MapData";
+import { getHeightPageKeys, parsePageKey, type MapData } from "@project/MapData";
 import {
   applyEditorSettingsPatch,
   cloneEditorSettings,
@@ -28,14 +28,14 @@ const editorTerrainConfig: TerrainConfig = {
   ...terrainConfig,
   streaming: {
     ...terrainConfig.streaming,
-    viewDistanceChunks: 8,
-    hysteresisChunks: 2,
-    maxChunkOpsPerFrame: 3,
+    viewDistancePages: 8,
+    hysteresisPages: 2,
+    maxPageOpsPerFrame: 3,
   },
   lod: {
     ...terrainConfig.lod,
-    // EN: Use one fixed editor tessellation level to avoid T-junction cracks without paying 64-segment cost for every visible chunk.
-    // 中文: 编辑器使用单一固定细分级别，避免 T-junction 裂缝，同时不让每个可见 chunk 都承担 64 段成本。
+    // EN: Use one fixed editor tessellation level to avoid T-junction cracks without paying 64-segment cost for every visible page.
+    // 中文: 编辑器使用单一固定细分级别，避免 T-junction 裂缝，同时不让每个可见 page 都承担 64 段成本。
     levels: [{ segmentsPerSide: terrainConfig.lod.levels[1].segmentsPerSide, maxDistanceMeters: Infinity }],
   },
 };
@@ -58,8 +58,8 @@ export class EditorApp extends GameApp implements EditorAppSession {
       terrainConfig: editorTerrainConfig,
     });
 
-    // EN: Keep editor vegetation independent from terrain streaming so every loaded chunk does not force a full vegetation visibility pass.
-    // 中文: 让编辑器植被不依赖地形流式状态，避免每加载一个 chunk 都触发完整植被可见性刷新。
+    // EN: Keep editor vegetation independent from terrain streaming so every loaded page does not force a full vegetation visibility pass.
+    // 中文: 让编辑器植被不依赖地形流式状态，避免每加载一个 page 都触发完整植被可见性刷新。
     this.vegetationScene.setTerrainAvailability(null);
     this.vegetationScene.configureVisibility(vegetationRenderConfig.editor);
     this.brushIndicator.attach(this.scene);
@@ -195,7 +195,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
   protected override async initRuntimeExtensions(): Promise<void> {
     const splatWorldSize = terrainConfig.worldBounds.halfSizeMeters * 2;
     await this.textureEditor.init(this.renderer, splatWorldSize);
-    this.frameEditorCameraAt(0, 0, terrainConfig.streaming.chunkSizeMeters * 4);
+    this.frameEditorCameraAt(0, 0, terrainConfig.streaming.pageSizeMeters * 4);
   }
 
   override getSettingsSnapshot(): EditorAppSettings {
@@ -331,30 +331,30 @@ export class EditorApp extends GameApp implements EditorAppSession {
   }
 
   private resolveMapCameraFrame(mapData: MapData): { x: number; z: number; radius: number } {
-    const keys = Object.keys(mapData.heightPages);
+    const keys = getHeightPageKeys(mapData);
     if (keys.length === 0) {
-      return { x: 0, z: 0, radius: terrainConfig.streaming.chunkSizeMeters * 4 };
+      return { x: 0, z: 0, radius: terrainConfig.streaming.pageSizeMeters * 4 };
     }
 
-    let minChunkX = Number.POSITIVE_INFINITY;
-    let maxChunkX = Number.NEGATIVE_INFINITY;
-    let minChunkZ = Number.POSITIVE_INFINITY;
-    let maxChunkZ = Number.NEGATIVE_INFINITY;
+    let minPageX = Number.POSITIVE_INFINITY;
+    let maxPageX = Number.NEGATIVE_INFINITY;
+    let minPageZ = Number.POSITIVE_INFINITY;
+    let maxPageZ = Number.NEGATIVE_INFINITY;
 
     for (const key of keys) {
       const { px, pz } = parsePageKey(key);
-      minChunkX = Math.min(minChunkX, px);
-      maxChunkX = Math.max(maxChunkX, px);
-      minChunkZ = Math.min(minChunkZ, pz);
-      maxChunkZ = Math.max(maxChunkZ, pz);
+      minPageX = Math.min(minPageX, px);
+      maxPageX = Math.max(maxPageX, px);
+      minPageZ = Math.min(minPageZ, pz);
+      maxPageZ = Math.max(maxPageZ, pz);
     }
 
-    const chunkSize = mapData.pageSizeMeters;
-    const spanX = (maxChunkX - minChunkX + 1) * chunkSize;
-    const spanZ = (maxChunkZ - minChunkZ + 1) * chunkSize;
-    const x = ((minChunkX + maxChunkX + 1) * chunkSize) / 2;
-    const z = ((minChunkZ + maxChunkZ + 1) * chunkSize) / 2;
-    const radius = Math.max(terrainConfig.streaming.chunkSizeMeters * 4, Math.hypot(spanX, spanZ) * 0.45);
+    const pageSize = mapData.pageSizeMeters;
+    const spanX = (maxPageX - minPageX + 1) * pageSize;
+    const spanZ = (maxPageZ - minPageZ + 1) * pageSize;
+    const x = ((minPageX + maxPageX + 1) * pageSize) / 2;
+    const z = ((minPageZ + maxPageZ + 1) * pageSize) / 2;
+    const radius = Math.max(terrainConfig.streaming.pageSizeMeters * 4, Math.hypot(spanX, spanZ) * 0.45);
 
     return { x, z, radius };
   }

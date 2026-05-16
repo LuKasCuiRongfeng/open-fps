@@ -4,18 +4,18 @@
 import { Group, type Texture } from "three/webgpu";
 import type { Scene, WebGPURenderer, PerspectiveCamera } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
-import { ChunkManager } from "./ChunkManager";
+import { TerrainPageManager } from "./TerrainPageManager";
 import { FloatingOrigin } from "../common/FloatingOrigin";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
 import type { BrushStroke } from "./brushTypes";
-import { type MapData, setHeightPageData, parsePageKey, getHeightPageData, hasHeightPages } from "@project/MapData";
+import { type MapData, setHeightPageData, parsePageKey, getHeightPageData, getHeightPageKeys, hasHeightPages } from "@project/MapData";
 import type { TerrainTextureArrayResult } from "./TerrainTextureArrays";
 
 export type TerrainSystemResource = {
   root: Group;
   heightAt: (xMeters: number, zMeters: number) => number;
   hasHeightAt: (xMeters: number, zMeters: number) => boolean;
-  hasRenderableChunkAt: (xMeters: number, zMeters: number) => boolean;
+  hasRenderablePageAt: (xMeters: number, zMeters: number) => boolean;
   getStreamingRevision: () => number;
   floatingOrigin: FloatingOrigin;
   initGpu: (renderer: WebGPURenderer) => Promise<void>;
@@ -65,7 +65,7 @@ export function createTerrainSystem(
   root.name = "terrain-system-gpu";
 
   const floatingOrigin = new FloatingOrigin(config);
-  let chunkManager: ChunkManager | null = null;
+  let pageManager: TerrainPageManager | null = null;
 
   // Store original map data for reset functionality.
   // 存储原始地图数据用于重置功能
@@ -82,7 +82,9 @@ export function createTerrainSystem(
     worldSizeMeters: source.worldSizeMeters,
     pageSizeMeters: source.pageSizeMeters,
     heightPageResolution: source.heightPageResolution,
+    heightPageKeys: [...source.heightPageKeys],
     heightPages: {},
+    loadHeightPage: source.loadHeightPage,
     paint: { ...source.paint, pageKeys: [...source.paint.pageKeys] },
     vegetation: { ...source.vegetation, cellKeys: [...source.vegetation.cellKeys] },
     metadata: { ...source.metadata },
@@ -114,48 +116,42 @@ export function createTerrainSystem(
    * 检查世界坐标是否有已加载高度数据，而不是回退到基础高度。
    */
   const hasHeightAt = (xMeters: number, zMeters: number): boolean => {
-    const chunkSize = config.streaming.chunkSizeMeters;
-    const cx = Math.floor(xMeters / chunkSize);
-    const cz = Math.floor(zMeters / chunkSize);
+    const pageSize = config.streaming.pageSizeMeters;
+    const cx = Math.floor(xMeters / pageSize);
+    const cz = Math.floor(zMeters / pageSize);
     const key = `${cx},${cz}`;
     if (!mapHeightPageKeys.has(key)) {
       return false;
     }
 
-    return TerrainHeightSampler.hasChunkData(cx, cz);
+    return TerrainHeightSampler.hasPageData(cx, cz);
   };
 
-  const hasRenderableChunkAt = (xMeters: number, zMeters: number): boolean => (
-    chunkManager?.hasChunkAtWorldPosition(xMeters, zMeters) ?? false
+  const hasRenderablePageAt = (xMeters: number, zMeters: number): boolean => (
+    pageManager?.hasPageAtWorldPosition(xMeters, zMeters) ?? false
   );
 
-  const getStreamingRevision = (): number => chunkManager?.getStreamingRevision() ?? 0;
+  const getStreamingRevision = (): number => pageManager?.getStreamingRevision() ?? 0;
 
   const initGpu = async (r: WebGPURenderer): Promise<void> => {
-    // Create GPU chunk manager.
-    // 创建 GPU chunk 管理器
-    chunkManager = new ChunkManager(config, scene, floatingOrigin);
+    // Create GPU page residency and clipmap manager.
+    // 创建 GPU page 驻留与 clipmap 管理器。
+    pageManager = new TerrainPageManager(config, scene, floatingOrigin);
 
     // Initialize GPU compute pipelines.
     // 初始化 GPU 计算管线
-    await chunkManager.initGpu(r);
+    await pageManager.initGpu(r);
 
-    // EN: Terrain is created only after map data is loaded; init must not generate placeholder chunks.
-    // 中文: 地形只在加载地图数据后创建；初始化阶段不能生成占位 chunk。
+    // EN: Terrain is created only after map data is loaded; init must not generate placeholder pages.
+    // 中文: 地形只在加载地图数据后创建；初始化阶段不能生成占位 page。
   };
 
   const update = (playerWorldX: number, playerWorldZ: number, camera: PerspectiveCamera): void => {
-    if (!chunkManager) return;
+    if (!pageManager) return;
 
-    // Update chunk streaming (async but we don't await in frame loop).
-    // 更新 chunk 流式加载（异步但不在帧循环中等待）
-    void chunkManager.update(playerWorldX, playerWorldZ, camera);
-
-    // Check for floating origin rebase.
-    // 检查浮动原点重置
-    const playerLocal = floatingOrigin.worldToLocal(playerWorldX, 0, playerWorldZ);
-    floatingOrigin.checkAndRebase(playerLocal.x, playerLocal.z);
-
+    // Update page residency and fixed clipmap patches without awaiting in the frame loop.
+    // 更新 page 驻留和固定 clipmap patch，帧循环中不等待。
+    void pageManager.update(playerWorldX, playerWorldZ, camera);
   };
 
   /**
@@ -166,15 +162,15 @@ export function createTerrainSystem(
    * GPU-first 设计：画刷操作完全在 GPU 上运行
    */
   const applyBrushStrokes = async (strokes: BrushStroke[]): Promise<void> => {
-    if (!chunkManager) return;
+    if (!pageManager) return;
     const editableStrokes = strokes.filter((stroke) => {
-      const chunkSize = config.streaming.chunkSizeMeters;
-      const cx = Math.floor(stroke.worldX / chunkSize);
-      const cz = Math.floor(stroke.worldZ / chunkSize);
+      const pageSize = config.streaming.pageSizeMeters;
+      const cx = Math.floor(stroke.worldX / pageSize);
+      const cz = Math.floor(stroke.worldZ / pageSize);
       return mapHeightPageKeys.has(`${cx},${cz}`);
     });
 
-    await chunkManager.applyBrushStrokes(editableStrokes);
+    await pageManager.applyBrushStrokes(editableStrokes);
   };
 
   /**
@@ -186,8 +182,8 @@ export function createTerrainSystem(
       throw new Error("Cannot export terrain before loading a map file");
     }
 
-    const originalPageKeys = new Set(Object.keys(originalMapData.heightPages));
-    const dirtyPageKeys = TerrainHeightSampler.getDirtyChunkKeys().filter((key) => originalPageKeys.has(key));
+    const originalPageKeys = new Set(getHeightPageKeys(originalMapData));
+    const dirtyPageKeys = TerrainHeightSampler.getDirtyPageKeys().filter((key) => originalPageKeys.has(key));
     const dirtyPageKeySet = new Set(dirtyPageKeys);
 
     const mapData = createMapDataShell(originalMapData);
@@ -196,7 +192,7 @@ export function createTerrainSystem(
     for (const key of originalPageKeys) {
       const { px, pz } = parsePageKey(key);
       const originalPage = getHeightPageData(originalMapData, px, pz);
-      const cachedHeightData = TerrainHeightSampler.getChunkHeightData(px, pz);
+      const cachedHeightData = TerrainHeightSampler.getPageHeightData(px, pz);
       const heights = dirtyPageKeySet.has(key)
         ? cachedHeightData ?? originalPage?.heights
         : originalPage?.heights ?? cachedHeightData;
@@ -216,7 +212,7 @@ export function createTerrainSystem(
    * 从 MapData 加载地形
    */
   const loadMapData = async (mapData: MapData): Promise<void> => {
-    if (!chunkManager) return;
+    if (!pageManager) return;
 
     // EN: Loading a project map replaces the terrain cache; map files are the only valid terrain source.
     // 中文: 加载项目地图时替换地形缓存；地图文件是唯一有效的地形来源。
@@ -227,6 +223,9 @@ export function createTerrainSystem(
     if (mapData.heightPageResolution !== config.gpuCompute.tileResolution) {
       console.warn("[TerrainSystem] Map height page resolution mismatch, may cause issues");
     }
+    if (mapData.pageSizeMeters !== config.streaming.pageSizeMeters) {
+      console.warn("[TerrainSystem] Map page size mismatch, may cause issues");
+    }
 
     // Load height pages into CPU cache.
     // 将高度 page 加载到 CPU 缓存。
@@ -235,26 +234,27 @@ export function createTerrainSystem(
         const { px, pz } = parsePageKey(key);
         const pageData = getHeightPageData(mapData, px, pz);
         if (pageData) {
-          TerrainHeightSampler.setChunkHeightData(px, pz, pageData.heights);
+          TerrainHeightSampler.setPageHeightData(px, pz, pageData.heights);
         }
       }
     }
 
-    TerrainHeightSampler.clearDirtyChunks();
-    mapHeightPageKeys = new Set(Object.keys(mapData.heightPages));
-    chunkManager.setMapChunkKeys(mapHeightPageKeys);
+    TerrainHeightSampler.clearDirtyPages();
+    mapHeightPageKeys = new Set(getHeightPageKeys(mapData));
+    pageManager.setMapPageKeys(mapHeightPageKeys);
+    pageManager.setHeightPageLoader(mapData.loadHeightPage ?? null);
 
     // Store original map data for reset.
     // 存储原始地图数据用于重置
     originalMapData = cloneMapData(mapData);
 
-    // EN: Existing active chunks may share coordinates with the newly loaded map, so refresh their GPU tiles first.
-    // 中文: 已激活 chunk 可能与新加载地图共用坐标，因此先刷新它们的 GPU tile。
-    await chunkManager.reuploadAllChunks();
+    // EN: Existing resident pages may share coordinates with the newly loaded map, so refresh their GPU tiles first.
+    // 中文: 已驻留 page 可能与新加载地图共用坐标，因此先刷新它们的 GPU tile。
+    await pageManager.reuploadAllPages();
 
-    // Load visible map chunks around the map center without synthesizing missing chunks.
-    // 围绕地图中心加载可见地图 chunk，但不合成缺失 chunk。
-    await chunkManager.forceLoadAround(...resolveMapInitialLoadPoint(mapData));
+    // Load visible map pages around the map center without synthesizing missing terrain.
+    // 围绕地图中心加载可见地图 page，但不合成缺失地形。
+    await pageManager.forceLoadAround(...resolveMapInitialLoadPoint(mapData));
   };
 
   /**
@@ -262,7 +262,7 @@ export function createTerrainSystem(
    * 重置地形为原始加载数据（丢弃所有编辑）
    */
   const resetToOriginal = async (): Promise<void> => {
-    if (!chunkManager || !originalMapData) {
+    if (!pageManager || !originalMapData) {
       console.warn("[TerrainSystem] No original map data to reset to");
       return;
     }
@@ -276,30 +276,30 @@ export function createTerrainSystem(
   };
 
   /**
-   * Mark exported terrain chunks as saved after project persistence succeeds.
-   * 项目持久化成功后，将已导出的地形 chunk 标记为已保存
+  * Mark exported terrain pages as saved after project persistence succeeds.
+  * 项目持久化成功后，将已导出的地形 page 标记为已保存。
    */
   const markMapDataSaved = (): void => {
-    TerrainHeightSampler.clearDirtyChunks();
+    TerrainHeightSampler.clearDirtyPages();
   };
 
   /**
    * Set texture array data for PBR terrain materials.
    * 设置 PBR 地形材质的纹理数组数据
    *
-   * Rebuilds all chunk materials with the new texture arrays.
-   * 使用新纹理数组重建所有 chunk 材质
+  * Rebuilds fixed clipmap patch materials with the new texture arrays.
+  * 使用新纹理数组重建固定 clipmap patch 材质。
    */
   const setTextureData = (
     textureArrays: TerrainTextureArrayResult | null,
     splatMapTextures: (Texture | null)[],
   ): void => {
-    chunkManager?.setTextureData(textureArrays, splatMapTextures);
+    pageManager?.setTextureData(textureArrays, splatMapTextures);
   };
 
   const dispose = (): void => {
-    chunkManager?.dispose();
-    chunkManager = null;
+    pageManager?.dispose();
+    pageManager = null;
     TerrainHeightSampler.clearCache();
     originalMapData = null;
     mapHeightPageKeys = new Set<string>();
@@ -309,7 +309,7 @@ export function createTerrainSystem(
     root,
     heightAt,
     hasHeightAt,
-    hasRenderableChunkAt,
+    hasRenderablePageAt,
     getStreamingRevision,
     floatingOrigin,
     initGpu,
@@ -325,46 +325,46 @@ export function createTerrainSystem(
 }
 
 function resolveMapInitialLoadPoint(mapData: MapData): [number, number] {
-  const keys = Object.keys(mapData.heightPages);
+  const keys = getHeightPageKeys(mapData);
   if (keys.length === 0) {
     return [0, 0];
   }
 
-  let minChunkX = Number.POSITIVE_INFINITY;
-  let maxChunkX = Number.NEGATIVE_INFINITY;
-  let minChunkZ = Number.POSITIVE_INFINITY;
-  let maxChunkZ = Number.NEGATIVE_INFINITY;
+  let minPageX = Number.POSITIVE_INFINITY;
+  let maxPageX = Number.NEGATIVE_INFINITY;
+  let minPageZ = Number.POSITIVE_INFINITY;
+  let maxPageZ = Number.NEGATIVE_INFINITY;
 
   const coords: Array<{ cx: number; cz: number }> = [];
   for (const key of keys) {
     const { px, pz } = parsePageKey(key);
     coords.push({ cx: px, cz: pz });
-    minChunkX = Math.min(minChunkX, px);
-    maxChunkX = Math.max(maxChunkX, px);
-    minChunkZ = Math.min(minChunkZ, pz);
-    maxChunkZ = Math.max(maxChunkZ, pz);
+    minPageX = Math.min(minPageX, px);
+    maxPageX = Math.max(maxPageX, px);
+    minPageZ = Math.min(minPageZ, pz);
+    maxPageZ = Math.max(maxPageZ, pz);
   }
 
-  const targetChunkX = (minChunkX + maxChunkX) / 2;
-  const targetChunkZ = (minChunkZ + maxChunkZ) / 2;
-  let nearestChunk = coords[0]!;
+  const targetPageX = (minPageX + maxPageX) / 2;
+  const targetPageZ = (minPageZ + maxPageZ) / 2;
+  let nearestPage = coords[0]!;
   let nearestDistanceSq = Number.POSITIVE_INFINITY;
 
   for (const coord of coords) {
-    const dx = coord.cx - targetChunkX;
-    const dz = coord.cz - targetChunkZ;
+    const dx = coord.cx - targetPageX;
+    const dz = coord.cz - targetPageZ;
     const distanceSq = dx * dx + dz * dz;
     if (distanceSq < nearestDistanceSq) {
       nearestDistanceSq = distanceSq;
-      nearestChunk = coord;
+      nearestPage = coord;
     }
   }
 
-  const chunkSize = mapData.pageSizeMeters;
-  // EN: Use the nearest declared chunk center, not the bounding-box center, so sparse maps never preload empty space.
-  // 中文: 使用最近的已声明 chunk 中心，而不是包围盒中心，避免稀疏地图预加载空白区域。
+  const pageSize = mapData.pageSizeMeters;
+  // EN: Use the nearest declared page center, not the bounding-box center, so sparse maps never preload empty space.
+  // 中文: 使用最近的已声明 page 中心，而不是包围盒中心，避免稀疏地图预加载空白区域。
   return [
-    (nearestChunk.cx + 0.5) * chunkSize,
-    (nearestChunk.cz + 0.5) * chunkSize,
+    (nearestPage.cx + 0.5) * pageSize,
+    (nearestPage.cz + 0.5) * pageSize,
   ];
 }

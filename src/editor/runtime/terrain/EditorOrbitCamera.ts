@@ -146,8 +146,8 @@ export class EditorOrbitCamera {
       if (this.raycastToTerrain(mouseX, mouseY, screenWidth, screenHeight, this.currentPanHit)) {
         this.panAnchor.copy(this.currentPanHit);
       } else {
-        // EN: Missing loaded terrain under the press point means pan must not start, otherwise fallback math can jump to distant chunks.
-        // 中文: 按下点没有命中已加载地形时不能启动平移，否则回退解算会跳到远处 chunk。
+        // EN: Missing loaded terrain under the press point means pan must not start, otherwise fallback math can jump to distant pages.
+        // 中文: 按下点没有命中已加载地形时不能启动平移，否则回退解算会跳到远处 page。
         this._panActive = false;
         return;
       }

@@ -50,7 +50,7 @@ export class VegetationStorage {
     const previousChunkPaths = await loadPreviousChunkPaths(jsonPath);
     const { manifest, chunks } = createVegetationStoragePayload(
       data,
-      terrainConfig.streaming.chunkSizeMeters,
+      terrainConfig.streaming.pageSizeMeters,
     );
 
     // EN: Instance chunk files are written before the manifest so the manifest never points at missing binary data.

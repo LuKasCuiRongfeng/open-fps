@@ -79,8 +79,8 @@ export class TerrainBrushCompute {
   // 目标 tile uniform
   private targetTileX = uniform(0);
   private targetTileZ = uniform(0);
-  private chunkOffsetX = uniform(0);
-  private chunkOffsetZ = uniform(0);
+  private pageOffsetX = uniform(0);
+  private pageOffsetZ = uniform(0);
 
   // Neighbor tile coordinates for smooth brush edge sampling.
   // 用于平滑画刷边缘采样的邻居 tile 坐标
@@ -154,8 +154,8 @@ export class TerrainBrushCompute {
     // 初始同步：将存储纹理复制到可读纹理
     renderer.copyTextureToTexture(this.heightTexture, this.heightTextureRead);
 
-    // Mark that we need to sync again before first brush (map chunks may upload after init).
-    // 标记我们需要在第一次画刷前再次同步（地图 chunk 可能在 init 之后上传）
+    // Mark that we need to sync again before first brush (map pages may upload after init).
+    // 标记我们需要在第一次画刷前再次同步（地图 page 可能在 init 之后上传）。
     this.needsSync = true;
 
     this.initialized = true;
@@ -167,7 +167,7 @@ export class TerrainBrushCompute {
    */
   private buildBrushShader(): void {
     const tileRes = this.tileResolution;
-    const chunkSize = float(this.config.streaming.chunkSizeMeters);
+    const pageSize = float(this.config.streaming.pageSizeMeters);
     const srcTexture = this.heightTextureRead!;
     const dstTexture = this.heightTexture!;
 
@@ -186,8 +186,8 @@ export class TerrainBrushCompute {
       // 世界坐标
       const localU = float(pixelX).div(float(tileRes - 1));
       const localV = float(pixelY).div(float(tileRes - 1));
-      const worldX = float(this.chunkOffsetX).mul(chunkSize).add(localU.mul(chunkSize));
-      const worldZ = float(this.chunkOffsetZ).mul(chunkSize).add(localV.mul(chunkSize));
+      const worldX = float(this.pageOffsetX).mul(pageSize).add(localU.mul(pageSize));
+      const worldZ = float(this.pageOffsetZ).mul(pageSize).add(localV.mul(pageSize));
 
       // Distance from brush center.
       // 到画刷中心的距离
@@ -390,8 +390,8 @@ export class TerrainBrushCompute {
   }
 
   /**
-   * Get tile coordinates for a chunk.
-   * 获取 chunk 的 tile 坐标
+  * Get tile coordinates for a page.
+  * 获取 page 的 tile 坐标。
    */
   private getTileCoords(cx: number, cz: number): { tileX: number; tileZ: number } | null {
     if (!this.allocator) return null;
@@ -401,10 +401,10 @@ export class TerrainBrushCompute {
   }
 
   /**
-   * Apply brush stroke to a chunk.
-   * 将画刷笔触应用到 chunk
+  * Apply brush stroke to a page.
+  * 将画刷笔触应用到 page。
    */
-  async applyBrushToChunk(
+  async applyBrushToPage(
     cx: number,
     cz: number,
     tileX: number,
@@ -430,8 +430,8 @@ export class TerrainBrushCompute {
 
     this.targetTileX.value = tileX;
     this.targetTileZ.value = tileZ;
-    this.chunkOffsetX.value = cx;
-    this.chunkOffsetZ.value = cz;
+    this.pageOffsetX.value = cx;
+    this.pageOffsetZ.value = cz;
 
     // Set neighbor tile coordinates for smooth brush.
     // 设置平滑画刷的邻居 tile 坐标
@@ -462,7 +462,7 @@ export class TerrainBrushCompute {
    * Apply brush without syncing (for batch processing).
    * 应用画刷但不同步（用于批量处理）
    */
-  async applyBrushToChunkNoCopy(
+  async applyBrushToPageNoCopy(
     cx: number,
     cz: number,
     tileX: number,
@@ -486,8 +486,8 @@ export class TerrainBrushCompute {
 
     this.targetTileX.value = tileX;
     this.targetTileZ.value = tileZ;
-    this.chunkOffsetX.value = cx;
-    this.chunkOffsetZ.value = cz;
+    this.pageOffsetX.value = cx;
+    this.pageOffsetZ.value = cz;
 
     const neighborXNeg = this.getTileCoords(cx - 1, cz);
     const neighborXPos = this.getTileCoords(cx + 1, cz);
@@ -539,8 +539,8 @@ export class TerrainBrushCompute {
   }
 
   /**
-   * Stitch edges between two adjacent chunks.
-   * 缝合两个相邻 chunk 之间的边缘
+  * Stitch edges between two adjacent pages.
+  * 缝合两个相邻 page 之间的边缘。
    */
   async stitchEdge(
     cx1: number,

@@ -142,7 +142,7 @@ export class GameApp implements RuntimeAppSession {
         settings: this.settings,
       },
     };
-    this.vegetationScene.setTerrainAvailability((x, z) => this.resources.runtime.terrain.hasRenderableChunkAt(x, z));
+    this.vegetationScene.setTerrainAvailability((x, z) => this.resources.runtime.terrain.hasRenderablePageAt(x, z));
 
     onBootPhase?.("creating-ecs");
 
@@ -568,8 +568,8 @@ export class GameApp implements RuntimeAppSession {
       return;
     }
 
-    // EN: Vegetation visibility depends on active terrain chunks, which can change after async streaming finishes.
-    // 中文: 植被可见性依赖活跃地形 chunk，而异步流式加载完成后这个集合会变化。
+    // EN: Vegetation visibility depends on active terrain pages, which can change after async streaming finishes.
+    // 中文: 植被可见性依赖活跃地形 page，而异步流式加载完成后这个集合会变化。
     this.lastVegetationTerrainRevision = revision;
     this.vegetationScene.invalidateVisibility();
   }

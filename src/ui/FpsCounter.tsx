@@ -61,7 +61,7 @@ export default function FpsCounter({
   if (!visible) return null;
 
   const { fps, playerPos, mousePos, mouseValid } = debug;
-  const chunkSize = terrainConfig.streaming.chunkSizeMeters;
+  const pageSize = terrainConfig.streaming.pageSizeMeters;
 
   return (
     <div className="overlay-panel absolute left-2 top-2 z-20 min-w-36 rounded-md border font-mono text-[11px] shadow-panel backdrop-blur-sm">
@@ -82,8 +82,8 @@ export default function FpsCounter({
             <span>{playerPos.y.toFixed(1)}m</span>
           </div>
           <div className="flex min-h-5 items-center justify-between gap-3 text-status-info">
-            <span className="text-content-muted">CHUNK</span>
-            <span>({Math.floor(playerPos.x / chunkSize)}, {Math.floor(playerPos.z / chunkSize)})</span>
+            <span className="text-content-muted">PAGE</span>
+            <span>({Math.floor(playerPos.x / pageSize)}, {Math.floor(playerPos.z / pageSize)})</span>
           </div>
         </div>
       )}
@@ -96,8 +96,8 @@ export default function FpsCounter({
             <span>({mousePos.x.toFixed(1)}, {mousePos.y.toFixed(1)}, {mousePos.z.toFixed(1)})</span>
           </div>
           <div className="flex min-h-5 items-center justify-between gap-3">
-            <span className="text-content-muted">CHUNK</span>
-            <span>({Math.floor(mousePos.x / chunkSize)}, {Math.floor(mousePos.z / chunkSize)})</span>
+            <span className="text-content-muted">PAGE</span>
+            <span>({Math.floor(mousePos.x / pageSize)}, {Math.floor(mousePos.z / pageSize)})</span>
           </div>
         </div>
       )}

@@ -6,7 +6,6 @@ import {
   decodeHeightPageBytes,
   deserializeMapManifest,
   getHeightPagePathForKey,
-  type HeightPageData,
   type MapData,
 } from "@project/MapData";
 import {
@@ -91,27 +90,45 @@ export async function loadBundledGameProject(
   const activeMapId = getCurrentProjectMapId(metadata);
   const mapDirectoryUrl = normalizeDirectoryUrl(resolveProjectUrl(projectBaseUrl, `maps/${activeMapId}/`));
 
-  const [manifestJson, settingsJson, textureJson, vegetationJson] = await Promise.all([
+  const [manifestJson, settingsJson] = await Promise.all([
     fetchRequiredText(resolveProjectUrl(mapDirectoryUrl, "map.json"), "map manifest"),
     fetchOptionalText(resolveProjectUrl(projectBaseUrl, "settings.json")),
-    fetchOptionalText(resolveProjectUrl(mapDirectoryUrl, "texture.json")),
-    fetchOptionalText(resolveProjectUrl(mapDirectoryUrl, "vegetation.json")),
   ]);
 
   const manifest = deserializeMapManifest(manifestJson);
   const activeMap = createProjectMapRecord(activeMapId, manifest.metadata);
-  const heightPageEntries = await Promise.all(
-    manifest.terrain.height.pageKeys.map(async (key) => {
+  const [textureJson, vegetationJson] = await Promise.all([
+    manifest.paint.pageKeys.length > 0
+      ? fetchOptionalText(resolveProjectUrl(mapDirectoryUrl, "texture.json"))
+      : Promise.resolve(null),
+    manifest.vegetation.cellKeys.length > 0
+      ? fetchOptionalText(resolveProjectUrl(mapDirectoryUrl, "vegetation.json"))
+      : Promise.resolve(null),
+  ]);
+
+  const heightPageCache = new Map<string, ReturnType<NonNullable<MapData["loadHeightPage"]>>>();
+  const map = createMapDataFromManifest(manifest, {});
+  map.loadHeightPage = async (key) => {
+    const cached = heightPageCache.get(key);
+    if (cached) {
+      return cached;
+    }
+
+    if (!map.heightPageKeys.includes(key)) {
+      throw new Error(`Map height page '${key}' is not declared in the manifest`);
+    }
+
+    const request = (async () => {
       const bytes = await fetchRequiredBytes(
         resolveProjectUrl(mapDirectoryUrl, getHeightPagePathForKey(key)),
         `map height page ${key}`,
       );
-      return [key, { heights: decodeHeightPageBytes(bytes, manifest.terrain.height.pageResolution) }] as const;
-    }),
-  );
+      return { heights: decodeHeightPageBytes(bytes, manifest.terrain.height.pageResolution) };
+    })();
+    heightPageCache.set(key, request);
+    return request;
+  };
 
-  const heightPages: Record<string, HeightPageData> = Object.fromEntries(heightPageEntries);
-  const map = createMapDataFromManifest(manifest, heightPages);
   const settings = mergeSettingsWithDefaults(settingsJson);
   const textureDefinition = textureJson ? JSON.parse(textureJson) as TextureDefinition : null;
   const vegetationData = vegetationJson

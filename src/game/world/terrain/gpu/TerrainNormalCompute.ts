@@ -30,7 +30,7 @@ import type { ComputeNode } from "three/webgpu";
 import type { TerrainConfig } from "../terrain";
 import type { TileAtlasAllocator } from "@game/gpu";
 
-type NormalChunkCoord = { cx: number; cz: number };
+type NormalPageCoord = { cx: number; cz: number };
 
 /**
  * GPU compute pipeline for terrain normal generation.
@@ -42,8 +42,8 @@ type NormalChunkCoord = { cx: number; cz: number };
 export class TerrainNormalCompute {
   private readonly config: TerrainConfig;
 
-  // Resolution per chunk tile (from config, must match height compute).
-  // 每个 chunk tile 的分辨率（来自配置，必须与高度计算匹配）
+  // Resolution per page tile (from config, must match height compute).
+  // 每个 page tile 的分辨率（来自配置，必须与高度计算匹配）。
   private readonly tileResolution: number;
 
   // Atlas dimensions (from config).
@@ -100,8 +100,8 @@ export class TerrainNormalCompute {
     this.buildComputeShader();
     this.buildTileComputeShader();
 
-    // Initial compute pass (will be re-run after map chunk uploads).
-    // 初始计算通道（地图 chunk 上传后会重新运行）
+    // Initial compute pass (will be re-run after map page uploads).
+    // 初始计算通道（地图 page 上传后会重新运行）。
     await renderer.computeAsync(this.computeNode!);
     await renderer.computeAsync(this.tileComputeNode!);
   }
@@ -109,16 +109,16 @@ export class TerrainNormalCompute {
   private buildComputeShader(): void {
     const cfg = this.config;
     const atlasRes = this.atlasResolution;
-    const chunkSize = cfg.streaming.chunkSizeMeters;
+    const pageSize = cfg.streaming.pageSizeMeters;
     const tileRes = this.tileResolution;
 
     // World distance between adjacent pixels in a tile.
     // tile 中相邻像素之间的世界距离
-    // With edge alignment: pixel 0 at x=0, pixel 63 at x=chunkSize
-    // So pixel step = chunkSize / (tileRes - 1)
-    // 边缘对齐：像素 0 在 x=0，像素 63 在 x=chunkSize
-    // 所以像素步长 = chunkSize / (tileRes - 1)
-    const pixelWorldStep = float(chunkSize / (tileRes - 1));
+    // With edge alignment: pixel 0 at x=0, last pixel at x=pageSize.
+    // So pixel step = pageSize / (tileRes - 1).
+    // 边缘对齐：像素 0 在 x=0，最后一个像素在 x=pageSize。
+    // 所以像素步长 = pageSize / (tileRes - 1)。
+    const pixelWorldStep = float(pageSize / (tileRes - 1));
 
     // Height texture sampler.
     // 高度纹理采样器
@@ -210,7 +210,7 @@ export class TerrainNormalCompute {
     const cfg = this.config;
     const atlasRes = this.atlasResolution;
     const tileRes = this.tileResolution;
-    const pixelWorldStep = float(cfg.streaming.chunkSizeMeters / (tileRes - 1));
+    const pixelWorldStep = float(cfg.streaming.pageSizeMeters / (tileRes - 1));
     const heightTex = texture(this.heightTexture!);
 
     const sampleHeight = Fn(([u, v]: [Node<"float">, Node<"float">]) => {
@@ -274,18 +274,18 @@ export class TerrainNormalCompute {
   }
 
   /**
-   * Regenerate normals only for uploaded chunk tiles.
-   * 只为已上传的 chunk tile 重新生成法线。
+   * Regenerate normals only for uploaded page tiles.
+   * 只为已上传的 page tile 重新生成法线。
    */
-  async regenerateChunks(
-    chunks: NormalChunkCoord[],
+  async regeneratePages(
+    pages: NormalPageCoord[],
     allocator: TileAtlasAllocator,
     renderer: WebGPURenderer,
   ): Promise<void> {
-    if (!this.tileComputeNode || chunks.length === 0) return;
+    if (!this.tileComputeNode || pages.length === 0) return;
 
     const visited = new Set<string>();
-    for (const { cx, cz } of chunks) {
+    for (const { cx, cz } of pages) {
       const key = `${cx},${cz}`;
       if (visited.has(key)) continue;
       visited.add(key);

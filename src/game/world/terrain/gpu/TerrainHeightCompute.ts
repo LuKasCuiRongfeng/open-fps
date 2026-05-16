@@ -12,11 +12,11 @@ import type { TerrainConfig } from "../terrain";
 import { TileAtlasAllocator, GpuTextureIO } from "@game/gpu";
 
 /**
- * GPU height atlas pipeline for loaded map chunks.
- * 已加载地图 chunk 的 GPU 高度图集管线
+ * GPU height atlas pipeline for loaded map pages.
+ * 已加载地图 page 的 GPU 高度图集管线。
  *
- * Stores a tiled heightmap texture where each tile represents a loaded map chunk.
- * 存储一个分块高度图纹理，每个 tile 代表一个已加载的地图 chunk。
+ * Stores a tiled heightmap texture where each tile represents a loaded map page.
+ * 存储一个分块高度图纹理，每个 tile 代表一个已加载的地图 page。
  */
 export class TerrainHeightCompute {
   // Tile atlas allocator (exposed for brush compute to use).
@@ -39,8 +39,8 @@ export class TerrainHeightCompute {
   }
 
   /**
-   * Free a tile when chunk is unloaded.
-   * chunk 卸载时释放 tile
+  * Free a tile when page is unloaded.
+  * page 卸载时释放 tile。
    */
   freeTile(cx: number, cz: number): void {
     this.allocator.free(cx, cz);
@@ -73,11 +73,11 @@ export class TerrainHeightCompute {
   }
 
   /**
-   * Get tile UV offset for a chunk.
-   * 获取 chunk 的 tile UV 偏移
+   * Get tile UV offset for a page.
+   * 获取 page 的 tile UV 偏移。
    */
-  getChunkTileUV(cx: number, cz: number): { uOffset: number; vOffset: number; uvScale: number } {
-    return this.allocator.getChunkTileUV(cx, cz);
+  getPageTileUV(cx: number, cz: number): { uOffset: number; vOffset: number; uvScale: number } {
+    return this.allocator.getPageTileUV(cx, cz);
   }
 
   /**
@@ -89,21 +89,21 @@ export class TerrainHeightCompute {
   }
 
   /**
-   * Read back height data for a chunk from GPU.
-   * 从 GPU 回读 chunk 的高度数据
+  * Read back height data for a page from GPU.
+  * 从 GPU 回读 page 的高度数据。
    */
-  async readbackChunkHeight(cx: number, cz: number, renderer: WebGPURenderer): Promise<Float32Array> {
+  async readbackPageHeight(cx: number, cz: number, renderer: WebGPURenderer): Promise<Float32Array> {
     if (!this.textureIO) {
       return new Float32Array(this.allocator.tileResolution * this.allocator.tileResolution);
     }
-    return this.textureIO.readbackChunkHeight(cx, cz, renderer);
+    return this.textureIO.readbackPageHeight(cx, cz, renderer);
   }
 
   /**
    * Upload height data from CPU to GPU texture.
    * 从 CPU 上传高度数据到 GPU 纹理
    */
-  async uploadChunkHeight(
+  async uploadPageHeight(
     cx: number,
     cz: number,
     heightData: Float32Array,
@@ -113,22 +113,22 @@ export class TerrainHeightCompute {
       console.error(`[TerrainHeightCompute] textureIO not initialized`);
       return;
     }
-    await this.textureIO.uploadChunkHeight(cx, cz, heightData, renderer);
+    await this.textureIO.uploadPageHeight(cx, cz, heightData, renderer);
   }
 
   /**
-   * Batch upload multiple chunks efficiently.
-   * 高效批量上传多个 chunk
+   * Batch upload multiple pages efficiently.
+   * 高效批量上传多个 page。
    */
-  async uploadChunksBatch(
-    chunks: Array<{ cx: number; cz: number; heightData: Float32Array }>,
+  async uploadPagesBatch(
+    pages: Array<{ cx: number; cz: number; heightData: Float32Array }>,
     renderer: WebGPURenderer
   ): Promise<void> {
     if (!this.textureIO) {
       console.error(`[TerrainHeightCompute] textureIO not initialized`);
       return;
     }
-    await this.textureIO.uploadChunksBatch(chunks, renderer);
+    await this.textureIO.uploadPagesBatch(pages, renderer);
   }
 
   dispose(): void {

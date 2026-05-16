@@ -2,28 +2,28 @@
 // 地形配置
 
 export const terrainConfig = {
-  // Streaming chunk system for large worlds.
-  // 大世界的流式分块系统
+  // Virtual height page residency for large worlds.
+  // 大世界的虚拟高度 page 驻留系统。
   streaming: {
-    // Per-chunk size in meters (power of 2 recommended).
-    // 每个 chunk 的尺寸（米，建议 2 的幂）
-    chunkSizeMeters: 64,
+    // Per-page size in meters (power of 2 recommended).
+    // 每个 page 的尺寸（米，建议 2 的幂）。
+    pageSizeMeters: 64,
 
-    // View distance in chunks (radius around player).
-    // 视距（以 chunk 为单位的半径）。5 chunks = 320m 视距
-    viewDistanceChunks: 5,
+    // View distance in resident pages (radius around player).
+    // 视距（以驻留 page 为单位的半径）。5 pages = 320m 视距。
+    viewDistancePages: 5,
 
-    // Maximum chunks to load/unload per frame (prevent stutter).
-    // 每帧最多加载/卸载的 chunk 数量（防止卡顿）
-    maxChunkOpsPerFrame: 1,
+    // Maximum pages to load/unload per frame (prevent stutter).
+    // 每帧最多加载/卸载的 page 数量（防止卡顿）。
+    maxPageOpsPerFrame: 1,
 
-    // Hysteresis distance to prevent thrashing at boundaries (chunks).
-    // 边界滞后距离，防止在边界处频繁加载/卸载（chunk 数）
-    hysteresisChunks: 2,
+    // Hysteresis distance to prevent page-boundary thrashing.
+    // 边界滞后距离，防止 page 边界处频繁加载/卸载。
+    hysteresisPages: 2,
   },
 
-  // LOD (Level of Detail) system for terrain chunks.
-  // 地形 chunk 的 LOD（细节层级）系统
+  // LOD (Level of Detail) system for clipmap page patches.
+  // clipmap page patch 的 LOD（细节层级）系统。
   lod: {
     // LOD levels (index 0 = highest detail).
     // LOD 级别（索引 0 = 最高细节）
@@ -47,9 +47,9 @@ export const terrainConfig = {
     // 图集纹理每边的 tile 数
     atlasTilesPerSide: 32,
 
-    // Maximum chunks for culling buffer.
-    // 剔除缓冲区的最大 chunk 数
-    maxCullChunks: 1024,
+    // Maximum page patches for culling buffer.
+    // 剔除缓冲区的最大 page patch 数。
+    maxCullPages: 1024,
   },
 
   // Floating origin for large world precision.
@@ -57,8 +57,8 @@ export const terrainConfig = {
   floatingOrigin: {
     // Rebase threshold in meters (rebase when player exceeds this distance from origin).
     // 重置阈值（米），当玩家距原点超过此距离时重置
-    // NOTE: Temporarily set very high to disable until chunk system properly supports it.
-    // 注意：临时设置很高以禁用，直到 chunk 系统正确支持它
+    // NOTE: Temporarily set very high until clipmap page rebasing is fully profiled.
+    // 注意：暂时设置很高，直到 clipmap page 重置流程完成性能分析。
     rebaseThresholdMeters: 100000,
   },
 
@@ -67,19 +67,19 @@ export const terrainConfig = {
   worldBounds: {
     // Half-size of the playable area (meters). Total size = 2 * halfSize.
     // 可玩区域的半尺寸（米）。总尺寸 = 2 * halfSize
-    // Terrain chunks stream dynamically, so this can be any size.
-    // 地形 chunk 动态流式加载，所以这可以是任意大小
-    // 1600m = 1.6km radius = 3.2km x 3.2km playable area, matching the 50x50 chunk main map.
-    // 1600米 = 1.6公里半径 = 3.2公里 x 3.2公里可玩区域，与 50x50 chunk 的 main 地图匹配。
+    // Terrain pages stream dynamically, so this can be any size.
+    // 地形 page 动态流式加载，所以这可以是任意大小。
+    // 1600m = 1.6km radius = 3.2km x 3.2km playable area, matching the 50x50-page main map.
+    // 1600米 = 1.6公里半径 = 3.2公里 x 3.2公里可玩区域，与 50x50 page 的 main 地图匹配。
     halfSizeMeters: 1600,
   },
 
   // CPU heightmap cache for fast heightAt queries.
   // CPU 高度图缓存，用于快速 heightAt 查询
   heightCache: {
-    // Resolution of the cached heightmap (samples per chunk side).
-    // 缓存高度图的分辨率（每 chunk 边的采样数）
-    samplesPerChunkSide: 17,
+    // Resolution of the cached heightmap (samples per page side).
+    // 缓存高度图的分辨率（每 page 边的采样数）。
+    samplesPerPageSide: 17,
   },
 
   // Ground plane constraints (prevents falling through world).

@@ -8,6 +8,8 @@ export interface HeightPageData {
   heights: Float32Array;
 }
 
+export type HeightPageLoader = (key: string) => Promise<HeightPageData>;
+
 /** Map metadata. / 地图元数据。 */
 export interface MapMetadata {
   name: string;
@@ -38,7 +40,9 @@ export interface MapData {
   worldSizeMeters: number;
   pageSizeMeters: number;
   heightPageResolution: number;
+  heightPageKeys: string[];
   heightPages: Record<string, HeightPageData>;
+  loadHeightPage?: HeightPageLoader;
   paint: MapPaintData;
   vegetation: MapVegetationData;
   metadata: MapMetadata;
@@ -98,6 +102,7 @@ export function createEmptyMapData(
     worldSizeMeters,
     pageSizeMeters,
     heightPageResolution,
+    heightPageKeys: [],
     heightPages: {},
     paint: createEmptyPaintData(),
     vegetation: createEmptyVegetationPageData(),
@@ -145,7 +150,13 @@ export function parsePageKey(key: string): { px: number; pz: number } {
 }
 
 export function hasHeightPages(mapData: MapData): boolean {
-  return Object.keys(mapData.heightPages).length > 0;
+  return getHeightPageKeys(mapData).length > 0;
+}
+
+export function getHeightPageKeys(mapData: MapData): string[] {
+  return mapData.heightPageKeys.length > 0
+    ? sortPageKeys(mapData.heightPageKeys)
+    : sortPageKeys(Object.keys(mapData.heightPages));
 }
 
 export function getHeightPageData(
@@ -162,9 +173,13 @@ export function setHeightPageData(
   pz: number,
   heights: Float32Array | ArrayLike<number>,
 ): void {
-  mapData.heightPages[pageKey(px, pz)] = {
+  const key = pageKey(px, pz);
+  mapData.heightPages[key] = {
     heights: heights instanceof Float32Array ? new Float32Array(heights) : Float32Array.from(heights),
   };
+  if (!mapData.heightPageKeys.includes(key)) {
+    mapData.heightPageKeys = sortPageKeys([...mapData.heightPageKeys, key]);
+  }
 }
 
 export function createMapManifest(mapData: MapData): MapManifest {
@@ -182,7 +197,7 @@ export function createMapManifest(mapData: MapData): MapManifest {
         format: MAP_HEIGHT_FORMAT,
         pagesDirectory: MAP_HEIGHT_PAGES_DIRECTORY,
         pageResolution: mapData.heightPageResolution,
-        pageKeys: sortPageKeys(Object.keys(mapData.heightPages)),
+        pageKeys: getHeightPageKeys(mapData),
       },
     },
     paint: normalizePaintData(mapData.paint),
@@ -265,6 +280,7 @@ export function createMapDataFromManifest(
     worldSizeMeters: manifest.world.sizeMeters,
     pageSizeMeters: manifest.world.pageSizeMeters,
     heightPageResolution: manifest.terrain.height.pageResolution,
+    heightPageKeys: sortPageKeys(manifest.terrain.height.pageKeys),
     heightPages,
     paint: normalizePaintData(manifest.paint),
     vegetation: normalizeVegetationData(manifest.vegetation),

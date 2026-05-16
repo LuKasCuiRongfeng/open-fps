@@ -24,7 +24,7 @@ export class GpuTextureIO {
     this.heightTexture = heightTexture;
   }
 
-  async readbackChunkHeight(
+  async readbackPageHeight(
     cx: number,
     cz: number,
     renderer: WebGPURenderer
@@ -32,7 +32,7 @@ export class GpuTextureIO {
     const tileRes = this.tileResolution;
     const tileIndex = this.allocator.getTileIndex(cx, cz);
     if (tileIndex === undefined) {
-      console.error(`[GpuTextureIO] No tile allocated for chunk (${cx}, ${cz}) in readback`);
+      console.error(`[GpuTextureIO] No tile allocated for page (${cx}, ${cz}) in readback`);
       return new Float32Array(tileRes * tileRes);
     }
 
@@ -96,7 +96,7 @@ export class GpuTextureIO {
     return heightData;
   }
 
-  async uploadChunkHeight(
+  async uploadPageHeight(
     cx: number,
     cz: number,
     heightData: Float32Array,
@@ -115,7 +115,7 @@ export class GpuTextureIO {
     if (tileIndex === undefined) {
       tileIndex = this.allocator.allocate(cx, cz);
       if (tileIndex < 0) {
-        console.error(`[GpuTextureIO] Failed to allocate tile for chunk (${cx}, ${cz})`);
+        console.error(`[GpuTextureIO] Failed to allocate tile for page (${cx}, ${cz})`);
         return;
       }
     }
@@ -178,11 +178,11 @@ export class GpuTextureIO {
     stagingBuffer.destroy();
   }
 
-  async uploadChunksBatch(
-    chunks: Array<{ cx: number; cz: number; heightData: Float32Array }>,
+  async uploadPagesBatch(
+    pages: Array<{ cx: number; cz: number; heightData: Float32Array }>,
     renderer: WebGPURenderer
   ): Promise<void> {
-    if (chunks.length === 0) return;
+    if (pages.length === 0) return;
 
     const tileRes = this.tileResolution;
     const expectedSize = tileRes * tileRes;
@@ -203,7 +203,7 @@ export class GpuTextureIO {
     const stagingBuffers: GPUBuffer[] = [];
     const commandEncoder = device.createCommandEncoder();
 
-    for (const { cx, cz, heightData } of chunks) {
+    for (const { cx, cz, heightData } of pages) {
       if (heightData.length !== expectedSize) {
         console.warn(`[GpuTextureIO] Invalid height data size for (${cx}, ${cz})`);
         continue;

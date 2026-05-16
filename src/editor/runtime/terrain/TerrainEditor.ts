@@ -87,7 +87,7 @@ export class TerrainEditor {
     this.mapData = createEmptyMapData(
       config.height.seed,
       config.gpuCompute.tileResolution,
-      config.streaming.chunkSizeMeters
+      config.streaming.pageSizeMeters
     );
   }
 
@@ -416,7 +416,7 @@ export class TerrainEditor {
     this.mapData = createEmptyMapData(
       this.config.height.seed,
       this.config.gpuCompute.tileResolution,
-      this.config.streaming.chunkSizeMeters,
+      this.config.streaming.pageSizeMeters,
       name
     );
     this.setDirty(false);
@@ -425,7 +425,9 @@ export class TerrainEditor {
   loadMapData(mapData: MapData): void {
     this.mapData = {
       ...mapData,
+      heightPageKeys: [...mapData.heightPageKeys],
       heightPages: {},
+      loadHeightPage: mapData.loadHeightPage,
       paint: { ...mapData.paint, pageKeys: [...mapData.paint.pageKeys] },
       vegetation: { ...mapData.vegetation, cellKeys: [...mapData.vegetation.cellKeys] },
       metadata: { ...mapData.metadata },
