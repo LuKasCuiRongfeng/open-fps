@@ -360,12 +360,24 @@ async function listMapDirectories(mapsDir) {
   return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
 }
 
+async function fileExists(filePath) {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function generateForMap(projectDir, mapId) {
   const mapDirectory = path.join(projectDir, "maps", mapId);
   const mapPath = path.join(mapDirectory, "map.json");
   const texturePath = path.join(mapDirectory, "texture.json");
 
-  await fs.access(texturePath);
+  if (!await fileExists(texturePath)) {
+    return null;
+  }
+
   const mapData = JSON.parse(await fs.readFile(mapPath, "utf8"));
   const context = await createContext(mapDirectory, mapId, mapData);
   const splatPixels = buildSplatMap(context);
@@ -393,7 +405,10 @@ async function main() {
 
   const generated = [];
   for (const mapId of mapIds) {
-    generated.push(await generateForMap(projectDir, mapId));
+    const result = await generateForMap(projectDir, mapId);
+    if (result) {
+      generated.push(result);
+    }
   }
 
   for (const result of generated) {

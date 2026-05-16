@@ -82,8 +82,9 @@ export const terrainConfig = {
     // 可玩区域的半尺寸（米）。总尺寸 = 2 * halfSize
     // Terrain chunks stream dynamically, so this can be any size.
     // 地形 chunk 动态流式加载，所以这可以是任意大小
-    // 2500m = 2.5km radius = 5km × 5km playable area
-    halfSizeMeters: 2500,
+    // 1600m = 1.6km radius = 3.2km x 3.2km playable area, matching the 50x50 chunk main map.
+    // 1600米 = 1.6公里半径 = 3.2公里 x 3.2公里可玩区域，与 50x50 chunk 的 main 地图匹配。
+    halfSizeMeters: 1600,
   },
 
   // CPU heightmap cache for fast heightAt queries.

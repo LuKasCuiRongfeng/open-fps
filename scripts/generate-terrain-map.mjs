@@ -13,8 +13,12 @@ const mapFilter = readFlagValue("--map");
 
 const chunkSizeMeters = 64;
 const tileResolution = 64;
-const chunkMin = -8;
-const chunkMax = 7;
+const defaultChunkBounds = {
+  minChunkX: -8,
+  maxChunkX: 7,
+  minChunkZ: -8,
+  maxChunkZ: 7,
+};
 const projectVersion = 3;
 const mapVersion = 4;
 const chunksDirectory = "terrain/chunks";
@@ -80,10 +84,25 @@ const baseHeightConfig = {
 const mapPresets = [
   {
     id: "main",
-    name: "Battleground Highlands",
-    seed: 1337,
-    shaper: "highlands",
-    overrides: {},
+    name: "Frontier Basin",
+    seed: 918273,
+    shaper: "frontier-basin",
+    chunkBounds: {
+      minChunkX: -25,
+      maxChunkX: 24,
+      minChunkZ: -25,
+      maxChunkZ: 24,
+    },
+    overrides: {
+      baseHeightMeters: 10,
+      continental: { amplitudeMeters: 72, frequencyPerMeter: 0.00022, powerCurve: 2.1 },
+      mountain: { amplitudeMeters: 82, frequencyPerMeter: 0.00058, powerCurve: 2.75 },
+      hills: { amplitudeMeters: 24, frequencyPerMeter: 0.0021, powerCurve: 1.25 },
+      detail: { amplitudeMeters: 4.5, frequencyPerMeter: 0.012 },
+      valleys: { amplitudeMeters: 20, frequencyPerMeter: 0.00052, heightFadeStartMeters: 34, heightFadeEndMeters: 86 },
+      warp: { amplitudeMeters: 120, frequencyPerMeter: 0.00095 },
+      erosion: { detailFrequency: 0.055, detailAmplitude: 1.0 },
+    },
   },
   {
     id: "ridge",
@@ -241,6 +260,37 @@ function applyBattlegroundShaping(worldX, worldZ, height) {
   return shaped;
 }
 
+function applyFrontierBasinShaping(worldX, worldZ, height, seed) {
+  const centralPrairie = radialMask(worldX, worldZ, -120, 80, 260, 980);
+  const westHighlands = radialMask(worldX, worldZ, -1280, -180, 260, 980);
+  const northeastRise = radialMask(worldX, worldZ, 980, -920, 220, 760);
+  const southMesa = radialMask(worldX, worldZ, 760, 980, 180, 700);
+  const northRidge = ridgeMask(worldX, worldZ, -1500, -1160, 1460, -700, 45, 260);
+  const riverCorridor = ridgeMask(worldX, worldZ, -1520, -620, 1460, 560, 45, 240);
+  const sideCreek = ridgeMask(worldX, worldZ, -820, 1180, 520, -1040, 35, 180);
+  const broadSaddle = radialMask(worldX, worldZ, 260, -420, 120, 520);
+  const edgeDistance = Math.max(Math.abs(worldX), Math.abs(worldZ));
+  const horizonShoulder = smoothstep(1120, 1580, edgeDistance);
+  const prairieNoise = valueNoise2D(worldX * 0.0026, worldZ * 0.0026, 7201, seed) * 2 - 1;
+  const mesaNoise = valueNoise2D(worldX * 0.0011, worldZ * 0.0011, 7202, seed);
+  const shoulderNoise = valueNoise2D(worldX * 0.0017, worldZ * 0.0017, 7203, seed);
+
+  let shaped = height;
+  shaped += westHighlands * 64;
+  shaped += northeastRise * 48;
+  shaped += southMesa * (36 + mesaNoise * 22);
+  shaped += northRidge * 34;
+  shaped += broadSaddle * 18;
+  shaped -= riverCorridor * 24;
+  shaped -= sideCreek * 12;
+
+  const prairieTarget = 20 + prairieNoise * 6 + valueNoise2D(worldX * 0.006, worldZ * 0.006, 7204, seed) * 4;
+  shaped = mixHeight(shaped, prairieTarget, centralPrairie * 0.58);
+  shaped += horizonShoulder * (10 + shoulderNoise * 24);
+
+  return shaped;
+}
+
 function applyRidgelineShaping(worldX, worldZ, height, seed) {
   const centralRidge = ridgeMask(worldX, worldZ, -520, -120, 520, 180, 35, 160);
   const rearRidge = ridgeMask(worldX, worldZ, -320, -420, 240, 420, 28, 120);
@@ -296,6 +346,8 @@ function applyIslandShaping(worldX, worldZ, height, seed) {
 
 function shapeHeight(worldX, worldZ, height, preset) {
   switch (preset.shaper) {
+    case "frontier-basin":
+      return applyFrontierBasinShaping(worldX, worldZ, height, preset.seed);
     case "ridge":
       return applyRidgelineShaping(worldX, worldZ, height, preset.seed);
     case "coast":
@@ -426,22 +478,64 @@ async function updateProjectMetadata(presets) {
   const existingProject = await readExistingProject();
   const created = existingProject?.created ?? now;
   const projectName = existingProject?.name ?? path.basename(projectDir);
+  const existingMaps = Array.isArray(existingProject?.maps) ? existingProject.maps : [];
+  const generatedMaps = new Map(presets.map((preset) => [preset.id, preset]));
+  const existingIds = new Set(existingMaps.map((entry) => entry.id));
+
+  const maps = existingMaps.map((entry) => {
+    const preset = generatedMaps.get(entry.id);
+    if (!preset) {
+      return entry;
+    }
+
+    return {
+      id: preset.id,
+      name: preset.name,
+      created: entry.created ?? created,
+      modified: now,
+    };
+  });
+
+  for (const preset of presets) {
+    if (existingIds.has(preset.id)) {
+      continue;
+    }
+
+    maps.push({
+      id: preset.id,
+      name: preset.name,
+      created,
+      modified: now,
+    });
+  }
 
   const project = {
     name: projectName,
     created,
     modified: now,
     version: projectVersion,
-    currentMapId: presets[0]?.id ?? "main",
-    maps: presets.map((preset) => ({
-      id: preset.id,
-      name: preset.name,
-      created,
-      modified: now,
-    })),
+    currentMapId: maps.some((entry) => entry.id === existingProject?.currentMapId)
+      ? existingProject.currentMapId
+      : presets[0]?.id ?? "main",
+    maps,
   };
 
   await writeFile(projectPath, `${JSON.stringify(project, null, 2)}\n`, "utf8");
+}
+
+async function clearMapAuthoringAssets(mapDir) {
+  // EN: Terrain redesigns start clean; texture paint and vegetation are rebuilt after the height field stabilizes.
+  // 中文: 地形重设计从干净状态开始；纹理绘制和植被会在高度场稳定后重刷。
+  await Promise.all([
+    rm(path.join(mapDir, "splatmap.png"), { force: true }),
+    rm(path.join(mapDir, "texture.json"), { force: true }),
+    rm(path.join(mapDir, "vegetation.json"), { force: true }),
+    rm(path.join(mapDir, "vegetation"), { recursive: true, force: true }),
+  ]);
+}
+
+function getChunkBounds(preset) {
+  return preset.chunkBounds ?? defaultChunkBounds;
 }
 
 async function generateMap(preset) {
@@ -450,14 +544,16 @@ async function generateMap(preset) {
   const mapPath = path.join(mapDir, "map.json");
   const chunksDir = path.join(mapDir, chunksDirectory);
   const heightConfig = buildHeightConfig(preset);
+  const bounds = getChunkBounds(preset);
   const chunkKeys = [];
   let minHeight = Number.POSITIVE_INFINITY;
   let maxHeight = Number.NEGATIVE_INFINITY;
 
+  await clearMapAuthoringAssets(mapDir);
   await rm(chunksDir, { recursive: true, force: true });
 
-  for (let cz = chunkMin; cz <= chunkMax; cz += 1) {
-    for (let cx = chunkMin; cx <= chunkMax; cx += 1) {
+  for (let cz = bounds.minChunkZ; cz <= bounds.maxChunkZ; cz += 1) {
+    for (let cx = bounds.minChunkX; cx <= bounds.maxChunkX; cx += 1) {
       const heights = createChunkHeights(cx, cz, preset, heightConfig);
       for (const value of heights) {
         minHeight = Math.min(minHeight, value);
@@ -497,7 +593,8 @@ async function generateMap(preset) {
     mapPath,
     minHeight,
     maxHeight,
-    chunkCount: (chunkMax - chunkMin + 1) ** 2,
+    chunkCount: chunkKeys.length,
+    areaSquareKilometers: chunkKeys.length * chunkSizeMeters * chunkSizeMeters / 1_000_000,
   };
 }
 
@@ -537,6 +634,7 @@ async function main() {
   for (const result of results) {
     console.log(`- ${result.id}: ${result.name}`);
     console.log(`  Chunks: ${result.chunkCount}`);
+    console.log(`  Area: ${result.areaSquareKilometers.toFixed(2)} km^2`);
     console.log(`  Height range: ${result.minHeight.toFixed(2)}m .. ${result.maxHeight.toFixed(2)}m`);
     console.log(`  Map path: ${result.mapPath}`);
   }
