@@ -5,6 +5,7 @@ import {
   createMapDataFromManifest,
   decodeHeightChunkBytes,
   deserializeMapManifest,
+  getHeightChunkPathForKey,
   type ChunkHeightData,
   type MapData,
 } from "@project/MapData";
@@ -98,8 +99,11 @@ export async function loadBundledGameProject(
 
   const manifest = deserializeMapManifest(manifestJson);
   const chunkEntries = await Promise.all(
-    Object.entries(manifest.chunks).map(async ([key, reference]) => {
-      const bytes = await fetchRequiredBytes(resolveProjectUrl(mapDirectoryUrl, reference.path), `map chunk ${key}`);
+    manifest.chunkKeys.map(async (key) => {
+      const bytes = await fetchRequiredBytes(
+        resolveProjectUrl(mapDirectoryUrl, getHeightChunkPathForKey(key)),
+        `map chunk ${key}`,
+      );
       return [key, { heights: decodeHeightChunkBytes(bytes, manifest.tileResolution) }] as const;
     }),
   );

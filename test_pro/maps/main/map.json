@@ -1,1042 +1,268 @@
 {
-  "version": 3,
+  "version": 4,
   "seed": 1337,
   "tileResolution": 64,
   "chunkSizeMeters": 64,
   "heightFormat": "float32le",
   "chunksDirectory": "terrain/chunks",
-  "chunks": {
-    "-8,-8": {
-      "path": "terrain/chunks/m8_m8.height.f32",
-      "byteLength": 16384
-    },
-    "-7,-8": {
-      "path": "terrain/chunks/m7_m8.height.f32",
-      "byteLength": 16384
-    },
-    "-6,-8": {
-      "path": "terrain/chunks/m6_m8.height.f32",
-      "byteLength": 16384
-    },
-    "-5,-8": {
-      "path": "terrain/chunks/m5_m8.height.f32",
-      "byteLength": 16384
-    },
-    "-4,-8": {
-      "path": "terrain/chunks/m4_m8.height.f32",
-      "byteLength": 16384
-    },
-    "-3,-8": {
-      "path": "terrain/chunks/m3_m8.height.f32",
-      "byteLength": 16384
-    },
-    "-2,-8": {
-      "path": "terrain/chunks/m2_m8.height.f32",
-      "byteLength": 16384
-    },
-    "-1,-8": {
-      "path": "terrain/chunks/m1_m8.height.f32",
-      "byteLength": 16384
-    },
-    "0,-8": {
-      "path": "terrain/chunks/0_m8.height.f32",
-      "byteLength": 16384
-    },
-    "1,-8": {
-      "path": "terrain/chunks/1_m8.height.f32",
-      "byteLength": 16384
-    },
-    "2,-8": {
-      "path": "terrain/chunks/2_m8.height.f32",
-      "byteLength": 16384
-    },
-    "3,-8": {
-      "path": "terrain/chunks/3_m8.height.f32",
-      "byteLength": 16384
-    },
-    "4,-8": {
-      "path": "terrain/chunks/4_m8.height.f32",
-      "byteLength": 16384
-    },
-    "5,-8": {
-      "path": "terrain/chunks/5_m8.height.f32",
-      "byteLength": 16384
-    },
-    "6,-8": {
-      "path": "terrain/chunks/6_m8.height.f32",
-      "byteLength": 16384
-    },
-    "7,-8": {
-      "path": "terrain/chunks/7_m8.height.f32",
-      "byteLength": 16384
-    },
-    "-8,-7": {
-      "path": "terrain/chunks/m8_m7.height.f32",
-      "byteLength": 16384
-    },
-    "-7,-7": {
-      "path": "terrain/chunks/m7_m7.height.f32",
-      "byteLength": 16384
-    },
-    "-6,-7": {
-      "path": "terrain/chunks/m6_m7.height.f32",
-      "byteLength": 16384
-    },
-    "-5,-7": {
-      "path": "terrain/chunks/m5_m7.height.f32",
-      "byteLength": 16384
-    },
-    "-4,-7": {
-      "path": "terrain/chunks/m4_m7.height.f32",
-      "byteLength": 16384
-    },
-    "-3,-7": {
-      "path": "terrain/chunks/m3_m7.height.f32",
-      "byteLength": 16384
-    },
-    "-2,-7": {
-      "path": "terrain/chunks/m2_m7.height.f32",
-      "byteLength": 16384
-    },
-    "-1,-7": {
-      "path": "terrain/chunks/m1_m7.height.f32",
-      "byteLength": 16384
-    },
-    "0,-7": {
-      "path": "terrain/chunks/0_m7.height.f32",
-      "byteLength": 16384
-    },
-    "1,-7": {
-      "path": "terrain/chunks/1_m7.height.f32",
-      "byteLength": 16384
-    },
-    "2,-7": {
-      "path": "terrain/chunks/2_m7.height.f32",
-      "byteLength": 16384
-    },
-    "3,-7": {
-      "path": "terrain/chunks/3_m7.height.f32",
-      "byteLength": 16384
-    },
-    "4,-7": {
-      "path": "terrain/chunks/4_m7.height.f32",
-      "byteLength": 16384
-    },
-    "5,-7": {
-      "path": "terrain/chunks/5_m7.height.f32",
-      "byteLength": 16384
-    },
-    "6,-7": {
-      "path": "terrain/chunks/6_m7.height.f32",
-      "byteLength": 16384
-    },
-    "7,-7": {
-      "path": "terrain/chunks/7_m7.height.f32",
-      "byteLength": 16384
-    },
-    "-8,-6": {
-      "path": "terrain/chunks/m8_m6.height.f32",
-      "byteLength": 16384
-    },
-    "-7,-6": {
-      "path": "terrain/chunks/m7_m6.height.f32",
-      "byteLength": 16384
-    },
-    "-6,-6": {
-      "path": "terrain/chunks/m6_m6.height.f32",
-      "byteLength": 16384
-    },
-    "-5,-6": {
-      "path": "terrain/chunks/m5_m6.height.f32",
-      "byteLength": 16384
-    },
-    "-4,-6": {
-      "path": "terrain/chunks/m4_m6.height.f32",
-      "byteLength": 16384
-    },
-    "-3,-6": {
-      "path": "terrain/chunks/m3_m6.height.f32",
-      "byteLength": 16384
-    },
-    "-2,-6": {
-      "path": "terrain/chunks/m2_m6.height.f32",
-      "byteLength": 16384
-    },
-    "-1,-6": {
-      "path": "terrain/chunks/m1_m6.height.f32",
-      "byteLength": 16384
-    },
-    "0,-6": {
-      "path": "terrain/chunks/0_m6.height.f32",
-      "byteLength": 16384
-    },
-    "1,-6": {
-      "path": "terrain/chunks/1_m6.height.f32",
-      "byteLength": 16384
-    },
-    "2,-6": {
-      "path": "terrain/chunks/2_m6.height.f32",
-      "byteLength": 16384
-    },
-    "3,-6": {
-      "path": "terrain/chunks/3_m6.height.f32",
-      "byteLength": 16384
-    },
-    "4,-6": {
-      "path": "terrain/chunks/4_m6.height.f32",
-      "byteLength": 16384
-    },
-    "5,-6": {
-      "path": "terrain/chunks/5_m6.height.f32",
-      "byteLength": 16384
-    },
-    "6,-6": {
-      "path": "terrain/chunks/6_m6.height.f32",
-      "byteLength": 16384
-    },
-    "7,-6": {
-      "path": "terrain/chunks/7_m6.height.f32",
-      "byteLength": 16384
-    },
-    "-8,-5": {
-      "path": "terrain/chunks/m8_m5.height.f32",
-      "byteLength": 16384
-    },
-    "-7,-5": {
-      "path": "terrain/chunks/m7_m5.height.f32",
-      "byteLength": 16384
-    },
-    "-6,-5": {
-      "path": "terrain/chunks/m6_m5.height.f32",
-      "byteLength": 16384
-    },
-    "-5,-5": {
-      "path": "terrain/chunks/m5_m5.height.f32",
-      "byteLength": 16384
-    },
-    "-4,-5": {
-      "path": "terrain/chunks/m4_m5.height.f32",
-      "byteLength": 16384
-    },
-    "-3,-5": {
-      "path": "terrain/chunks/m3_m5.height.f32",
-      "byteLength": 16384
-    },
-    "-2,-5": {
-      "path": "terrain/chunks/m2_m5.height.f32",
-      "byteLength": 16384
-    },
-    "-1,-5": {
-      "path": "terrain/chunks/m1_m5.height.f32",
-      "byteLength": 16384
-    },
-    "0,-5": {
-      "path": "terrain/chunks/0_m5.height.f32",
-      "byteLength": 16384
-    },
-    "1,-5": {
-      "path": "terrain/chunks/1_m5.height.f32",
-      "byteLength": 16384
-    },
-    "2,-5": {
-      "path": "terrain/chunks/2_m5.height.f32",
-      "byteLength": 16384
-    },
-    "3,-5": {
-      "path": "terrain/chunks/3_m5.height.f32",
-      "byteLength": 16384
-    },
-    "4,-5": {
-      "path": "terrain/chunks/4_m5.height.f32",
-      "byteLength": 16384
-    },
-    "5,-5": {
-      "path": "terrain/chunks/5_m5.height.f32",
-      "byteLength": 16384
-    },
-    "6,-5": {
-      "path": "terrain/chunks/6_m5.height.f32",
-      "byteLength": 16384
-    },
-    "7,-5": {
-      "path": "terrain/chunks/7_m5.height.f32",
-      "byteLength": 16384
-    },
-    "-8,-4": {
-      "path": "terrain/chunks/m8_m4.height.f32",
-      "byteLength": 16384
-    },
-    "-7,-4": {
-      "path": "terrain/chunks/m7_m4.height.f32",
-      "byteLength": 16384
-    },
-    "-6,-4": {
-      "path": "terrain/chunks/m6_m4.height.f32",
-      "byteLength": 16384
-    },
-    "-5,-4": {
-      "path": "terrain/chunks/m5_m4.height.f32",
-      "byteLength": 16384
-    },
-    "-4,-4": {
-      "path": "terrain/chunks/m4_m4.height.f32",
-      "byteLength": 16384
-    },
-    "-3,-4": {
-      "path": "terrain/chunks/m3_m4.height.f32",
-      "byteLength": 16384
-    },
-    "-2,-4": {
-      "path": "terrain/chunks/m2_m4.height.f32",
-      "byteLength": 16384
-    },
-    "-1,-4": {
-      "path": "terrain/chunks/m1_m4.height.f32",
-      "byteLength": 16384
-    },
-    "0,-4": {
-      "path": "terrain/chunks/0_m4.height.f32",
-      "byteLength": 16384
-    },
-    "1,-4": {
-      "path": "terrain/chunks/1_m4.height.f32",
-      "byteLength": 16384
-    },
-    "2,-4": {
-      "path": "terrain/chunks/2_m4.height.f32",
-      "byteLength": 16384
-    },
-    "3,-4": {
-      "path": "terrain/chunks/3_m4.height.f32",
-      "byteLength": 16384
-    },
-    "4,-4": {
-      "path": "terrain/chunks/4_m4.height.f32",
-      "byteLength": 16384
-    },
-    "5,-4": {
-      "path": "terrain/chunks/5_m4.height.f32",
-      "byteLength": 16384
-    },
-    "6,-4": {
-      "path": "terrain/chunks/6_m4.height.f32",
-      "byteLength": 16384
-    },
-    "7,-4": {
-      "path": "terrain/chunks/7_m4.height.f32",
-      "byteLength": 16384
-    },
-    "-8,-3": {
-      "path": "terrain/chunks/m8_m3.height.f32",
-      "byteLength": 16384
-    },
-    "-7,-3": {
-      "path": "terrain/chunks/m7_m3.height.f32",
-      "byteLength": 16384
-    },
-    "-6,-3": {
-      "path": "terrain/chunks/m6_m3.height.f32",
-      "byteLength": 16384
-    },
-    "-5,-3": {
-      "path": "terrain/chunks/m5_m3.height.f32",
-      "byteLength": 16384
-    },
-    "-4,-3": {
-      "path": "terrain/chunks/m4_m3.height.f32",
-      "byteLength": 16384
-    },
-    "-3,-3": {
-      "path": "terrain/chunks/m3_m3.height.f32",
-      "byteLength": 16384
-    },
-    "-2,-3": {
-      "path": "terrain/chunks/m2_m3.height.f32",
-      "byteLength": 16384
-    },
-    "-1,-3": {
-      "path": "terrain/chunks/m1_m3.height.f32",
-      "byteLength": 16384
-    },
-    "0,-3": {
-      "path": "terrain/chunks/0_m3.height.f32",
-      "byteLength": 16384
-    },
-    "1,-3": {
-      "path": "terrain/chunks/1_m3.height.f32",
-      "byteLength": 16384
-    },
-    "2,-3": {
-      "path": "terrain/chunks/2_m3.height.f32",
-      "byteLength": 16384
-    },
-    "3,-3": {
-      "path": "terrain/chunks/3_m3.height.f32",
-      "byteLength": 16384
-    },
-    "4,-3": {
-      "path": "terrain/chunks/4_m3.height.f32",
-      "byteLength": 16384
-    },
-    "5,-3": {
-      "path": "terrain/chunks/5_m3.height.f32",
-      "byteLength": 16384
-    },
-    "6,-3": {
-      "path": "terrain/chunks/6_m3.height.f32",
-      "byteLength": 16384
-    },
-    "7,-3": {
-      "path": "terrain/chunks/7_m3.height.f32",
-      "byteLength": 16384
-    },
-    "-8,-2": {
-      "path": "terrain/chunks/m8_m2.height.f32",
-      "byteLength": 16384
-    },
-    "-7,-2": {
-      "path": "terrain/chunks/m7_m2.height.f32",
-      "byteLength": 16384
-    },
-    "-6,-2": {
-      "path": "terrain/chunks/m6_m2.height.f32",
-      "byteLength": 16384
-    },
-    "-5,-2": {
-      "path": "terrain/chunks/m5_m2.height.f32",
-      "byteLength": 16384
-    },
-    "-4,-2": {
-      "path": "terrain/chunks/m4_m2.height.f32",
-      "byteLength": 16384
-    },
-    "-3,-2": {
-      "path": "terrain/chunks/m3_m2.height.f32",
-      "byteLength": 16384
-    },
-    "-2,-2": {
-      "path": "terrain/chunks/m2_m2.height.f32",
-      "byteLength": 16384
-    },
-    "-1,-2": {
-      "path": "terrain/chunks/m1_m2.height.f32",
-      "byteLength": 16384
-    },
-    "0,-2": {
-      "path": "terrain/chunks/0_m2.height.f32",
-      "byteLength": 16384
-    },
-    "1,-2": {
-      "path": "terrain/chunks/1_m2.height.f32",
-      "byteLength": 16384
-    },
-    "2,-2": {
-      "path": "terrain/chunks/2_m2.height.f32",
-      "byteLength": 16384
-    },
-    "3,-2": {
-      "path": "terrain/chunks/3_m2.height.f32",
-      "byteLength": 16384
-    },
-    "4,-2": {
-      "path": "terrain/chunks/4_m2.height.f32",
-      "byteLength": 16384
-    },
-    "5,-2": {
-      "path": "terrain/chunks/5_m2.height.f32",
-      "byteLength": 16384
-    },
-    "6,-2": {
-      "path": "terrain/chunks/6_m2.height.f32",
-      "byteLength": 16384
-    },
-    "7,-2": {
-      "path": "terrain/chunks/7_m2.height.f32",
-      "byteLength": 16384
-    },
-    "-8,-1": {
-      "path": "terrain/chunks/m8_m1.height.f32",
-      "byteLength": 16384
-    },
-    "-7,-1": {
-      "path": "terrain/chunks/m7_m1.height.f32",
-      "byteLength": 16384
-    },
-    "-6,-1": {
-      "path": "terrain/chunks/m6_m1.height.f32",
-      "byteLength": 16384
-    },
-    "-5,-1": {
-      "path": "terrain/chunks/m5_m1.height.f32",
-      "byteLength": 16384
-    },
-    "-4,-1": {
-      "path": "terrain/chunks/m4_m1.height.f32",
-      "byteLength": 16384
-    },
-    "-3,-1": {
-      "path": "terrain/chunks/m3_m1.height.f32",
-      "byteLength": 16384
-    },
-    "-2,-1": {
-      "path": "terrain/chunks/m2_m1.height.f32",
-      "byteLength": 16384
-    },
-    "-1,-1": {
-      "path": "terrain/chunks/m1_m1.height.f32",
-      "byteLength": 16384
-    },
-    "0,-1": {
-      "path": "terrain/chunks/0_m1.height.f32",
-      "byteLength": 16384
-    },
-    "1,-1": {
-      "path": "terrain/chunks/1_m1.height.f32",
-      "byteLength": 16384
-    },
-    "2,-1": {
-      "path": "terrain/chunks/2_m1.height.f32",
-      "byteLength": 16384
-    },
-    "3,-1": {
-      "path": "terrain/chunks/3_m1.height.f32",
-      "byteLength": 16384
-    },
-    "4,-1": {
-      "path": "terrain/chunks/4_m1.height.f32",
-      "byteLength": 16384
-    },
-    "5,-1": {
-      "path": "terrain/chunks/5_m1.height.f32",
-      "byteLength": 16384
-    },
-    "6,-1": {
-      "path": "terrain/chunks/6_m1.height.f32",
-      "byteLength": 16384
-    },
-    "7,-1": {
-      "path": "terrain/chunks/7_m1.height.f32",
-      "byteLength": 16384
-    },
-    "-8,0": {
-      "path": "terrain/chunks/m8_0.height.f32",
-      "byteLength": 16384
-    },
-    "-7,0": {
-      "path": "terrain/chunks/m7_0.height.f32",
-      "byteLength": 16384
-    },
-    "-6,0": {
-      "path": "terrain/chunks/m6_0.height.f32",
-      "byteLength": 16384
-    },
-    "-5,0": {
-      "path": "terrain/chunks/m5_0.height.f32",
-      "byteLength": 16384
-    },
-    "-4,0": {
-      "path": "terrain/chunks/m4_0.height.f32",
-      "byteLength": 16384
-    },
-    "-3,0": {
-      "path": "terrain/chunks/m3_0.height.f32",
-      "byteLength": 16384
-    },
-    "-2,0": {
-      "path": "terrain/chunks/m2_0.height.f32",
-      "byteLength": 16384
-    },
-    "-1,0": {
-      "path": "terrain/chunks/m1_0.height.f32",
-      "byteLength": 16384
-    },
-    "0,0": {
-      "path": "terrain/chunks/0_0.height.f32",
-      "byteLength": 16384
-    },
-    "1,0": {
-      "path": "terrain/chunks/1_0.height.f32",
-      "byteLength": 16384
-    },
-    "2,0": {
-      "path": "terrain/chunks/2_0.height.f32",
-      "byteLength": 16384
-    },
-    "3,0": {
-      "path": "terrain/chunks/3_0.height.f32",
-      "byteLength": 16384
-    },
-    "4,0": {
-      "path": "terrain/chunks/4_0.height.f32",
-      "byteLength": 16384
-    },
-    "5,0": {
-      "path": "terrain/chunks/5_0.height.f32",
-      "byteLength": 16384
-    },
-    "6,0": {
-      "path": "terrain/chunks/6_0.height.f32",
-      "byteLength": 16384
-    },
-    "7,0": {
-      "path": "terrain/chunks/7_0.height.f32",
-      "byteLength": 16384
-    },
-    "-8,1": {
-      "path": "terrain/chunks/m8_1.height.f32",
-      "byteLength": 16384
-    },
-    "-7,1": {
-      "path": "terrain/chunks/m7_1.height.f32",
-      "byteLength": 16384
-    },
-    "-6,1": {
-      "path": "terrain/chunks/m6_1.height.f32",
-      "byteLength": 16384
-    },
-    "-5,1": {
-      "path": "terrain/chunks/m5_1.height.f32",
-      "byteLength": 16384
-    },
-    "-4,1": {
-      "path": "terrain/chunks/m4_1.height.f32",
-      "byteLength": 16384
-    },
-    "-3,1": {
-      "path": "terrain/chunks/m3_1.height.f32",
-      "byteLength": 16384
-    },
-    "-2,1": {
-      "path": "terrain/chunks/m2_1.height.f32",
-      "byteLength": 16384
-    },
-    "-1,1": {
-      "path": "terrain/chunks/m1_1.height.f32",
-      "byteLength": 16384
-    },
-    "0,1": {
-      "path": "terrain/chunks/0_1.height.f32",
-      "byteLength": 16384
-    },
-    "1,1": {
-      "path": "terrain/chunks/1_1.height.f32",
-      "byteLength": 16384
-    },
-    "2,1": {
-      "path": "terrain/chunks/2_1.height.f32",
-      "byteLength": 16384
-    },
-    "3,1": {
-      "path": "terrain/chunks/3_1.height.f32",
-      "byteLength": 16384
-    },
-    "4,1": {
-      "path": "terrain/chunks/4_1.height.f32",
-      "byteLength": 16384
-    },
-    "5,1": {
-      "path": "terrain/chunks/5_1.height.f32",
-      "byteLength": 16384
-    },
-    "6,1": {
-      "path": "terrain/chunks/6_1.height.f32",
-      "byteLength": 16384
-    },
-    "7,1": {
-      "path": "terrain/chunks/7_1.height.f32",
-      "byteLength": 16384
-    },
-    "-8,2": {
-      "path": "terrain/chunks/m8_2.height.f32",
-      "byteLength": 16384
-    },
-    "-7,2": {
-      "path": "terrain/chunks/m7_2.height.f32",
-      "byteLength": 16384
-    },
-    "-6,2": {
-      "path": "terrain/chunks/m6_2.height.f32",
-      "byteLength": 16384
-    },
-    "-5,2": {
-      "path": "terrain/chunks/m5_2.height.f32",
-      "byteLength": 16384
-    },
-    "-4,2": {
-      "path": "terrain/chunks/m4_2.height.f32",
-      "byteLength": 16384
-    },
-    "-3,2": {
-      "path": "terrain/chunks/m3_2.height.f32",
-      "byteLength": 16384
-    },
-    "-2,2": {
-      "path": "terrain/chunks/m2_2.height.f32",
-      "byteLength": 16384
-    },
-    "-1,2": {
-      "path": "terrain/chunks/m1_2.height.f32",
-      "byteLength": 16384
-    },
-    "0,2": {
-      "path": "terrain/chunks/0_2.height.f32",
-      "byteLength": 16384
-    },
-    "1,2": {
-      "path": "terrain/chunks/1_2.height.f32",
-      "byteLength": 16384
-    },
-    "2,2": {
-      "path": "terrain/chunks/2_2.height.f32",
-      "byteLength": 16384
-    },
-    "3,2": {
-      "path": "terrain/chunks/3_2.height.f32",
-      "byteLength": 16384
-    },
-    "4,2": {
-      "path": "terrain/chunks/4_2.height.f32",
-      "byteLength": 16384
-    },
-    "5,2": {
-      "path": "terrain/chunks/5_2.height.f32",
-      "byteLength": 16384
-    },
-    "6,2": {
-      "path": "terrain/chunks/6_2.height.f32",
-      "byteLength": 16384
-    },
-    "7,2": {
-      "path": "terrain/chunks/7_2.height.f32",
-      "byteLength": 16384
-    },
-    "-8,3": {
-      "path": "terrain/chunks/m8_3.height.f32",
-      "byteLength": 16384
-    },
-    "-7,3": {
-      "path": "terrain/chunks/m7_3.height.f32",
-      "byteLength": 16384
-    },
-    "-6,3": {
-      "path": "terrain/chunks/m6_3.height.f32",
-      "byteLength": 16384
-    },
-    "-5,3": {
-      "path": "terrain/chunks/m5_3.height.f32",
-      "byteLength": 16384
-    },
-    "-4,3": {
-      "path": "terrain/chunks/m4_3.height.f32",
-      "byteLength": 16384
-    },
-    "-3,3": {
-      "path": "terrain/chunks/m3_3.height.f32",
-      "byteLength": 16384
-    },
-    "-2,3": {
-      "path": "terrain/chunks/m2_3.height.f32",
-      "byteLength": 16384
-    },
-    "-1,3": {
-      "path": "terrain/chunks/m1_3.height.f32",
-      "byteLength": 16384
-    },
-    "0,3": {
-      "path": "terrain/chunks/0_3.height.f32",
-      "byteLength": 16384
-    },
-    "1,3": {
-      "path": "terrain/chunks/1_3.height.f32",
-      "byteLength": 16384
-    },
-    "2,3": {
-      "path": "terrain/chunks/2_3.height.f32",
-      "byteLength": 16384
-    },
-    "3,3": {
-      "path": "terrain/chunks/3_3.height.f32",
-      "byteLength": 16384
-    },
-    "4,3": {
-      "path": "terrain/chunks/4_3.height.f32",
-      "byteLength": 16384
-    },
-    "5,3": {
-      "path": "terrain/chunks/5_3.height.f32",
-      "byteLength": 16384
-    },
-    "6,3": {
-      "path": "terrain/chunks/6_3.height.f32",
-      "byteLength": 16384
-    },
-    "7,3": {
-      "path": "terrain/chunks/7_3.height.f32",
-      "byteLength": 16384
-    },
-    "-8,4": {
-      "path": "terrain/chunks/m8_4.height.f32",
-      "byteLength": 16384
-    },
-    "-7,4": {
-      "path": "terrain/chunks/m7_4.height.f32",
-      "byteLength": 16384
-    },
-    "-6,4": {
-      "path": "terrain/chunks/m6_4.height.f32",
-      "byteLength": 16384
-    },
-    "-5,4": {
-      "path": "terrain/chunks/m5_4.height.f32",
-      "byteLength": 16384
-    },
-    "-4,4": {
-      "path": "terrain/chunks/m4_4.height.f32",
-      "byteLength": 16384
-    },
-    "-3,4": {
-      "path": "terrain/chunks/m3_4.height.f32",
-      "byteLength": 16384
-    },
-    "-2,4": {
-      "path": "terrain/chunks/m2_4.height.f32",
-      "byteLength": 16384
-    },
-    "-1,4": {
-      "path": "terrain/chunks/m1_4.height.f32",
-      "byteLength": 16384
-    },
-    "0,4": {
-      "path": "terrain/chunks/0_4.height.f32",
-      "byteLength": 16384
-    },
-    "1,4": {
-      "path": "terrain/chunks/1_4.height.f32",
-      "byteLength": 16384
-    },
-    "2,4": {
-      "path": "terrain/chunks/2_4.height.f32",
-      "byteLength": 16384
-    },
-    "3,4": {
-      "path": "terrain/chunks/3_4.height.f32",
-      "byteLength": 16384
-    },
-    "4,4": {
-      "path": "terrain/chunks/4_4.height.f32",
-      "byteLength": 16384
-    },
-    "5,4": {
-      "path": "terrain/chunks/5_4.height.f32",
-      "byteLength": 16384
-    },
-    "6,4": {
-      "path": "terrain/chunks/6_4.height.f32",
-      "byteLength": 16384
-    },
-    "7,4": {
-      "path": "terrain/chunks/7_4.height.f32",
-      "byteLength": 16384
-    },
-    "-8,5": {
-      "path": "terrain/chunks/m8_5.height.f32",
-      "byteLength": 16384
-    },
-    "-7,5": {
-      "path": "terrain/chunks/m7_5.height.f32",
-      "byteLength": 16384
-    },
-    "-6,5": {
-      "path": "terrain/chunks/m6_5.height.f32",
-      "byteLength": 16384
-    },
-    "-5,5": {
-      "path": "terrain/chunks/m5_5.height.f32",
-      "byteLength": 16384
-    },
-    "-4,5": {
-      "path": "terrain/chunks/m4_5.height.f32",
-      "byteLength": 16384
-    },
-    "-3,5": {
-      "path": "terrain/chunks/m3_5.height.f32",
-      "byteLength": 16384
-    },
-    "-2,5": {
-      "path": "terrain/chunks/m2_5.height.f32",
-      "byteLength": 16384
-    },
-    "-1,5": {
-      "path": "terrain/chunks/m1_5.height.f32",
-      "byteLength": 16384
-    },
-    "0,5": {
-      "path": "terrain/chunks/0_5.height.f32",
-      "byteLength": 16384
-    },
-    "1,5": {
-      "path": "terrain/chunks/1_5.height.f32",
-      "byteLength": 16384
-    },
-    "2,5": {
-      "path": "terrain/chunks/2_5.height.f32",
-      "byteLength": 16384
-    },
-    "3,5": {
-      "path": "terrain/chunks/3_5.height.f32",
-      "byteLength": 16384
-    },
-    "4,5": {
-      "path": "terrain/chunks/4_5.height.f32",
-      "byteLength": 16384
-    },
-    "5,5": {
-      "path": "terrain/chunks/5_5.height.f32",
-      "byteLength": 16384
-    },
-    "6,5": {
-      "path": "terrain/chunks/6_5.height.f32",
-      "byteLength": 16384
-    },
-    "7,5": {
-      "path": "terrain/chunks/7_5.height.f32",
-      "byteLength": 16384
-    },
-    "-8,6": {
-      "path": "terrain/chunks/m8_6.height.f32",
-      "byteLength": 16384
-    },
-    "-7,6": {
-      "path": "terrain/chunks/m7_6.height.f32",
-      "byteLength": 16384
-    },
-    "-6,6": {
-      "path": "terrain/chunks/m6_6.height.f32",
-      "byteLength": 16384
-    },
-    "-5,6": {
-      "path": "terrain/chunks/m5_6.height.f32",
-      "byteLength": 16384
-    },
-    "-4,6": {
-      "path": "terrain/chunks/m4_6.height.f32",
-      "byteLength": 16384
-    },
-    "-3,6": {
-      "path": "terrain/chunks/m3_6.height.f32",
-      "byteLength": 16384
-    },
-    "-2,6": {
-      "path": "terrain/chunks/m2_6.height.f32",
-      "byteLength": 16384
-    },
-    "-1,6": {
-      "path": "terrain/chunks/m1_6.height.f32",
-      "byteLength": 16384
-    },
-    "0,6": {
-      "path": "terrain/chunks/0_6.height.f32",
-      "byteLength": 16384
-    },
-    "1,6": {
-      "path": "terrain/chunks/1_6.height.f32",
-      "byteLength": 16384
-    },
-    "2,6": {
-      "path": "terrain/chunks/2_6.height.f32",
-      "byteLength": 16384
-    },
-    "3,6": {
-      "path": "terrain/chunks/3_6.height.f32",
-      "byteLength": 16384
-    },
-    "4,6": {
-      "path": "terrain/chunks/4_6.height.f32",
-      "byteLength": 16384
-    },
-    "5,6": {
-      "path": "terrain/chunks/5_6.height.f32",
-      "byteLength": 16384
-    },
-    "6,6": {
-      "path": "terrain/chunks/6_6.height.f32",
-      "byteLength": 16384
-    },
-    "7,6": {
-      "path": "terrain/chunks/7_6.height.f32",
-      "byteLength": 16384
-    },
-    "-8,7": {
-      "path": "terrain/chunks/m8_7.height.f32",
-      "byteLength": 16384
-    },
-    "-7,7": {
-      "path": "terrain/chunks/m7_7.height.f32",
-      "byteLength": 16384
-    },
-    "-6,7": {
-      "path": "terrain/chunks/m6_7.height.f32",
-      "byteLength": 16384
-    },
-    "-5,7": {
-      "path": "terrain/chunks/m5_7.height.f32",
-      "byteLength": 16384
-    },
-    "-4,7": {
-      "path": "terrain/chunks/m4_7.height.f32",
-      "byteLength": 16384
-    },
-    "-3,7": {
-      "path": "terrain/chunks/m3_7.height.f32",
-      "byteLength": 16384
-    },
-    "-2,7": {
-      "path": "terrain/chunks/m2_7.height.f32",
-      "byteLength": 16384
-    },
-    "-1,7": {
-      "path": "terrain/chunks/m1_7.height.f32",
-      "byteLength": 16384
-    },
-    "0,7": {
-      "path": "terrain/chunks/0_7.height.f32",
-      "byteLength": 16384
-    },
-    "1,7": {
-      "path": "terrain/chunks/1_7.height.f32",
-      "byteLength": 16384
-    },
-    "2,7": {
-      "path": "terrain/chunks/2_7.height.f32",
-      "byteLength": 16384
-    },
-    "3,7": {
-      "path": "terrain/chunks/3_7.height.f32",
-      "byteLength": 16384
-    },
-    "4,7": {
-      "path": "terrain/chunks/4_7.height.f32",
-      "byteLength": 16384
-    },
-    "5,7": {
-      "path": "terrain/chunks/5_7.height.f32",
-      "byteLength": 16384
-    },
-    "6,7": {
-      "path": "terrain/chunks/6_7.height.f32",
-      "byteLength": 16384
-    },
-    "7,7": {
-      "path": "terrain/chunks/7_7.height.f32",
-      "byteLength": 16384
-    }
-  },
-  "bounds": {
-    "minChunkX": -8,
-    "maxChunkX": 7,
-    "minChunkZ": -8,
-    "maxChunkZ": 7
-  },
+  "chunkKeys": [
+    "-8,-8",
+    "-7,-8",
+    "-6,-8",
+    "-5,-8",
+    "-4,-8",
+    "-3,-8",
+    "-2,-8",
+    "-1,-8",
+    "0,-8",
+    "1,-8",
+    "2,-8",
+    "3,-8",
+    "4,-8",
+    "5,-8",
+    "6,-8",
+    "7,-8",
+    "-8,-7",
+    "-7,-7",
+    "-6,-7",
+    "-5,-7",
+    "-4,-7",
+    "-3,-7",
+    "-2,-7",
+    "-1,-7",
+    "0,-7",
+    "1,-7",
+    "2,-7",
+    "3,-7",
+    "4,-7",
+    "5,-7",
+    "6,-7",
+    "7,-7",
+    "-8,-6",
+    "-7,-6",
+    "-6,-6",
+    "-5,-6",
+    "-4,-6",
+    "-3,-6",
+    "-2,-6",
+    "-1,-6",
+    "0,-6",
+    "1,-6",
+    "2,-6",
+    "3,-6",
+    "4,-6",
+    "5,-6",
+    "6,-6",
+    "7,-6",
+    "-8,-5",
+    "-7,-5",
+    "-6,-5",
+    "-5,-5",
+    "-4,-5",
+    "-3,-5",
+    "-2,-5",
+    "-1,-5",
+    "0,-5",
+    "1,-5",
+    "2,-5",
+    "3,-5",
+    "4,-5",
+    "5,-5",
+    "6,-5",
+    "7,-5",
+    "-8,-4",
+    "-7,-4",
+    "-6,-4",
+    "-5,-4",
+    "-4,-4",
+    "-3,-4",
+    "-2,-4",
+    "-1,-4",
+    "0,-4",
+    "1,-4",
+    "2,-4",
+    "3,-4",
+    "4,-4",
+    "5,-4",
+    "6,-4",
+    "7,-4",
+    "-8,-3",
+    "-7,-3",
+    "-6,-3",
+    "-5,-3",
+    "-4,-3",
+    "-3,-3",
+    "-2,-3",
+    "-1,-3",
+    "0,-3",
+    "1,-3",
+    "2,-3",
+    "3,-3",
+    "4,-3",
+    "5,-3",
+    "6,-3",
+    "7,-3",
+    "-8,-2",
+    "-7,-2",
+    "-6,-2",
+    "-5,-2",
+    "-4,-2",
+    "-3,-2",
+    "-2,-2",
+    "-1,-2",
+    "0,-2",
+    "1,-2",
+    "2,-2",
+    "3,-2",
+    "4,-2",
+    "5,-2",
+    "6,-2",
+    "7,-2",
+    "-8,-1",
+    "-7,-1",
+    "-6,-1",
+    "-5,-1",
+    "-4,-1",
+    "-3,-1",
+    "-2,-1",
+    "-1,-1",
+    "0,-1",
+    "1,-1",
+    "2,-1",
+    "3,-1",
+    "4,-1",
+    "5,-1",
+    "6,-1",
+    "7,-1",
+    "-8,0",
+    "-7,0",
+    "-6,0",
+    "-5,0",
+    "-4,0",
+    "-3,0",
+    "-2,0",
+    "-1,0",
+    "0,0",
+    "1,0",
+    "2,0",
+    "3,0",
+    "4,0",
+    "5,0",
+    "6,0",
+    "7,0",
+    "-8,1",
+    "-7,1",
+    "-6,1",
+    "-5,1",
+    "-4,1",
+    "-3,1",
+    "-2,1",
+    "-1,1",
+    "0,1",
+    "1,1",
+    "2,1",
+    "3,1",
+    "4,1",
+    "5,1",
+    "6,1",
+    "7,1",
+    "-8,2",
+    "-7,2",
+    "-6,2",
+    "-5,2",
+    "-4,2",
+    "-3,2",
+    "-2,2",
+    "-1,2",
+    "0,2",
+    "1,2",
+    "2,2",
+    "3,2",
+    "4,2",
+    "5,2",
+    "6,2",
+    "7,2",
+    "-8,3",
+    "-7,3",
+    "-6,3",
+    "-5,3",
+    "-4,3",
+    "-3,3",
+    "-2,3",
+    "-1,3",
+    "0,3",
+    "1,3",
+    "2,3",
+    "3,3",
+    "4,3",
+    "5,3",
+    "6,3",
+    "7,3",
+    "-8,4",
+    "-7,4",
+    "-6,4",
+    "-5,4",
+    "-4,4",
+    "-3,4",
+    "-2,4",
+    "-1,4",
+    "0,4",
+    "1,4",
+    "2,4",
+    "3,4",
+    "4,4",
+    "5,4",
+    "6,4",
+    "7,4",
+    "-8,5",
+    "-7,5",
+    "-6,5",
+    "-5,5",
+    "-4,5",
+    "-3,5",
+    "-2,5",
+    "-1,5",
+    "0,5",
+    "1,5",
+    "2,5",
+    "3,5",
+    "4,5",
+    "5,5",
+    "6,5",
+    "7,5",
+    "-8,6",
+    "-7,6",
+    "-6,6",
+    "-5,6",
+    "-4,6",
+    "-3,6",
+    "-2,6",
+    "-1,6",
+    "0,6",
+    "1,6",
+    "2,6",
+    "3,6",
+    "4,6",
+    "5,6",
+    "6,6",
+    "7,6",
+    "-8,7",
+    "-7,7",
+    "-6,7",
+    "-5,7",
+    "-4,7",
+    "-3,7",
+    "-2,7",
+    "-1,7",
+    "0,7",
+    "1,7",
+    "2,7",
+    "3,7",
+    "4,7",
+    "5,7",
+    "6,7",
+    "7,7"
+  ],
   "metadata": {
     "name": "Battleground Highlands",
     "created": 1778835916952,

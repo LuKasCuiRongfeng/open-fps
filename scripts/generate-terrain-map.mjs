@@ -16,7 +16,7 @@ const tileResolution = 64;
 const chunkMin = -8;
 const chunkMax = 7;
 const projectVersion = 3;
-const mapVersion = 3;
+const mapVersion = 4;
 const chunksDirectory = "terrain/chunks";
 const heightFormat = "float32le";
 
@@ -412,10 +412,6 @@ function formatChunkCoordinate(value) {
   return value < 0 ? `m${Math.abs(value)}` : String(value);
 }
 
-function toPosixPath(value) {
-  return value.split(path.sep).join("/");
-}
-
 async function readExistingProject() {
   try {
     const raw = await readFile(projectPath, "utf8");
@@ -454,7 +450,7 @@ async function generateMap(preset) {
   const mapPath = path.join(mapDir, "map.json");
   const chunksDir = path.join(mapDir, chunksDirectory);
   const heightConfig = buildHeightConfig(preset);
-  const chunks = {};
+  const chunkKeys = [];
   let minHeight = Number.POSITIVE_INFINITY;
   let maxHeight = Number.NEGATIVE_INFINITY;
 
@@ -473,10 +469,7 @@ async function generateMap(preset) {
       await mkdir(path.dirname(chunkFilePath), { recursive: true });
       await writeFile(chunkFilePath, Buffer.from(heights.buffer, heights.byteOffset, heights.byteLength));
 
-      chunks[`${cx},${cz}`] = {
-        path: toPosixPath(relativeChunkPath),
-        byteLength: heights.byteLength,
-      };
+      chunkKeys.push(`${cx},${cz}`);
     }
   }
 
@@ -487,13 +480,7 @@ async function generateMap(preset) {
     chunkSizeMeters,
     heightFormat,
     chunksDirectory,
-    chunks,
-    bounds: {
-      minChunkX: chunkMin,
-      maxChunkX: chunkMax,
-      minChunkZ: chunkMin,
-      maxChunkZ: chunkMax,
-    },
+    chunkKeys,
     metadata: {
       name: preset.name,
       created: now,

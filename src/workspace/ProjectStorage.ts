@@ -10,9 +10,8 @@ import {
   decodeHeightChunkBase64,
   deserializeMapManifest,
   encodeHeightChunkBase64,
-  parseChunkKey,
-  type MapChunkBounds,
-  type MapChunkReference,
+  getHeightChunkPathForKey,
+  sortChunkKeys,
   type MapManifest,
 } from "./MapData";
 import type { ProjectMapRecord, ProjectMetadata } from "./ProjectData";
@@ -318,25 +317,17 @@ async function loadProjectMapData(projectPath: string, mapId: string): Promise<M
   const manifestJson = await platform.projects.readMapManifest(projectPath, mapId);
   const manifest = deserializeMapManifest(manifestJson);
   const chunkEntries = await Promise.all(
-    Object.entries(manifest.chunks).map(async ([key, reference]) => {
-      try {
-        const base64 = await platform.projects.readMapChunk(projectPath, mapId, reference.path);
-        return [key, { heights: decodeHeightChunkBase64(base64, manifest.tileResolution) }] as const;
-      } catch (error) {
-        if (isMissingFileSystemResourceError(error)) {
-          // EN: Older editor saves could leave dangling manifest refs; skip them so the rest of the map remains recoverable.
-          // 中文: 旧保存逻辑可能留下悬空的清单引用；跳过它们，让地图其余部分仍可恢复。
-          console.warn(`[ProjectStorage] Skipping missing map chunk '${key}' (${reference.path})`, error);
-          return null;
-        }
-
-        throw error;
-      }
+    manifest.chunkKeys.map(async (key) => {
+      const base64 = await platform.projects.readMapChunk(
+        projectPath,
+        mapId,
+        getHeightChunkPathForKey(key),
+      );
+      return [key, { heights: decodeHeightChunkBase64(base64, manifest.tileResolution) }] as const;
     }),
   );
 
-  const validChunkEntries = chunkEntries.filter((entry): entry is readonly [string, ChunkHeightData] => entry !== null);
-  const chunks: Record<string, ChunkHeightData> = Object.fromEntries(validChunkEntries);
+  const chunks: Record<string, ChunkHeightData> = Object.fromEntries(chunkEntries);
   return createMapDataFromManifest(manifest, chunks);
 }
 
@@ -355,18 +346,18 @@ async function saveProjectMapData(
   const manifest = writeAllChunks
     ? nextManifest
     : await createPartialSaveManifest(projectPath, mapId, mapData, nextManifest, dirtyChunkKeys);
+  const manifestChunkKeys = new Set(manifest.chunkKeys);
 
   // EN: Height payloads are written before the manifest so the manifest never points at missing new chunk files.
   // 中文: 高度数据先于清单写入，避免清单指向尚未写好的新 chunk 文件。
   await Promise.all(chunkKeysToWrite.map(async (key) => {
-    const reference = manifest.chunks[key];
     const chunkData = mapData.chunks[key];
-    if (!reference || !chunkData) {
+    if (!manifestChunkKeys.has(key) || !chunkData) {
       throw new Error(`Map chunk '${key}' is missing during save`);
     }
 
     const base64 = encodeHeightChunkBase64(chunkData.heights, mapData.tileResolution);
-    await platform.projects.saveMapChunk(projectPath, mapId, reference.path, base64);
+    await platform.projects.saveMapChunk(projectPath, mapId, getHeightChunkPathForKey(key), base64);
   }));
 
   await platform.projects.saveMapManifest(projectPath, mapId, serializeManifest(manifest));
@@ -393,50 +384,27 @@ async function createPartialSaveManifest(
   }
 
   const exportedChunkKeys = new Set(Object.keys(mapData.chunks));
-  const chunks: Record<string, MapChunkReference> = {};
+  const chunkKeys = new Set<string>();
 
-  for (const [key, reference] of Object.entries(existingManifest.chunks)) {
+  for (const key of existingManifest.chunkKeys) {
     if (exportedChunkKeys.has(key)) {
-      chunks[key] = reference;
+      chunkKeys.add(key);
     }
   }
 
   // EN: Partial saves may add edited chunks, but must not add unedited procedural cache chunks to the manifest.
   // 中文: 部分保存可以加入被编辑的 chunk，但不能把未编辑的程序缓存 chunk 加进清单。
+  const nextChunkKeys = new Set(nextManifest.chunkKeys);
   for (const key of dirtyChunkKeys) {
-    const reference = nextManifest.chunks[key];
-    if (reference) {
-      chunks[key] = reference;
+    if (nextChunkKeys.has(key)) {
+      chunkKeys.add(key);
     }
   }
 
   return {
     ...nextManifest,
-    chunks,
-    bounds: getChunkReferenceBounds(chunks),
+    chunkKeys: sortChunkKeys(chunkKeys),
   };
-}
-
-function getChunkReferenceBounds(chunks: Record<string, MapChunkReference>): MapChunkBounds | null {
-  const keys = Object.keys(chunks);
-  if (keys.length === 0) {
-    return null;
-  }
-
-  let minChunkX = Number.POSITIVE_INFINITY;
-  let maxChunkX = Number.NEGATIVE_INFINITY;
-  let minChunkZ = Number.POSITIVE_INFINITY;
-  let maxChunkZ = Number.NEGATIVE_INFINITY;
-
-  for (const key of keys) {
-    const { cx, cz } = parseChunkKey(key);
-    minChunkX = Math.min(minChunkX, cx);
-    maxChunkX = Math.max(maxChunkX, cx);
-    minChunkZ = Math.min(minChunkZ, cz);
-    maxChunkZ = Math.max(maxChunkZ, cz);
-  }
-
-  return { minChunkX, maxChunkX, minChunkZ, maxChunkZ };
 }
 
 function serializeManifest(manifest: MapManifest): string {

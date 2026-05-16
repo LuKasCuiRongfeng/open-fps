@@ -37,18 +37,6 @@ export interface MapData {
   dirtyChunkKeys?: readonly string[];
 }
 
-export interface MapChunkReference {
-  path: string;
-  byteLength: number;
-}
-
-export interface MapChunkBounds {
-  minChunkX: number;
-  maxChunkX: number;
-  minChunkZ: number;
-  maxChunkZ: number;
-}
-
 export interface MapManifest {
   version: number;
   seed: number;
@@ -56,12 +44,13 @@ export interface MapManifest {
   chunkSizeMeters: number;
   heightFormat: typeof MAP_HEIGHT_FORMAT;
   chunksDirectory: typeof MAP_HEIGHT_CHUNKS_DIRECTORY;
-  chunks: Record<string, MapChunkReference>;
-  bounds: MapChunkBounds | null;
+  // EN: Sparse chunk keys are the source of truth; binary file paths are derived from each key.
+  // 中文: 稀疏 chunk key 是权威清单；二进制文件路径由每个 key 推导。
+  chunkKeys: string[];
   metadata: MapMetadata;
 }
 
-export const MAP_DATA_VERSION = 3;
+export const MAP_DATA_VERSION = 4;
 export const MAP_HEIGHT_FORMAT = "float32le";
 export const MAP_HEIGHT_CHUNKS_DIRECTORY = "terrain/chunks";
 
@@ -127,16 +116,6 @@ export function setChunkData(
 }
 
 export function createMapManifest(mapData: MapData): MapManifest {
-  const chunks: Record<string, MapChunkReference> = {};
-
-  for (const key of Object.keys(mapData.chunks).sort(compareChunkKeys)) {
-    const { cx, cz } = parseChunkKey(key);
-    chunks[key] = {
-      path: getHeightChunkPath(cx, cz),
-      byteLength: getExpectedHeightChunkByteLength(mapData.tileResolution),
-    };
-  }
-
   return {
     version: MAP_DATA_VERSION,
     seed: mapData.seed,
@@ -144,8 +123,7 @@ export function createMapManifest(mapData: MapData): MapManifest {
     chunkSizeMeters: mapData.chunkSizeMeters,
     heightFormat: MAP_HEIGHT_FORMAT,
     chunksDirectory: MAP_HEIGHT_CHUNKS_DIRECTORY,
-    chunks,
-    bounds: getMapChunkBounds(mapData),
+    chunkKeys: sortChunkKeys(Object.keys(mapData.chunks)),
     metadata: { ...mapData.metadata },
   };
 }
@@ -181,27 +159,23 @@ export function deserializeMapManifest(json: string): MapManifest {
     throw new Error("Map manifest has invalid metadata");
   }
 
-  if (!parsed.chunks || typeof parsed.chunks !== "object") {
-    throw new Error("Map manifest must contain chunk references");
+  if (!Array.isArray(parsed.chunkKeys)) {
+    throw new Error("Map manifest must contain sparse chunk keys");
   }
 
-  const chunks: Record<string, MapChunkReference> = {};
-  const expectedByteLength = getExpectedHeightChunkByteLength(tileResolution!);
+  const chunkKeys = new Set<string>();
 
-  for (const [key, reference] of Object.entries(parsed.chunks)) {
+  for (const key of parsed.chunkKeys) {
+    if (typeof key !== "string") {
+      throw new Error("Map manifest chunk keys must be strings");
+    }
+
     parseChunkKey(key);
-    if (!reference || typeof reference.path !== "string" || !reference.path.startsWith(`${MAP_HEIGHT_CHUNKS_DIRECTORY}/`)) {
-      throw new Error(`Map chunk '${key}' has an invalid path`);
+    if (chunkKeys.has(key)) {
+      throw new Error(`Map manifest has duplicate chunk key '${key}'`);
     }
 
-    if (reference.byteLength !== expectedByteLength) {
-      throw new Error(`Map chunk '${key}' has invalid byte length ${reference.byteLength}`);
-    }
-
-    chunks[key] = {
-      path: reference.path,
-      byteLength: reference.byteLength,
-    };
+    chunkKeys.add(key);
   }
 
   return {
@@ -211,8 +185,7 @@ export function deserializeMapManifest(json: string): MapManifest {
     chunkSizeMeters: chunkSizeMeters!,
     heightFormat: MAP_HEIGHT_FORMAT,
     chunksDirectory: MAP_HEIGHT_CHUNKS_DIRECTORY,
-    chunks,
-    bounds: parsed.bounds ?? null,
+    chunkKeys: sortChunkKeys(chunkKeys),
     metadata: {
       name: parsed.metadata.name,
       created: parsed.metadata.created,
@@ -237,6 +210,15 @@ export function createMapDataFromManifest(
 
 export function getHeightChunkPath(cx: number, cz: number): string {
   return `${MAP_HEIGHT_CHUNKS_DIRECTORY}/${formatChunkCoordinate(cx)}_${formatChunkCoordinate(cz)}.height.f32`;
+}
+
+export function getHeightChunkPathForKey(key: string): string {
+  const { cx, cz } = parseChunkKey(key);
+  return getHeightChunkPath(cx, cz);
+}
+
+export function sortChunkKeys(keys: Iterable<string>): string[] {
+  return Array.from(keys).sort(compareChunkKeys);
 }
 
 export function encodeHeightChunkBase64(heights: Float32Array, tileResolution: number): string {
@@ -281,28 +263,6 @@ function validateHeightChunkLength(heights: Float32Array, tileResolution: number
   if (heights.length !== expectedLength) {
     throw new Error(`Invalid height chunk length: expected ${expectedLength}, got ${heights.length}`);
   }
-}
-
-function getMapChunkBounds(mapData: MapData): MapChunkBounds | null {
-  const keys = Object.keys(mapData.chunks);
-  if (keys.length === 0) {
-    return null;
-  }
-
-  let minChunkX = Number.POSITIVE_INFINITY;
-  let maxChunkX = Number.NEGATIVE_INFINITY;
-  let minChunkZ = Number.POSITIVE_INFINITY;
-  let maxChunkZ = Number.NEGATIVE_INFINITY;
-
-  for (const key of keys) {
-    const { cx, cz } = parseChunkKey(key);
-    minChunkX = Math.min(minChunkX, cx);
-    maxChunkX = Math.max(maxChunkX, cx);
-    minChunkZ = Math.min(minChunkZ, cz);
-    maxChunkZ = Math.max(maxChunkZ, cz);
-  }
-
-  return { minChunkX, maxChunkX, minChunkZ, maxChunkZ };
 }
 
 function compareChunkKeys(left: string, right: string): number {

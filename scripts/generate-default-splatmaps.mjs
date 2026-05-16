@@ -154,8 +154,16 @@ function parseChunkKey(key) {
   return { chunkX, chunkZ };
 }
 
-async function readHeightChunk(mapDirectory, reference, tileResolution) {
-  const chunkPath = path.join(mapDirectory, reference.path);
+function formatChunkCoordinate(value) {
+  return value < 0 ? `m${Math.abs(value)}` : String(value);
+}
+
+async function readHeightChunk(mapDirectory, chunksDirectory, chunkX, chunkZ, tileResolution) {
+  const chunkPath = path.join(
+    mapDirectory,
+    chunksDirectory,
+    `${formatChunkCoordinate(chunkX)}_${formatChunkCoordinate(chunkZ)}.height.f32`,
+  );
   const buffer = await fs.readFile(chunkPath);
   const expectedByteLength = tileResolution * tileResolution * Float32Array.BYTES_PER_ELEMENT;
   if (buffer.byteLength !== expectedByteLength) {
@@ -221,9 +229,12 @@ function sampleSlope(context, u, v) {
 }
 
 async function createContext(mapDirectory, mapId, mapData) {
-  const entries = Object.entries(mapData.chunks ?? {});
-  if (entries.length === 0) {
+  if (!Array.isArray(mapData.chunkKeys) || mapData.chunkKeys.length === 0) {
     throw new Error(`Map ${mapId} has no chunks`);
+  }
+
+  if (typeof mapData.chunksDirectory !== "string" || mapData.chunksDirectory.length === 0) {
+    throw new Error(`Map ${mapId} has no chunks directory`);
   }
 
   const parsedChunks = new Map();
@@ -234,9 +245,15 @@ async function createContext(mapDirectory, mapId, mapData) {
   let minHeight = Number.POSITIVE_INFINITY;
   let maxHeight = Number.NEGATIVE_INFINITY;
 
-  for (const [key, chunkReference] of entries) {
+  for (const key of mapData.chunkKeys) {
     const { chunkX, chunkZ } = parseChunkKey(key);
-    const heights = await readHeightChunk(mapDirectory, chunkReference, mapData.tileResolution);
+    const heights = await readHeightChunk(
+      mapDirectory,
+      mapData.chunksDirectory,
+      chunkX,
+      chunkZ,
+      mapData.tileResolution,
+    );
     parsedChunks.set(key, heights);
 
     minChunkX = Math.min(minChunkX, chunkX);
