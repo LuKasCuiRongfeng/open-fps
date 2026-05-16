@@ -10,24 +10,6 @@
       "name": "Frontier Basin",
       "created": 1774839549823,
       "modified": 1778940964051
-    },
-    {
-      "id": "ridge",
-      "name": "Ridgeline Siege",
-      "created": 1774839549823,
-      "modified": 1777459068238
-    },
-    {
-      "id": "coast",
-      "name": "Coastal Crossfire",
-      "created": 1774839549823,
-      "modified": 1777459068238
-    },
-    {
-      "id": "islands",
-      "name": "Island Gauntlet",
-      "created": 1774839549823,
-      "modified": 1777459068238
     }
   ]
 }

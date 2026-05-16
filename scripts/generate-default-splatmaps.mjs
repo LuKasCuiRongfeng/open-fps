@@ -14,30 +14,6 @@ const mapProfiles = {
     noiseBias: 0.08,
     ridgeBias: 0.10,
   },
-  ridge: {
-    lowStart: 0.08,
-    lowEnd: 0.22,
-    edgeBias: 0.03,
-    flatnessBias: 0.11,
-    noiseBias: 0.05,
-    ridgeBias: 0.20,
-  },
-  coast: {
-    lowStart: 0.18,
-    lowEnd: 0.42,
-    edgeBias: 0.20,
-    flatnessBias: 0.18,
-    noiseBias: 0.08,
-    ridgeBias: 0.08,
-  },
-  islands: {
-    lowStart: 0.20,
-    lowEnd: 0.48,
-    edgeBias: 0.24,
-    flatnessBias: 0.14,
-    noiseBias: 0.10,
-    ridgeBias: 0.06,
-  },
   default: {
     lowStart: 0.16,
     lowEnd: 0.36,
@@ -316,19 +292,6 @@ function computeBeachWeight(context, u, v) {
     edgeMask * context.profile.edgeBias +
     noiseOffset * context.profile.noiseBias -
     ridgePenalty;
-
-  if (context.mapId === "coast") {
-    beachWeight += edgeMask * 0.08;
-  }
-
-  if (context.mapId === "islands") {
-    const radial = 1 - smoothstep(0.18, 0.7, Math.hypot(u - 0.5, v - 0.5));
-    beachWeight += radial * 0.05;
-  }
-
-  if (context.mapId === "ridge") {
-    beachWeight -= smoothstep(0.2, 0.55, heightNorm) * 0.12;
-  }
 
   return clamp(beachWeight, 0.02, 0.98);
 }

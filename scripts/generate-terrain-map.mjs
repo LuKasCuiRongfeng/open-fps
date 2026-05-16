@@ -104,44 +104,6 @@ const mapPresets = [
       erosion: { detailFrequency: 0.055, detailAmplitude: 1.0 },
     },
   },
-  {
-    id: "ridge",
-    name: "Ridgeline Siege",
-    seed: 2112,
-    shaper: "ridge",
-    overrides: {
-      baseHeightMeters: 12,
-      mountain: { amplitudeMeters: 150, frequencyPerMeter: 0.00095 },
-      valleys: { amplitudeMeters: 24 },
-      warp: { amplitudeMeters: 58 },
-    },
-  },
-  {
-    id: "coast",
-    name: "Coastal Crossfire",
-    seed: 3779,
-    shaper: "coast",
-    overrides: {
-      baseHeightMeters: 8,
-      continental: { amplitudeMeters: 72 },
-      mountain: { amplitudeMeters: 120 },
-      hills: { amplitudeMeters: 15 },
-      valleys: { amplitudeMeters: 14 },
-    },
-  },
-  {
-    id: "islands",
-    name: "Island Gauntlet",
-    seed: 4545,
-    shaper: "islands",
-    overrides: {
-      baseHeightMeters: 5,
-      continental: { amplitudeMeters: 58 },
-      mountain: { amplitudeMeters: 105 },
-      hills: { amplitudeMeters: 17 },
-      warp: { amplitudeMeters: 82 },
-    },
-  },
 ];
 
 function clamp(value, min, max) {
@@ -233,33 +195,6 @@ function mixHeight(height, target, weight) {
   return lerp(height, target, clamp(weight, 0, 1));
 }
 
-function applyBattlegroundShaping(worldX, worldZ, height) {
-  const mainMassif = radialMask(worldX, worldZ, 180, -20, 120, 380);
-  const northRidge = ridgeMask(worldX, worldZ, -420, -210, 420, 220, 40, 200);
-  const eastRidge = ridgeMask(worldX, worldZ, 120, -460, 430, 120, 35, 160);
-  const westHighlands = radialMask(worldX, worldZ, -260, 90, 80, 280);
-  const centerValley = ridgeMask(worldX, worldZ, -460, 240, 420, -200, 55, 220);
-  const southPlain = radialMask(worldX, worldZ, 20, 300, 80, 360);
-  const northSaddle = radialMask(worldX, worldZ, -40, -260, 50, 170);
-
-  let shaped = height;
-  shaped += mainMassif * 95;
-  shaped += northRidge * 72;
-  shaped += eastRidge * 48;
-  shaped += westHighlands * 24;
-  shaped -= centerValley * 32;
-  shaped -= northSaddle * 18;
-
-  const plainTarget = 10 + valueNoise2D(worldX * 0.003, worldZ * 0.003, 7100) * 8;
-  shaped = mixHeight(shaped, plainTarget, southPlain * 0.58);
-
-  const edgeDistance = Math.max(Math.abs(worldX), Math.abs(worldZ));
-  const edgeFade = smoothstep(360, 540, edgeDistance);
-  shaped = mixHeight(shaped, 8, edgeFade * 0.35);
-
-  return shaped;
-}
-
 function applyFrontierBasinShaping(worldX, worldZ, height, seed) {
   const centralPrairie = radialMask(worldX, worldZ, -120, 80, 260, 980);
   const westHighlands = radialMask(worldX, worldZ, -1280, -180, 260, 980);
@@ -291,73 +226,12 @@ function applyFrontierBasinShaping(worldX, worldZ, height, seed) {
   return shaped;
 }
 
-function applyRidgelineShaping(worldX, worldZ, height, seed) {
-  const centralRidge = ridgeMask(worldX, worldZ, -520, -120, 520, 180, 35, 160);
-  const rearRidge = ridgeMask(worldX, worldZ, -320, -420, 240, 420, 28, 120);
-  const westBowl = radialMask(worldX, worldZ, -230, 40, 70, 240);
-  const eastShelf = radialMask(worldX, worldZ, 290, -30, 80, 260);
-  const saddle = ridgeMask(worldX, worldZ, -380, 260, 360, -220, 45, 170);
-
-  let shaped = height;
-  shaped += centralRidge * 105;
-  shaped += rearRidge * 62;
-  shaped += eastShelf * 24;
-  shaped -= westBowl * 18;
-  shaped -= saddle * 26;
-
-  const basinNoise = valueNoise2D(worldX * 0.0025, worldZ * 0.0025, 7101, seed);
-  shaped = mixHeight(shaped, 18 + basinNoise * 14, radialMask(worldX, worldZ, 20, 20, 40, 240) * 0.48);
-
-  return shaped;
-}
-
-function applyCoastalShaping(worldX, worldZ, height, seed) {
-  const coastMask = smoothstep(-180, 260, worldX + worldZ * 0.18);
-  const inlandMassif = radialMask(worldX, worldZ, -180, -60, 120, 340);
-  const coastalRidge = ridgeMask(worldX, worldZ, -420, 320, 320, -320, 30, 130);
-  const harborBowl = radialMask(worldX, worldZ, 240, 150, 50, 210);
-
-  let shaped = height;
-  shaped += inlandMassif * 84;
-  shaped += coastalRidge * 42;
-  shaped -= harborBowl * 18;
-  shaped = mixHeight(shaped, 6 + valueNoise2D(worldX * 0.003, worldZ * 0.003, 7102, seed) * 4, coastMask * 0.72);
-
-  return shaped;
-}
-
-function applyIslandShaping(worldX, worldZ, height, seed) {
-  const islandA = radialMask(worldX, worldZ, -240, -120, 70, 210);
-  const islandB = radialMask(worldX, worldZ, 160, -40, 80, 240);
-  const islandC = radialMask(worldX, worldZ, -20, 240, 60, 180);
-  const islandBridge = ridgeMask(worldX, worldZ, -220, -90, 170, -20, 24, 90);
-  const channels = ridgeMask(worldX, worldZ, -440, 20, 420, 120, 50, 180);
-
-  let shaped = mixHeight(height, 3, 0.62);
-  shaped += islandA * 92;
-  shaped += islandB * 108;
-  shaped += islandC * 74;
-  shaped += islandBridge * 34;
-  shaped -= channels * 26;
-  shaped += valueNoise2D(worldX * 0.004, worldZ * 0.004, 7103, seed) * 6;
-
-  return shaped;
-}
-
 function shapeHeight(worldX, worldZ, height, preset) {
-  switch (preset.shaper) {
-    case "frontier-basin":
-      return applyFrontierBasinShaping(worldX, worldZ, height, preset.seed);
-    case "ridge":
-      return applyRidgelineShaping(worldX, worldZ, height, preset.seed);
-    case "coast":
-      return applyCoastalShaping(worldX, worldZ, height, preset.seed);
-    case "islands":
-      return applyIslandShaping(worldX, worldZ, height, preset.seed);
-    case "highlands":
-    default:
-      return applyBattlegroundShaping(worldX, worldZ, height);
+  if (preset.shaper !== "frontier-basin") {
+    throw new Error(`Unsupported terrain shaper '${preset.shaper}'`);
   }
+
+  return applyFrontierBasinShaping(worldX, worldZ, height, preset.seed);
 }
 
 function buildHeightConfig(preset) {
