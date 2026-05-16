@@ -3,15 +3,15 @@
 
 import { getPlatform } from "@/platform";
 import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
-import type { ChunkHeightData, MapData } from "./MapData";
+import type { HeightPageData, MapData } from "./MapData";
 import {
   createMapDataFromManifest,
   createMapManifest,
-  decodeHeightChunkBase64,
+  decodeHeightPageBase64,
   deserializeMapManifest,
-  encodeHeightChunkBase64,
-  getHeightChunkPathForKey,
-  sortChunkKeys,
+  encodeHeightPageBase64,
+  getHeightPagePathForKey,
+  sortPageKeys,
   type MapManifest,
 } from "./MapData";
 import type { ProjectMapRecord, ProjectMetadata } from "./ProjectData";
@@ -51,7 +51,7 @@ type SaveProjectMapOptions<TSettings extends GameSettings = GameSettings> = {
   mapName?: string;
   mapId?: string;
   createNewMap?: boolean;
-  forceWriteAllChunks?: boolean;
+  forceWriteAllPages?: boolean;
 };
 
 let currentProject: CurrentProjectState | null = null;
@@ -232,8 +232,8 @@ export async function saveProjectMap<TSettings extends GameSettings = GameSettin
     },
   };
 
-  const writeAllChunks = options.forceWriteAllChunks || options.createNewMap || mapData.dirtyChunkKeys === undefined;
-  await saveProjectMapData(projectPath, targetMapId, savedMapData, writeAllChunks);
+  const writeAllPages = options.forceWriteAllPages || options.createNewMap || mapData.dirtyHeightPageKeys === undefined;
+  await saveProjectMapData(projectPath, targetMapId, savedMapData, writeAllPages);
 
   if (options.settings) {
     const settingsJson = JSON.stringify(options.settings, null, 2);
@@ -283,7 +283,7 @@ export async function saveProjectAs<TSettings extends GameSettings = GameSetting
   const projectPath = `${folderPath}/${projectName}`;
 
   await createProject(projectPath, projectName);
-  return saveProjectMap<TSettings>(mapData, { settings, mapName, forceWriteAllChunks: true });
+  return saveProjectMap<TSettings>(mapData, { settings, mapName, forceWriteAllPages: true });
 }
 
 export function hasOpenProject(): boolean {
@@ -335,19 +335,19 @@ async function saveProjectMetadata(projectPath: string, metadata: ProjectMetadat
 async function loadProjectMapData(projectPath: string, mapId: string): Promise<MapData> {
   const manifestJson = await platform.projects.readMapManifest(projectPath, mapId);
   const manifest = deserializeMapManifest(manifestJson);
-  const chunkEntries = await Promise.all(
-    manifest.chunkKeys.map(async (key) => {
+  const heightPageEntries = await Promise.all(
+    manifest.terrain.height.pageKeys.map(async (key) => {
       const base64 = await platform.projects.readMapChunk(
         projectPath,
         mapId,
-        getHeightChunkPathForKey(key),
+        getHeightPagePathForKey(key),
       );
-      return [key, { heights: decodeHeightChunkBase64(base64, manifest.tileResolution) }] as const;
+      return [key, { heights: decodeHeightPageBase64(base64, manifest.terrain.height.pageResolution) }] as const;
     }),
   );
 
-  const chunks: Record<string, ChunkHeightData> = Object.fromEntries(chunkEntries);
-  return createMapDataFromManifest(manifest, chunks);
+  const heightPages: Record<string, HeightPageData> = Object.fromEntries(heightPageEntries);
+  return createMapDataFromManifest(manifest, heightPages);
 }
 
 async function loadProjectMapRecord(projectPath: string, mapId: string): Promise<ProjectMapRecord> {
@@ -374,29 +374,29 @@ async function saveProjectMapData(
   projectPath: string,
   mapId: string,
   mapData: MapData,
-  writeAllChunks: boolean,
+  writeAllPages: boolean,
 ): Promise<void> {
   const nextManifest = createMapManifest(mapData);
-  const dirtyChunkKeys = new Set(mapData.dirtyChunkKeys ?? []);
-  const chunkKeys = Object.keys(mapData.chunks);
-  const chunkKeysToWrite = writeAllChunks
-    ? chunkKeys
-    : chunkKeys.filter((key) => dirtyChunkKeys.has(key));
-  const manifest = writeAllChunks
+  const dirtyHeightPageKeys = new Set(mapData.dirtyHeightPageKeys ?? []);
+  const heightPageKeys = Object.keys(mapData.heightPages);
+  const pageKeysToWrite = writeAllPages
+    ? heightPageKeys
+    : heightPageKeys.filter((key) => dirtyHeightPageKeys.has(key));
+  const manifest = writeAllPages
     ? nextManifest
-    : await createPartialSaveManifest(projectPath, mapId, mapData, nextManifest, dirtyChunkKeys);
-  const manifestChunkKeys = new Set(manifest.chunkKeys);
+    : await createPartialSaveManifest(projectPath, mapId, mapData, nextManifest, dirtyHeightPageKeys);
+  const manifestHeightPageKeys = new Set(manifest.terrain.height.pageKeys);
 
-  // EN: Height payloads are written before the manifest so the manifest never points at missing new chunk files.
-  // 中文: 高度数据先于清单写入，避免清单指向尚未写好的新 chunk 文件。
-  await Promise.all(chunkKeysToWrite.map(async (key) => {
-    const chunkData = mapData.chunks[key];
-    if (!manifestChunkKeys.has(key) || !chunkData) {
-      throw new Error(`Map chunk '${key}' is missing during save`);
+  // EN: Height page payloads are written before the manifest so the manifest never points at missing new page files.
+  // 中文: 高度 page 数据先于清单写入，避免清单指向尚未写好的新 page 文件。
+  await Promise.all(pageKeysToWrite.map(async (key) => {
+    const heightPage = mapData.heightPages[key];
+    if (!manifestHeightPageKeys.has(key) || !heightPage) {
+      throw new Error(`Map height page '${key}' is missing during save`);
     }
 
-    const base64 = encodeHeightChunkBase64(chunkData.heights, mapData.tileResolution);
-    await platform.projects.saveMapChunk(projectPath, mapId, getHeightChunkPathForKey(key), base64);
+    const base64 = encodeHeightPageBase64(heightPage.heights, mapData.heightPageResolution);
+    await platform.projects.saveMapChunk(projectPath, mapId, getHeightPagePathForKey(key), base64);
   }));
 
   await platform.projects.saveMapManifest(projectPath, mapId, serializeManifest(manifest));
@@ -407,7 +407,7 @@ async function createPartialSaveManifest(
   mapId: string,
   mapData: MapData,
   nextManifest: MapManifest,
-  dirtyChunkKeys: ReadonlySet<string>,
+  dirtyHeightPageKeys: ReadonlySet<string>,
 ): Promise<MapManifest> {
   let existingManifest: MapManifest | null = null;
   try {
@@ -422,22 +422,28 @@ async function createPartialSaveManifest(
     return nextManifest;
   }
 
-  const exportedChunkKeys = new Set(Object.keys(mapData.chunks));
-  const chunkKeys = new Set<string>();
+  const exportedPageKeys = new Set(Object.keys(mapData.heightPages));
+  const pageKeys = new Set<string>();
 
-  for (const key of existingManifest.chunkKeys) {
-    if (exportedChunkKeys.has(key)) {
-      chunkKeys.add(key);
+  for (const key of existingManifest.terrain.height.pageKeys) {
+    if (exportedPageKeys.has(key)) {
+      pageKeys.add(key);
     }
   }
 
-  // EN: Partial saves preserve the existing sparse index; creating or expanding map chunks must be an explicit operation.
-  // 中文: 部分保存保持现有稀疏索引；创建或扩展地图 chunk 必须走显式操作。
-  void dirtyChunkKeys;
+  // EN: Partial saves preserve the existing sparse page index; expanding map pages must be an explicit operation.
+  // 中文: 部分保存保持现有稀疏 page 索引；扩展地图 page 必须走显式操作。
+  void dirtyHeightPageKeys;
 
   return {
     ...nextManifest,
-    chunkKeys: sortChunkKeys(chunkKeys),
+    terrain: {
+      ...nextManifest.terrain,
+      height: {
+        ...nextManifest.terrain.height,
+        pageKeys: sortPageKeys(pageKeys),
+      },
+    },
   };
 }
 

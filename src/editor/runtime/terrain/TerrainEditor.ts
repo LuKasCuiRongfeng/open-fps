@@ -425,7 +425,9 @@ export class TerrainEditor {
   loadMapData(mapData: MapData): void {
     this.mapData = {
       ...mapData,
-      chunks: {},
+      heightPages: {},
+      paint: { ...mapData.paint, pageKeys: [...mapData.paint.pageKeys] },
+      vegetation: { ...mapData.vegetation, cellKeys: [...mapData.vegetation.cellKeys] },
       metadata: { ...mapData.metadata },
     };
     this.setDirty(false);

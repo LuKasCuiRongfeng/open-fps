@@ -9,7 +9,7 @@ import type { EditorCameraAction } from "@editor/runtime/terrain/TerrainEditor";
 import { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
 import { TerrainTextureArrays } from "@game/world/terrain/TerrainTextureArrays";
-import { parseChunkKey, type MapData } from "@project/MapData";
+import { parsePageKey, type MapData } from "@project/MapData";
 import {
   applyEditorSettingsPatch,
   cloneEditorSettings,
@@ -331,7 +331,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
   }
 
   private resolveMapCameraFrame(mapData: MapData): { x: number; z: number; radius: number } {
-    const keys = Object.keys(mapData.chunks);
+    const keys = Object.keys(mapData.heightPages);
     if (keys.length === 0) {
       return { x: 0, z: 0, radius: terrainConfig.streaming.chunkSizeMeters * 4 };
     }
@@ -342,14 +342,14 @@ export class EditorApp extends GameApp implements EditorAppSession {
     let maxChunkZ = Number.NEGATIVE_INFINITY;
 
     for (const key of keys) {
-      const { cx, cz } = parseChunkKey(key);
-      minChunkX = Math.min(minChunkX, cx);
-      maxChunkX = Math.max(maxChunkX, cx);
-      minChunkZ = Math.min(minChunkZ, cz);
-      maxChunkZ = Math.max(maxChunkZ, cz);
+      const { px, pz } = parsePageKey(key);
+      minChunkX = Math.min(minChunkX, px);
+      maxChunkX = Math.max(maxChunkX, px);
+      minChunkZ = Math.min(minChunkZ, pz);
+      maxChunkZ = Math.max(maxChunkZ, pz);
     }
 
-    const chunkSize = mapData.chunkSizeMeters;
+    const chunkSize = mapData.pageSizeMeters;
     const spanX = (maxChunkX - minChunkX + 1) * chunkSize;
     const spanZ = (maxChunkZ - minChunkZ + 1) * chunkSize;
     const x = ((minChunkX + maxChunkX + 1) * chunkSize) / 2;

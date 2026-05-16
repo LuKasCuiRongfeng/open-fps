@@ -8,7 +8,7 @@ import { ChunkManager } from "./ChunkManager";
 import { FloatingOrigin } from "../common/FloatingOrigin";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
 import type { BrushStroke } from "./brushTypes";
-import { type MapData, setChunkData, parseChunkKey, getChunkData, hasChunks } from "@project/MapData";
+import { type MapData, setHeightPageData, parsePageKey, getHeightPageData, hasHeightPages } from "@project/MapData";
 import type { TerrainTextureArrayResult } from "./TerrainTextureArrays";
 
 export type TerrainSystemResource = {
@@ -70,7 +70,7 @@ export function createTerrainSystem(
   // Store original map data for reset functionality.
   // 存储原始地图数据用于重置功能
   let originalMapData: MapData | null = null;
-  let mapChunkKeys = new Set<string>();
+  let mapHeightPageKeys = new Set<string>();
 
   // Initialize height sampler with config.
   // 使用配置初始化高度采样器
@@ -79,19 +79,22 @@ export function createTerrainSystem(
   const createMapDataShell = (source: MapData): MapData => ({
     version: source.version,
     seed: source.seed,
-    tileResolution: source.tileResolution,
-    chunkSizeMeters: source.chunkSizeMeters,
-    chunks: {},
+    worldSizeMeters: source.worldSizeMeters,
+    pageSizeMeters: source.pageSizeMeters,
+    heightPageResolution: source.heightPageResolution,
+    heightPages: {},
+    paint: { ...source.paint, pageKeys: [...source.paint.pageKeys] },
+    vegetation: { ...source.vegetation, cellKeys: [...source.vegetation.cellKeys] },
     metadata: { ...source.metadata },
   });
 
   const cloneMapData = (source: MapData): MapData => {
     const clone = createMapDataShell(source);
-    for (const key of Object.keys(source.chunks)) {
-      const { cx, cz } = parseChunkKey(key);
-      const chunkData = getChunkData(source, cx, cz);
-      if (chunkData) {
-        setChunkData(clone, cx, cz, chunkData.heights);
+    for (const key of Object.keys(source.heightPages)) {
+      const { px, pz } = parsePageKey(key);
+      const pageData = getHeightPageData(source, px, pz);
+      if (pageData) {
+        setHeightPageData(clone, px, pz, pageData.heights);
       }
     }
 
@@ -115,7 +118,7 @@ export function createTerrainSystem(
     const cx = Math.floor(xMeters / chunkSize);
     const cz = Math.floor(zMeters / chunkSize);
     const key = `${cx},${cz}`;
-    if (!mapChunkKeys.has(key)) {
+    if (!mapHeightPageKeys.has(key)) {
       return false;
     }
 
@@ -168,7 +171,7 @@ export function createTerrainSystem(
       const chunkSize = config.streaming.chunkSizeMeters;
       const cx = Math.floor(stroke.worldX / chunkSize);
       const cz = Math.floor(stroke.worldZ / chunkSize);
-      return mapChunkKeys.has(`${cx},${cz}`);
+      return mapHeightPageKeys.has(`${cx},${cz}`);
     });
 
     await chunkManager.applyBrushStrokes(editableStrokes);
@@ -179,31 +182,31 @@ export function createTerrainSystem(
    * 导出当前地形为 MapData（用于保存）
    */
   const exportCurrentMapData = (): MapData => {
-    if (!originalMapData || !hasChunks(originalMapData)) {
+    if (!originalMapData || !hasHeightPages(originalMapData)) {
       throw new Error("Cannot export terrain before loading a map file");
     }
 
-    const originalChunkKeys = new Set(Object.keys(originalMapData.chunks));
-    const dirtyChunkKeys = TerrainHeightSampler.getDirtyChunkKeys().filter((key) => originalChunkKeys.has(key));
-    const dirtyChunkKeySet = new Set(dirtyChunkKeys);
+    const originalPageKeys = new Set(Object.keys(originalMapData.heightPages));
+    const dirtyPageKeys = TerrainHeightSampler.getDirtyChunkKeys().filter((key) => originalPageKeys.has(key));
+    const dirtyPageKeySet = new Set(dirtyPageKeys);
 
     const mapData = createMapDataShell(originalMapData);
-    // EN: Saves preserve the loaded sparse manifest; runtime never invents or expands terrain chunks.
-    // 中文: 保存保持已加载的稀疏清单；运行时绝不创建或扩展地形 chunk。
-    for (const key of originalChunkKeys) {
-      const { cx, cz } = parseChunkKey(key);
-      const originalChunk = getChunkData(originalMapData, cx, cz);
-      const cachedHeightData = TerrainHeightSampler.getChunkHeightData(cx, cz);
-      const heights = dirtyChunkKeySet.has(key)
-        ? cachedHeightData ?? originalChunk?.heights
-        : originalChunk?.heights ?? cachedHeightData;
+    // EN: Saves preserve the loaded sparse page manifest; runtime never invents or expands terrain pages.
+    // 中文: 保存保持已加载的稀疏 page 清单；运行时绝不创建或扩展地形 page。
+    for (const key of originalPageKeys) {
+      const { px, pz } = parsePageKey(key);
+      const originalPage = getHeightPageData(originalMapData, px, pz);
+      const cachedHeightData = TerrainHeightSampler.getChunkHeightData(px, pz);
+      const heights = dirtyPageKeySet.has(key)
+        ? cachedHeightData ?? originalPage?.heights
+        : originalPage?.heights ?? cachedHeightData;
 
       if (heights) {
-        setChunkData(mapData, cx, cz, heights);
+        setHeightPageData(mapData, px, pz, heights);
       }
     }
 
-    mapData.dirtyChunkKeys = dirtyChunkKeys;
+    mapData.dirtyHeightPageKeys = dirtyPageKeys;
 
     return mapData;
   };
@@ -221,25 +224,25 @@ export function createTerrainSystem(
 
     // Verify config matches.
     // 验证配置匹配
-    if (mapData.tileResolution !== config.gpuCompute.tileResolution) {
-      console.warn("[TerrainSystem] Map tile resolution mismatch, may cause issues");
+    if (mapData.heightPageResolution !== config.gpuCompute.tileResolution) {
+      console.warn("[TerrainSystem] Map height page resolution mismatch, may cause issues");
     }
 
-    // Load height data into CPU cache.
-    // 将高度数据加载到 CPU 缓存
-    if (hasChunks(mapData)) {
-      for (const key of Object.keys(mapData.chunks)) {
-        const { cx, cz } = parseChunkKey(key);
-        const chunkData = getChunkData(mapData, cx, cz);
-        if (chunkData) {
-          TerrainHeightSampler.setChunkHeightData(cx, cz, chunkData.heights);
+    // Load height pages into CPU cache.
+    // 将高度 page 加载到 CPU 缓存。
+    if (hasHeightPages(mapData)) {
+      for (const key of Object.keys(mapData.heightPages)) {
+        const { px, pz } = parsePageKey(key);
+        const pageData = getHeightPageData(mapData, px, pz);
+        if (pageData) {
+          TerrainHeightSampler.setChunkHeightData(px, pz, pageData.heights);
         }
       }
     }
 
     TerrainHeightSampler.clearDirtyChunks();
-    mapChunkKeys = new Set(Object.keys(mapData.chunks));
-    chunkManager.setMapChunkKeys(mapChunkKeys);
+    mapHeightPageKeys = new Set(Object.keys(mapData.heightPages));
+    chunkManager.setMapChunkKeys(mapHeightPageKeys);
 
     // Store original map data for reset.
     // 存储原始地图数据用于重置
@@ -299,7 +302,7 @@ export function createTerrainSystem(
     chunkManager = null;
     TerrainHeightSampler.clearCache();
     originalMapData = null;
-    mapChunkKeys = new Set<string>();
+    mapHeightPageKeys = new Set<string>();
   };
 
   return {
@@ -322,7 +325,7 @@ export function createTerrainSystem(
 }
 
 function resolveMapInitialLoadPoint(mapData: MapData): [number, number] {
-  const keys = Object.keys(mapData.chunks);
+  const keys = Object.keys(mapData.heightPages);
   if (keys.length === 0) {
     return [0, 0];
   }
@@ -334,12 +337,12 @@ function resolveMapInitialLoadPoint(mapData: MapData): [number, number] {
 
   const coords: Array<{ cx: number; cz: number }> = [];
   for (const key of keys) {
-    const { cx, cz } = parseChunkKey(key);
-    coords.push({ cx, cz });
-    minChunkX = Math.min(minChunkX, cx);
-    maxChunkX = Math.max(maxChunkX, cx);
-    minChunkZ = Math.min(minChunkZ, cz);
-    maxChunkZ = Math.max(maxChunkZ, cz);
+    const { px, pz } = parsePageKey(key);
+    coords.push({ cx: px, cz: pz });
+    minChunkX = Math.min(minChunkX, px);
+    maxChunkX = Math.max(maxChunkX, px);
+    minChunkZ = Math.min(minChunkZ, pz);
+    maxChunkZ = Math.max(maxChunkZ, pz);
   }
 
   const targetChunkX = (minChunkX + maxChunkX) / 2;
@@ -357,7 +360,7 @@ function resolveMapInitialLoadPoint(mapData: MapData): [number, number] {
     }
   }
 
-  const chunkSize = mapData.chunkSizeMeters;
+  const chunkSize = mapData.pageSizeMeters;
   // EN: Use the nearest declared chunk center, not the bounding-box center, so sparse maps never preload empty space.
   // 中文: 使用最近的已声明 chunk 中心，而不是包围盒中心，避免稀疏地图预加载空白区域。
   return [

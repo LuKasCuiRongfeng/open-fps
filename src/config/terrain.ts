@@ -39,9 +39,9 @@ export const terrainConfig = {
   // GPU compute pipeline configuration.
   // GPU 计算管线配置
   gpuCompute: {
-    // Resolution per chunk tile in the atlas (power of 2).
-    // 图集中每个 chunk tile 的分辨率（2 的幂）
-    tileResolution: 64,
+    // Resolution per height page tile in the atlas; 129 keeps shared page edges explicit.
+    // 图集中每个高度 page tile 的分辨率；129 用于显式保留共享边界采样。
+    tileResolution: 129,
 
     // Number of tiles per side in the atlas texture.
     // 图集纹理每边的 tile 数

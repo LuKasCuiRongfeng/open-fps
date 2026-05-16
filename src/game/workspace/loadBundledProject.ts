@@ -3,10 +3,10 @@
 
 import {
   createMapDataFromManifest,
-  decodeHeightChunkBytes,
+  decodeHeightPageBytes,
   deserializeMapManifest,
-  getHeightChunkPathForKey,
-  type ChunkHeightData,
+  getHeightPagePathForKey,
+  type HeightPageData,
   type MapData,
 } from "@project/MapData";
 import {
@@ -100,18 +100,18 @@ export async function loadBundledGameProject(
 
   const manifest = deserializeMapManifest(manifestJson);
   const activeMap = createProjectMapRecord(activeMapId, manifest.metadata);
-  const chunkEntries = await Promise.all(
-    manifest.chunkKeys.map(async (key) => {
+  const heightPageEntries = await Promise.all(
+    manifest.terrain.height.pageKeys.map(async (key) => {
       const bytes = await fetchRequiredBytes(
-        resolveProjectUrl(mapDirectoryUrl, getHeightChunkPathForKey(key)),
-        `map chunk ${key}`,
+        resolveProjectUrl(mapDirectoryUrl, getHeightPagePathForKey(key)),
+        `map height page ${key}`,
       );
-      return [key, { heights: decodeHeightChunkBytes(bytes, manifest.tileResolution) }] as const;
+      return [key, { heights: decodeHeightPageBytes(bytes, manifest.terrain.height.pageResolution) }] as const;
     }),
   );
 
-  const chunks: Record<string, ChunkHeightData> = Object.fromEntries(chunkEntries);
-  const map = createMapDataFromManifest(manifest, chunks);
+  const heightPages: Record<string, HeightPageData> = Object.fromEntries(heightPageEntries);
+  const map = createMapDataFromManifest(manifest, heightPages);
   const settings = mergeSettingsWithDefaults(settingsJson);
   const textureDefinition = textureJson ? JSON.parse(textureJson) as TextureDefinition : null;
   const vegetationData = vegetationJson

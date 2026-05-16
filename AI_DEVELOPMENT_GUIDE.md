@@ -10,7 +10,7 @@ Project-specific supplement to `.github/copilot-instructions.md`.
 - Keep AI-led redesigns focused: explain the design change, preserve intended user-facing behavior, and verify the affected workflows.
 - Keep all project UI in a compact, serious editor-style desktop application aesthetic; avoid web-page or card-grid presentation patterns.
 - Keep platform-specific behavior behind `src/platform/` capabilities; app code must not call native command names directly.
-- Store editable terrain as v4 sparse map manifests plus per-chunk binary `float32le` files; do not add legacy map-format compatibility unless explicitly requested.
+- Store editable terrain as v5 sparse virtual height pages under `terrain/height/pages`; manifest paths are derived from page keys and no legacy map-format compatibility should be added unless explicitly requested.
 - Use English for all new or modified project text: UI copy, docs, test names, logs, errors, config descriptions, fixture text, file names, and asset metadata.
 - Keep existing non-English text unchanged unless localization work requires touching it.
 - Use clear English code identifiers.

@@ -11,17 +11,19 @@ const projectPath = path.join(projectDir, "project.json");
 const generateAll = process.argv.includes("--all");
 const mapFilter = readFlagValue("--map");
 
-const chunkSizeMeters = 64;
-const tileResolution = 64;
-const defaultChunkBounds = {
-  minChunkX: -8,
-  maxChunkX: 7,
-  minChunkZ: -8,
-  maxChunkZ: 7,
+const pageSizeMeters = 64;
+const heightPageResolution = 129;
+const paintPageResolution = 1024;
+const vegetationCellSizeMeters = 32;
+const defaultPageBounds = {
+  minPageX: -8,
+  maxPageX: 7,
+  minPageZ: -8,
+  maxPageZ: 7,
 };
 const projectVersion = 3;
-const mapVersion = 4;
-const chunksDirectory = "terrain/chunks";
+const mapVersion = 5;
+const heightPagesDirectory = "terrain/height/pages";
 const heightFormat = "float32le";
 
 const baseHeightConfig = {
@@ -87,11 +89,11 @@ const mapPresets = [
     name: "Frontier Basin",
     seed: 918273,
     shaper: "frontier-basin",
-    chunkBounds: {
-      minChunkX: -25,
-      maxChunkX: 24,
-      minChunkZ: -25,
-      maxChunkZ: 24,
+    pageBounds: {
+      minPageX: -25,
+      maxPageX: 24,
+      minPageZ: -25,
+      maxPageZ: 24,
     },
     overrides: {
       baseHeightMeters: 10,
@@ -316,25 +318,25 @@ function generateHeight(worldX, worldZ, preset, heightConfig) {
   return clamp(height, 2, 255);
 }
 
-function createChunkHeights(cx, cz, preset, heightConfig) {
-  const heights = new Float32Array(tileResolution * tileResolution);
-  for (let z = 0; z < tileResolution; z += 1) {
-    const localV = z / (tileResolution - 1);
-    for (let x = 0; x < tileResolution; x += 1) {
-      const localU = x / (tileResolution - 1);
-      const worldX = cx * chunkSizeMeters + localU * chunkSizeMeters;
-      const worldZ = cz * chunkSizeMeters + localV * chunkSizeMeters;
-      heights[z * tileResolution + x] = generateHeight(worldX, worldZ, preset, heightConfig);
+function createHeightPage(px, pz, preset, heightConfig) {
+  const heights = new Float32Array(heightPageResolution * heightPageResolution);
+  for (let z = 0; z < heightPageResolution; z += 1) {
+    const localV = z / (heightPageResolution - 1);
+    for (let x = 0; x < heightPageResolution; x += 1) {
+      const localU = x / (heightPageResolution - 1);
+      const worldX = px * pageSizeMeters + localU * pageSizeMeters;
+      const worldZ = pz * pageSizeMeters + localV * pageSizeMeters;
+      heights[z * heightPageResolution + x] = generateHeight(worldX, worldZ, preset, heightConfig);
     }
   }
   return heights;
 }
 
-function chunkPathFor(cx, cz) {
-  return `${chunksDirectory}/${formatChunkCoordinate(cx)}_${formatChunkCoordinate(cz)}.height.f32`;
+function heightPagePathFor(px, pz) {
+  return `${heightPagesDirectory}/p_${formatGridCoordinate(px)}_${formatGridCoordinate(pz)}.height.f32`;
 }
 
-function formatChunkCoordinate(value) {
+function formatGridCoordinate(value) {
   return value < 0 ? `m${Math.abs(value)}` : String(value);
 }
 
@@ -390,49 +392,79 @@ async function clearMapAuthoringAssets(mapDir) {
   ]);
 }
 
-function getChunkBounds(preset) {
-  return preset.chunkBounds ?? defaultChunkBounds;
+function getPageBounds(preset) {
+  return preset.pageBounds ?? defaultPageBounds;
 }
 
 async function generateMap(preset) {
   const now = Date.now();
   const mapDir = path.join(projectDir, "maps", preset.id);
   const mapPath = path.join(mapDir, "map.json");
-  const chunksDir = path.join(mapDir, chunksDirectory);
+  const heightPagesDir = path.join(mapDir, heightPagesDirectory);
   const heightConfig = buildHeightConfig(preset);
-  const bounds = getChunkBounds(preset);
-  const chunkKeys = [];
+  const bounds = getPageBounds(preset);
+  const pageKeys = [];
   let minHeight = Number.POSITIVE_INFINITY;
   let maxHeight = Number.NEGATIVE_INFINITY;
 
   await clearMapAuthoringAssets(mapDir);
-  await rm(chunksDir, { recursive: true, force: true });
+  await Promise.all([
+    rm(path.join(mapDir, "terrain", "chunks"), { recursive: true, force: true }),
+    rm(heightPagesDir, { recursive: true, force: true }),
+  ]);
 
-  for (let cz = bounds.minChunkZ; cz <= bounds.maxChunkZ; cz += 1) {
-    for (let cx = bounds.minChunkX; cx <= bounds.maxChunkX; cx += 1) {
-      const heights = createChunkHeights(cx, cz, preset, heightConfig);
+  for (let pz = bounds.minPageZ; pz <= bounds.maxPageZ; pz += 1) {
+    for (let px = bounds.minPageX; px <= bounds.maxPageX; px += 1) {
+      const heights = createHeightPage(px, pz, preset, heightConfig);
       for (const value of heights) {
         minHeight = Math.min(minHeight, value);
         maxHeight = Math.max(maxHeight, value);
       }
 
-      const relativeChunkPath = chunkPathFor(cx, cz);
-      const chunkFilePath = path.join(mapDir, relativeChunkPath);
-      await mkdir(path.dirname(chunkFilePath), { recursive: true });
-      await writeFile(chunkFilePath, Buffer.from(heights.buffer, heights.byteOffset, heights.byteLength));
+      const relativePagePath = heightPagePathFor(px, pz);
+      const pageFilePath = path.join(mapDir, relativePagePath);
+      await mkdir(path.dirname(pageFilePath), { recursive: true });
+      await writeFile(pageFilePath, Buffer.from(heights.buffer, heights.byteOffset, heights.byteLength));
 
-      chunkKeys.push(`${cx},${cz}`);
+      pageKeys.push(`${px},${pz}`);
     }
   }
+
+  const pageCountX = bounds.maxPageX - bounds.minPageX + 1;
+  const pageCountZ = bounds.maxPageZ - bounds.minPageZ + 1;
+  const worldSizeMeters = Math.max(pageCountX, pageCountZ) * pageSizeMeters;
 
   const mapData = {
     version: mapVersion,
     seed: preset.seed,
-    tileResolution,
-    chunkSizeMeters,
-    heightFormat,
-    chunksDirectory,
-    chunkKeys,
+    world: {
+      sizeMeters: worldSizeMeters,
+      pageSizeMeters,
+      originX: 0,
+      originZ: 0,
+    },
+    terrain: {
+      height: {
+        format: heightFormat,
+        pagesDirectory: heightPagesDirectory,
+        pageResolution: heightPageResolution,
+        pageKeys,
+      },
+    },
+    paint: {
+      materialSetPath: "paint/layers.json",
+      pageResolution: paintPageResolution,
+      pageFormat: "rgba8-splat-v1",
+      pagesDirectory: "paint/pages",
+      pageKeys: [],
+    },
+    vegetation: {
+      modelsPath: "vegetation/models.json",
+      cellSizeMeters: vegetationCellSizeMeters,
+      cellFormat: "instanced-f32le-v1",
+      cellsDirectory: "vegetation/cells",
+      cellKeys: [],
+    },
     metadata: {
       name: preset.name,
       created: now,
@@ -449,8 +481,8 @@ async function generateMap(preset) {
     mapPath,
     minHeight,
     maxHeight,
-    chunkCount: chunkKeys.length,
-    areaSquareKilometers: chunkKeys.length * chunkSizeMeters * chunkSizeMeters / 1_000_000,
+    pageCount: pageKeys.length,
+    areaSquareKilometers: pageKeys.length * pageSizeMeters * pageSizeMeters / 1_000_000,
   };
 }
 
@@ -489,7 +521,7 @@ async function main() {
   console.log(`Generated ${results.length} terrain map(s) for ${projectArg}`);
   for (const result of results) {
     console.log(`- ${result.id}: ${result.name}`);
-    console.log(`  Chunks: ${result.chunkCount}`);
+    console.log(`  Height pages: ${result.pageCount}`);
     console.log(`  Area: ${result.areaSquareKilometers.toFixed(2)} km^2`);
     console.log(`  Height range: ${result.minHeight.toFixed(2)}m .. ${result.maxHeight.toFixed(2)}m`);
     console.log(`  Map path: ${result.mapPath}`);

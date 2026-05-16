@@ -1,7 +1,7 @@
 // VegetationData: editable vegetation model and placement data.
 // VegetationData：可编辑植被模型与摆放数据。
 
-import { chunkKey, parseChunkKey } from "@project/MapData";
+import { pageKey, parsePageKey } from "@project/MapData";
 
 export const VEGETATION_DATA_VERSION = 2;
 export const VEGETATION_FILE_NAME = "vegetation.json";
@@ -183,7 +183,7 @@ export function createVegetationStoragePayload(
   const references: Record<string, VegetationChunkReference> = {};
   for (const key of Array.from(groupedInstances.keys()).sort(compareChunkKeys)) {
     const instances = groupedInstances.get(key) ?? [];
-    const { cx, cz } = parseChunkKey(key);
+    const { px: cx, pz: cz } = parsePageKey(key);
     const path = getVegetationChunkPath(cx, cz);
     const bytes = encodeVegetationChunkInstances(instances, modelIndexById);
     references[key] = {
@@ -406,7 +406,7 @@ function normalizeInstanceManifest(
 
   const chunks: Record<string, VegetationChunkReference> = {};
   for (const [key, reference] of Object.entries(value.chunks)) {
-    parseChunkKey(key);
+    parsePageKey(key);
     if (!isRecord(reference)) {
       throw new Error(`Vegetation chunk '${key}' must be an object`);
     }
@@ -447,7 +447,7 @@ function cloneVegetationModels(
 }
 
 function getVegetationChunkKey(x: number, z: number, chunkSizeMeters: number): string {
-  return chunkKey(Math.floor(x / chunkSizeMeters), Math.floor(z / chunkSizeMeters));
+  return pageKey(Math.floor(x / chunkSizeMeters), Math.floor(z / chunkSizeMeters));
 }
 
 function getVegetationChunkPath(cx: number, cz: number): string {
@@ -532,9 +532,9 @@ function createLoadedInstanceId(chunkKeyValue: string, index: number): string {
 }
 
 function compareChunkKeys(left: string, right: string): number {
-  const a = parseChunkKey(left);
-  const b = parseChunkKey(right);
-  return a.cz - b.cz || a.cx - b.cx;
+  const a = parsePageKey(left);
+  const b = parsePageKey(right);
+  return a.pz - b.pz || a.px - b.px;
 }
 
 function formatChunkCoordinate(value: number): string {

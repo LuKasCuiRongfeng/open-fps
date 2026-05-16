@@ -113,7 +113,7 @@ export function createTexturedArrayTerrainMaterial(
   const localU = positionLocal.x.div(chunkSize).add(0.5);
   const localV = positionLocal.z.div(chunkSize).add(0.5);
 
-  const tilePixels = float(64.0);
+  const tilePixels = float(cfg.gpuCompute.tileResolution);
   const halfPixel = float(0.5).div(tilePixels);
   const pixelRange = tilePixels.sub(1.0).div(tilePixels);
   const pixelU = halfPixel.add(localU.mul(pixelRange));
