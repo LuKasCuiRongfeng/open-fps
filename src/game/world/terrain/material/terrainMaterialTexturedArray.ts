@@ -62,6 +62,19 @@ export interface TerrainMaterialArrayParams {
   textureArrays?: TerrainTextureArrayResult | null;
 }
 
+/** Check whether a map has authored paint data that needs the heavier PBR material path. / 检查地图是否有需要较重 PBR 材质路径的已创作绘制数据。 */
+export function hasAuthoredTerrainTextureData(
+  textureArrays: TerrainTextureArrayResult | null | undefined,
+  splatMaps: readonly (Texture | null)[] | undefined,
+): boolean {
+  return Boolean(
+    textureArrays?.useTextures
+    && textureArrays.diffuseArray
+    && textureArrays.armArray
+    && splatMaps?.[0],
+  );
+}
+
 /**
  * Create terrain material with PBR texture arrays and splat map blending.
  * 创建使用 PBR 纹理数组和 splat map 混合的地形材质
@@ -87,8 +100,6 @@ export function createTexturedArrayTerrainMaterial(
   const tileOffsetU = uniform(params.tileUvOffset.x);
   const tileOffsetV = uniform(params.tileUvOffset.y);
   const tileScale = uniform(params.tileUvScale);
-  const chunkWorldX = uniform(params.chunkWorldX);
-  const chunkWorldZ = uniform(params.chunkWorldZ);
   const chunkSize = uniform(params.chunkSize);
 
   // Height and normal textures.
@@ -128,6 +139,23 @@ export function createTexturedArrayTerrainMaterial(
   const upVector = vec3(0.0, 1.0, 0.0);
   const terrainNormal = normalize(mix(rawNormal, upVector, normalSoftnessUniform));
 
+  const textureArrays = params.textureArrays;
+  const splatMaps = params.splatMaps ?? [];
+
+  if (!hasAuthoredTerrainTextureData(textureArrays, splatMaps)) {
+    // EN: Missing texture.json means no authored paint data; keep this path tiny because every streamed chunk builds it.
+    // 中文: 缺少 texture.json 表示没有已创作绘制数据；该路径会被每个流式 chunk 构建，因此必须保持很轻。
+    mat.colorNode = vec3(0.15, 0.42, 0.12);
+    mat.normalNode = transformNormalToView(terrainNormal);
+    mat.roughnessNode = float(1.0);
+    mat.metalnessNode = float(0.0);
+    return mat;
+  }
+
+  const authoredTextureArrays = textureArrays!;
+  const chunkWorldX = uniform(params.chunkWorldX);
+  const chunkWorldZ = uniform(params.chunkWorldZ);
+
   // World position for texture sampling.
   // 用于纹理采样的世界位置
   const worldX = chunkWorldX.add(positionLocal.x);
@@ -149,178 +177,158 @@ export function createTexturedArrayTerrainMaterial(
   const weightSum = add(add(weights.x, weights.y), weights.z);
   const triplanarWeights = weights.div(weightSum);
 
-  // Check if authored texture arrays are available; otherwise use the unpainted green material.
-  // 检查是否有已创作的纹理数组；否则使用未刷绿色材质。
-  const textureArrays = params.textureArrays;
-  const splatMaps = params.splatMaps ?? [];
-  const hasSplatMaps = splatMaps.length > 0 && splatMaps[0] !== null;
+  // ========================================================================
+  // Mode 1: PBR Texture Arrays + Multi-Splat Map Blending
+  // 模式1：PBR 纹理数组 + 多 Splat Map 混合
+  // ========================================================================
 
-  if (textureArrays?.useTextures && textureArrays.diffuseArray && hasSplatMaps) {
-    // ========================================================================
-    // Mode 1: PBR Texture Arrays + Multi-Splat Map Blending
-    // 模式1：PBR 纹理数组 + 多 Splat Map 混合
-    // ========================================================================
+  // Splat map UV calculation (same for all splat maps).
+  // Splat map UV 计算（所有 splat map 相同）
+  const worldSize = float(cfg.worldBounds.halfSizeMeters * 2);
+  const splatU = clamp(worldX.div(worldSize).add(0.5), 0.0, 1.0);
+  const splatV = clamp(worldZ.div(worldSize).add(0.5), 0.0, 1.0);
+  const splatUV = vec2(splatU, splatV);
 
-    // Splat map UV calculation (same for all splat maps).
-    // Splat map UV 计算（所有 splat map 相同）
-    const worldSize = float(cfg.worldBounds.halfSizeMeters * 2);
-    const splatU = clamp(worldX.div(worldSize).add(0.5), 0.0, 1.0);
-    const splatV = clamp(worldZ.div(worldSize).add(0.5), 0.0, 1.0);
-    const splatUV = vec2(splatU, splatV);
+  // Create texture nodes for arrays.
+  // 创建纹理数组节点
+  const diffuseArray = authoredTextureArrays.diffuseArray!;
+  const armArray = authoredTextureArrays.armArray!;
 
-    // Create texture nodes for arrays.
-    // 创建纹理数组节点
-    const diffuseArray = textureArrays.diffuseArray!;
-    const armArray = textureArrays.armArray!;
+  // Scale values for each layer.
+  // 每层的缩放值
+  const scales = authoredTextureArrays.scales;
+  const layerCount = authoredTextureArrays.layerCount;
+  const layerAssignments = authoredTextureArrays.layerAssignments;
 
-    // Scale values for each layer.
-    // 每层的缩放值
-    const scales = textureArrays.scales;
-    const layerCount = textureArrays.layerCount;
-    const layerAssignments = textureArrays.layerAssignments;
+  // Helper: triplanar sample from texture array at specific layer.
+  // 辅助函数：从纹理数组的特定层进行三平面采样
+  const triplanarSampleArray = (
+    texArrayData: typeof diffuseArray,
+    layerIndex: number,
+    scale: number,
+  ) => {
+    const s = float(scale);
+    const coord = worldPos.div(s);
+    const layer = int(layerIndex);
 
-    // Helper: triplanar sample from texture array at specific layer.
-    // 辅助函数：从纹理数组的特定层进行三平面采样
-    const triplanarSampleArray = (
-      texArrayData: typeof diffuseArray,
-      layerIndex: number,
-      scale: number,
-    ) => {
-      const s = float(scale);
-      const coord = worldPos.div(s);
-      const layer = int(layerIndex);
+    // Create texture nodes with UV passed to constructor, then depth for layer selection.
+    // 创建带 UV 的纹理节点，然后用 depth 选择层
+    const sYZ = texture(texArrayData, vec2(coord.y, coord.z)).depth(layer).xyz;
+    const sXZ = texture(texArrayData, vec2(coord.x, coord.z)).depth(layer).xyz;
+    const sXY = texture(texArrayData, vec2(coord.x, coord.y)).depth(layer).xyz;
 
-      // Create texture nodes with UV passed to constructor, then depth for layer selection.
-      // 创建带 UV 的纹理节点，然后用 depth 选择层
-      const sYZ = texture(texArrayData, vec2(coord.y, coord.z)).depth(layer).xyz;
-      const sXZ = texture(texArrayData, vec2(coord.x, coord.z)).depth(layer).xyz;
-      const sXY = texture(texArrayData, vec2(coord.x, coord.y)).depth(layer).xyz;
+    return sYZ.mul(triplanarWeights.x)
+      .add(sXZ.mul(triplanarWeights.y))
+      .add(sXY.mul(triplanarWeights.z));
+  };
 
-      return sYZ.mul(triplanarWeights.x)
-        .add(sXZ.mul(triplanarWeights.y))
-        .add(sXY.mul(triplanarWeights.z));
-    };
+  // Create splat map texture nodes for each available splat map.
+  // 为每个可用的 splat map 创建纹理节点
+  const splatTexNodes = splatMaps
+    .filter((t): t is Texture => t !== null)
+    .map((t) => texture(t));
 
-    // Create splat map texture nodes for each available splat map.
-    // 为每个可用的 splat map 创建纹理节点
-    const splatTexNodes = splatMaps
-      .filter((t): t is Texture => t !== null)
-      .map((t) => texture(t));
+  // Sample each splat map.
+  // 采样每个 splat map
+  const splatSamples = splatTexNodes.map((tex) => tex.sample(splatUV));
+  type LayerWeightNode = typeof splatSamples[number]["r"];
 
-    // Sample each splat map.
-    // 采样每个 splat map
-    const splatSamples = splatTexNodes.map((tex) => tex.sample(splatUV));
-    type LayerWeightNode = typeof splatSamples[number]["r"];
+  // Build layer contributions: weighted diffuse and ARM for each layer.
+  // 构建层贡献：每层的加权漫反射和 ARM
+  const layerContributions: Array<{
+    diffuse: ReturnType<typeof triplanarSampleArray>;
+    arm: ReturnType<typeof triplanarSampleArray>;
+    weight: LayerWeightNode;
+  }> = [];
 
-    // Build layer contributions: weighted diffuse and ARM for each layer.
-    // 构建层贡献：每层的加权漫反射和 ARM
-    const layerContributions: Array<{
-      diffuse: ReturnType<typeof triplanarSampleArray>;
-      arm: ReturnType<typeof triplanarSampleArray>;
-      weight: LayerWeightNode;
-    }> = [];
+  for (let i = 0; i < layerCount; i++) {
+    const assignment = layerAssignments[i];
+    if (!assignment) continue;
 
-    for (let i = 0; i < layerCount; i++) {
-      const assignment = layerAssignments[i];
-      if (!assignment) continue;
+    const { splatMapIndex, channel } = assignment;
 
-      const { splatMapIndex, channel } = assignment;
+    // Skip if splat map not available.
+    // 如果 splat map 不可用则跳过
+    if (splatMapIndex >= splatSamples.length) continue;
 
-      // Skip if splat map not available.
-      // 如果 splat map 不可用则跳过
-      if (splatMapIndex >= splatSamples.length) continue;
+    const splatSample = splatSamples[splatMapIndex];
 
-      const splatSample = splatSamples[splatMapIndex];
+    // Get weight from the appropriate channel (0=R, 1=G, 2=B, 3=A).
+    // 从适当的通道获取权重（0=R, 1=G, 2=B, 3=A）
+    const layerWeight = [splatSample.r, splatSample.g, splatSample.b, splatSample.a][channel];
 
-      // Get weight from the appropriate channel (0=R, 1=G, 2=B, 3=A).
-      // 从适当的通道获取权重（0=R, 1=G, 2=B, 3=A）
-      const layerWeight = [splatSample.r, splatSample.g, splatSample.b, splatSample.a][channel];
+    // Sample textures for this layer.
+    // 为此层采样纹理
+    const layerDiffuse = triplanarSampleArray(diffuseArray, i, scales[i] ?? 4);
+    const layerARM = triplanarSampleArray(armArray, i, scales[i] ?? 4);
 
-      // Sample textures for this layer.
-      // 为此层采样纹理
-      const layerDiffuse = triplanarSampleArray(diffuseArray, i, scales[i] ?? 4);
-      const layerARM = triplanarSampleArray(armArray, i, scales[i] ?? 4);
-
-      layerContributions.push({
-        diffuse: layerDiffuse.mul(layerWeight),
-        arm: layerARM.mul(layerWeight),
-        weight: layerWeight,
-      });
-    }
-
-    // If no layers have splat map data, fallback to first layer only.
-    // 如果没有层有 splat map 数据，回退到仅第一层
-    if (layerContributions.length === 0) {
-      layerContributions.push({
-        diffuse: triplanarSampleArray(diffuseArray, 0, scales[0] ?? 4),
-        arm: triplanarSampleArray(armArray, 0, scales[0] ?? 4),
-        weight: float(1),
-      });
-    }
-
-    // Reduce all layer contributions into final accumulated values.
-    // 将所有层贡献 reduce 为最终累积值
-    // Start with the first contribution.
-    // 从第一个贡献开始
-    const first = layerContributions[0];
-    let accDiffuse = first.diffuse;
-    let accARM = first.arm;
-    let totalWeight = first.weight;
-
-    // Add remaining contributions.
-    // 添加剩余贡献
-    for (let i = 1; i < layerContributions.length; i++) {
-      const c = layerContributions[i];
-      accDiffuse = accDiffuse.add(c.diffuse);
-      accARM = accARM.add(c.arm);
-      totalWeight = totalWeight.add(c.weight);
-    }
-
-    // Normalize by total weight (fallback to first layer if no weight).
-    // 按总权重归一化（如无权重则回退到第一层）
-    const safeWeight = totalWeight.max(0.001);
-    const finalDiffuse = accDiffuse.div(safeWeight);
-    const finalARM = accARM.div(safeWeight);
-
-    // Extract AO, Roughness, Metallic.
-    // 提取 AO、Roughness、Metallic
-    const finalAO = finalARM.x;
-    const finalRoughness = finalARM.y;
-    // Terrain layers are treated as dielectrics even when source packs contain noisy metallic data.
-    // 地形层按非金属介质处理，即使源纹理包里带有噪声金属度数据
-    const finalMetallic = float(0.0);
-
-    // Feed AO through the material AO channel instead of darkening the albedo.
-    // This keeps direct lighting from being incorrectly attenuated by baked AO.
-    // 通过材质 AO 通道使用 AO，而不是直接压暗底色。
-    // 这样可避免烘焙 AO 错误地衰减直射光。
-    const aoIntensity = float(0.5);
-    const finalAOFactor = mix(float(1.0), finalAO, aoIntensity);
-
-    mat.colorNode = finalDiffuse;
-    mat.aoNode = finalAOFactor;
-    // Do not apply tangent-space layer normal maps here.
-    // The current triplanar terrain path does not build a correct per-axis tangent basis,
-    // and treating sampled normal maps as plain vectors causes angle-dependent darkening.
-    // 这里不应用切线空间层法线贴图。
-    // 当前三平面地形路径没有建立正确的逐轴切线基，
-    // 把采样法线贴图当普通向量混合会导致随角度变化的错误变暗。
-    mat.normalNode = transformNormalToView(terrainNormal);
-    mat.roughnessNode = finalRoughness;
-    mat.metalnessNode = finalMetallic;
-
-  } else {
-    // ========================================================================
-    // Mode 2: Unpainted map fallback (no texture.json)
-    // 模式2：未刷地图后备显示（无 texture.json）
-    // ========================================================================
-    // EN: Missing texture.json means the map has no authored paint data, so every surface renders as the same green.
-    // 中文: 缺少 texture.json 表示地图没有已创作的绘制数据，因此所有表面都渲染为同一种绿色。
-    mat.colorNode = vec3(0.15, 0.42, 0.12);
-    mat.normalNode = transformNormalToView(terrainNormal);
-    mat.roughnessNode = float(1.0);
-    mat.metalnessNode = float(0.0);
+    layerContributions.push({
+      diffuse: layerDiffuse.mul(layerWeight),
+      arm: layerARM.mul(layerWeight),
+      weight: layerWeight,
+    });
   }
+
+  // If no layers have splat map data, fallback to first layer only.
+  // 如果没有层有 splat map 数据，回退到仅第一层
+  if (layerContributions.length === 0) {
+    layerContributions.push({
+      diffuse: triplanarSampleArray(diffuseArray, 0, scales[0] ?? 4),
+      arm: triplanarSampleArray(armArray, 0, scales[0] ?? 4),
+      weight: float(1),
+    });
+  }
+
+  // Reduce all layer contributions into final accumulated values.
+  // 将所有层贡献 reduce 为最终累积值
+  // Start with the first contribution.
+  // 从第一个贡献开始
+  const first = layerContributions[0];
+  let accDiffuse = first.diffuse;
+  let accARM = first.arm;
+  let totalWeight = first.weight;
+
+  // Add remaining contributions.
+  // 添加剩余贡献
+  for (let i = 1; i < layerContributions.length; i++) {
+    const c = layerContributions[i];
+    accDiffuse = accDiffuse.add(c.diffuse);
+    accARM = accARM.add(c.arm);
+    totalWeight = totalWeight.add(c.weight);
+  }
+
+  // Normalize by total weight (fallback to first layer if no weight).
+  // 按总权重归一化（如无权重则回退到第一层）
+  const safeWeight = totalWeight.max(0.001);
+  const finalDiffuse = accDiffuse.div(safeWeight);
+  const finalARM = accARM.div(safeWeight);
+
+  // Extract AO, Roughness, Metallic.
+  // 提取 AO、Roughness、Metallic
+  const finalAO = finalARM.x;
+  const finalRoughness = finalARM.y;
+  // Terrain layers are treated as dielectrics even when source packs contain noisy metallic data.
+  // 地形层按非金属介质处理，即使源纹理包里带有噪声金属度数据
+  const finalMetallic = float(0.0);
+
+  // Feed AO through the material AO channel instead of darkening the albedo.
+  // This keeps direct lighting from being incorrectly attenuated by baked AO.
+  // 通过材质 AO 通道使用 AO，而不是直接压暗底色。
+  // 这样可避免烘焙 AO 错误地衰减直射光。
+  const aoIntensity = float(0.5);
+  const finalAOFactor = mix(float(1.0), finalAO, aoIntensity);
+
+  mat.colorNode = finalDiffuse;
+  mat.aoNode = finalAOFactor;
+  // Do not apply tangent-space layer normal maps here.
+  // The current triplanar terrain path does not build a correct per-axis tangent basis,
+  // and treating sampled normal maps as plain vectors causes angle-dependent darkening.
+  // 这里不应用切线空间层法线贴图。
+  // 当前三平面地形路径没有建立正确的逐轴切线基，
+  // 把采样法线贴图当普通向量混合会导致随角度变化的错误变暗。
+  mat.normalNode = transformNormalToView(terrainNormal);
+  mat.roughnessNode = finalRoughness;
+  mat.metalnessNode = finalMetallic;
 
   return mat;
 }

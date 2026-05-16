@@ -29,17 +29,14 @@ const editorTerrainConfig: TerrainConfig = {
   streaming: {
     ...terrainConfig.streaming,
     viewDistanceChunks: 8,
-    hysteresisChunks: 3,
-    maxChunkOpsPerFrame: 2,
+    hysteresisChunks: 2,
+    maxChunkOpsPerFrame: 3,
   },
   lod: {
     ...terrainConfig.lod,
-    // EN: Editor orbit views expose T-junction cracks from mixed chunk LODs; keep all editor chunks at the same edge tessellation.
-    // 中文: 编辑器轨道视角会暴露混合 chunk LOD 产生的 T-junction 裂缝；编辑器中保持所有 chunk 使用相同边界细分。
-    levels: terrainConfig.lod.levels.map((level) => ({
-      ...level,
-      segmentsPerSide: terrainConfig.lod.levels[0].segmentsPerSide,
-    })),
+    // EN: Use one fixed editor tessellation level to avoid T-junction cracks without paying 64-segment cost for every visible chunk.
+    // 中文: 编辑器使用单一固定细分级别，避免 T-junction 裂缝，同时不让每个可见 chunk 都承担 64 段成本。
+    levels: [{ segmentsPerSide: terrainConfig.lod.levels[1].segmentsPerSide, maxDistanceMeters: Infinity }],
   },
 };
 
@@ -61,8 +58,9 @@ export class EditorApp extends GameApp implements EditorAppSession {
       terrainConfig: editorTerrainConfig,
     });
 
-    // EN: Orbit editing often views vegetation from far above; keep it visible and skip tree shadow passes for responsive painting.
-    // 中文: 轨道编辑常从远处俯视植被；放宽可见距离并跳过树木阴影 pass，保证刷植被时响应更稳。
+    // EN: Keep editor vegetation independent from terrain streaming so every loaded chunk does not force a full vegetation visibility pass.
+    // 中文: 让编辑器植被不依赖地形流式状态，避免每加载一个 chunk 都触发完整植被可见性刷新。
+    this.vegetationScene.setTerrainAvailability(null);
     this.vegetationScene.configureVisibility(vegetationRenderConfig.editor);
     this.brushIndicator.attach(this.scene);
     this.terrainEditor.setMode("edit");

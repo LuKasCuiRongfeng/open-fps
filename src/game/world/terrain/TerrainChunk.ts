@@ -285,6 +285,8 @@ export class TerrainChunk {
     heightTexture: StorageTexture,
     normalTexture: StorageTexture,
     tileInfo: { uOffset: number; vOffset: number; uvScale: number },
+    textureArrays: TerrainTextureArrayResult | null = null,
+    splatMapTextures: (Texture | null)[] = [],
   ) {
     this.cx = cx;
     this.cz = cz;
@@ -315,6 +317,8 @@ export class TerrainChunk {
       chunkWorldX: this.worldCenterX,
       chunkWorldZ: this.worldCenterZ,
       chunkSize,
+      textureArrays,
+      splatMaps: splatMapTextures,
     };
 
     const material = createTexturedArrayTerrainMaterial(config, materialParams);
@@ -363,9 +367,7 @@ export class TerrainChunk {
     const chunkSize = this.config.streaming.chunkSizeMeters;
     const sharedGeo = getOrCreateSharedGeometry(chunkSize, segments, SKIRT_DEPTH_METERS);
 
-    // Clone geometry to have per-chunk bounding sphere.
-    // 克隆几何体以拥有每 chunk 的包围球
-    const geo = sharedGeo.clone();
+    const geo = sharedGeo;
 
     // Calculate expanded bounding sphere for GPU height displacement.
     // 计算扩展的包围球以考虑 GPU 高度位移
@@ -432,13 +434,9 @@ export class TerrainChunk {
       }
     }
 
-    // Switch to per-chunk geometry with correct bounding sphere for new LOD.
-    // 切换到带正确包围球的每 chunk 几何体用于新 LOD
+    // Switch to shared LOD geometry with correct bounding sphere.
+    // 切换到带正确包围球的共享 LOD 几何体。
     if (newLodIndex !== this.currentLodIndex) {
-      // Dispose old per-chunk geometry.
-      // 释放旧的每 chunk 几何体
-      this.mesh.geometry.dispose();
-
       this.currentLodIndex = newLodIndex;
       const segments = this.config.lod.levels[newLodIndex].segmentsPerSide;
       this.mesh.geometry = this.createChunkGeometry(segments);
@@ -533,9 +531,8 @@ export class TerrainChunk {
   dispose(): void {
     this.floatingOrigin.offRebase(this.handleOriginRebase);
 
-    // Dispose per-chunk geometry (it's a clone).
-    // 释放每 chunk 几何体（它是克隆的）
-    this.mesh.geometry.dispose();
+    // Shared geometries are disposed by disposeSharedGeometries().
+    // 共享几何体由 disposeSharedGeometries() 统一释放。
 
     // Dispose material.
     // 释放材质

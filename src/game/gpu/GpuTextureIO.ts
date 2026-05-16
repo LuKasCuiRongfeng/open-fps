@@ -246,9 +246,13 @@ export class GpuTextureIO {
       );
     }
 
-    device.queue.submit([commandEncoder.finish()]);
-    await device.queue.onSubmittedWorkDone();
+    if (stagingBuffers.length === 0) return;
 
+    device.queue.submit([commandEncoder.finish()]);
+
+    // EN: Await GPU completion here as streaming backpressure; otherwise camera movement can enqueue copy/compute work faster than the GPU drains it.
+    // 中文: 此处等待 GPU 完成作为流式加载背压；否则相机移动时会比 GPU 消化速度更快地堆积复制/计算任务。
+    await device.queue.onSubmittedWorkDone();
     for (const buf of stagingBuffers) {
       buf.destroy();
     }

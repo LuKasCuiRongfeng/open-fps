@@ -462,6 +462,10 @@ export class VegetationScene {
     this.visibilityDirty = true;
   }
 
+  hasTerrainAvailability(): boolean {
+    return this.terrainAvailability !== null;
+  }
+
   invalidateVisibility(): void {
     this.visibilityDirty = true;
   }

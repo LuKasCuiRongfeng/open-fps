@@ -559,6 +559,10 @@ export class GameApp implements RuntimeAppSession {
   }
 
   private syncVegetationTerrainVisibility(): void {
+    if (!this.vegetationScene.hasTerrainAvailability()) {
+      return;
+    }
+
     const revision = this.resources.runtime.terrain.getStreamingRevision();
     if (revision === this.lastVegetationTerrainRevision) {
       return;

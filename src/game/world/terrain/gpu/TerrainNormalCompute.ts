@@ -15,6 +15,8 @@ import {
   normalize,
   vec3,
   mod,
+  uniform,
+  int,
 } from "three/tsl";
 import {
   FloatType,
@@ -26,6 +28,9 @@ import {
 } from "three/webgpu";
 import type { ComputeNode } from "three/webgpu";
 import type { TerrainConfig } from "../terrain";
+import type { TileAtlasAllocator } from "@game/gpu";
+
+type NormalChunkCoord = { cx: number; cz: number };
 
 /**
  * GPU compute pipeline for terrain normal generation.
@@ -58,6 +63,12 @@ export class TerrainNormalCompute {
   // 法线生成的计算节点
   private computeNode: ComputeNode | null = null;
 
+  // Compute node for regenerating one uploaded tile instead of the full atlas.
+  // 用于只重算一个已上传 tile 的计算节点，而不是整张图集。
+  private tileComputeNode: ComputeNode | null = null;
+  private readonly tilePixelOffsetX = uniform(0);
+  private readonly tilePixelOffsetY = uniform(0);
+
   constructor(config: TerrainConfig) {
     this.config = config;
     this.tileResolution = config.gpuCompute.tileResolution;
@@ -84,13 +95,15 @@ export class TerrainNormalCompute {
     this.normalTexture.magFilter = LinearFilter;
     this.normalTexture.minFilter = LinearFilter;
 
-    // Build compute shader.
+    // Build compute shaders.
     // 构建计算着色器
     this.buildComputeShader();
+    this.buildTileComputeShader();
 
     // Initial compute pass (will be re-run after map chunk uploads).
     // 初始计算通道（地图 chunk 上传后会重新运行）
     await renderer.computeAsync(this.computeNode!);
+    await renderer.computeAsync(this.tileComputeNode!);
   }
 
   private buildComputeShader(): void {
@@ -193,6 +206,63 @@ export class TerrainNormalCompute {
     this.computeNode = computeFn().compute(atlasRes * atlasRes);
   }
 
+  private buildTileComputeShader(): void {
+    const cfg = this.config;
+    const atlasRes = this.atlasResolution;
+    const tileRes = this.tileResolution;
+    const pixelWorldStep = float(cfg.streaming.chunkSizeMeters / (tileRes - 1));
+    const heightTex = texture(this.heightTexture!);
+
+    const sampleHeight = Fn(([u, v]: [Node<"float">, Node<"float">]) => {
+      const clampedU = clamp(u, float(0), float(1));
+      const clampedV = clamp(v, float(0), float(1));
+      return heightTex.sample(vec2(clampedU, clampedV)).r;
+    });
+
+    const computeFn = Fn(() => {
+      const linearIndex = uint(instanceIndex);
+      const localX = mod(linearIndex, uint(tileRes));
+      const localY = linearIndex.div(uint(tileRes));
+      const tileStartPixelX = uint(int(this.tilePixelOffsetX));
+      const tileStartPixelY = uint(int(this.tilePixelOffsetY));
+      const pixelX = tileStartPixelX.add(localX);
+      const pixelY = tileStartPixelY.add(localY);
+
+      const u = float(pixelX).add(0.5).div(float(atlasRes));
+      const v = float(pixelY).add(0.5).div(float(atlasRes));
+      const texelStep = float(1).div(float(atlasRes));
+
+      const tileStartU = float(tileStartPixelX).add(0.5).div(float(atlasRes));
+      const tileStartV = float(tileStartPixelY).add(0.5).div(float(atlasRes));
+      const tileEndU = float(tileStartPixelX.add(uint(tileRes - 1))).add(0.5).div(float(atlasRes));
+      const tileEndV = float(tileStartPixelY.add(uint(tileRes - 1))).add(0.5).div(float(atlasRes));
+
+      const uL = u.sub(texelStep).max(tileStartU);
+      const uR = u.add(texelStep).min(tileEndU);
+      const vD = v.sub(texelStep).max(tileStartV);
+      const vU = v.add(texelStep).min(tileEndV);
+
+      const hL = sampleHeight(uL, v);
+      const hR = sampleHeight(uR, v);
+      const hD = sampleHeight(u, vD);
+      const hU = sampleHeight(u, vU);
+
+      const isLeftEdge = float(localX).lessThan(0.5);
+      const isRightEdge = float(localX).greaterThan(float(tileRes - 1).sub(0.5));
+      const isBottomEdge = float(localY).lessThan(0.5);
+      const isTopEdge = float(localY).greaterThan(float(tileRes - 1).sub(0.5));
+      const dxPixels = isLeftEdge.or(isRightEdge).select(float(1), float(2));
+      const dzPixels = isBottomEdge.or(isTopEdge).select(float(1), float(2));
+      const dhdx = hR.sub(hL).div(dxPixels.mul(pixelWorldStep));
+      const dhdz = hU.sub(hD).div(dzPixels.mul(pixelWorldStep));
+      const normal = normalize(vec3(dhdx.negate(), float(1), dhdz.negate()));
+
+      textureStore(this.normalTexture!, uvec2(pixelX.toUint(), pixelY.toUint()), vec4(normal, float(1))).toWriteOnly();
+    });
+
+    this.tileComputeNode = computeFn().compute(tileRes * tileRes);
+  }
+
   /**
    * Regenerate normals after height changes.
    * 高度变化后重新生成法线
@@ -203,9 +273,37 @@ export class TerrainNormalCompute {
     }
   }
 
+  /**
+   * Regenerate normals only for uploaded chunk tiles.
+   * 只为已上传的 chunk tile 重新生成法线。
+   */
+  async regenerateChunks(
+    chunks: NormalChunkCoord[],
+    allocator: TileAtlasAllocator,
+    renderer: WebGPURenderer,
+  ): Promise<void> {
+    if (!this.tileComputeNode || chunks.length === 0) return;
+
+    const visited = new Set<string>();
+    for (const { cx, cz } of chunks) {
+      const key = `${cx},${cz}`;
+      if (visited.has(key)) continue;
+      visited.add(key);
+
+      const tileIndex = allocator.getTileIndex(cx, cz);
+      if (tileIndex === undefined) continue;
+
+      const { tileX, tileZ } = allocator.tileIndexToCoords(tileIndex);
+      this.tilePixelOffsetX.value = tileX * this.tileResolution;
+      this.tilePixelOffsetY.value = tileZ * this.tileResolution;
+      await renderer.computeAsync(this.tileComputeNode);
+    }
+  }
+
   dispose(): void {
     this.normalTexture = null;
     this.heightTexture = null;
     this.computeNode = null;
+    this.tileComputeNode = null;
   }
 }

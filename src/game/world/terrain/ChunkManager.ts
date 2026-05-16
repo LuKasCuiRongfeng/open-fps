@@ -6,6 +6,7 @@ import type { TerrainConfig } from "./terrain";
 import type { TerrainTextureArrayResult } from "./TerrainTextureArrays";
 import { FloatingOrigin } from "../common/FloatingOrigin";
 import { TerrainChunk, disposeSharedGeometries } from "./TerrainChunk";
+import { hasAuthoredTerrainTextureData } from "./material/terrainMaterialTexturedArray";
 import { TerrainHeightCompute, TerrainNormalCompute, TerrainBrushCompute } from "./gpu";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
 import type { BrushStroke } from "./brushTypes";
@@ -67,6 +68,10 @@ export class ChunkManager {
   // GPU 初始化状态
   private gpuReady = false;
 
+  // EN: Queue processing does GPU uploads; keep only one async batch active to avoid duplicated work and normal recompute storms.
+  // 中文: 队列处理会执行 GPU 上传；只允许一个异步批次运行，避免重复工作和法线重算风暴。
+  private queueProcessing = false;
+
   // Active chunk set revision for render systems that depend on terrain availability.
   // 活跃 chunk 集合版本号，供依赖地形可用性的渲染系统使用。
   private streamingRevision = 0;
@@ -79,6 +84,7 @@ export class ChunkManager {
   // 地形材质的纹理数组数据（来自 texture.json）
   private textureArrays: TerrainTextureArrayResult | null = null;
   private splatMapTextures: (Texture | null)[] = [];
+  private materialUsesAuthoredTextures = false;
 
   constructor(config: TerrainConfig, scene: Scene, floatingOrigin: FloatingOrigin) {
     this.config = config;
@@ -167,35 +173,10 @@ export class ChunkManager {
     if (!this.gpuReady || !this.renderer) return;
 
     const { cx: centerCx, cz: centerCz } = this.worldToChunk(worldX, worldZ);
-    const viewDist = this.config.streaming.viewDistanceChunks;
-
-    // Collect all chunks to load (based on view distance).
-    // 收集所有要加载的 chunk（基于视距）
-    const toLoad: ChunkCoord[] = [];
-    for (let dz = -viewDist; dz <= viewDist; dz++) {
-      for (let dx = -viewDist; dx <= viewDist; dx++) {
-        const cx = centerCx + dx;
-        const cz = centerCz + dz;
-        const key = this.chunkKey(cx, cz);
-        if (this.canUseChunk(cx, cz) && !this.chunks.has(key)) {
-          toLoad.push({ cx, cz });
-        }
-      }
-    }
-
-    // Upload and create all map-backed chunks.
-    // 上传并创建所有由地图支撑的 chunk
-    for (const coord of toLoad) {
-      await this.uploadAndCreateChunk(coord.cx, coord.cz);
-    }
-
-    // Regenerate all normals after uploads.
-    // 上传后重新生成所有法线
-    await this.normalCompute.regenerate(this.renderer);
-    this.normalPending.clear();
-
     this.lastPlayerCx = centerCx;
     this.lastPlayerCz = centerCz;
+    this.rebuildQueues(centerCx, centerCz);
+    await this.processQueuesIfIdle();
   }
 
   /**
@@ -214,21 +195,17 @@ export class ChunkManager {
 
     const { cx: playerCx, cz: playerCz } = this.worldToChunk(playerWorldX, playerWorldZ);
 
-    // Check if player moved to a different chunk (with hysteresis).
-    // 检查玩家是否移动到不同的 chunk（带滞后）
-    const hysteresis = this.config.streaming.hysteresisChunks;
-    const dx = Math.abs(playerCx - this.lastPlayerCx);
-    const dz = Math.abs(playerCz - this.lastPlayerCz);
-
-    if (dx > hysteresis || dz > hysteresis) {
+    // EN: Queue loads as soon as the camera enters a new chunk; hysteresis only delays unloads.
+    // 中文: 相机进入新 chunk 就立即排入加载队列；滞后只用于延迟卸载。
+    if (playerCx !== this.lastPlayerCx || playerCz !== this.lastPlayerCz) {
       this.lastPlayerCx = playerCx;
       this.lastPlayerCz = playerCz;
       this.rebuildQueues(playerCx, playerCz);
     }
 
-    // Process load/unload operations (limited per frame).
-    // 处理加载/卸载操作（每帧有限）
-    await this.processQueues();
+    // Process load/unload operations in one async batch at a time.
+    // 每次只运行一个异步批次来处理加载/卸载操作。
+    await this.processQueuesIfIdle();
 
     // Update LOD for all chunks based on player position.
     // 根据玩家位置更新所有 chunk 的 LOD
@@ -262,55 +239,112 @@ export class ChunkManager {
     this.unloadQueue.push(...buildUnloadQueue(playerCx, playerCz, maxDist, this.chunks));
   }
 
+  private async processQueuesIfIdle(): Promise<void> {
+    if (this.queueProcessing) return;
+
+    this.queueProcessing = true;
+    try {
+      await this.processQueues();
+    } finally {
+      this.queueProcessing = false;
+    }
+  }
+
   private async processQueues(): Promise<void> {
     const maxOps = this.config.streaming.maxChunkOpsPerFrame;
-    let ops = 0;
 
-    // Process unloads first (free memory).
-    // 先处理卸载（释放内存）
+    // EN: Load visible chunks first so editor panning fills newly exposed terrain promptly.
+    // 中文: 优先加载可见 chunk，让编辑器平移时新暴露的地形能更快补上。
+    const loadBatch: ChunkCoord[] = [];
+    const loadBudget = this.loadQueue.length > 0 ? Math.max(1, Math.ceil(maxOps * 0.75)) : 0;
+    while (this.loadQueue.length > 0 && loadBatch.length < loadBudget) {
+      const coord = this.loadQueue.shift()!;
+      loadBatch.push(coord);
+    }
+    await this.uploadAndCreateChunks(loadBatch);
+
+    let ops = loadBatch.length;
     while (this.unloadQueue.length > 0 && ops < maxOps) {
       const key = this.unloadQueue.pop()!;
       this.unloadChunk(key);
       ops++;
     }
 
-    // Process loads.
-    // 处理加载
-    while (this.loadQueue.length > 0 && ops < maxOps) {
-      const coord = this.loadQueue.shift()!;
-      await this.uploadAndCreateChunk(coord.cx, coord.cz);
-      ops++;
-    }
-
-    // Regenerate normals if any chunks were uploaded.
-    // 如果有 chunk 被上传，重新生成法线
+    // EN: Normal generation is throttled separately so loading a ring of chunks does not submit a compute burst in one frame.
+    // 中文: 法线生成单独限流，避免加载一圈 chunk 时在同一帧提交一波计算任务。
     if (this.normalPending.size > 0 && this.renderer) {
-      await this.normalCompute.regenerate(this.renderer);
-      this.normalPending.clear();
+      const normalBudget = loadBatch.length > 0 ? 1 : Math.max(1, maxOps);
+      const normalBatch = Array.from(this.normalPending.values()).slice(0, normalBudget);
+      await this.normalCompute.regenerateChunks(
+        normalBatch,
+        this.heightCompute.allocator,
+        this.renderer,
+      );
+      for (const { cx, cz } of normalBatch) {
+        this.normalPending.delete(this.chunkKey(cx, cz));
+      }
     }
   }
 
-  private async uploadAndCreateChunk(cx: number, cz: number): Promise<void> {
+  private async uploadAndCreateChunks(coords: ChunkCoord[]): Promise<void> {
     if (!this.renderer) return;
-    if (!this.canUseChunk(cx, cz)) return;
+    if (coords.length === 0) return;
 
+    const accepted: ChunkCoord[] = [];
+    const batchData: Array<{ cx: number; cz: number; heightData: Float32Array }> = [];
+    const expectedHeightCount = this.config.gpuCompute.tileResolution * this.config.gpuCompute.tileResolution;
+    let availableTiles = this.heightCompute.allocator.freeCount;
+
+    for (const { cx, cz } of coords) {
+      if (!this.canUseChunk(cx, cz)) continue;
+
+      const key = this.chunkKey(cx, cz);
+      if (this.chunks.has(key)) continue;
+
+      const cachedHeightData = TerrainHeightSampler.getChunkHeightData(cx, cz);
+      if (!cachedHeightData) {
+        // EN: Missing map height data is an asset error; runtime must not synthesize replacement terrain.
+        // 中文: 缺少地图高度数据是资源错误；运行时不能合成替代地形。
+        console.warn(`[ChunkManager] Missing saved height data for map chunk (${cx}, ${cz})`);
+        continue;
+      }
+
+      if (cachedHeightData.length !== expectedHeightCount) {
+        console.warn(`[ChunkManager] Invalid height data size for map chunk (${cx}, ${cz})`);
+        continue;
+      }
+
+      if (!this.heightCompute.allocator.hasTile(cx, cz)) {
+        if (availableTiles <= 0) {
+          console.warn(`[ChunkManager] No terrain height atlas tile available for chunk (${cx}, ${cz})`);
+          continue;
+        }
+        availableTiles--;
+      }
+
+      accepted.push({ cx, cz });
+      batchData.push({ cx, cz, heightData: cachedHeightData });
+      this.normalPending.set(key, { cx, cz });
+    }
+
+    if (batchData.length === 0) return;
+
+    await this.heightCompute.uploadChunksBatch(batchData, this.renderer);
+
+    // EN: Brush compute keeps a readable copy of the height atlas; map chunk uploads invalidate it.
+    // 中文: 画刷计算保留高度图集的可读副本；地图 chunk 上传会使其失效。
+    this.brushCompute.markNeedsSync();
+
+    for (const { cx, cz } of accepted) {
+      this.createChunkMesh(cx, cz);
+    }
+  }
+
+  private createChunkMesh(cx: number, cz: number): void {
     const key = this.chunkKey(cx, cz);
     if (this.chunks.has(key)) return;
-
-    // Check if we have cached height data from previous edits.
-    // 检查是否有之前编辑的缓存高度数据
-    const cachedHeightData = TerrainHeightSampler.getChunkHeightData(cx, cz);
-
-    if (cachedHeightData) {
-      await this.heightCompute.uploadChunkHeight(cx, cz, cachedHeightData, this.renderer);
-      // EN: Brush compute keeps a readable copy of the height atlas; map chunk uploads invalidate it.
-      // 中文: 画刷计算保留高度图集的可读副本；地图 chunk 上传会使其失效。
-      this.brushCompute.markNeedsSync();
-      this.normalPending.set(key, { cx, cz });
-    } else {
-      // EN: Missing map height data is an asset error; runtime must not synthesize replacement terrain.
-      // 中文: 缺少地图高度数据是资源错误；运行时不能合成替代地形。
-      console.warn(`[ChunkManager] Missing saved height data for map chunk (${cx}, ${cz})`);
+    if (!this.heightCompute.allocator.hasTile(cx, cz)) {
+      this.normalPending.delete(key);
       return;
     }
 
@@ -328,13 +362,9 @@ export class ChunkManager {
       this.heightCompute.heightTexture!,
       this.normalCompute.normalTexture!,
       tileInfo,
+      this.materialUsesAuthoredTextures ? this.textureArrays : null,
+      this.materialUsesAuthoredTextures ? this.splatMapTextures : [],
     );
-
-    // If we have texture array data loaded, apply it to the new chunk.
-    // 如果已加载纹理数组数据，将其应用到新 chunk
-    if (this.textureArrays || this.splatMapTextures.length > 0) {
-      chunk.rebuildMaterial(this.textureArrays, this.splatMapTextures);
-    }
 
     this.chunks.set(key, chunk);
     this.scene.add(chunk.mesh);
@@ -600,8 +630,14 @@ export class ChunkManager {
     textureArrays: TerrainTextureArrayResult | null,
     splatMapTextures: (Texture | null)[],
   ): void {
+    const wasUsingAuthoredTextures = this.materialUsesAuthoredTextures;
     this.textureArrays = textureArrays;
     this.splatMapTextures = splatMapTextures;
+    this.materialUsesAuthoredTextures = hasAuthoredTerrainTextureData(textureArrays, splatMapTextures);
+
+    if (!wasUsingAuthoredTextures && !this.materialUsesAuthoredTextures) {
+      return;
+    }
 
     // Recreate all existing chunk materials with new texture arrays.
     // 使用新纹理数组重新创建所有现有 chunk 的材质
