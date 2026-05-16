@@ -214,9 +214,10 @@ export class TerrainEditor {
     canvasWidth: number,
     canvasHeight: number,
     camera: PerspectiveCamera,
-    heightAt: (x: number, z: number) => number
+    heightAt: (x: number, z: number) => number,
+    hasHeightAt?: TerrainHeightAvailability
   ): void {
-    this._brush.updateTarget(mouseX, mouseY, canvasWidth, canvasHeight, camera, heightAt);
+    this._brush.updateTarget(mouseX, mouseY, canvasWidth, canvasHeight, camera, heightAt, hasHeightAt);
   }
 
   startBrush(): void {

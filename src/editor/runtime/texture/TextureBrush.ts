@@ -180,7 +180,8 @@ export class TextureBrush {
     canvasWidth: number,
     canvasHeight: number,
     camera: PerspectiveCamera,
-    heightAt: (x: number, z: number) => number
+    heightAt: (x: number, z: number) => number,
+    hasHeightAt?: (x: number, z: number) => boolean
   ): void {
     const result = this.brushRaycaster.cast(
       mouseX,
@@ -188,7 +189,8 @@ export class TextureBrush {
       canvasWidth,
       canvasHeight,
       camera,
-      heightAt
+      heightAt,
+      hasHeightAt,
     );
 
     this._targetValid = result.valid;

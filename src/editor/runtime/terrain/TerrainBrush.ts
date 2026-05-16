@@ -94,9 +94,10 @@ export class TerrainBrush {
     canvasWidth: number,
     canvasHeight: number,
     camera: PerspectiveCamera,
-    heightAt: (x: number, z: number) => number
+    heightAt: (x: number, z: number) => number,
+    hasHeightAt?: (x: number, z: number) => boolean
   ): void {
-    const result = this.terrainRaycaster.cast(mouseX, mouseY, canvasWidth, canvasHeight, camera, heightAt);
+    const result = this.terrainRaycaster.cast(mouseX, mouseY, canvasWidth, canvasHeight, camera, heightAt, hasHeightAt);
 
     this._targetValid = result.valid;
     if (result.valid) {

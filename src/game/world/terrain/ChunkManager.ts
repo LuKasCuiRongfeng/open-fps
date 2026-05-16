@@ -71,6 +71,10 @@ export class ChunkManager {
   // 活跃 chunk 集合版本号，供依赖地形可用性的渲染系统使用。
   private streamingRevision = 0;
 
+  // EN: Null means procedural streaming is unbounded; a set means only listed project chunks may stream or edit.
+  // 中文: null 表示程序流式加载不设边界；集合表示只允许列出的项目 chunk 被加载或编辑。
+  private allowedChunkKeys: ReadonlySet<string> | null = null;
+
   // Texture array data for terrain materials (from texture.json).
   // 地形材质的纹理数组数据（来自 texture.json）
   private textureArrays: TerrainTextureArrayResult | null = null;
@@ -139,6 +143,24 @@ export class ChunkManager {
     return `${cx},${cz}`;
   }
 
+  setAllowedChunkKeys(keys: ReadonlySet<string> | null): void {
+    this.allowedChunkKeys = keys;
+    this.loadQueue.length = 0;
+    this.bakePending.clear();
+
+    if (!keys) return;
+
+    for (const key of Array.from(this.chunks.keys())) {
+      if (!keys.has(key)) {
+        this.unloadChunk(key);
+      }
+    }
+  }
+
+  private canUseChunk(cx: number, cz: number): boolean {
+    return !this.allowedChunkKeys || this.allowedChunkKeys.has(this.chunkKey(cx, cz));
+  }
+
   /**
    * Force load chunks around a position (for spawn).
    * 强制加载某位置周围的 chunk（用于出生点）
@@ -157,7 +179,7 @@ export class ChunkManager {
         const cx = centerCx + dx;
         const cz = centerCz + dz;
         const key = this.chunkKey(cx, cz);
-        if (!this.chunks.has(key)) {
+        if (this.canUseChunk(cx, cz) && !this.chunks.has(key)) {
           toLoad.push({ cx, cz });
         }
       }
@@ -234,7 +256,7 @@ export class ChunkManager {
         (key) => this.chunks.has(key),
         (key) => this.bakePending.has(key),
         (cx, cz) => this.chunkKey(cx, cz),
-      ),
+      ).filter(({ cx, cz }) => this.canUseChunk(cx, cz)),
     );
 
     this.unloadQueue.length = 0;
@@ -271,6 +293,7 @@ export class ChunkManager {
 
   private async bakeAndCreateChunk(cx: number, cz: number): Promise<void> {
     if (!this.renderer) return;
+    if (!this.canUseChunk(cx, cz)) return;
 
     const key = this.chunkKey(cx, cz);
     if (this.chunks.has(key)) return;
@@ -290,6 +313,11 @@ export class ChunkManager {
       // Upload cached height data to GPU.
       // 上传缓存的高度数据到 GPU
       await this.heightCompute.uploadChunkHeight(cx, cz, cachedHeightData, this.renderer);
+    } else if (this.allowedChunkKeys) {
+      // EN: In project-editing mode, a declared chunk without loaded height data is an error, not procedural terrain.
+      // 中文: 在项目编辑模式下，已声明但未加载高度数据的 chunk 是错误，不能退回程序地形。
+      console.warn(`[ChunkManager] Missing saved height data for restricted chunk (${cx}, ${cz})`);
+      return;
     } else {
       // No cached data: generate procedural terrain on GPU.
       // 无缓存数据：在 GPU 上生成程序地形
@@ -407,6 +435,8 @@ export class ChunkManager {
     // 从合并的包围盒收集受影响的 chunk（单次遍历）
     for (let cx = bounds.minCx; cx <= bounds.maxCx; cx++) {
       for (let cz = bounds.minCz; cz <= bounds.maxCz; cz++) {
+        if (!this.canUseChunk(cx, cz)) continue;
+
         const key = this.chunkKey(cx, cz);
         if (this.chunks.has(key)) {
           affectedChunks.add(key);

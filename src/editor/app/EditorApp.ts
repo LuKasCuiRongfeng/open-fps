@@ -132,6 +132,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
       canvas.clientHeight,
       this.camera,
       this.resources.runtime.terrain.heightAt,
+      this.resources.runtime.terrain.hasHeightAt,
     );
   }
 
@@ -144,6 +145,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
       canvas.clientHeight,
       this.camera,
       this.resources.runtime.terrain.heightAt,
+      this.resources.runtime.terrain.hasHeightAt,
     );
   }
 
@@ -267,6 +269,11 @@ export class EditorApp extends GameApp implements EditorAppSession {
   protected override async afterLoadMapData(mapData: MapData): Promise<void> {
     this.terrainEditor.loadMapData(mapData);
     this.frameEditorCameraForMap(mapData);
+  }
+
+  override async loadMapData(mapData: MapData): Promise<void> {
+    await this.resources.runtime.terrain.loadMapData(mapData, { restrictToMapChunks: true });
+    await this.afterLoadMapData(mapData);
   }
 
   protected override runSimulationStep(): void {

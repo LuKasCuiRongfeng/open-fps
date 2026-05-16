@@ -58,6 +58,10 @@ export class TerrainSurfaceRaycaster {
       const terrainY = heightAt(origin.x, origin.z);
       prevAboveGround = origin.y > terrainY;
       if (!prevAboveGround) {
+        if (isValidAt && !isValidAt(origin.x, origin.z)) {
+          return { valid: false, x: 0, y: 0, z: 0 };
+        }
+
         return { valid: true, x: origin.x, y: terrainY, z: origin.z };
       }
     }

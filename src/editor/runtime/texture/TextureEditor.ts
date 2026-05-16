@@ -247,9 +247,10 @@ export class TextureEditor {
     canvasWidth: number,
     canvasHeight: number,
     camera: PerspectiveCamera,
-    heightAt: (x: number, z: number) => number
+    heightAt: (x: number, z: number) => number,
+    hasHeightAt?: (x: number, z: number) => boolean
   ): void {
-    this.brush.updateTarget(mouseX, mouseY, canvasWidth, canvasHeight, camera, heightAt);
+    this.brush.updateTarget(mouseX, mouseY, canvasWidth, canvasHeight, camera, heightAt, hasHeightAt);
   }
 
   invalidateBrushTarget(): void {

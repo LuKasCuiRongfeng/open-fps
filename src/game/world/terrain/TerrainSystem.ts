@@ -27,13 +27,17 @@ export type TerrainSystemResource = {
   // Map save/load API.
   // 地图保存/加载 API
   exportCurrentMapData: () => MapData;
-  loadMapData: (mapData: MapData) => Promise<void>;
+  loadMapData: (mapData: MapData, options?: LoadMapDataOptions) => Promise<void>;
   markMapDataSaved: () => void;
   resetToOriginal: () => Promise<void>;
   // Texture array data for PBR terrain materials.
   // PBR 地形材质的纹理数组数据
   setTextureData: (textureArrays: TerrainTextureArrayResult | null, splatMapTextures: (Texture | null)[]) => void;
   dispose: () => void;
+};
+
+export type LoadMapDataOptions = {
+  restrictToMapChunks?: boolean;
 };
 
 /**
@@ -76,6 +80,7 @@ export function createTerrainSystem(
   // Store original map data for reset functionality.
   // 存储原始地图数据用于重置功能
   let originalMapData: MapData | null = null;
+  let restrictedMapChunkKeys: ReadonlySet<string> | null = null;
 
   // Initialize height sampler with config.
   // 使用配置初始化高度采样器
@@ -119,6 +124,11 @@ export function createTerrainSystem(
     const chunkSize = config.streaming.chunkSizeMeters;
     const cx = Math.floor(xMeters / chunkSize);
     const cz = Math.floor(zMeters / chunkSize);
+    const key = `${cx},${cz}`;
+    if (restrictedMapChunkKeys && !restrictedMapChunkKeys.has(key)) {
+      return false;
+    }
+
     return TerrainHeightSampler.hasChunkData(cx, cz);
   };
 
@@ -172,7 +182,16 @@ export function createTerrainSystem(
    */
   const applyBrushStrokes = async (strokes: BrushStroke[]): Promise<void> => {
     if (!chunkManager) return;
-    await chunkManager.applyBrushStrokes(strokes);
+    const editableStrokes = restrictedMapChunkKeys
+      ? strokes.filter((stroke) => {
+          const chunkSize = config.streaming.chunkSizeMeters;
+          const cx = Math.floor(stroke.worldX / chunkSize);
+          const cz = Math.floor(stroke.worldZ / chunkSize);
+          return restrictedMapChunkKeys!.has(`${cx},${cz}`);
+        })
+      : strokes;
+
+    await chunkManager.applyBrushStrokes(editableStrokes);
   };
 
   /**
@@ -180,18 +199,18 @@ export function createTerrainSystem(
    * 导出当前地形为 MapData（用于保存）
    */
   const exportCurrentMapData = (): MapData => {
-    const dirtyChunkKeys = TerrainHeightSampler.getDirtyChunkKeys();
+    const originalChunkKeys = originalMapData ? new Set(Object.keys(originalMapData.chunks)) : null;
+    const dirtyChunkKeys = originalChunkKeys
+      ? TerrainHeightSampler.getDirtyChunkKeys().filter((key) => originalChunkKeys.has(key))
+      : TerrainHeightSampler.getDirtyChunkKeys();
     const dirtyChunkKeySet = new Set(dirtyChunkKeys);
 
     if (originalMapData && hasChunks(originalMapData)) {
       const mapData = createMapDataShell(originalMapData);
-      const exportChunkKeys = new Set([
-        ...Object.keys(originalMapData.chunks),
-        ...dirtyChunkKeys,
-      ]);
+      const exportChunkKeys = new Set(Object.keys(originalMapData.chunks));
 
-      // EN: Streamed procedural chunks are cache entries, not project data; only original chunks and edited chunks belong in saves.
-      // 中文: 流式加载的程序 chunk 只是缓存，不是项目数据；保存时只纳入原始 chunk 和被编辑过的 chunk。
+      // EN: Existing project maps may only save chunks already declared by their sparse manifest; map expansion must be explicit.
+      // 中文: 已有项目地图只能保存稀疏清单已声明的 chunk；扩展地图必须走显式流程。
       for (const key of exportChunkKeys) {
         const { cx, cz } = parseChunkKey(key);
         const originalChunk = getChunkData(originalMapData, cx, cz);
@@ -236,7 +255,7 @@ export function createTerrainSystem(
    * Load terrain from MapData.
    * 从 MapData 加载地形
    */
-  const loadMapData = async (mapData: MapData): Promise<void> => {
+  const loadMapData = async (mapData: MapData, options: LoadMapDataOptions = {}): Promise<void> => {
     if (!chunkManager) return;
 
     // EN: Loading a project map replaces the terrain cache so stale procedural chunks cannot leak into later saves.
@@ -262,6 +281,10 @@ export function createTerrainSystem(
     }
 
     TerrainHeightSampler.clearDirtyChunks();
+    restrictedMapChunkKeys = options.restrictToMapChunks
+      ? new Set(Object.keys(mapData.chunks))
+      : null;
+    chunkManager.setAllowedChunkKeys(restrictedMapChunkKeys);
 
     // Store original map data for reset.
     // 存储原始地图数据用于重置
@@ -286,10 +309,11 @@ export function createTerrainSystem(
     // 清除所有缓存的高度数据
     TerrainHeightSampler.clearCache();
     modifiedChunks.clear();
+    const shouldRestrictToMapChunks = restrictedMapChunkKeys !== null;
 
     // Reload original data.
     // 重新加载原始数据
-    await loadMapData(originalMapData);
+    await loadMapData(originalMapData, { restrictToMapChunks: shouldRestrictToMapChunks });
   };
 
   /**
@@ -322,6 +346,7 @@ export function createTerrainSystem(
     TerrainHeightSampler.clearCache();
     modifiedChunks.clear();
     originalMapData = null;
+    restrictedMapChunkKeys = null;
   };
 
   return {

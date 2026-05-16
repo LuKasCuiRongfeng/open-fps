@@ -46,9 +46,10 @@ export class BrushRaycaster {
     canvasWidth: number,
     canvasHeight: number,
     camera: PerspectiveCamera,
-    heightAt: (x: number, z: number) => number
+    heightAt: (x: number, z: number) => number,
+    isValidAt?: (x: number, z: number) => boolean
   ): BrushRaycastResult {
-    const result = this.terrainRaycaster.cast(mouseX, mouseY, canvasWidth, canvasHeight, camera, heightAt);
+    const result = this.terrainRaycaster.cast(mouseX, mouseY, canvasWidth, canvasHeight, camera, heightAt, isValidAt);
     return { valid: result.valid, x: result.x, z: result.z };
   }
 }

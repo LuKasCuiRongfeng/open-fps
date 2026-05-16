@@ -431,14 +431,9 @@ async function createPartialSaveManifest(
     }
   }
 
-  // EN: Partial saves may add edited chunks, but must not add unedited procedural cache chunks to the manifest.
-  // 中文: 部分保存可以加入被编辑的 chunk，但不能把未编辑的程序缓存 chunk 加进清单。
-  const nextChunkKeys = new Set(nextManifest.chunkKeys);
-  for (const key of dirtyChunkKeys) {
-    if (nextChunkKeys.has(key)) {
-      chunkKeys.add(key);
-    }
-  }
+  // EN: Partial saves preserve the existing sparse index; creating or expanding map chunks must be an explicit operation.
+  // 中文: 部分保存保持现有稀疏索引；创建或扩展地图 chunk 必须走显式操作。
+  void dirtyChunkKeys;
 
   return {
     ...nextManifest,
