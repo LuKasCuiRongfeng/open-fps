@@ -103,7 +103,9 @@ export function useGameApp({
 
             if (bundledProject) {
               await app.loadTerrainTexturesFromMapDirectory(
+                bundledProject.projectBaseUrl,
                 bundledProject.mapDirectoryUrl,
+                bundledProject.map,
                 bundledProject.textureDefinition,
               );
               if (disposed) return;

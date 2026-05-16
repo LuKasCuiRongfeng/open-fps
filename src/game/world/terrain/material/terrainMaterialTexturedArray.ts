@@ -172,8 +172,8 @@ export function createControlledTexturedArrayTerrainMaterial(
   const splatMaps = params.splatMaps ?? [];
 
   if (!hasAuthoredTerrainTextureData(textureArrays, splatMaps)) {
-    // EN: Missing texture.json means no authored paint data; keep this path tiny because every streamed page builds it.
-    // 中文: 缺少 texture.json 表示没有已创作绘制数据；该路径会被每个流式 page 构建，因此必须保持很轻。
+    // EN: Missing paint/layers.json means no authored paint data; keep this path tiny because every streamed page builds it.
+    // 中文: 缺少 paint/layers.json 表示没有已创作绘制数据；该路径会被每个流式 page 构建，因此必须保持很轻。
     mat.colorNode = vec3(0.15, 0.42, 0.12);
     mat.normalNode = transformNormalToView(terrainNormal);
     mat.roughnessNode = float(1.0);

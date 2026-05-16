@@ -169,7 +169,7 @@ export default function EditorView() {
 				{error && (
 					<div className="pointer-events-none absolute inset-0 p-3">
 						<div className="overlay-panel pointer-events-auto max-w-xl rounded-md border text-sm shadow-panel backdrop-blur-sm">
-							<div className="border-b border-stroke-subtle px-3 py-2 text-xs font-semibold text-content-primary">WebGPU Init Failed</div>
+							<div className="border-b border-stroke-subtle px-3 py-2 text-xs font-semibold text-content-primary">Editor Startup Failed</div>
 							<div className="px-3 py-2 text-xs leading-relaxed text-content-secondary">{error}</div>
 						</div>
 					</div>

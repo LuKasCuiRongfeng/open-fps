@@ -1,191 +1,116 @@
-// TextureStorage: Load and save texture definitions and splat maps.
-// TextureStorage：加载和保存纹理定义和 splat map
+// TextureStorage: v5 paint layer manifest and raw RGBA paint page storage.
+// TextureStorage：v5 绘制层清单与原始 RGBA paint page 存储。
 
+import { base64ToUint8Array } from "@/lib/base64";
 import { getPlatform } from "@/platform";
 import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
 import {
-  type TextureDefinition,
-  type SplatMapData,
-  createDefaultSplatMap,
-  getSplatMapFilename,
-} from "@game/world/terrain/TextureData";
+  MAP_PAINT_MATERIAL_SET_PATH,
+  decodePaintPageBase64,
+  encodePaintPageBase64,
+  getPaintPagePathForKey,
+  pageKey,
+  type MapData,
+} from "@project/MapData";
 import {
-  base64ToUint8Array,
-  uint8ArrayToBase64,
-} from "./storageUtils";
+  createDefaultSplatMap,
+  type SplatMapData,
+  type TextureDefinition,
+} from "@game/world/terrain/TextureData";
 
 const platform = getPlatform();
 
-/**
- * Texture storage manager for loading/saving texture.json and splatmap files.
- * 纹理存储管理器，用于加载/保存 texture.json 和 splatmap 文件
- *
- * Supports multiple splat maps: splatmap.png, splatmap_1.png, splatmap_2.png, etc.
- * 支持多个 splat map：splatmap.png、splatmap_1.png、splatmap_2.png 等
- *
- * Uses native Tauri PNG read/write to bypass browser's premultiplied alpha issue.
- * 使用原生 Tauri PNG 读写来绕过浏览器的预乘 alpha 问题
- */
+export function getGlobalPaintPageKey(splatMapIndex: number): string {
+  return pageKey(splatMapIndex, 0);
+}
+
+export function getGlobalPaintPageKeys(splatMapCount: number): string[] {
+  return Array.from({ length: splatMapCount }, (_, index) => getGlobalPaintPageKey(index));
+}
+
 export class TextureStorage {
-  /**
-   * Load texture definition from project folder.
-  * Returns null if texture.json doesn't exist (render unpainted green terrain).
-   * 从项目文件夹加载纹理定义
-  * 如果 texture.json 不存在则返回 null（渲染未刷绿色地形）
-   */
   static async loadTextureDefinition(mapDirectory: string): Promise<TextureDefinition | null> {
-    const jsonPath = `${mapDirectory}/texture.json`;
+    const jsonPath = `${mapDirectory}/${MAP_PAINT_MATERIAL_SET_PATH}`;
 
     try {
       const content = await platform.files.readText(jsonPath);
       return JSON.parse(content) as TextureDefinition;
     } catch (error) {
       if (isMissingFileSystemResourceError(error)) {
-        console.warn(`[TextureStorage] Texture definition not found: ${jsonPath}`, error);
         return null;
       }
 
       console.error(
-        `[TextureStorage] Failed to load texture definition: ${jsonPath}: ${formatUnknownError(error)}`,
+        `[TextureStorage] Failed to load paint material set: ${jsonPath}: ${formatUnknownError(error)}`,
         error,
       );
       throw error;
     }
   }
 
-  /**
-   * Save texture definition to project folder.
-   * 保存纹理定义到项目文件夹
-   */
-  static async saveTextureDefinition(
-    mapDirectory: string,
-    definition: TextureDefinition,
-  ): Promise<void> {
-    const jsonPath = `${mapDirectory}/texture.json`;
-    const content = JSON.stringify(definition, null, 2);
-    await platform.files.writeText(jsonPath, content);
+  static async saveTextureDefinition(mapDirectory: string, definition: TextureDefinition): Promise<void> {
+    const jsonPath = `${mapDirectory}/${MAP_PAINT_MATERIAL_SET_PATH}`;
+    await platform.files.writeText(jsonPath, `${JSON.stringify(definition, null, 2)}\n`);
   }
 
-  /**
-   * Load splat map from project folder using native PNG decoder.
-   * 使用原生 PNG 解码器从项目文件夹加载 splat map
-   *
-   * Uses Tauri backend to read PNG, bypassing browser's premultiplied alpha issue.
-   * 使用 Tauri 后端读取 PNG，绕过浏览器的预乘 alpha 问题
-   *
-   * @param splatMapIndex Which splat map to load (0 = splatmap.png, 1 = splatmap_1.png, etc.)
-   */
-  static async loadSplatMap(
+  static async loadPaintPage(
     mapDirectory: string,
-    splatMapIndex: number = 0,
+    mapData: MapData,
+    splatMapIndex: number,
   ): Promise<SplatMapData | null> {
-    const filename = getSplatMapFilename(splatMapIndex);
-    const pngPath = `${mapDirectory}/${filename}`;
+    const key = getGlobalPaintPageKey(splatMapIndex);
+    const path = `${mapDirectory}/${getPaintPagePathForKey(key)}`;
 
     try {
-      // Use native Tauri PNG decoder to get raw RGBA pixels.
-      // 使用原生 Tauri PNG 解码器获取原始 RGBA 像素
-      const { base64Pixels, width } = await platform.files.readPngRgba(pngPath);
-
-      const pixels = base64ToUint8Array(base64Pixels);
-
-      // Migrate old format: if ALL pixels have A=255, convert to A=0.
-      // This handles splatmaps saved with the old code that set A=255 as placeholder.
-      // 迁移旧格式：如果所有像素的 A=255，转换为 A=0
-      // 这处理旧代码保存的 splatmap（使用 A=255 作为占位符）
-      let allAlpha255 = true;
-      for (let i = 3; i < pixels.length; i += 4) {
-        if (pixels[i] !== 255) {
-          allAlpha255 = false;
-          break;
-        }
-      }
-      if (allAlpha255 && splatMapIndex === 0) {
-        for (let i = 3; i < pixels.length; i += 4) {
-          pixels[i] = 0;
-        }
-      }
-
+      const base64 = await platform.files.readBinaryBase64(path);
       return {
-        resolution: width,
-        pixels,
+        resolution: mapData.paint.pageResolution,
+        pixels: decodePaintPageBase64(base64, mapData.paint.pageResolution),
         splatMapIndex,
       };
     } catch (error) {
       if (isMissingFileSystemResourceError(error)) {
-        console.warn(`[TextureStorage] Splat map not found: ${pngPath}`, error);
         return null;
       }
 
-      console.error(
-        `[TextureStorage] Failed to load splat map: ${pngPath}: ${formatUnknownError(error)}`,
-        error,
-      );
+      console.error(`[TextureStorage] Failed to load paint page: ${path}: ${formatUnknownError(error)}`, error);
       throw error;
     }
   }
 
-  /**
-   * Save splat map to project folder as PNG using native encoder.
-   * 使用原生编码器保存 splat map 到项目文件夹为 PNG
-   *
-   * Uses Tauri backend to write PNG, bypassing browser's premultiplied alpha issue.
-   * This preserves all 4 RGBA channels correctly (including A channel for 4th texture).
-   * 使用 Tauri 后端写入 PNG，绕过浏览器的预乘 alpha 问题
-   * 这样可以正确保存所有 4 个 RGBA 通道（包括第 4 种纹理的 A 通道）
-   *
-   * @param splatMapIndex Which splat map to save (0 = splatmap.png, 1 = splatmap_1.png, etc.)
-   */
-  static async saveSplatMap(
+  static async savePaintPage(
     mapDirectory: string,
+    mapData: MapData,
     splatMap: SplatMapData,
-    splatMapIndex: number = 0,
+    splatMapIndex: number,
   ): Promise<void> {
-    const { resolution, pixels } = splatMap;
-    const filename = getSplatMapFilename(splatMapIndex);
-    const pngPath = `${mapDirectory}/${filename}`;
-
-    // Use native Tauri PNG encoder to save raw RGBA pixels.
-    // 使用原生 Tauri PNG 编码器保存原始 RGBA 像素
-    const base64Pixels = uint8ArrayToBase64(pixels);
-
-    await platform.files.writePngRgba(pngPath, {
-      base64Pixels,
-      width: resolution,
-      height: resolution,
-    });
+    const key = getGlobalPaintPageKey(splatMapIndex);
+    const path = `${mapDirectory}/${getPaintPagePathForKey(key)}`;
+    await platform.files.writeBinaryBase64(
+      path,
+      encodePaintPageBase64(splatMap.pixels, mapData.paint.pageResolution),
+    );
   }
 
-  /**
-   * Create default splat map for a project (if texture.json exists but splatmap.png doesn't).
-   * 为项目创建默认 splat map（如果 texture.json 存在但 splatmap.png 不存在）
-   *
-   * @param splatMapIndex Which splat map to ensure (0 = splatmap.png, 1 = splatmap_1.png, etc.)
-   */
-  static async ensureSplatMap(
+  static async ensurePaintPage(
     mapDirectory: string,
-    splatMapIndex: number = 0,
-    resolution: number = 1024,
+    mapData: MapData,
+    splatMapIndex: number,
   ): Promise<void> {
-    const filename = getSplatMapFilename(splatMapIndex);
-    const pngPath = `${mapDirectory}/${filename}`;
+    const key = getGlobalPaintPageKey(splatMapIndex);
+    const path = `${mapDirectory}/${getPaintPagePathForKey(key)}`;
 
     try {
-      // Check if file exists by trying to read it.
-      // 尝试读取文件来检查是否存在
-      await platform.files.readPngRgba(pngPath);
+      const base64 = await platform.files.readBinaryBase64(path);
+      base64ToUint8Array(base64);
     } catch (error) {
       if (!isMissingFileSystemResourceError(error)) {
-        console.error(
-          `[TextureStorage] Failed to verify splat map: ${pngPath}: ${formatUnknownError(error)}`,
-          error,
-        );
+        console.error(`[TextureStorage] Failed to verify paint page: ${path}: ${formatUnknownError(error)}`, error);
         throw error;
       }
 
-      console.warn(`[TextureStorage] Splat map missing, creating default: ${pngPath}`, error);
-      const defaultSplatMap = createDefaultSplatMap(resolution, splatMapIndex);
-      await this.saveSplatMap(mapDirectory, defaultSplatMap, splatMapIndex);
+      const defaultSplatMap = createDefaultSplatMap(mapData.paint.pageResolution, splatMapIndex);
+      await this.savePaintPage(mapDirectory, mapData, defaultSplatMap, splatMapIndex);
     }
   }
 }

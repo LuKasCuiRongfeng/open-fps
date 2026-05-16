@@ -18,17 +18,13 @@ export const LAYERS_PER_SPLAT_MAP = 4;
  */
 export const MAX_SPLAT_MAPS = 4;
 
-export function getSplatMapFilename(index: number): string {
-  return index === 0 ? "splatmap.png" : `splatmap_${index}.png`;
-}
-
 /**
  * PBR texture layer definition.
  * Each layer can have multiple maps for physically-based rendering.
  * PBR 纹理层定义
  * 每层可包含多张贴图用于物理渲染
  *
- * Example texture.json with multi-splat support:
+ * Example paint/layers.json with multi-splat support:
  * {
  *   "rocky": {
  *     "diffuse": "assets/textures/rocky_diffuse.jpg",
@@ -85,10 +81,10 @@ export interface TextureLayerDef {
 }
 
 /**
- * texture.json structure.
+ * paint/layers.json structure.
  * Keys = texture layer names, values = PBR map definitions.
  * If file doesn't exist → render unpainted green terrain, editing disabled.
- * texture.json 结构
+ * paint/layers.json 结构
  * 键 = 纹理层名称，值 = PBR 贴图定义
  * 如果文件不存在 → 渲染未刷绿色地形，禁用编辑
  */
@@ -122,7 +118,7 @@ export interface SplatMapData {
  * 层分配信息 - 一个层使用哪个 splat map 和通道
  */
 export interface LayerAssignment {
-  /** Layer name from texture.json / 来自 texture.json 的层名称 */
+  /** Layer name from paint/layers.json / 来自 paint/layers.json 的层名称 */
   layerName: string;
   /** Global layer index in texture array / 纹理数组中的全局层索引 */
   layerIndex: number;

@@ -99,10 +99,10 @@ export async function loadBundledGameProject(
   const activeMap = createProjectMapRecord(activeMapId, manifest.metadata);
   const [textureJson, vegetationJson] = await Promise.all([
     manifest.paint.pageKeys.length > 0
-      ? fetchOptionalText(resolveProjectUrl(mapDirectoryUrl, "texture.json"))
+      ? fetchRequiredText(resolveProjectUrl(mapDirectoryUrl, manifest.paint.materialSetPath), "paint material set")
       : Promise.resolve(null),
     manifest.vegetation.cellKeys.length > 0
-      ? fetchOptionalText(resolveProjectUrl(mapDirectoryUrl, "vegetation.json"))
+      ? fetchRequiredText(resolveProjectUrl(mapDirectoryUrl, manifest.vegetation.modelsPath), "vegetation models")
       : Promise.resolve(null),
   ]);
 
@@ -152,15 +152,15 @@ async function loadBundledVegetationData(
   vegetationJson: string,
 ): Promise<VegetationMapData> {
   const manifest = deserializeVegetationManifest(vegetationJson);
-  const chunkEntries = await Promise.all(
-    Object.entries(manifest.instances.chunks).map(async ([key, reference]) => {
+  const cellEntries = await Promise.all(
+    Object.entries(manifest.instances.cells).map(async ([key, reference]) => {
       const bytes = await fetchRequiredBytes(
         resolveProjectUrl(mapDirectoryUrl, reference.path),
-        `vegetation chunk ${key}`,
+        `vegetation cell ${key}`,
       );
       return [key, bytes] as const;
     }),
   );
 
-  return createVegetationDataFromManifest(manifest, Object.fromEntries(chunkEntries));
+  return createVegetationDataFromManifest(manifest, Object.fromEntries(cellEntries));
 }

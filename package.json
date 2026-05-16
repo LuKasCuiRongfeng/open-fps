@@ -13,8 +13,7 @@
     "desktop": "node scripts/run-tauri-target.mjs",
     "web": "node scripts/run-web-target.mjs",
     "version:sync": "node scripts/sync-version-from-tag.mjs",
-    "gen:terrain": "node scripts/generate-terrain-map.mjs",
-    "gen:splatmaps": "node scripts/generate-default-splatmaps.mjs"
+    "gen:terrain": "node scripts/generate-terrain-map.mjs"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.6",

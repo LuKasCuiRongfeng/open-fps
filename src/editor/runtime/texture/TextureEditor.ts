@@ -6,10 +6,12 @@ import { SplatMapSet } from "@game/world/terrain/gpu/SplatMapSet";
 import {
   type TextureDefinition,
   type SplatMapData,
+  createDefaultSplatMap,
   getSplatMapCount,
 } from "@game/world/terrain/TextureData";
-import { TextureStorage } from "./TextureStorage";
+import { TextureStorage, getGlobalPaintPageKeys } from "./TextureStorage";
 import { TextureBrush, type TextureBrushSettings } from "./TextureBrush";
+import { type MapData } from "@project/MapData";
 
 /**
  * TextureEditor: coordinates texture painting on terrain splat maps.
@@ -84,10 +86,10 @@ export class TextureEditor {
    * Load texture definition and splat map from project.
    * 从项目加载纹理定义和 splat map
    */
-  async loadFromMapDirectory(mapDirectory: string): Promise<void> {
+  async loadFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void> {
     this._textureDefinition = await TextureStorage.loadTextureDefinition(mapDirectory);
 
-    if (this._textureDefinition && this.splatMapSet && this.renderer) {
+    if (this._textureDefinition && this.splatMapSet && this.renderer && mapData) {
       this._editingEnabled = true;
       this.brush.setTextureDefinition(this._textureDefinition);
 
@@ -96,19 +98,15 @@ export class TextureEditor {
       const splatMapCount = getSplatMapCount(this._textureDefinition);
       await this.splatMapSet.resize(this.renderer, splatMapCount);
 
-      // Load all splat maps.
-      // 加载所有 splat map
       for (let i = 0; i < splatMapCount; i++) {
-        await TextureStorage.ensureSplatMap(mapDirectory, i);
-        const splatMapData = await TextureStorage.loadSplatMap(mapDirectory, i);
-        if (splatMapData) {
-          await this.splatMapSet.loadFromPixels(
-            this.renderer,
-            splatMapData.pixels,
-            splatMapData.resolution,
-            i,
-          );
-        }
+        const splatMapData = await TextureStorage.loadPaintPage(mapDirectory, mapData, i)
+          ?? createDefaultSplatMap(this.splatMapSet.getResolution(), i);
+        await this.splatMapSet.loadFromPixels(
+          this.renderer,
+          splatMapData.pixels,
+          splatMapData.resolution,
+          i,
+        );
       }
     } else {
       this._editingEnabled = false;
@@ -122,7 +120,7 @@ export class TextureEditor {
    * Save texture definition and splat map to project.
    * 将纹理定义和 splat map 保存到项目
    */
-  async saveToMapDirectory(mapDirectory: string): Promise<void> {
+  async saveToMapDirectory(mapDirectory: string, mapData: MapData): Promise<void> {
     if (!this._editingEnabled || !this._textureDefinition) {
       console.warn("[TextureEditor] Cannot save: texture editing not enabled");
       return;
@@ -132,14 +130,16 @@ export class TextureEditor {
 
     if (this.splatMapSet && this.renderer) {
       const splatMapCount = this.splatMapSet.getCount();
+      mapData.paint.pageResolution = this.splatMapSet.getResolution();
+      mapData.paint.pageKeys = getGlobalPaintPageKeys(splatMapCount);
       for (let i = 0; i < splatMapCount; i++) {
         const pixels = await this.splatMapSet.readToPixels(this.renderer, i);
         const splatMapData: SplatMapData = {
-          resolution: this.splatMapSet.getResolution(),
+          resolution: mapData.paint.pageResolution,
           pixels,
           splatMapIndex: i,
         };
-        await TextureStorage.saveSplatMap(mapDirectory, splatMapData, i);
+        await TextureStorage.savePaintPage(mapDirectory, mapData, splatMapData, i);
       }
     }
 
@@ -206,6 +206,16 @@ export class TextureEditor {
    */
   getSplatMapCount(): number {
     return this.splatMapSet?.getCount() ?? 1;
+  }
+
+  applyToMapData(mapData: MapData): void {
+    if (!this._editingEnabled || !this._textureDefinition || !this.splatMapSet) {
+      mapData.paint.pageKeys = [];
+      return;
+    }
+
+    mapData.paint.pageResolution = this.splatMapSet.getResolution();
+    mapData.paint.pageKeys = getGlobalPaintPageKeys(this.splatMapSet.getCount());
   }
 
   // --- Dirty State / 脏状态 ---

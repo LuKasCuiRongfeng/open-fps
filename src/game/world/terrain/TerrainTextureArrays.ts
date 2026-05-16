@@ -99,8 +99,8 @@ export class TerrainTextureArrays {
     definition: TextureDefinition | null,
   ): Promise<TerrainTextureArrayResult> {
     if (!definition) {
-      // EN: No texture.json means no authored paint data; terrain material renders unpainted green.
-      // 中文: 没有 texture.json 表示没有已创作的绘制数据；地形材质会渲染为未刷绿色。
+      // EN: No paint/layers.json means no authored paint data; terrain material renders unpainted green.
+      // 中文: 没有 paint/layers.json 表示没有已创作的绘制数据；地形材质会渲染为未刷绿色。
       this.result = {
         useTextures: false,
         diffuseArray: null,

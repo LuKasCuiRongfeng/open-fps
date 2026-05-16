@@ -10,6 +10,7 @@ import { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
 import { TerrainTextureArrays } from "@game/world/terrain/TerrainTextureArrays";
 import { getHeightPageKeys, parsePageKey, type MapData } from "@project/MapData";
+import type { VegetationMapData } from "@game/world/vegetation";
 import {
   applyEditorSettingsPatch,
   cloneEditorSettings,
@@ -168,24 +169,31 @@ export class EditorApp extends GameApp implements EditorAppSession {
     );
   }
 
-  async loadTexturesFromMapDirectory(mapDirectory: string): Promise<void> {
-    await this.textureEditor.loadFromMapDirectory(mapDirectory);
+  async loadTexturesFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void> {
+    await this.textureEditor.loadFromMapDirectory(mapDirectory, mapData);
     const textureDef = this.textureEditor.textureDefinition;
-    const textureArrays = await TerrainTextureArrays.getInstance().loadFromDefinition(mapDirectory, textureDef);
+    const projectDirectory = this.getProjectDirectoryFromMapDirectory(mapDirectory);
+    const textureArrays = await TerrainTextureArrays.getInstance().loadFromDefinition(projectDirectory, textureDef);
     const splatMapTextures = this.textureEditor.getAllSplatTextures();
     this.resources.runtime.terrain.setTextureData(textureArrays, splatMapTextures);
     await this.skySystem.loadStarTexture(
-      this.getProjectDirectoryFromMapDirectory(mapDirectory),
+      projectDirectory,
       platform.files.readBinaryBase64,
     );
   }
 
-  async saveTexturesToMapDirectory(mapDirectory: string): Promise<void> {
-    await this.textureEditor.saveToMapDirectory(mapDirectory);
+  async saveTexturesToMapDirectory(mapDirectory: string, mapData: MapData): Promise<void> {
+    await this.textureEditor.saveToMapDirectory(mapDirectory, mapData);
   }
 
-  async loadVegetationFromMapDirectory(mapDirectory: string): Promise<void> {
-    await this.vegetationEditor.loadFromMapDirectory(mapDirectory);
+  override async loadVegetationFromMapDirectory(
+    mapDirectory: string,
+    vegetationDataOrMapData?: VegetationMapData | MapData | null,
+  ): Promise<void> {
+    const mapData = vegetationDataOrMapData && "heightPageKeys" in vegetationDataOrMapData
+      ? vegetationDataOrMapData
+      : null;
+    await this.vegetationEditor.loadFromMapDirectory(mapDirectory, mapData);
   }
 
   async saveVegetationToMapDirectory(mapDirectory: string): Promise<void> {

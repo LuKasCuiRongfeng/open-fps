@@ -3,12 +3,14 @@
 
 import {
   ClampToEdgeWrapping,
+  DataTexture,
   DirectionalLight,
   FogExp2,
   HemisphereLight,
   LinearFilter,
   NoColorSpace,
-  TextureLoader,
+  RGBAFormat,
+  UnsignedByteType,
   type PerspectiveCamera,
   type Scene,
   type Texture,
@@ -48,9 +50,9 @@ import {
 import { setTerrainNormalSoftness } from "../world/terrain/material/terrainMaterialTexturedArray";
 import { timeToSunPosition, type SkySystem } from "../world/sky/SkySystem";
 import { TerrainTextureArrays } from "../world/terrain/TerrainTextureArrays";
-import { getSplatMapCount, getSplatMapFilename, type TextureDefinition } from "../world/terrain/TextureData";
+import { getSplatMapCount, type TextureDefinition } from "../world/terrain/TextureData";
 import { VegetationScene, type VegetationMapData } from "../world/vegetation";
-import type { MapData } from "@project/MapData";
+import { decodePaintPageBytes, getPaintPagePathForKey, pageKey, type MapData } from "@project/MapData";
 
 export interface GameAppOptions {
   gameplayEnabled?: boolean;
@@ -94,7 +96,6 @@ export class GameApp implements RuntimeAppSession {
   protected readonly skySystem: SkySystem;
   protected readonly vegetationScene = new VegetationScene();
   private readonly gameplayEnabled: boolean;
-  private readonly textureLoader = new TextureLoader();
   private lastFrameMs = 0;
   private lastUpdateMs = 0;
   private lastRenderMs = 0;
@@ -335,16 +336,19 @@ export class GameApp implements RuntimeAppSession {
   }
 
   async loadTerrainTexturesFromMapDirectory(
+    projectBaseUrl: string,
     mapDirectoryUrl: string,
+    mapData: MapData,
     textureDefinition: TextureDefinition | null,
   ): Promise<void> {
+    const normalizedProjectBaseUrl = normalizeDirectoryUrl(projectBaseUrl);
     const normalizedMapDirectoryUrl = normalizeDirectoryUrl(mapDirectoryUrl);
     const textureArrays = await TerrainTextureArrays.getInstance().loadFromDefinition(
-      normalizedMapDirectoryUrl,
+      normalizedProjectBaseUrl,
       textureDefinition,
     );
     const splatMapTextures = textureDefinition
-      ? await this.loadSplatMapTextures(normalizedMapDirectoryUrl, getSplatMapCount(textureDefinition))
+      ? await this.loadPaintPageTextures(normalizedMapDirectoryUrl, mapData, getSplatMapCount(textureDefinition))
       : [];
 
     this.resources.runtime.terrain.setTextureData(textureArrays, splatMapTextures);
@@ -357,36 +361,46 @@ export class GameApp implements RuntimeAppSession {
     await this.vegetationScene.setData(mapDirectoryUrl, vegetationData);
   }
 
-  private loadSplatMapTextures(mapDirectoryUrl: string, splatMapCount: number): Promise<(Texture | null)[]> {
+  private loadPaintPageTextures(
+    mapDirectoryUrl: string,
+    mapData: MapData,
+    splatMapCount: number,
+  ): Promise<(Texture | null)[]> {
     return Promise.all(
       Array.from({ length: splatMapCount }, (_, index) => {
-        const url = new URL(getSplatMapFilename(index), mapDirectoryUrl).href;
-        return this.loadSplatMapTexture(url);
+        const key = pageKey(index, 0);
+        if (!mapData.paint.pageKeys.includes(key)) {
+          return Promise.resolve(null);
+        }
+
+        const url = new URL(getPaintPagePathForKey(key), mapDirectoryUrl).href;
+        return this.loadPaintPageTexture(url, mapData.paint.pageResolution);
       }),
     );
   }
 
-  private loadSplatMapTexture(url: string): Promise<Texture | null> {
-    return new Promise((resolve) => {
-      this.textureLoader.load(
-        url,
-        (texture) => {
-          texture.colorSpace = NoColorSpace;
-          texture.magFilter = LinearFilter;
-          texture.minFilter = LinearFilter;
-          texture.wrapS = ClampToEdgeWrapping;
-          texture.wrapT = ClampToEdgeWrapping;
-          texture.generateMipmaps = false;
-          texture.needsUpdate = true;
-          resolve(texture);
-        },
-        undefined,
-        (error) => {
-          console.warn(`[GameApp] Failed to load splat map: ${url}`, error);
-          resolve(null);
-        },
-      );
-    });
+  private async loadPaintPageTexture(url: string, pageResolution: number): Promise<Texture | null> {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.warn(`[GameApp] Failed to load paint page: ${url} (${response.status})`);
+        return null;
+      }
+
+      const pixels = decodePaintPageBytes(new Uint8Array(await response.arrayBuffer()), pageResolution);
+      const texture = new DataTexture(pixels, pageResolution, pageResolution, RGBAFormat, UnsignedByteType);
+      texture.colorSpace = NoColorSpace;
+      texture.magFilter = LinearFilter;
+      texture.minFilter = LinearFilter;
+      texture.wrapS = ClampToEdgeWrapping;
+      texture.wrapT = ClampToEdgeWrapping;
+      texture.generateMipmaps = false;
+      texture.needsUpdate = true;
+      return texture;
+    } catch (error) {
+      console.warn(`[GameApp] Failed to load paint page: ${url}`, error);
+      return null;
+    }
   }
 
   markMapDataSaved(): void {

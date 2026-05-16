@@ -385,9 +385,7 @@ async function clearMapAuthoringAssets(mapDir) {
   // EN: Terrain redesigns start clean; texture paint and vegetation are rebuilt after the height field stabilizes.
   // 中文: 地形重设计从干净状态开始；纹理绘制和植被会在高度场稳定后重刷。
   await Promise.all([
-    rm(path.join(mapDir, "splatmap.png"), { force: true }),
-    rm(path.join(mapDir, "texture.json"), { force: true }),
-    rm(path.join(mapDir, "vegetation.json"), { force: true }),
+    rm(path.join(mapDir, "paint"), { recursive: true, force: true }),
     rm(path.join(mapDir, "vegetation"), { recursive: true, force: true }),
   ]);
 }

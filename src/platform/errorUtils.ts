@@ -21,7 +21,10 @@ export function isMissingFileSystemResourceError(error: unknown): boolean {
     message.includes("not found")
     || message.includes("does not exist")
     || message.includes("no such file")
+    || message.includes("cannot find the path specified")
+    || message.includes("系统找不到指定的路径")
     || message.includes("os error 2")
+    || message.includes("os error 3")
     || message.includes("enoent")
   );
 }

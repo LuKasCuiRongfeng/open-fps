@@ -149,14 +149,14 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     editorApp.applySettings(project.settings);
     onApplySettings?.(project.settings);
 
-    await editorApp.loadTexturesFromMapDirectory(project.activeMapDirectory);
-
     if (project.map) {
       await editorApp.loadMapData(project.map);
       onLoadMap?.(project.map);
     }
 
-    await editorApp.loadVegetationFromMapDirectory(project.activeMapDirectory);
+    await editorApp.loadTexturesFromMapDirectory(project.activeMapDirectory, project.map);
+
+    await editorApp.loadVegetationFromMapDirectory(project.activeMapDirectory, project.map);
 
     setPendingMapData(project.map);
     setPendingSettings(project.settings);
@@ -228,6 +228,12 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     const mapData = editorApp.exportCurrentMapData();
     const settings = editorApp.getSettingsSnapshot();
     mapData.metadata.name = mapName;
+    if (editorApp.getTextureEditor().editingEnabled) {
+      editorApp.getTextureEditor().applyToMapData(mapData);
+    }
+    if (editorApp.getVegetationEditor().shouldSave) {
+      editorApp.getVegetationEditor().applyToMapData(mapData);
+    }
 
     const createNewProject = forceSaveAs || !currentProjectPath;
     const savedProject = createNewProject
@@ -244,7 +250,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     }
 
     if (editorApp.getTextureEditor().editingEnabled) {
-      await editorApp.saveTexturesToMapDirectory(savedProject.activeMapDirectory);
+      await editorApp.saveTexturesToMapDirectory(savedProject.activeMapDirectory, mapData);
     }
 
     if (editorApp.getVegetationEditor().shouldSave) {
@@ -288,6 +294,12 @@ export function useEditorWorkspace(): EditorWorkspaceController {
   const saveCurrentProjectForClose = async (app: EditorAppSession): Promise<string> => {
     const mapData = app.exportCurrentMapData();
     const settings = app.getSettingsSnapshot();
+    if (app.getTextureEditor().editingEnabled) {
+      app.getTextureEditor().applyToMapData(mapData);
+    }
+    if (app.getVegetationEditor().shouldSave) {
+      app.getVegetationEditor().applyToMapData(mapData);
+    }
     const savedProject = await saveProjectMap(mapData, {
       settings,
       projectName: currentProjectMetadata?.name,
@@ -296,7 +308,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     });
 
     if (app.getTextureEditor().editingEnabled) {
-      await app.saveTexturesToMapDirectory(savedProject.activeMapDirectory);
+      await app.saveTexturesToMapDirectory(savedProject.activeMapDirectory, mapData);
     }
 
     if (app.getVegetationEditor().shouldSave) {

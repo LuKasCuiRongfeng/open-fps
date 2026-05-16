@@ -56,12 +56,12 @@ export function TextureEditorTab({
     <SettingsPage>
       <SettingsSection
         title="Mode"
-        description="Enables splatmap painting while keeping the settings sidebar open."
+        description="Enables paint page editing while keeping the settings sidebar open."
         actions={<SettingBadge tone={isEditing ? "secondary" : canStartEditing ? "neutral" : "warning"}>{isEditing ? "Active" : canStartEditing ? "Ready" : "Locked"}</SettingBadge>}
       >
         <SettingRow
           label="Texture Brush"
-          description={!canEdit ? "Open an editable project first." : !editingEnabled ? "Create texture.json to enable painting." : "Paint texture layers directly in the viewport."}
+          description={!canEdit ? "Open an editable project first." : !editingEnabled ? "Create paint/layers.json to enable painting." : "Paint texture layers directly in the viewport."}
         >
           <SettingsButton
             Icon={isEditing ? Square : Paintbrush}
@@ -75,7 +75,7 @@ export function TextureEditorTab({
                 ? "Start Texture Brush"
                 : !canEdit
                   ? "Open Project First"
-                  : "Add texture.json"}
+                  : "Add paint layers"}
           </SettingsButton>
         </SettingRow>
       </SettingsSection>
@@ -83,7 +83,7 @@ export function TextureEditorTab({
       {canEdit && !editingEnabled && (
         <SettingsSection title="Setup">
           <SettingRow label="Missing File">
-            <div className="text-xs text-status-warning">Create texture.json in the project root to enable texture painting.</div>
+            <div className="text-xs text-status-warning">Create paint/layers.json in the map directory to enable texture painting.</div>
           </SettingRow>
         </SettingsSection>
       )}
@@ -114,7 +114,7 @@ export function TextureEditorTab({
         )}
       </SettingsSection>
 
-      <SettingsSection title="Brush" description="Splatmap brush parameters used by the active texture brush.">
+      <SettingsSection title="Brush" description="Paint page brush parameters used by the active texture brush.">
         <RangeField
           label="Radius"
           value={brushRadius}

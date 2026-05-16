@@ -8,6 +8,11 @@ export interface HeightPageData {
   heights: Float32Array;
 }
 
+/** Paint page payload stored as raw RGBA8 splat weights. / 以原始 RGBA8 splat 权重保存的绘制 page 数据。 */
+export interface PaintPageData {
+  pixels: Uint8Array;
+}
+
 export type HeightPageLoader = (key: string) => Promise<HeightPageData>;
 
 /** Map metadata. / 地图元数据。 */
@@ -297,6 +302,15 @@ export function getHeightPagePathForKey(key: string): string {
   return getHeightPagePath(px, pz);
 }
 
+export function getPaintPagePath(px: number, pz: number): string {
+  return `${MAP_PAINT_PAGES_DIRECTORY}/p_${formatGridCoordinate(px)}_${formatGridCoordinate(pz)}.paint.rgba`;
+}
+
+export function getPaintPagePathForKey(key: string): string {
+  const { px, pz } = parsePageKey(key);
+  return getPaintPagePath(px, pz);
+}
+
 export function sortPageKeys(keys: Iterable<string>): string[] {
   return Array.from(keys).sort(comparePageKeys);
 }
@@ -315,6 +329,28 @@ export function encodeHeightPageBase64(heights: Float32Array, pageResolution: nu
 
 export function decodeHeightPageBase64(base64: string, pageResolution: number): Float32Array {
   return decodeHeightPageBytes(base64ToUint8Array(base64), pageResolution);
+}
+
+export function encodePaintPageBase64(pixels: Uint8Array | ArrayLike<number>, pageResolution: number): string {
+  const expectedByteLength = getExpectedPaintPageByteLength(pageResolution);
+  if (pixels.length !== expectedByteLength) {
+    throw new Error(`Paint page requires ${expectedByteLength} RGBA8 bytes, got ${pixels.length}`);
+  }
+
+  return uint8ArrayToBase64(pixels instanceof Uint8Array ? pixels : Uint8Array.from(pixels));
+}
+
+export function decodePaintPageBase64(base64: string, pageResolution: number): Uint8Array {
+  return decodePaintPageBytes(base64ToUint8Array(base64), pageResolution);
+}
+
+export function decodePaintPageBytes(bytes: Uint8Array, pageResolution: number): Uint8Array {
+  const expectedByteLength = getExpectedPaintPageByteLength(pageResolution);
+  if (bytes.byteLength !== expectedByteLength) {
+    throw new Error(`Invalid paint page byte length: expected ${expectedByteLength}, got ${bytes.byteLength}`);
+  }
+
+  return new Uint8Array(bytes);
 }
 
 export function decodeHeightPageBytes(bytes: Uint8Array, pageResolution: number): Float32Array {
@@ -336,6 +372,10 @@ export function decodeHeightPageBytes(bytes: Uint8Array, pageResolution: number)
 
 export function getExpectedHeightPageByteLength(pageResolution: number): number {
   return pageResolution * pageResolution * Float32Array.BYTES_PER_ELEMENT;
+}
+
+export function getExpectedPaintPageByteLength(pageResolution: number): number {
+  return pageResolution * pageResolution * 4;
 }
 
 function normalizePaintData(value: Partial<MapPaintData> | null | undefined): MapPaintData {

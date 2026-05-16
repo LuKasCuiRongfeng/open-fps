@@ -75,17 +75,17 @@ export function useEditorApp({
               app.applySettings(bootInputs.pendingSettings);
             }
 
-            if (bootInputs.currentMapDirectory) {
-              await app.loadTexturesFromMapDirectory(bootInputs.currentMapDirectory);
-            }
-
             if (bootInputs.pendingMapData) {
               setBootPhase("loading-map");
               await app.loadMapData(bootInputs.pendingMapData);
             }
 
             if (bootInputs.currentMapDirectory) {
-              await app.loadVegetationFromMapDirectory(bootInputs.currentMapDirectory);
+              await app.loadTexturesFromMapDirectory(bootInputs.currentMapDirectory, bootInputs.pendingMapData);
+            }
+
+            if (bootInputs.currentMapDirectory) {
+              await app.loadVegetationFromMapDirectory(bootInputs.currentMapDirectory, bootInputs.pendingMapData);
             }
 
             setBootPhase("ready");

@@ -1,15 +1,22 @@
 // VegetationData: editable vegetation model and placement data.
 // VegetationData：可编辑植被模型与摆放数据。
 
-import { pageKey, parsePageKey } from "@project/MapData";
+import {
+  MAP_VEGETATION_CELL_FORMAT,
+  MAP_VEGETATION_CELLS_DIRECTORY,
+  MAP_VEGETATION_MODELS_PATH,
+  pageKey,
+  parsePageKey,
+  sortPageKeys,
+} from "@project/MapData";
 
-export const VEGETATION_DATA_VERSION = 2;
-export const VEGETATION_FILE_NAME = "vegetation.json";
-export const VEGETATION_CHUNKS_DIRECTORY = "vegetation";
-export const VEGETATION_INSTANCE_FORMAT = "chunked-f32le-v1";
+export const VEGETATION_DATA_VERSION = 3;
+export const VEGETATION_MODELS_PATH = MAP_VEGETATION_MODELS_PATH;
+export const VEGETATION_CELLS_DIRECTORY = MAP_VEGETATION_CELLS_DIRECTORY;
+export const VEGETATION_INSTANCE_FORMAT = MAP_VEGETATION_CELL_FORMAT;
 
-// EN: v2 keeps model metadata in JSON and stores dense per-chunk instance records as little-endian binary.
-// 中文: v2 将模型元数据保留在 JSON 中，并把密集的逐 chunk 实例记录保存为小端二进制。
+// EN: v3 keeps model metadata in vegetation/models.json and stores sparse cell instance records as little-endian binary.
+// 中文: v3 将模型元数据保存在 vegetation/models.json，并把稀疏 cell 实例记录保存为小端二进制。
 export const VEGETATION_INSTANCE_RECORD_BYTE_LENGTH = 24;
 export const DEFAULT_VEGETATION_TARGET_HEIGHT_METERS = 8;
 export const DEFAULT_VEGETATION_LOD1_DISTANCE_METERS = 70;
@@ -70,7 +77,7 @@ export interface VegetationMapData {
   instances: VegetationInstance[];
 }
 
-export interface VegetationChunkReference {
+export interface VegetationCellReference {
   path: string;
   count: number;
   byteLength: number;
@@ -78,9 +85,9 @@ export interface VegetationChunkReference {
 
 export interface VegetationInstanceManifest {
   format: typeof VEGETATION_INSTANCE_FORMAT;
-  chunkSizeMeters: number;
+  cellSizeMeters: number;
   modelIds: string[];
-  chunks: Record<string, VegetationChunkReference>;
+  cells: Record<string, VegetationCellReference>;
 }
 
 export interface VegetationManifest {
@@ -89,7 +96,7 @@ export interface VegetationManifest {
   instances: VegetationInstanceManifest;
 }
 
-export interface VegetationChunkPayload {
+export interface VegetationCellPayload {
   key: string;
   path: string;
   bytes: Uint8Array;
@@ -134,7 +141,7 @@ export function deserializeVegetationManifest(json: string): VegetationManifest 
   }
 
   if (!isRecord(parsed.instances)) {
-    throw new Error("Vegetation manifest must contain chunked instance metadata");
+    throw new Error("Vegetation manifest must contain cell instance metadata");
   }
 
   const models: Record<string, VegetationModelDefinition> = {};
@@ -148,10 +155,10 @@ export function deserializeVegetationManifest(json: string): VegetationManifest 
 
 export function createVegetationStoragePayload(
   data: VegetationMapData,
-  chunkSizeMeters: number,
-): { manifest: VegetationManifest; chunks: VegetationChunkPayload[] } {
-  if (!Number.isFinite(chunkSizeMeters) || chunkSizeMeters <= 0) {
-    throw new Error("Vegetation chunk size must be a positive finite number");
+  cellSizeMeters: number,
+): { manifest: VegetationManifest; cells: VegetationCellPayload[] } {
+  if (!Number.isFinite(cellSizeMeters) || cellSizeMeters <= 0) {
+    throw new Error("Vegetation cell size must be a positive finite number");
   }
 
   const models = cloneVegetationModels(data.models);
@@ -163,14 +170,14 @@ export function createVegetationStoragePayload(
   const modelIndexById = new Map(modelIds.map((id, index) => [id, index]));
   const groupedInstances = new Map<string, VegetationInstance[]>();
 
-  // EN: Chunking mirrors terrain streaming so saves and future streaming can touch only the edited footprint.
-  // 中文: 分块方式对齐地形流式加载，使保存和未来流式植被只需要触碰编辑过的区域。
+  // EN: Vegetation cells are independent from terrain pages so foliage can stream at its own density and LOD cadence.
+  // 中文: 植被 cell 独立于地形 page，使植被可以按自己的密度和 LOD 节奏流式加载。
   for (const instance of data.instances) {
     if (!modelIndexById.has(instance.modelId)) {
       throw new Error(`Vegetation instance '${instance.id}' references unknown model '${instance.modelId}'`);
     }
 
-    const key = getVegetationChunkKey(instance.x, instance.z, chunkSizeMeters);
+    const key = getVegetationCellKey(instance.x, instance.z, cellSizeMeters);
     const group = groupedInstances.get(key);
     if (group) {
       group.push(instance);
@@ -179,19 +186,19 @@ export function createVegetationStoragePayload(
     }
   }
 
-  const chunks: VegetationChunkPayload[] = [];
-  const references: Record<string, VegetationChunkReference> = {};
-  for (const key of Array.from(groupedInstances.keys()).sort(compareChunkKeys)) {
+  const cells: VegetationCellPayload[] = [];
+  const references: Record<string, VegetationCellReference> = {};
+  for (const key of sortPageKeys(groupedInstances.keys())) {
     const instances = groupedInstances.get(key) ?? [];
     const { px: cx, pz: cz } = parsePageKey(key);
-    const path = getVegetationChunkPath(cx, cz);
-    const bytes = encodeVegetationChunkInstances(instances, modelIndexById);
+    const path = getVegetationCellPath(cx, cz);
+    const bytes = encodeVegetationCellInstances(instances, modelIndexById);
     references[key] = {
       path,
       count: instances.length,
       byteLength: bytes.byteLength,
     };
-    chunks.push({ key, path, bytes });
+    cells.push({ key, path, bytes });
   }
 
   return {
@@ -200,31 +207,39 @@ export function createVegetationStoragePayload(
       models,
       instances: {
         format: VEGETATION_INSTANCE_FORMAT,
-        chunkSizeMeters,
+        cellSizeMeters,
         modelIds,
-        chunks: references,
+        cells: references,
       },
     },
-    chunks,
+    cells,
   };
+}
+
+export function getVegetationCellKeys(data: VegetationMapData, cellSizeMeters: number): string[] {
+  if (!Number.isFinite(cellSizeMeters) || cellSizeMeters <= 0) {
+    throw new Error("Vegetation cell size must be a positive finite number");
+  }
+
+  return sortPageKeys(new Set(data.instances.map((instance) => getVegetationCellKey(instance.x, instance.z, cellSizeMeters))));
 }
 
 export function createVegetationDataFromManifest(
   manifest: VegetationManifest,
-  chunks: Record<string, Uint8Array>,
+  cells: Record<string, Uint8Array>,
 ): VegetationMapData {
   const instances: VegetationInstance[] = [];
-  const chunkReferences = manifest.instances.chunks;
+  const cellReferences = manifest.instances.cells;
   const modelIds = manifest.instances.modelIds;
 
-  for (const key of Object.keys(chunkReferences).sort(compareChunkKeys)) {
-    const reference = chunkReferences[key];
-    const bytes = chunks[key];
+  for (const key of sortPageKeys(Object.keys(cellReferences))) {
+    const reference = cellReferences[key];
+    const bytes = cells[key];
     if (!bytes) {
-      throw new Error(`Vegetation chunk '${key}' is missing binary data`);
+      throw new Error(`Vegetation cell '${key}' is missing binary data`);
     }
 
-    instances.push(...decodeVegetationChunkInstances(key, reference, modelIds, bytes));
+    instances.push(...decodeVegetationCellInstances(key, reference, modelIds, bytes));
   }
 
   return {
@@ -379,9 +394,9 @@ function normalizeInstanceManifest(
     throw new Error(`Vegetation instance format '${String(value.format ?? "unknown")}' is not supported`);
   }
 
-  const chunkSizeMeters = readFiniteNumber(value.chunkSizeMeters, 0);
-  if (chunkSizeMeters <= 0) {
-    throw new Error("Vegetation instance manifest has invalid chunk size");
+  const cellSizeMeters = readFiniteNumber(value.cellSizeMeters, 0);
+  if (cellSizeMeters <= 0) {
+    throw new Error("Vegetation instance manifest has invalid cell size");
   }
 
   if (!Array.isArray(value.modelIds) || !value.modelIds.every((id) => typeof id === "string")) {
@@ -400,41 +415,41 @@ function normalizeInstanceManifest(
     }
   }
 
-  if (!isRecord(value.chunks)) {
-    throw new Error("Vegetation instance manifest must contain chunk references");
+  if (!isRecord(value.cells)) {
+    throw new Error("Vegetation instance manifest must contain cell references");
   }
 
-  const chunks: Record<string, VegetationChunkReference> = {};
-  for (const [key, reference] of Object.entries(value.chunks)) {
+  const cells: Record<string, VegetationCellReference> = {};
+  for (const [key, reference] of Object.entries(value.cells)) {
     parsePageKey(key);
     if (!isRecord(reference)) {
-      throw new Error(`Vegetation chunk '${key}' must be an object`);
+      throw new Error(`Vegetation cell '${key}' must be an object`);
     }
 
     const path = readString(reference.path) ?? "";
     const count = readFiniteNumber(reference.count, -1);
     const byteLength = readFiniteNumber(reference.byteLength, -1);
-    if (!path.startsWith(`${VEGETATION_CHUNKS_DIRECTORY}/`)) {
-      throw new Error(`Vegetation chunk '${key}' has an invalid path`);
+    if (!path.startsWith(`${VEGETATION_CELLS_DIRECTORY}/`)) {
+      throw new Error(`Vegetation cell '${key}' has an invalid path`);
     }
 
     if (!Number.isInteger(count) || count < 0) {
-      throw new Error(`Vegetation chunk '${key}' has invalid instance count`);
+      throw new Error(`Vegetation cell '${key}' has invalid instance count`);
     }
 
     const expectedByteLength = count * VEGETATION_INSTANCE_RECORD_BYTE_LENGTH;
     if (byteLength !== expectedByteLength) {
-      throw new Error(`Vegetation chunk '${key}' has invalid byte length ${byteLength}`);
+      throw new Error(`Vegetation cell '${key}' has invalid byte length ${byteLength}`);
     }
 
-    chunks[key] = { path, count, byteLength };
+    cells[key] = { path, count, byteLength };
   }
 
   return {
     format: VEGETATION_INSTANCE_FORMAT,
-    chunkSizeMeters,
+    cellSizeMeters,
     modelIds,
-    chunks,
+    cells,
   };
 }
 
@@ -446,15 +461,15 @@ function cloneVegetationModels(
   );
 }
 
-function getVegetationChunkKey(x: number, z: number, chunkSizeMeters: number): string {
-  return pageKey(Math.floor(x / chunkSizeMeters), Math.floor(z / chunkSizeMeters));
+function getVegetationCellKey(x: number, z: number, cellSizeMeters: number): string {
+  return pageKey(Math.floor(x / cellSizeMeters), Math.floor(z / cellSizeMeters));
 }
 
-function getVegetationChunkPath(cx: number, cz: number): string {
-  return `${VEGETATION_CHUNKS_DIRECTORY}/${formatChunkCoordinate(cx)}_${formatChunkCoordinate(cz)}.instances.bin`;
+export function getVegetationCellPath(cx: number, cz: number): string {
+  return `${VEGETATION_CELLS_DIRECTORY}/c_${formatCellCoordinate(cx)}_${formatCellCoordinate(cz)}.instances.f32`;
 }
 
-function encodeVegetationChunkInstances(
+function encodeVegetationCellInstances(
   instances: readonly VegetationInstance[],
   modelIndexById: ReadonlyMap<string, number>,
 ): Uint8Array {
@@ -481,15 +496,15 @@ function encodeVegetationChunkInstances(
   return bytes;
 }
 
-function decodeVegetationChunkInstances(
-  chunkKeyValue: string,
-  reference: VegetationChunkReference,
+function decodeVegetationCellInstances(
+  cellKeyValue: string,
+  reference: VegetationCellReference,
   modelIds: readonly string[],
   bytes: Uint8Array,
 ): VegetationInstance[] {
   if (bytes.byteLength !== reference.byteLength) {
     throw new Error(
-      `Vegetation chunk '${chunkKeyValue}' byte length mismatch: expected ${reference.byteLength}, got ${bytes.byteLength}`,
+      `Vegetation cell '${cellKeyValue}' byte length mismatch: expected ${reference.byteLength}, got ${bytes.byteLength}`,
     );
   }
 
@@ -500,46 +515,40 @@ function decodeVegetationChunkInstances(
     const modelIndex = view.getUint16(offset, true);
     const modelId = modelIds[modelIndex];
     if (!modelId) {
-      throw new Error(`Vegetation chunk '${chunkKeyValue}' references unknown model index ${modelIndex}`);
+      throw new Error(`Vegetation cell '${cellKeyValue}' references unknown model index ${modelIndex}`);
     }
 
     instances.push({
-      id: createLoadedInstanceId(chunkKeyValue, index),
+      id: createLoadedInstanceId(cellKeyValue, index),
       modelId,
-      x: readChunkFloat(view, offset + 4, chunkKeyValue),
-      y: readChunkFloat(view, offset + 8, chunkKeyValue),
-      z: readChunkFloat(view, offset + 12, chunkKeyValue),
-      rotationY: readChunkFloat(view, offset + 16, chunkKeyValue),
-      scale: Math.max(0.001, readChunkFloat(view, offset + 20, chunkKeyValue)),
+      x: readCellFloat(view, offset + 4, cellKeyValue),
+      y: readCellFloat(view, offset + 8, cellKeyValue),
+      z: readCellFloat(view, offset + 12, cellKeyValue),
+      rotationY: readCellFloat(view, offset + 16, cellKeyValue),
+      scale: Math.max(0.001, readCellFloat(view, offset + 20, cellKeyValue)),
     });
   }
 
   return instances;
 }
 
-function readChunkFloat(view: DataView, offset: number, chunkKeyValue: string): number {
+function readCellFloat(view: DataView, offset: number, cellKeyValue: string): number {
   const value = view.getFloat32(offset, true);
   if (!Number.isFinite(value)) {
-    throw new Error(`Vegetation chunk '${chunkKeyValue}' contains a non-finite instance value`);
+    throw new Error(`Vegetation cell '${cellKeyValue}' contains a non-finite instance value`);
   }
 
   return value;
 }
 
-function createLoadedInstanceId(chunkKeyValue: string, index: number): string {
-  const safeChunkKey = chunkKeyValue.replace(/-/g, "m").replace(/,/g, "_");
-  return `vegetation-${safeChunkKey}-${index.toString(36)}`;
+function createLoadedInstanceId(cellKeyValue: string, index: number): string {
+  const safeCellKey = cellKeyValue.replace(/-/g, "m").replace(/,/g, "_");
+  return `vegetation-${safeCellKey}-${index.toString(36)}`;
 }
 
-function compareChunkKeys(left: string, right: string): number {
-  const a = parsePageKey(left);
-  const b = parsePageKey(right);
-  return a.pz - b.pz || a.px - b.px;
-}
-
-function formatChunkCoordinate(value: number): string {
+function formatCellCoordinate(value: number): string {
   if (!Number.isInteger(value)) {
-    throw new Error(`Vegetation chunk coordinate must be an integer: ${value}`);
+    throw new Error(`Vegetation cell coordinate must be an integer: ${value}`);
   }
 
   return value < 0 ? `m${Math.abs(value)}` : String(value);

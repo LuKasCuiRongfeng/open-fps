@@ -6,6 +6,7 @@ import {
   cloneVegetationData,
   createEmptyVegetationData,
   createVegetationModelDefinition,
+  getVegetationCellKeys,
   isSupportedVegetationModelPath,
   type VegetationBrushMode,
   type VegetationInstance,
@@ -16,6 +17,7 @@ import {
 } from "@game/world/vegetation";
 import { VegetationBrush, type VegetationBrushSettings } from "./VegetationBrush";
 import { VegetationStorage } from "./VegetationStorage";
+import { DEFAULT_VEGETATION_CELL_SIZE_METERS, type MapData } from "@project/MapData";
 
 type TerrainHeightAt = (x: number, z: number) => number;
 type TerrainHeightAvailability = (x: number, z: number) => boolean;
@@ -30,6 +32,7 @@ export class VegetationEditor {
   private selectedModelId = "";
   private placementAccumulator = 0;
   private sequence = 0;
+  private cellSizeMeters = DEFAULT_VEGETATION_CELL_SIZE_METERS;
   private _dirty = false;
   private onDirtyChange?: (dirty: boolean) => void;
   private readonly changeSubscribers = new Set<() => void>();
@@ -95,7 +98,8 @@ export class VegetationEditor {
     };
   }
 
-  async loadFromMapDirectory(mapDirectory: string): Promise<void> {
+  async loadFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void> {
+    this.cellSizeMeters = mapData?.vegetation.cellSizeMeters ?? DEFAULT_VEGETATION_CELL_SIZE_METERS;
     this.data = await VegetationStorage.loadVegetationData(mapDirectory);
     this.selectedModelId = this.modelDefinitions[0]?.id ?? "";
     this.placementAccumulator = 0;
@@ -107,8 +111,13 @@ export class VegetationEditor {
   async saveToMapDirectory(mapDirectory: string): Promise<void> {
     if (!this.shouldSave) return;
 
-    await VegetationStorage.saveVegetationData(mapDirectory, this.data);
+    await VegetationStorage.saveVegetationData(mapDirectory, this.data, this.cellSizeMeters);
     this.setDirty(false);
+  }
+
+  applyToMapData(mapData: MapData): void {
+    this.cellSizeMeters = mapData.vegetation.cellSizeMeters;
+    mapData.vegetation.cellKeys = getVegetationCellKeys(this.data, this.cellSizeMeters);
   }
 
   getDataSnapshot(): VegetationMapData {
