@@ -89,12 +89,8 @@ export function createGpuTerrainMaterial(
   // Map to atlas UV with proper boundary handling.
   // 映射到图集 UV，正确处理边界
   //
-  // The height texture uses EDGE ALIGNMENT in baking:
-  // - Pixel 0 bakes localU=0 (chunk start)
-  // - Pixel 63 bakes localU=1 (chunk end, same as next chunk's start)
-  // 高度纹理在烘焙时使用边缘对齐：
-  // - 像素 0 烘焙 localU=0（chunk 起点）
-  // - 像素 63 烘焙 localU=1（chunk 终点，与下一个 chunk 起点相同）
+  // EN: The height texture uses edge-aligned map samples: pixel 0 is the chunk start, pixel 63 is the chunk end.
+  // 中文: 高度纹理使用边缘对齐的地图采样：像素 0 是 chunk 起点，像素 63 是 chunk 终点。
   //
   // With LINEAR filter, we want to sample pixel centers:
   // - Pixel 0 center is at texU = 0.5/64

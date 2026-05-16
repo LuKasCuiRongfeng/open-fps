@@ -6,7 +6,6 @@ import {
     AlertTriangle,
     Database,
     FolderOpen,
-    Globe2,
     Loader2,
     Play,
     Trash2,
@@ -108,10 +107,6 @@ export function ProjectScreen({ workspace }: Props) {
         }
     };
 
-    const handleSkip = () => {
-        workspace.enterProceduralMode();
-    };
-
     const recentProjectCount = workspace.recentProjects.length;
     const selectedProjectName = selectedPath
         ? getProjectNameFromPath(selectedPath)
@@ -157,15 +152,6 @@ export function ProjectScreen({ workspace }: Props) {
                                     <FolderOpen className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                                 )}
                                 Open Project
-                            </Button>
-                            <Button
-                                type="button"
-                                onClick={handleSkip}
-                                disabled={loading}
-                                className="w-full justify-start"
-                            >
-                                <Globe2 className="h-3.5 w-3.5 shrink-0 text-status-success" aria-hidden="true" />
-                                Procedural Terrain
                             </Button>
                         </div>
                     </section>
@@ -255,7 +241,7 @@ export function ProjectScreen({ workspace }: Props) {
                             </div>
                         ) : (
                             <div className="border-b border-stroke-subtle px-3 py-2 text-xs text-content-muted">
-                                No recent projects. Open a project folder or enter procedural terrain mode.
+                                No recent projects. Open a project folder to start editing.
                             </div>
                         )}
                     </div>

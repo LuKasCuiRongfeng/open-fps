@@ -86,18 +86,20 @@ export function useGameApp({
             const settingsToApply = bundledProject?.settings ?? pendingSettings;
             const mapDataToLoad = bundledProject?.map ?? pendingMapData;
 
+            if (!mapDataToLoad) {
+              throw new Error("No map file data was provided for the game runtime");
+            }
+
             // Apply settings before loading data so terrain and sky use the packaged project values.
             // 先应用设置，确保地形和天空使用随包项目的配置值。
             if (settingsToApply) {
               app.applySettings(settingsToApply);
             }
 
-            // Load packaged map data instead of falling back to procedural terrain.
-            // 加载随包地图数据，而不是回退到程序生成地形。
-            if (mapDataToLoad) {
-              await app.loadMapData(mapDataToLoad);
-              if (disposed) return;
-            }
+            // EN: The game runtime requires a map file and cannot synthesize replacement terrain.
+            // 中文: 游戏运行时必须提供地图文件，不能合成替代地形。
+            await app.loadMapData(mapDataToLoad);
+            if (disposed) return;
 
             if (bundledProject) {
               await app.loadTerrainTexturesFromMapDirectory(

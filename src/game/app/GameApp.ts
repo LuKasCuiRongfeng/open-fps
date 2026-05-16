@@ -15,7 +15,6 @@ import {
   type WebGPURenderer,
 } from "three/webgpu";
 import { renderStaticConfig } from "@config/render";
-import { playerStaticConfig } from "@config/player";
 import { vegetationRenderConfig } from "@config/vegetation";
 import type { TerrainConfig } from "@config/terrain";
 import { createWorld } from "./createWorld";
@@ -55,7 +54,6 @@ import type { MapData } from "@project/MapData";
 
 export interface GameAppOptions {
   gameplayEnabled?: boolean;
-  initialTerrainTarget?: { x: number; z: number };
   terrainConfig?: TerrainConfig;
 }
 
@@ -96,7 +94,6 @@ export class GameApp implements RuntimeAppSession {
   protected readonly skySystem: SkySystem;
   protected readonly vegetationScene = new VegetationScene();
   private readonly gameplayEnabled: boolean;
-  private readonly initialTerrainTarget: { x: number; z: number };
   private readonly textureLoader = new TextureLoader();
   private lastFrameMs = 0;
   private lastUpdateMs = 0;
@@ -113,10 +110,6 @@ export class GameApp implements RuntimeAppSession {
     options: GameAppOptions = {},
   ) {
     this.gameplayEnabled = options.gameplayEnabled ?? true;
-    this.initialTerrainTarget = options.initialTerrainTarget ?? {
-      x: playerStaticConfig.spawnX,
-      z: playerStaticConfig.spawnZ,
-    };
 
     onBootPhase?.("checking-webgpu");
     onBootPhase?.("creating-renderer");
@@ -187,11 +180,7 @@ export class GameApp implements RuntimeAppSession {
     await this.gameRenderer.init();
     if (this.disposed) return;
 
-    await this.resources.runtime.terrain.initGpu(
-      this.gameRenderer.renderer,
-      this.initialTerrainTarget.x,
-      this.initialTerrainTarget.z,
-    );
+    await this.resources.runtime.terrain.initGpu(this.gameRenderer.renderer);
     if (this.disposed) return;
 
     if (this.gameplayEnabled) {

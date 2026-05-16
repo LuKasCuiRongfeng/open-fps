@@ -275,7 +275,7 @@ export function ProjectFileTab({
           />
         </SettingRow>
         <SettingRow label="Mode">
-          <SettingBadge tone={canEdit ? "success" : "warning"}>{canEdit ? "Editable Project" : "Procedural View"}</SettingBadge>
+          <SettingBadge tone={canEdit ? "success" : "warning"}>{canEdit ? "Editable Project" : "No Project"}</SettingBadge>
         </SettingRow>
         <SettingRow label="Project Path" align="start">
           <ReadonlyField>{editorWorkspace.currentProjectPath ?? "No project selected"}</ReadonlyField>

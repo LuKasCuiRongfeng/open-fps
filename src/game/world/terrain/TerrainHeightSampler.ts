@@ -4,24 +4,24 @@
 import type { TerrainConfig } from "./terrain";
 
 /**
- * GPU-first height sampler: stores height data from GPU readback.
- * GPU-first 高度采样器：存储从 GPU 回读的高度数据
+ * GPU-first height sampler: stores map-file heights plus edited GPU readback data.
+ * GPU-first 高度采样器：存储地图文件高度以及编辑后的 GPU 回读数据
  *
  * Key design (GPU-first principle):
- * - Height is ONLY computed on GPU (TerrainHeightCompute)
- * - After GPU bake, data is read back ONCE per chunk
- * - CPU samples from this cached readback data
- * - NO duplicate noise implementation on CPU
+ * - Initial height data comes from the loaded map manifest chunks
+ * - Brush edits read updated GPU height data back into this cache
+ * - CPU samples only from this cache
+ * - NO procedural height fallback on CPU
  *
  * 关键设计（GPU-first 原则）：
- * - 高度仅在 GPU 上计算（TerrainHeightCompute）
- * - GPU 烘焙后，每个 chunk 回读一次数据
- * - CPU 从这个缓存的回读数据采样
- * - CPU 上不重复实现噪声函数
+ * - 初始高度数据来自已加载地图清单中的 chunk
+ * - 画刷编辑会将更新后的 GPU 高度回读到此缓存
+ * - CPU 只从此缓存采样
+ * - CPU 上没有程序高度回退
  */
 export class TerrainHeightSampler {
-  // Cache: Map<chunkKey, Float32Array> from GPU readback.
-  // 缓存：Map<chunkKey, Float32Array>，来自 GPU 回读
+  // Cache: Map<chunkKey, Float32Array> from map files or edited GPU readback.
+  // 缓存：Map<chunkKey, Float32Array>，来自地图文件或编辑后的 GPU 回读
   private static cache = new Map<string, Float32Array>();
 
   // Dirty chunks changed since the last successful project save.
@@ -60,12 +60,12 @@ export class TerrainHeightSampler {
   }
 
   /**
-   * Store height data from GPU readback for a chunk.
-   * 存储从 GPU 回读的 chunk 高度数据
+  * Store height data for a chunk.
+  * 存储 chunk 高度数据
    *
    * @param cx Chunk X coordinate.
    * @param cz Chunk Z coordinate.
-   * @param heightData Height data from GPU readback (must be tileResolution x tileResolution).
+  * @param heightData Height data (must be tileResolution x tileResolution).
    */
   static setChunkHeightData(cx: number, cz: number, heightData: Float32Array, dirty = false): void {
     const key = `${cx},${cz}`;
@@ -105,23 +105,6 @@ export class TerrainHeightSampler {
   }
 
   /**
-   * Get all cached chunk keys.
-   * 获取所有缓存的 chunk 键
-   */
-  static getAllCachedChunkKeys(): string[] {
-    return Array.from(this.cache.keys());
-  }
-
-  /**
-   * Remove cached height data for a chunk (on unload).
-   * 移除 chunk 的缓存高度数据（卸载时）
-   */
-  static removeChunkHeightData(cx: number, cz: number): void {
-    const key = `${cx},${cz}`;
-    this.cache.delete(key);
-  }
-
-  /**
    * Check if a chunk has cached height data.
    * 检查 chunk 是否有缓存的高度数据
    */
@@ -131,24 +114,8 @@ export class TerrainHeightSampler {
   }
 
   /**
-   * Get the tile resolution.
-   * 获取 tile 分辨率
-   */
-  static getTileResolution(): number {
-    return this.tileResolution;
-  }
-
-  /**
-   * Get the chunk size in meters.
-   * 获取 chunk 大小（米）
-   */
-  static getChunkSizeMeters(): number {
-    return this.chunkSizeMeters;
-  }
-
-  /**
-   * Get height at a world position (bilinear interpolation from GPU-baked data).
-   * 获取世界位置的高度（从 GPU 烘焙数据双线性插值）
+  * Get height at a world position (bilinear interpolation from loaded map data).
+  * 获取世界位置的高度（从已加载地图数据双线性插值）
    *
    * @param worldX World X coordinate.
    * @param worldZ World Z coordinate.

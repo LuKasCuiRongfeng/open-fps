@@ -4,6 +4,7 @@
 import { Brush, Square } from "lucide-react";
 import type { TerrainEditor, BrushType } from "@editor/runtime";
 import type { ActiveEditorType as RuntimeActiveEditorType } from "@editor/runtime/common";
+import type { TerrainMode } from "@editor/ui/hooks/useEditorWorkspace";
 import { useTerrainBrushSettings } from "../../hooks/useTerrainBrushSettings";
 import { RangeField } from "@ui/settings/RangeField";
 import { SettingBadge, SettingRow, SettingsButton, SettingsPage, SettingsSection } from "@ui/settings/SettingsLayout";
@@ -13,7 +14,7 @@ export type ActiveEditorType = NonNullable<RuntimeActiveEditorType> | "none";
 
 type TerrainEditorTabProps = {
   terrainEditor: TerrainEditor | null;
-  terrainMode: "editable" | "procedural";
+  terrainMode: TerrainMode;
   activeEditor: ActiveEditorType;
   onActiveEditorChange: (editor: ActiveEditorType) => void;
 };

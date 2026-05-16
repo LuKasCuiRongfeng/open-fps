@@ -14,18 +14,18 @@ import { buildLoadQueue, buildUnloadQueue, getAffectedChunkBounds } from "./chun
 export type ChunkCoord = { cx: number; cz: number };
 
 /**
- * GPU-first chunk manager with compute-based height baking.
- * GPU-first 分块管理器，带基于计算的高度烘焙
+ * GPU-first chunk manager for map-file height chunks.
+ * GPU-first 分块管理器，用于地图文件高度 chunk
  *
  * GPU-first design:
- * - Height computed ONLY on GPU
- * - After bake, height data read back ONCE to CPU cache
- * - CPU heightAt() samples from this cache (no duplicate noise)
+ * - Height data must come from loaded map files
+ * - CPU height cache uploads to the GPU atlas on demand
+ * - Brush edits read updated GPU height data back to the CPU cache
  *
  * GPU-first 设计：
- * - 高度仅在 GPU 上计算
- * - 烘焙后，高度数据回读一次到 CPU 缓存
- * - CPU heightAt() 从此缓存采样（无重复噪声实现）
+ * - 高度数据必须来自已加载的地图文件
+ * - CPU 高度缓存按需上传到 GPU 图集
+ * - 画刷编辑后将更新后的 GPU 高度回读到 CPU 缓存
  *
  * Frustum culling is handled by Three.js built-in culling (GPU-optimized).
  * 视锥剔除由 Three.js 内置剔除处理（已 GPU 优化）
@@ -50,9 +50,9 @@ export class ChunkManager {
   private readonly loadQueue: ChunkCoord[] = [];
   private readonly unloadQueue: string[] = [];
 
-  // Chunks that need height baking.
-  // 需要高度烘焙的 chunk
-  private readonly bakePending = new Map<string, ChunkCoord>();
+  // Chunks that need normal regeneration after upload or edits.
+  // 上传或编辑后需要重新生成法线的 chunk
+  private readonly normalPending = new Map<string, ChunkCoord>();
 
   // Last known player chunk for hysteresis.
   // 上次已知的玩家 chunk，用于滞后判断
@@ -71,9 +71,9 @@ export class ChunkManager {
   // 活跃 chunk 集合版本号，供依赖地形可用性的渲染系统使用。
   private streamingRevision = 0;
 
-  // EN: Null means procedural streaming is unbounded; a set means only listed project chunks may stream or edit.
-  // 中文: null 表示程序流式加载不设边界；集合表示只允许列出的项目 chunk 被加载或编辑。
-  private allowedChunkKeys: ReadonlySet<string> | null = null;
+  // EN: Only chunks declared by the loaded map manifest may stream or edit.
+  // 中文: 只有已加载地图清单声明的 chunk 可以流式加载或编辑。
+  private mapChunkKeys: ReadonlySet<string> = new Set();
 
   // Texture array data for terrain materials (from texture.json).
   // 地形材质的纹理数组数据（来自 texture.json）
@@ -143,12 +143,10 @@ export class ChunkManager {
     return `${cx},${cz}`;
   }
 
-  setAllowedChunkKeys(keys: ReadonlySet<string> | null): void {
-    this.allowedChunkKeys = keys;
+  setMapChunkKeys(keys: ReadonlySet<string>): void {
+    this.mapChunkKeys = keys;
     this.loadQueue.length = 0;
-    this.bakePending.clear();
-
-    if (!keys) return;
+    this.normalPending.clear();
 
     for (const key of Array.from(this.chunks.keys())) {
       if (!keys.has(key)) {
@@ -158,12 +156,12 @@ export class ChunkManager {
   }
 
   private canUseChunk(cx: number, cz: number): boolean {
-    return !this.allowedChunkKeys || this.allowedChunkKeys.has(this.chunkKey(cx, cz));
+    return this.mapChunkKeys.has(this.chunkKey(cx, cz));
   }
 
   /**
-   * Force load chunks around a position (for spawn).
-   * 强制加载某位置周围的 chunk（用于出生点）
+   * Force load map chunks around a position.
+   * 强制加载某位置周围的地图 chunk
    */
   async forceLoadAround(worldX: number, worldZ: number): Promise<void> {
     if (!this.gpuReady || !this.renderer) return;
@@ -185,15 +183,16 @@ export class ChunkManager {
       }
     }
 
-    // Bake and create all chunks.
-    // 烘焙并创建所有 chunk
+    // Upload and create all map-backed chunks.
+    // 上传并创建所有由地图支撑的 chunk
     for (const coord of toLoad) {
-      await this.bakeAndCreateChunk(coord.cx, coord.cz);
+      await this.uploadAndCreateChunk(coord.cx, coord.cz);
     }
 
-    // Regenerate all normals after baking.
-    // 烘焙后重新生成所有法线
+    // Regenerate all normals after uploads.
+    // 上传后重新生成所有法线
     await this.normalCompute.regenerate(this.renderer);
+    this.normalPending.clear();
 
     this.lastPlayerCx = centerCx;
     this.lastPlayerCz = centerCz;
@@ -254,7 +253,7 @@ export class ChunkManager {
         playerCz,
         viewDist,
         (key) => this.chunks.has(key),
-        (key) => this.bakePending.has(key),
+        (key) => this.normalPending.has(key),
         (cx, cz) => this.chunkKey(cx, cz),
       ).filter(({ cx, cz }) => this.canUseChunk(cx, cz)),
     );
@@ -279,19 +278,19 @@ export class ChunkManager {
     // 处理加载
     while (this.loadQueue.length > 0 && ops < maxOps) {
       const coord = this.loadQueue.shift()!;
-      await this.bakeAndCreateChunk(coord.cx, coord.cz);
+      await this.uploadAndCreateChunk(coord.cx, coord.cz);
       ops++;
     }
 
-    // Regenerate normals if any chunks were baked.
-    // 如果有 chunk 被烘焙，重新生成法线
-    if (this.bakePending.size > 0 && this.renderer) {
+    // Regenerate normals if any chunks were uploaded.
+    // 如果有 chunk 被上传，重新生成法线
+    if (this.normalPending.size > 0 && this.renderer) {
       await this.normalCompute.regenerate(this.renderer);
-      this.bakePending.clear();
+      this.normalPending.clear();
     }
   }
 
-  private async bakeAndCreateChunk(cx: number, cz: number): Promise<void> {
+  private async uploadAndCreateChunk(cx: number, cz: number): Promise<void> {
     if (!this.renderer) return;
     if (!this.canUseChunk(cx, cz)) return;
 
@@ -303,31 +302,16 @@ export class ChunkManager {
     const cachedHeightData = TerrainHeightSampler.getChunkHeightData(cx, cz);
 
     if (cachedHeightData) {
-      // Reuse cached data: upload to GPU instead of regenerating.
-      // 重用缓存数据：上传到 GPU 而不是重新生成
-      // This preserves edits when player returns to a previously edited chunk.
-      // 这在玩家返回之前编辑过的 chunk 时保留编辑内容
-      await this.heightCompute.bakeChunk(cx, cz, this.renderer);
-      this.bakePending.set(key, { cx, cz });
-
-      // Upload cached height data to GPU.
-      // 上传缓存的高度数据到 GPU
       await this.heightCompute.uploadChunkHeight(cx, cz, cachedHeightData, this.renderer);
-    } else if (this.allowedChunkKeys) {
-      // EN: In project-editing mode, a declared chunk without loaded height data is an error, not procedural terrain.
-      // 中文: 在项目编辑模式下，已声明但未加载高度数据的 chunk 是错误，不能退回程序地形。
-      console.warn(`[ChunkManager] Missing saved height data for restricted chunk (${cx}, ${cz})`);
-      return;
+      // EN: Brush compute keeps a readable copy of the height atlas; map chunk uploads invalidate it.
+      // 中文: 画刷计算保留高度图集的可读副本；地图 chunk 上传会使其失效。
+      this.brushCompute.markNeedsSync();
+      this.normalPending.set(key, { cx, cz });
     } else {
-      // No cached data: generate procedural terrain on GPU.
-      // 无缓存数据：在 GPU 上生成程序地形
-      await this.heightCompute.bakeChunk(cx, cz, this.renderer);
-      this.bakePending.set(key, { cx, cz });
-
-      // GPU-first: readback height data to CPU cache (ONCE per chunk).
-      // GPU-first：回读高度数据到 CPU 缓存（每 chunk 一次）
-      const heightData = await this.heightCompute.readbackChunkHeight(cx, cz, this.renderer);
-      TerrainHeightSampler.setChunkHeightData(cx, cz, heightData);
+      // EN: Missing map height data is an asset error; runtime must not synthesize replacement terrain.
+      // 中文: 缺少地图高度数据是资源错误；运行时不能合成替代地形。
+      console.warn(`[ChunkManager] Missing saved height data for map chunk (${cx}, ${cz})`);
+      return;
     }
 
     // Get tile UV info.

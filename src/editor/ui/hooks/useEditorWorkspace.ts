@@ -20,7 +20,7 @@ import {
   setCurrentProjectReference,
 } from "@project/ProjectStorage";
 
-export type TerrainMode = "editable" | "procedural";
+export type TerrainMode = "editable" | "locked";
 
 export type LoadedWorkspaceProject = LoadedProject<EditorAppSettings>;
 
@@ -62,8 +62,7 @@ export interface EditorWorkspaceController {
   currentMapName: string | null;
   currentMapDirectory: string | null;
   recentProjects: string[];
-  completeProjectSelection: (project: LoadedWorkspaceProject | null) => void;
-  enterProceduralMode: () => void;
+  completeProjectSelection: (project: LoadedWorkspaceProject) => void;
   markEditableMode: () => void;
   openProjectRecord: (projectPath: string) => Promise<LoadedWorkspaceProject>;
   openProjectFromDialog: () => Promise<LoadedWorkspaceProject | null>;
@@ -78,7 +77,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
   const [showProjectScreen, setShowProjectScreen] = useState(true);
   const [pendingMapData, setPendingMapData] = useState<MapData | null>(null);
   const [pendingSettings, setPendingSettings] = useState<EditorAppSettings | null>(null);
-  const [terrainMode, setTerrainMode] = useState<TerrainMode>("procedural");
+  const [terrainMode, setTerrainMode] = useState<TerrainMode>("locked");
   const [currentProjectPath, setCurrentProjectPath] = useState<string | null>(null);
   const [currentProjectMetadata, setCurrentProjectMetadata] = useState<ProjectMetadata | null>(null);
   const [currentProjectMaps, setCurrentProjectMaps] = useState<ProjectMapRecord[]>([]);
@@ -106,18 +105,14 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     setCurrentMapId(project?.activeMap.id ?? null);
     setCurrentMapDirectory(project?.activeMapDirectory ?? null);
     setCurrentProjectReference(project?.projectPath ?? null, project?.metadata ?? null);
-    setTerrainMode(project ? "editable" : "procedural");
+    setTerrainMode(project ? "editable" : "locked");
   };
 
-  const completeProjectSelection = (project: LoadedWorkspaceProject | null) => {
-    setPendingMapData(project?.map ?? null);
-    setPendingSettings(project?.settings ?? null);
+  const completeProjectSelection = (project: LoadedWorkspaceProject) => {
+    setPendingMapData(project.map);
+    setPendingSettings(project.settings);
     syncProjectState(project);
     setShowProjectScreen(false);
-  };
-
-  const enterProceduralMode = () => {
-    completeProjectSelection(null);
   };
 
   const markEditableMode = () => {
@@ -330,7 +325,6 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     currentMapDirectory,
     recentProjects,
     completeProjectSelection,
-    enterProceduralMode,
     markEditableMode,
     openProjectRecord,
     openProjectFromDialog,

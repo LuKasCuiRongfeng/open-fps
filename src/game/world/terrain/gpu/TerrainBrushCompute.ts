@@ -154,8 +154,8 @@ export class TerrainBrushCompute {
     // 初始同步：将存储纹理复制到可读纹理
     renderer.copyTextureToTexture(this.heightTexture, this.heightTextureRead);
 
-    // Mark that we need to sync again before first brush (terrain may be baked after init).
-    // 标记我们需要在第一次画刷前再次同步（地形可能在 init 之后烘焙）
+    // Mark that we need to sync again before first brush (map chunks may upload after init).
+    // 标记我们需要在第一次画刷前再次同步（地图 chunk 可能在 init 之后上传）
     this.needsSync = true;
 
     this.initialized = true;

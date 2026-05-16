@@ -88,8 +88,8 @@ export class TerrainNormalCompute {
     // 构建计算着色器
     this.buildComputeShader();
 
-    // Initial compute pass (will be re-run when chunks bake).
-    // 初始计算通道（chunk 烘焙时会重新运行）
+    // Initial compute pass (will be re-run after map chunk uploads).
+    // 初始计算通道（地图 chunk 上传后会重新运行）
     await renderer.computeAsync(this.computeNode!);
   }
 

@@ -6,6 +6,7 @@ import { Eraser, Layers, Plus, Sprout, Square, Trees } from "lucide-react";
 import type { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
 import { isSupportedVegetationModelPath, type VegetationBrushMode } from "@game/world/vegetation";
 import type { ActiveEditorType } from "./TerrainEditorTab";
+import type { TerrainMode } from "@editor/ui/hooks/useEditorWorkspace";
 import { useVegetationBrushSettings } from "../../hooks/useVegetationBrushSettings";
 import { RangeField } from "@ui/settings/RangeField";
 import { ReadonlyField, SettingBadge, SettingRow, SettingsButton, SettingsPage, SettingsSection } from "@ui/settings/SettingsLayout";
@@ -14,7 +15,7 @@ import { Input } from "@ui/components/ui/input";
 
 type VegetationEditorTabProps = {
   vegetationEditor: VegetationEditor | null;
-  terrainMode: "editable" | "procedural";
+  terrainMode: TerrainMode;
   activeEditor: ActiveEditorType;
   onActiveEditorChange: (editor: ActiveEditorType) => void;
 };

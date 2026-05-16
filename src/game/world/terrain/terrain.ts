@@ -9,7 +9,6 @@ export { createTerrainSystem, type TerrainSystemResource } from "./TerrainSystem
 export { ChunkManager } from "./ChunkManager";
 export { FloatingOrigin } from "../common/FloatingOrigin";
 export { TerrainChunk } from "./TerrainChunk";
-export { FarTerrainSystem } from "./FarTerrainSystem";
 export { TerrainHeightSampler } from "./TerrainHeightSampler";
 export { createGpuTerrainMaterial } from "./material/terrainMaterial";
 

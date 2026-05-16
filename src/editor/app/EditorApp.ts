@@ -49,7 +49,6 @@ export class EditorApp extends GameApp implements EditorAppSession {
   constructor(container: HTMLElement, onBootPhase?: (phase: GameBootPhase) => void) {
     super(container, onBootPhase, {
       gameplayEnabled: false,
-      initialTerrainTarget: { x: 0, z: 0 },
       terrainConfig: editorTerrainConfig,
     });
 
@@ -269,11 +268,6 @@ export class EditorApp extends GameApp implements EditorAppSession {
   protected override async afterLoadMapData(mapData: MapData): Promise<void> {
     this.terrainEditor.loadMapData(mapData);
     this.frameEditorCameraForMap(mapData);
-  }
-
-  override async loadMapData(mapData: MapData): Promise<void> {
-    await this.resources.runtime.terrain.loadMapData(mapData, { restrictToMapChunks: true });
-    await this.afterLoadMapData(mapData);
   }
 
   protected override runSimulationStep(): void {

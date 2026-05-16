@@ -17,7 +17,7 @@ import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import type { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
 import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings";
 import type { MapData } from "@project/MapData";
-import type { EditorWorkspaceController } from "@editor/ui/hooks/useEditorWorkspace";
+import type { EditorWorkspaceController, TerrainMode } from "@editor/ui/hooks/useEditorWorkspace";
 import {
   AppearanceTab,
   RenderTab,
@@ -49,7 +49,7 @@ export type EditorSettingsTabRenderProps = {
   textureEditor: TextureEditor | null;
   vegetationEditor: VegetationEditor | null;
   editorWorkspace: EditorWorkspaceController;
-  terrainMode: "editable" | "procedural";
+  terrainMode: TerrainMode;
   activeEditor: ActiveEditorType;
   onActiveEditorChange: (editor: ActiveEditorType) => void;
   onLoadMap: (mapData: MapData) => void;

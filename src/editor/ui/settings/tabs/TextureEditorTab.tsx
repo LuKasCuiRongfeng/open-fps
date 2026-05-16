@@ -3,6 +3,7 @@
 
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import type { ActiveEditorType } from "./TerrainEditorTab";
+import type { TerrainMode } from "@editor/ui/hooks/useEditorWorkspace";
 import { useTextureBrushSettings } from "../../hooks/useTextureBrushSettings";
 import { Layers, Paintbrush, Square } from "lucide-react";
 import { RangeField } from "@ui/settings/RangeField";
@@ -11,7 +12,7 @@ import { Button } from "@ui/components/ui/button";
 
 type TextureEditorTabProps = {
   textureEditor: TextureEditor | null;
-  terrainMode: "editable" | "procedural";
+  terrainMode: TerrainMode;
   activeEditor: ActiveEditorType;
   onActiveEditorChange: (editor: ActiveEditorType) => void;
 };

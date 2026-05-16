@@ -5,11 +5,10 @@ import { Group, type Texture } from "three/webgpu";
 import type { Scene, WebGPURenderer, PerspectiveCamera } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
 import { ChunkManager } from "./ChunkManager";
-import { FarTerrainSystem } from "./FarTerrainSystem";
 import { FloatingOrigin } from "../common/FloatingOrigin";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
 import type { BrushStroke } from "./brushTypes";
-import { type MapData, createEmptyMapData, setChunkData, parseChunkKey, getChunkData, hasChunks } from "@project/MapData";
+import { type MapData, setChunkData, parseChunkKey, getChunkData, hasChunks } from "@project/MapData";
 import type { TerrainTextureArrayResult } from "./TerrainTextureArrays";
 
 export type TerrainSystemResource = {
@@ -19,7 +18,7 @@ export type TerrainSystemResource = {
   hasRenderableChunkAt: (xMeters: number, zMeters: number) => boolean;
   getStreamingRevision: () => number;
   floatingOrigin: FloatingOrigin;
-  initGpu: (renderer: WebGPURenderer, spawnX?: number, spawnZ?: number) => Promise<void>;
+  initGpu: (renderer: WebGPURenderer) => Promise<void>;
   update: (playerWorldX: number, playerWorldZ: number, camera: PerspectiveCamera) => void;
   // GPU-first brush editing: all brush operations run on GPU compute shaders.
   // GPU-first 画刷编辑：所有画刷操作在 GPU 计算着色器上运行
@@ -27,7 +26,7 @@ export type TerrainSystemResource = {
   // Map save/load API.
   // 地图保存/加载 API
   exportCurrentMapData: () => MapData;
-  loadMapData: (mapData: MapData, options?: LoadMapDataOptions) => Promise<void>;
+  loadMapData: (mapData: MapData) => Promise<void>;
   markMapDataSaved: () => void;
   resetToOriginal: () => Promise<void>;
   // Texture array data for PBR terrain materials.
@@ -36,17 +35,13 @@ export type TerrainSystemResource = {
   dispose: () => void;
 };
 
-export type LoadMapDataOptions = {
-  restrictToMapChunks?: boolean;
-};
-
 /**
  * Create the GPU-first streaming terrain system.
  * 创建 GPU-first 流式地形系统
  *
  * Architecture (GPU-first design):
- * - Height generation: GPU compute shader → StorageTexture atlas
- * - Height readback: GPU → CPU cache (ONCE per chunk, no duplicate noise)
+ * - Height source: map files → CPU cache → StorageTexture atlas
+ * - Height readback: GPU → CPU cache after brush edits
  * - Normal generation: GPU compute shader → StorageTexture atlas
  * - Vertex displacement: GPU vertex shader samples from height texture
  * - Frustum culling: Three.js built-in (GPU-optimized)
@@ -54,8 +49,8 @@ export type LoadMapDataOptions = {
  * - Height queries: CPU samples from GPU-readback cache
  *
  * 架构（GPU-first 设计）：
- * - 高度生成：GPU 计算着色器 → StorageTexture 图集
- * - 高度回读：GPU → CPU 缓存（每 chunk 一次，无重复噪声）
+ * - 高度来源：地图文件 → CPU 缓存 → StorageTexture 图集
+ * - 高度回读：画刷编辑后从 GPU 回读到 CPU 缓存
  * - 法线生成：GPU 计算着色器 → StorageTexture 图集
  * - 顶点位移：GPU 顶点着色器从高度纹理采样
  * - 视锥剔除：Three.js 内置（已 GPU 优化）
@@ -71,16 +66,11 @@ export function createTerrainSystem(
 
   const floatingOrigin = new FloatingOrigin(config);
   let chunkManager: ChunkManager | null = null;
-  let farTerrain: FarTerrainSystem | null = null;
-
-  // Track which chunks have been modified by brush (need re-upload).
-  // 跟踪哪些 chunk 被画刷修改过（需要重新上传）
-  const modifiedChunks = new Set<string>();
 
   // Store original map data for reset functionality.
   // 存储原始地图数据用于重置功能
   let originalMapData: MapData | null = null;
-  let restrictedMapChunkKeys: ReadonlySet<string> | null = null;
+  let mapChunkKeys = new Set<string>();
 
   // Initialize height sampler with config.
   // 使用配置初始化高度采样器
@@ -125,7 +115,7 @@ export function createTerrainSystem(
     const cx = Math.floor(xMeters / chunkSize);
     const cz = Math.floor(zMeters / chunkSize);
     const key = `${cx},${cz}`;
-    if (restrictedMapChunkKeys && !restrictedMapChunkKeys.has(key)) {
+    if (!mapChunkKeys.has(key)) {
       return false;
     }
 
@@ -138,7 +128,7 @@ export function createTerrainSystem(
 
   const getStreamingRevision = (): number => chunkManager?.getStreamingRevision() ?? 0;
 
-  const initGpu = async (r: WebGPURenderer, spawnX = 32, spawnZ = 32): Promise<void> => {
+  const initGpu = async (r: WebGPURenderer): Promise<void> => {
     // Create GPU chunk manager.
     // 创建 GPU chunk 管理器
     chunkManager = new ChunkManager(config, scene, floatingOrigin);
@@ -147,15 +137,8 @@ export function createTerrainSystem(
     // 初始化 GPU 计算管线
     await chunkManager.initGpu(r);
 
-    // Force load chunks around spawn point.
-    // 强制加载出生点周围的 chunk
-    await chunkManager.forceLoadAround(spawnX, spawnZ);
-
-    if (config.farTerrain.enabled) {
-      farTerrain = new FarTerrainSystem(config, floatingOrigin);
-      root.add(farTerrain.root);
-      farTerrain.update(spawnX, spawnZ);
-    }
+    // EN: Terrain is created only after map data is loaded; init must not generate placeholder chunks.
+    // 中文: 地形只在加载地图数据后创建；初始化阶段不能生成占位 chunk。
   };
 
   const update = (playerWorldX: number, playerWorldZ: number, camera: PerspectiveCamera): void => {
@@ -170,7 +153,6 @@ export function createTerrainSystem(
     const playerLocal = floatingOrigin.worldToLocal(playerWorldX, 0, playerWorldZ);
     floatingOrigin.checkAndRebase(playerLocal.x, playerLocal.z);
 
-    farTerrain?.update(playerWorldX, playerWorldZ);
   };
 
   /**
@@ -182,14 +164,12 @@ export function createTerrainSystem(
    */
   const applyBrushStrokes = async (strokes: BrushStroke[]): Promise<void> => {
     if (!chunkManager) return;
-    const editableStrokes = restrictedMapChunkKeys
-      ? strokes.filter((stroke) => {
-          const chunkSize = config.streaming.chunkSizeMeters;
-          const cx = Math.floor(stroke.worldX / chunkSize);
-          const cz = Math.floor(stroke.worldZ / chunkSize);
-          return restrictedMapChunkKeys!.has(`${cx},${cz}`);
-        })
-      : strokes;
+    const editableStrokes = strokes.filter((stroke) => {
+      const chunkSize = config.streaming.chunkSizeMeters;
+      const cx = Math.floor(stroke.worldX / chunkSize);
+      const cz = Math.floor(stroke.worldZ / chunkSize);
+      return mapChunkKeys.has(`${cx},${cz}`);
+    });
 
     await chunkManager.applyBrushStrokes(editableStrokes);
   };
@@ -199,50 +179,27 @@ export function createTerrainSystem(
    * 导出当前地形为 MapData（用于保存）
    */
   const exportCurrentMapData = (): MapData => {
-    const originalChunkKeys = originalMapData ? new Set(Object.keys(originalMapData.chunks)) : null;
-    const dirtyChunkKeys = originalChunkKeys
-      ? TerrainHeightSampler.getDirtyChunkKeys().filter((key) => originalChunkKeys.has(key))
-      : TerrainHeightSampler.getDirtyChunkKeys();
-    const dirtyChunkKeySet = new Set(dirtyChunkKeys);
-
-    if (originalMapData && hasChunks(originalMapData)) {
-      const mapData = createMapDataShell(originalMapData);
-      const exportChunkKeys = new Set(Object.keys(originalMapData.chunks));
-
-      // EN: Existing project maps may only save chunks already declared by their sparse manifest; map expansion must be explicit.
-      // 中文: 已有项目地图只能保存稀疏清单已声明的 chunk；扩展地图必须走显式流程。
-      for (const key of exportChunkKeys) {
-        const { cx, cz } = parseChunkKey(key);
-        const originalChunk = getChunkData(originalMapData, cx, cz);
-        const cachedHeightData = TerrainHeightSampler.getChunkHeightData(cx, cz);
-        const heights = dirtyChunkKeySet.has(key)
-          ? cachedHeightData ?? originalChunk?.heights
-          : originalChunk?.heights ?? cachedHeightData;
-
-        if (heights) {
-          setChunkData(mapData, cx, cz, heights);
-        }
-      }
-
-      mapData.dirtyChunkKeys = dirtyChunkKeys;
-      return mapData;
+    if (!originalMapData || !hasChunks(originalMapData)) {
+      throw new Error("Cannot export terrain before loading a map file");
     }
 
-    const mapData = createEmptyMapData(
-      config.height.seed,
-      config.gpuCompute.tileResolution,
-      config.streaming.chunkSizeMeters,
-      "Exported Map"
-    );
+    const originalChunkKeys = new Set(Object.keys(originalMapData.chunks));
+    const dirtyChunkKeys = TerrainHeightSampler.getDirtyChunkKeys().filter((key) => originalChunkKeys.has(key));
+    const dirtyChunkKeySet = new Set(dirtyChunkKeys);
 
-    // Copy all cached chunk height data.
-    // 复制所有缓存的 chunk 高度数据
-    const chunkKeys = TerrainHeightSampler.getAllCachedChunkKeys();
-    for (const key of chunkKeys) {
+    const mapData = createMapDataShell(originalMapData);
+    // EN: Saves preserve the loaded sparse manifest; runtime never invents or expands terrain chunks.
+    // 中文: 保存保持已加载的稀疏清单；运行时绝不创建或扩展地形 chunk。
+    for (const key of originalChunkKeys) {
       const { cx, cz } = parseChunkKey(key);
-      const heightData = TerrainHeightSampler.getChunkHeightData(cx, cz);
-      if (heightData) {
-        setChunkData(mapData, cx, cz, heightData);
+      const originalChunk = getChunkData(originalMapData, cx, cz);
+      const cachedHeightData = TerrainHeightSampler.getChunkHeightData(cx, cz);
+      const heights = dirtyChunkKeySet.has(key)
+        ? cachedHeightData ?? originalChunk?.heights
+        : originalChunk?.heights ?? cachedHeightData;
+
+      if (heights) {
+        setChunkData(mapData, cx, cz, heights);
       }
     }
 
@@ -255,11 +212,11 @@ export function createTerrainSystem(
    * Load terrain from MapData.
    * 从 MapData 加载地形
    */
-  const loadMapData = async (mapData: MapData, options: LoadMapDataOptions = {}): Promise<void> => {
+  const loadMapData = async (mapData: MapData): Promise<void> => {
     if (!chunkManager) return;
 
-    // EN: Loading a project map replaces the terrain cache so stale procedural chunks cannot leak into later saves.
-    // 中文: 加载项目地图时替换地形缓存，避免旧的程序 chunk 泄漏到后续保存中。
+    // EN: Loading a project map replaces the terrain cache; map files are the only valid terrain source.
+    // 中文: 加载项目地图时替换地形缓存；地图文件是唯一有效的地形来源。
     TerrainHeightSampler.clearCache();
 
     // Verify config matches.
@@ -281,18 +238,20 @@ export function createTerrainSystem(
     }
 
     TerrainHeightSampler.clearDirtyChunks();
-    restrictedMapChunkKeys = options.restrictToMapChunks
-      ? new Set(Object.keys(mapData.chunks))
-      : null;
-    chunkManager.setAllowedChunkKeys(restrictedMapChunkKeys);
+    mapChunkKeys = new Set(Object.keys(mapData.chunks));
+    chunkManager.setMapChunkKeys(mapChunkKeys);
 
     // Store original map data for reset.
     // 存储原始地图数据用于重置
     originalMapData = cloneMapData(mapData);
 
-    // Re-upload all loaded chunks to GPU.
-    // 重新上传所有已加载的 chunk 到 GPU
+    // EN: Existing active chunks may share coordinates with the newly loaded map, so refresh their GPU tiles first.
+    // 中文: 已激活 chunk 可能与新加载地图共用坐标，因此先刷新它们的 GPU tile。
     await chunkManager.reuploadAllChunks();
+
+    // Load visible map chunks around the map center without synthesizing missing chunks.
+    // 围绕地图中心加载可见地图 chunk，但不合成缺失 chunk。
+    await chunkManager.forceLoadAround(...resolveMapInitialLoadPoint(mapData));
   };
 
   /**
@@ -308,12 +267,9 @@ export function createTerrainSystem(
     // Clear all cached height data.
     // 清除所有缓存的高度数据
     TerrainHeightSampler.clearCache();
-    modifiedChunks.clear();
-    const shouldRestrictToMapChunks = restrictedMapChunkKeys !== null;
-
     // Reload original data.
     // 重新加载原始数据
-    await loadMapData(originalMapData, { restrictToMapChunks: shouldRestrictToMapChunks });
+    await loadMapData(originalMapData);
   };
 
   /**
@@ -339,14 +295,11 @@ export function createTerrainSystem(
   };
 
   const dispose = (): void => {
-    farTerrain?.dispose();
-    farTerrain = null;
     chunkManager?.dispose();
     chunkManager = null;
     TerrainHeightSampler.clearCache();
-    modifiedChunks.clear();
     originalMapData = null;
-    restrictedMapChunkKeys = null;
+    mapChunkKeys = new Set<string>();
   };
 
   return {
@@ -366,4 +319,49 @@ export function createTerrainSystem(
     setTextureData,
     dispose,
   };
+}
+
+function resolveMapInitialLoadPoint(mapData: MapData): [number, number] {
+  const keys = Object.keys(mapData.chunks);
+  if (keys.length === 0) {
+    return [0, 0];
+  }
+
+  let minChunkX = Number.POSITIVE_INFINITY;
+  let maxChunkX = Number.NEGATIVE_INFINITY;
+  let minChunkZ = Number.POSITIVE_INFINITY;
+  let maxChunkZ = Number.NEGATIVE_INFINITY;
+
+  const coords: Array<{ cx: number; cz: number }> = [];
+  for (const key of keys) {
+    const { cx, cz } = parseChunkKey(key);
+    coords.push({ cx, cz });
+    minChunkX = Math.min(minChunkX, cx);
+    maxChunkX = Math.max(maxChunkX, cx);
+    minChunkZ = Math.min(minChunkZ, cz);
+    maxChunkZ = Math.max(maxChunkZ, cz);
+  }
+
+  const targetChunkX = (minChunkX + maxChunkX) / 2;
+  const targetChunkZ = (minChunkZ + maxChunkZ) / 2;
+  let nearestChunk = coords[0]!;
+  let nearestDistanceSq = Number.POSITIVE_INFINITY;
+
+  for (const coord of coords) {
+    const dx = coord.cx - targetChunkX;
+    const dz = coord.cz - targetChunkZ;
+    const distanceSq = dx * dx + dz * dz;
+    if (distanceSq < nearestDistanceSq) {
+      nearestDistanceSq = distanceSq;
+      nearestChunk = coord;
+    }
+  }
+
+  const chunkSize = mapData.chunkSizeMeters;
+  // EN: Use the nearest declared chunk center, not the bounding-box center, so sparse maps never preload empty space.
+  // 中文: 使用最近的已声明 chunk 中心，而不是包围盒中心，避免稀疏地图预加载空白区域。
+  return [
+    (nearestChunk.cx + 0.5) * chunkSize,
+    (nearestChunk.cz + 0.5) * chunkSize,
+  ];
 }
