@@ -5,6 +5,7 @@ import { getPlatform } from "@/platform";
 import { base64ToUint8Array, uint8ArrayToBase64 } from "@/lib/base64";
 import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
 import {
+  DEFAULT_VEGETATION_CELL_SIZE_METERS,
   VEGETATION_MODELS_PATH,
   createVegetationDataFromManifest,
   createVegetationStoragePayload,
@@ -18,9 +19,15 @@ import { sortPageKeys, type MapData } from "@project/MapData";
 
 const platform = getPlatform();
 
+export interface VegetationStorageLoadResult {
+  data: VegetationMapData;
+  cellSizeMeters: number;
+  cellKeys: string[];
+}
+
 export class VegetationStorage {
-  static async loadVegetationData(mapDirectory: string, mapData?: MapData | null): Promise<VegetationMapData> {
-    const jsonPath = `${mapDirectory}/${VEGETATION_MODELS_PATH}`;
+  static async loadVegetationData(mapDirectory: string, mapData?: MapData | null): Promise<VegetationStorageLoadResult> {
+    const jsonPath = `${mapDirectory}/${mapData?.vegetationPath ?? VEGETATION_MODELS_PATH}`;
     let manifestText: string;
 
     try {
@@ -28,7 +35,11 @@ export class VegetationStorage {
     } catch (error) {
       if (isMissingFileSystemResourceError(error)) {
         console.warn(`[VegetationStorage] Vegetation data not found: ${jsonPath}`, error);
-        return createEmptyVegetationData();
+        return {
+          data: createEmptyVegetationData(),
+          cellSizeMeters: DEFAULT_VEGETATION_CELL_SIZE_METERS,
+          cellKeys: [],
+        };
       }
 
       console.error(
@@ -40,14 +51,18 @@ export class VegetationStorage {
 
     try {
       const manifest = deserializeVegetationManifest(manifestText);
-      const cellKeys = mapData?.vegetation.cellKeys ?? [];
+      const cellKeys = manifest.instances.cellKeys;
       const cellEntries = await Promise.all(
         sortPageKeys(cellKeys).map(async (key) => {
           const base64 = await platform.files.readBinaryBase64(`${mapDirectory}/${getVegetationCellPathForKey(key)}`);
           return [key, base64ToUint8Array(base64)] as const;
         }),
       );
-      return createVegetationDataFromManifest(manifest, Object.fromEntries(cellEntries));
+      return {
+        data: createVegetationDataFromManifest(manifest, Object.fromEntries(cellEntries)),
+        cellSizeMeters: manifest.instances.cellSizeMeters,
+        cellKeys,
+      };
     } catch (error) {
       console.error(
         `[VegetationStorage] Failed to load vegetation data: ${jsonPath}: ${formatUnknownError(error)}`,

@@ -14,7 +14,6 @@ const mapFilter = readFlagValue("--map");
 const pageSizeMeters = 64;
 const heightPageResolution = 129;
 const paintPageResolution = 1024;
-const vegetationCellSizeMeters = 32;
 const defaultPageBounds = {
   minPageX: -8,
   maxPageX: 7,
@@ -22,7 +21,7 @@ const defaultPageBounds = {
   maxPageZ: 7,
 };
 const projectVersion = 3;
-const mapVersion = 5;
+const mapVersion = 6;
 const heightPagesDirectory = "terrain/height/pages";
 const heightFormat = "float32le";
 
@@ -456,13 +455,7 @@ async function generateMap(preset) {
       pagesDirectory: "paint/pages",
       pageKeys: [],
     },
-    vegetation: {
-      modelsPath: "vegetation/models.json",
-      cellSizeMeters: vegetationCellSizeMeters,
-      cellFormat: "instanced-f32le-v1",
-      cellsDirectory: "vegetation/cells",
-      cellKeys: [],
-    },
+    vegetationPath: "vegetation/models.json",
     metadata: {
       name: preset.name,
       created: now,

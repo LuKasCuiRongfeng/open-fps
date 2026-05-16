@@ -429,7 +429,7 @@ export class TerrainEditor {
       heightPages: {},
       loadHeightPage: mapData.loadHeightPage,
       paint: { ...mapData.paint, pageKeys: [...mapData.paint.pageKeys] },
-      vegetation: { ...mapData.vegetation, cellKeys: [...mapData.vegetation.cellKeys] },
+      vegetationPath: mapData.vegetationPath,
       metadata: { ...mapData.metadata },
     };
     this.setDirty(false);

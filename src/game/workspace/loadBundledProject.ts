@@ -102,9 +102,7 @@ export async function loadBundledGameProject(
     manifest.paint.pageKeys.length > 0
       ? fetchRequiredText(resolveProjectUrl(mapDirectoryUrl, manifest.paint.materialSetPath), "paint material set")
       : Promise.resolve(null),
-    manifest.vegetation.cellKeys.length > 0
-      ? fetchRequiredText(resolveProjectUrl(mapDirectoryUrl, manifest.vegetation.modelsPath), "vegetation models")
-      : Promise.resolve(null),
+    fetchOptionalText(resolveProjectUrl(mapDirectoryUrl, manifest.vegetationPath)),
   ]);
 
   const heightPageCache = new Map<string, ReturnType<NonNullable<MapData["loadHeightPage"]>>>();
@@ -133,7 +131,7 @@ export async function loadBundledGameProject(
   const settings = mergeSettingsWithDefaults(settingsJson);
   const textureDefinition = textureJson ? JSON.parse(textureJson) as TextureDefinition : null;
   const vegetationData = vegetationJson
-    ? await loadBundledVegetationData(mapDirectoryUrl, vegetationJson, map.vegetation.cellKeys)
+    ? await loadBundledVegetationData(mapDirectoryUrl, vegetationJson)
     : null;
 
   return {
@@ -151,11 +149,10 @@ export async function loadBundledGameProject(
 async function loadBundledVegetationData(
   mapDirectoryUrl: string,
   vegetationJson: string,
-  cellKeys: readonly string[],
 ): Promise<VegetationMapData> {
   const manifest = deserializeVegetationManifest(vegetationJson);
   const cellEntries = await Promise.all(
-    cellKeys.map(async (key) => {
+    manifest.instances.cellKeys.map(async (key) => {
       const bytes = await fetchRequiredBytes(
         resolveProjectUrl(mapDirectoryUrl, getVegetationCellPathForKey(key)),
         `vegetation cell ${key}`,

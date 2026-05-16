@@ -2,21 +2,20 @@
 // VegetationData：可编辑植被模型与摆放数据。
 
 import {
-  MAP_VEGETATION_CELL_FORMAT,
-  MAP_VEGETATION_CELLS_DIRECTORY,
   MAP_VEGETATION_MODELS_PATH,
   pageKey,
   parsePageKey,
   sortPageKeys,
 } from "@project/MapData";
 
-export const VEGETATION_DATA_VERSION = 3;
+export const VEGETATION_DATA_VERSION = 4;
 export const VEGETATION_MODELS_PATH = MAP_VEGETATION_MODELS_PATH;
-export const VEGETATION_CELLS_DIRECTORY = MAP_VEGETATION_CELLS_DIRECTORY;
-export const VEGETATION_INSTANCE_FORMAT = MAP_VEGETATION_CELL_FORMAT;
+export const VEGETATION_CELLS_DIRECTORY = "vegetation/cells";
+export const VEGETATION_INSTANCE_FORMAT = "instanced-f32le-v1";
+export const DEFAULT_VEGETATION_CELL_SIZE_METERS = 32;
 
-// EN: v3 keeps model metadata in vegetation/models.json and stores sparse cell instance records as little-endian binary.
-// 中文: v3 将模型元数据保存在 vegetation/models.json，并把稀疏 cell 实例记录保存为小端二进制。
+// EN: v4 keeps all vegetation storage metadata in vegetation/models.json and stores sparse cells as binary records.
+// 中文: v4 将所有植被存储元数据保存在 vegetation/models.json，并把稀疏 cell 保存为二进制记录。
 export const VEGETATION_INSTANCE_RECORD_BYTE_LENGTH = 24;
 export const DEFAULT_VEGETATION_TARGET_HEIGHT_METERS = 8;
 export const DEFAULT_VEGETATION_LOD1_DISTANCE_METERS = 70;
@@ -79,6 +78,9 @@ export interface VegetationMapData {
 
 export interface VegetationInstanceManifest {
   format: typeof VEGETATION_INSTANCE_FORMAT;
+  cellSizeMeters: number;
+  cellsDirectory: typeof VEGETATION_CELLS_DIRECTORY;
+  cellKeys: string[];
   modelIds: string[];
 }
 
@@ -193,6 +195,9 @@ export function createVegetationStoragePayload(
       models,
       instances: {
         format: VEGETATION_INSTANCE_FORMAT,
+        cellSizeMeters,
+        cellsDirectory: VEGETATION_CELLS_DIRECTORY,
+        cellKeys: cells.map((cell) => cell.key),
         modelIds,
       },
     },
@@ -215,7 +220,7 @@ export function createVegetationDataFromManifest(
   const instances: VegetationInstance[] = [];
   const modelIds = manifest.instances.modelIds;
 
-  for (const key of sortPageKeys(Object.keys(cells))) {
+  for (const key of manifest.instances.cellKeys) {
     const bytes = cells[key];
     if (!bytes) {
       throw new Error(`Vegetation cell '${key}' is missing binary data`);
@@ -376,6 +381,17 @@ function normalizeInstanceManifest(
     throw new Error(`Vegetation instance format '${String(value.format ?? "unknown")}' is not supported`);
   }
 
+  const cellSizeMeters = readFiniteNumber(value.cellSizeMeters, Number.NaN);
+  if (!Number.isFinite(cellSizeMeters) || cellSizeMeters <= 0) {
+    throw new Error("Vegetation instance manifest has invalid cell size");
+  }
+
+  if (value.cellsDirectory !== VEGETATION_CELLS_DIRECTORY) {
+    throw new Error("Vegetation instance manifest has invalid cells directory");
+  }
+
+  const cellKeys = normalizeVegetationCellKeys(value.cellKeys);
+
   if (!Array.isArray(value.modelIds) || !value.modelIds.every((id) => typeof id === "string")) {
     throw new Error("Vegetation instance manifest must contain model id order");
   }
@@ -394,8 +410,33 @@ function normalizeInstanceManifest(
 
   return {
     format: VEGETATION_INSTANCE_FORMAT,
+    cellSizeMeters,
+    cellsDirectory: VEGETATION_CELLS_DIRECTORY,
+    cellKeys,
     modelIds,
   };
+}
+
+function normalizeVegetationCellKeys(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    throw new Error("Vegetation instance manifest must contain cell keys");
+  }
+
+  const keys = new Set<string>();
+  for (const key of value) {
+    if (typeof key !== "string") {
+      throw new Error("Vegetation instance manifest cell keys must be strings");
+    }
+
+    parsePageKey(key);
+    if (keys.has(key)) {
+      throw new Error(`Vegetation instance manifest has duplicate cell key '${key}'`);
+    }
+
+    keys.add(key);
+  }
+
+  return sortPageKeys(keys);
 }
 
 function cloneVegetationModels(

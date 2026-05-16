@@ -86,7 +86,7 @@ export function createTerrainSystem(
     heightPages: {},
     loadHeightPage: source.loadHeightPage,
     paint: { ...source.paint, pageKeys: [...source.paint.pageKeys] },
-    vegetation: { ...source.vegetation, cellKeys: [...source.vegetation.cellKeys] },
+    vegetationPath: source.vegetationPath,
     metadata: { ...source.metadata },
   });
 

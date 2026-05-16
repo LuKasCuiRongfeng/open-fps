@@ -30,14 +30,6 @@ export interface MapPaintData {
   pageKeys: string[];
 }
 
-export interface MapVegetationData {
-  modelsPath: typeof MAP_VEGETATION_MODELS_PATH;
-  cellSizeMeters: number;
-  cellFormat: typeof MAP_VEGETATION_CELL_FORMAT;
-  cellsDirectory: typeof MAP_VEGETATION_CELLS_DIRECTORY;
-  cellKeys: string[];
-}
-
 /** Complete map data for save/load. / 用于保存/加载的完整地图数据。 */
 export interface MapData {
   version: number;
@@ -49,7 +41,7 @@ export interface MapData {
   heightPages: Record<string, HeightPageData>;
   loadHeightPage?: HeightPageLoader;
   paint: MapPaintData;
-  vegetation: MapVegetationData;
+  vegetationPath: typeof MAP_VEGETATION_MODELS_PATH;
   metadata: MapMetadata;
   dirtyHeightPageKeys?: readonly string[];
 }
@@ -74,24 +66,21 @@ export interface MapManifest {
     };
   };
   paint: MapPaintData;
-  vegetation: MapVegetationData;
+  vegetationPath: typeof MAP_VEGETATION_MODELS_PATH;
   metadata: MapMetadata;
 }
 
-export const MAP_DATA_VERSION = 5;
+export const MAP_DATA_VERSION = 6;
 export const MAP_HEIGHT_FORMAT = "float32le";
 export const MAP_HEIGHT_PAGES_DIRECTORY = "terrain/height/pages";
 export const MAP_PAINT_MATERIAL_SET_PATH = "paint/layers.json";
 export const MAP_PAINT_PAGES_DIRECTORY = "paint/pages";
 export const MAP_PAINT_PAGE_FORMAT = "rgba8-splat-v1";
 export const MAP_VEGETATION_MODELS_PATH = "vegetation/models.json";
-export const MAP_VEGETATION_CELLS_DIRECTORY = "vegetation/cells";
-export const MAP_VEGETATION_CELL_FORMAT = "instanced-f32le-v1";
 export const DEFAULT_OPEN_WORLD_SIZE_METERS = 3200;
 export const DEFAULT_MAP_PAGE_SIZE_METERS = 64;
 export const DEFAULT_HEIGHT_PAGE_RESOLUTION = 129;
 export const DEFAULT_PAINT_PAGE_RESOLUTION = 1024;
-export const DEFAULT_VEGETATION_CELL_SIZE_METERS = 32;
 
 export function createEmptyMapData(
   seed: number,
@@ -110,7 +99,7 @@ export function createEmptyMapData(
     heightPageKeys: [],
     heightPages: {},
     paint: createEmptyPaintData(),
-    vegetation: createEmptyVegetationPageData(),
+    vegetationPath: MAP_VEGETATION_MODELS_PATH,
     metadata: {
       name,
       created: now,
@@ -126,16 +115,6 @@ export function createEmptyPaintData(): MapPaintData {
     pageFormat: MAP_PAINT_PAGE_FORMAT,
     pagesDirectory: MAP_PAINT_PAGES_DIRECTORY,
     pageKeys: [],
-  };
-}
-
-export function createEmptyVegetationPageData(): MapVegetationData {
-  return {
-    modelsPath: MAP_VEGETATION_MODELS_PATH,
-    cellSizeMeters: DEFAULT_VEGETATION_CELL_SIZE_METERS,
-    cellFormat: MAP_VEGETATION_CELL_FORMAT,
-    cellsDirectory: MAP_VEGETATION_CELLS_DIRECTORY,
-    cellKeys: [],
   };
 }
 
@@ -206,7 +185,7 @@ export function createMapManifest(mapData: MapData): MapManifest {
       },
     },
     paint: normalizePaintData(mapData.paint),
-    vegetation: normalizeVegetationData(mapData.vegetation),
+    vegetationPath: normalizeVegetationPath(mapData.vegetationPath),
     metadata: { ...mapData.metadata },
   };
 }
@@ -266,7 +245,7 @@ export function deserializeMapManifest(json: string): MapManifest {
       },
     },
     paint: normalizePaintData(parsed.paint),
-    vegetation: normalizeVegetationData(parsed.vegetation),
+    vegetationPath: normalizeVegetationPath(parsed.vegetationPath),
     metadata: {
       name: parsed.metadata.name,
       created: parsed.metadata.created,
@@ -288,7 +267,7 @@ export function createMapDataFromManifest(
     heightPageKeys: sortPageKeys(manifest.terrain.height.pageKeys),
     heightPages,
     paint: normalizePaintData(manifest.paint),
-    vegetation: normalizeVegetationData(manifest.vegetation),
+    vegetationPath: normalizeVegetationPath(manifest.vegetationPath),
     metadata: { ...manifest.metadata },
   };
 }
@@ -389,15 +368,12 @@ function normalizePaintData(value: Partial<MapPaintData> | null | undefined): Ma
   };
 }
 
-function normalizeVegetationData(value: Partial<MapVegetationData> | null | undefined): MapVegetationData {
-  const cellKeys = normalizePageKeys(value?.cellKeys ?? [], "vegetation cell");
-  return {
-    modelsPath: MAP_VEGETATION_MODELS_PATH,
-    cellSizeMeters: readPositiveNumber(value?.cellSizeMeters, DEFAULT_VEGETATION_CELL_SIZE_METERS, "vegetation cell size"),
-    cellFormat: MAP_VEGETATION_CELL_FORMAT,
-    cellsDirectory: MAP_VEGETATION_CELLS_DIRECTORY,
-    cellKeys,
-  };
+function normalizeVegetationPath(value: unknown): typeof MAP_VEGETATION_MODELS_PATH {
+  if (value !== MAP_VEGETATION_MODELS_PATH) {
+    throw new Error("Map manifest has invalid vegetation path");
+  }
+
+  return MAP_VEGETATION_MODELS_PATH;
 }
 
 function normalizePageKeys(value: unknown, label: string): string[] {

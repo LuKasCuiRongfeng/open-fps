@@ -6,6 +6,8 @@ import {
   cloneVegetationData,
   createEmptyVegetationData,
   createVegetationModelDefinition,
+  DEFAULT_VEGETATION_CELL_SIZE_METERS,
+  VEGETATION_MODELS_PATH,
   getVegetationCellKeys,
   isSupportedVegetationModelPath,
   type VegetationBrushMode,
@@ -17,7 +19,7 @@ import {
 } from "@game/world/vegetation";
 import { VegetationBrush, type VegetationBrushSettings } from "./VegetationBrush";
 import { VegetationStorage } from "./VegetationStorage";
-import { DEFAULT_VEGETATION_CELL_SIZE_METERS, type MapData } from "@project/MapData";
+import type { MapData } from "@project/MapData";
 
 type TerrainHeightAt = (x: number, z: number) => number;
 type TerrainHeightAvailability = (x: number, z: number) => boolean;
@@ -100,9 +102,10 @@ export class VegetationEditor {
   }
 
   async loadFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void> {
-    this.cellSizeMeters = mapData?.vegetation.cellSizeMeters ?? DEFAULT_VEGETATION_CELL_SIZE_METERS;
-    this.loadedCellKeys = new Set(mapData?.vegetation.cellKeys ?? []);
-    this.data = await VegetationStorage.loadVegetationData(mapDirectory, mapData);
+    const loaded = await VegetationStorage.loadVegetationData(mapDirectory, mapData);
+    this.cellSizeMeters = loaded.cellSizeMeters;
+    this.loadedCellKeys = new Set(loaded.cellKeys);
+    this.data = loaded.data;
     this.selectedModelId = this.modelDefinitions[0]?.id ?? "";
     this.placementAccumulator = 0;
     await this.scene.setData(mapDirectory, this.data);
@@ -119,8 +122,7 @@ export class VegetationEditor {
   }
 
   applyToMapData(mapData: MapData): void {
-    this.cellSizeMeters = mapData.vegetation.cellSizeMeters;
-    mapData.vegetation.cellKeys = getVegetationCellKeys(this.data, this.cellSizeMeters);
+    mapData.vegetationPath = VEGETATION_MODELS_PATH;
   }
 
   getDataSnapshot(): VegetationMapData {
