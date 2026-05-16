@@ -12,7 +12,7 @@ import {
   type SkySettings,
 } from "@game/settings";
 import { timeToSunPosition, type SkySystem } from "@game/world/sky/SkySystem";
-import { setTerrainNormalSoftness } from "@game/world/terrain/material/terrainMaterialTextured";
+import { setTerrainNormalSoftness } from "@game/world/terrain/material/terrainMaterialTexturedArray";
 import type { GameRenderer } from "./rendering/GameRenderer";
 
 export type SettingsChangeCallback = (settings: GameSettings, patch: Partial<GameSettingsPatch>) => void;

@@ -32,6 +32,15 @@ const editorTerrainConfig: TerrainConfig = {
     hysteresisChunks: 3,
     maxChunkOpsPerFrame: 2,
   },
+  lod: {
+    ...terrainConfig.lod,
+    // EN: Editor orbit views expose T-junction cracks from mixed chunk LODs; keep all editor chunks at the same edge tessellation.
+    // 中文: 编辑器轨道视角会暴露混合 chunk LOD 产生的 T-junction 裂缝；编辑器中保持所有 chunk 使用相同边界细分。
+    levels: terrainConfig.lod.levels.map((level) => ({
+      ...level,
+      segmentsPerSide: terrainConfig.lod.levels[0].segmentsPerSide,
+    })),
+  },
 };
 
 export class EditorApp extends GameApp implements EditorAppSession {

@@ -56,7 +56,7 @@ export interface TerrainMaterialArrayParams {
   chunkWorldX: number;
   chunkWorldZ: number;
   chunkSize: number;
-  /** Array of splat map textures (one per 4 layers, null = use procedural blending) */
+  /** Array of splat map textures (one per 4 layers; missing maps use the unpainted green material). */
   splatMaps?: (Texture | null)[];
   /** Texture array result from TerrainTextureArrays loader */
   textureArrays?: TerrainTextureArrayResult | null;
@@ -149,8 +149,8 @@ export function createTexturedArrayTerrainMaterial(
   const weightSum = add(add(weights.x, weights.y), weights.z);
   const triplanarWeights = weights.div(weightSum);
 
-  // Check if we have texture arrays or use procedural.
-  // 检查是否有纹理数组或使用程序纹理
+  // Check if authored texture arrays are available; otherwise use the unpainted green material.
+  // 检查是否有已创作的纹理数组；否则使用未刷绿色材质。
   const textureArrays = params.textureArrays;
   const splatMaps = params.splatMaps ?? [];
   const hasSplatMaps = splatMaps.length > 0 && splatMaps[0] !== null;
@@ -311,45 +311,15 @@ export function createTexturedArrayTerrainMaterial(
 
   } else {
     // ========================================================================
-    // Mode 2: Procedural Blending (no texture.json)
-    // 模式2：程序混合（无 texture.json）
+    // Mode 2: Unpainted map fallback (no texture.json)
+    // 模式2：未刷地图后备显示（无 texture.json）
     // ========================================================================
-    const grassColor = vec3(0.15, 0.42, 0.12);
-    const rockColor = vec3(0.38, 0.35, 0.32);
-    const snowColor = vec3(0.95, 0.95, 0.98);
-
-    const slope = clamp(float(1).sub(terrainNormal.y), float(0), float(1));
-
-    const grassToRock = clamp(
-      worldY.sub(float(cfg.material.grassToRockStartMeters))
-        .div(float(cfg.material.grassToRockEndMeters - cfg.material.grassToRockStartMeters)),
-      float(0),
-      float(1),
-    );
-
-    const rockBySlope = clamp(
-      slope.sub(float(cfg.material.rockSlopeStart))
-        .div(float(cfg.material.rockSlopeEnd - cfg.material.rockSlopeStart)),
-      float(0),
-      float(1),
-    );
-
-    const rockMask = clamp(add(grassToRock, rockBySlope), float(0), float(1));
-
-    const snowMask = clamp(
-      worldY.sub(float(cfg.material.rockToSnowStartMeters))
-        .div(float(cfg.material.rockToSnowEndMeters - cfg.material.rockToSnowStartMeters)),
-      float(0),
-      float(1),
-    );
-
-    const baseColor = mix(grassColor, rockColor, rockMask);
-    const finalColor = mix(baseColor, snowColor, snowMask);
-
-    mat.colorNode = finalColor;
+    // EN: Missing texture.json means the map has no authored paint data, so every surface renders as the same green.
+    // 中文: 缺少 texture.json 表示地图没有已创作的绘制数据，因此所有表面都渲染为同一种绿色。
+    mat.colorNode = vec3(0.15, 0.42, 0.12);
     mat.normalNode = transformNormalToView(terrainNormal);
-    mat.roughnessNode = float(cfg.material.roughness);
-    mat.metalnessNode = float(cfg.material.metalness);
+    mat.roughnessNode = float(1.0);
+    mat.metalnessNode = float(0.0);
   }
 
   return mat;

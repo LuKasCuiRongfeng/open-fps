@@ -87,10 +87,10 @@ export interface TextureLayerDef {
 /**
  * texture.json structure.
  * Keys = texture layer names, values = PBR map definitions.
- * If file doesn't exist → use procedural textures, editing disabled.
+ * If file doesn't exist → render unpainted green terrain, editing disabled.
  * texture.json 结构
  * 键 = 纹理层名称，值 = PBR 贴图定义
- * 如果文件不存在 → 使用程序纹理，禁用编辑
+ * 如果文件不存在 → 渲染未刷绿色地形，禁用编辑
  */
 export type TextureDefinition = Record<string, TextureLayerDef>;
 

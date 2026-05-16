@@ -29,9 +29,9 @@ const platform = getPlatform();
 export class TextureStorage {
   /**
    * Load texture definition from project folder.
-   * Returns null if texture.json doesn't exist (use procedural textures).
+  * Returns null if texture.json doesn't exist (render unpainted green terrain).
    * 从项目文件夹加载纹理定义
-   * 如果 texture.json 不存在则返回 null（使用程序纹理）
+  * 如果 texture.json 不存在则返回 null（渲染未刷绿色地形）
    */
   static async loadTextureDefinition(mapDirectory: string): Promise<TextureDefinition | null> {
     const jsonPath = `${mapDirectory}/texture.json`;

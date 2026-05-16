@@ -33,7 +33,7 @@ import { resolveTerrainAssetPath } from "./assetPaths";
  *   更好的 GPU 缓存利用率
  */
 export interface TerrainTextureArrayResult {
-  /** Whether using real textures (true) or procedural fallback (false) */
+  /** Whether authored texture arrays are available. */
   useTextures: boolean;
 
   /** Diffuse/albedo texture array (SRGB) / 漫反射纹理数组 */
@@ -99,8 +99,8 @@ export class TerrainTextureArrays {
     definition: TextureDefinition | null,
   ): Promise<TerrainTextureArrayResult> {
     if (!definition) {
-      // No texture.json - use procedural textures.
-      // 没有 texture.json - 使用程序纹理
+      // EN: No texture.json means no authored paint data; terrain material renders unpainted green.
+      // 中文: 没有 texture.json 表示没有已创作的绘制数据；地形材质会渲染为未刷绿色。
       this.result = {
         useTextures: false,
         diffuseArray: null,

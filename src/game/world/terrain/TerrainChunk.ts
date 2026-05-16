@@ -14,7 +14,6 @@ import {
 } from "three/webgpu";
 import type { TerrainConfig } from "./terrain";
 import type { FloatingOrigin } from "../common/FloatingOrigin";
-import { createGpuTerrainMaterial, type TerrainMaterialParams } from "./material/terrainMaterial";
 import { createTexturedArrayTerrainMaterial, type TerrainMaterialArrayParams } from "./material/terrainMaterialTexturedArray";
 import type { TerrainTextureArrayResult } from "./TerrainTextureArrays";
 
@@ -306,9 +305,9 @@ export class TerrainChunk {
     const segments = config.lod.levels[0].segmentsPerSide;
     const geometry = this.createChunkGeometry(segments);
 
-    // Create GPU-displaced material (textured or procedural based on config).
-    // 创建 GPU 位移材质（根据配置选择纹理或程序化）
-    const materialParams: TerrainMaterialParams = {
+    // Create GPU-displaced material. Missing texture data renders as unpainted green.
+    // 创建 GPU 位移材质。缺少纹理数据时渲染为未刷绿色。
+    const materialParams: TerrainMaterialArrayParams = {
       heightTexture,
       normalTexture,
       tileUvOffset: this.tileUvOffset,
@@ -318,11 +317,7 @@ export class TerrainChunk {
       chunkSize,
     };
 
-    // Use textured array material for better visuals, fallback to procedural.
-    // 使用纹理数组材质获得更好的视觉效果，回退到程序化
-    const material = config.material.useTextures
-      ? createTexturedArrayTerrainMaterial(config, materialParams)
-      : createGpuTerrainMaterial(config, materialParams);
+    const material = createTexturedArrayTerrainMaterial(config, materialParams);
 
     this.mesh = new Mesh(geometry, material);
     this.mesh.name = `terrain-chunk-gpu-${cx}-${cz}`;
