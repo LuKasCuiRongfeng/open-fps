@@ -77,17 +77,9 @@ export interface VegetationMapData {
   instances: VegetationInstance[];
 }
 
-export interface VegetationCellReference {
-  path: string;
-  count: number;
-  byteLength: number;
-}
-
 export interface VegetationInstanceManifest {
   format: typeof VEGETATION_INSTANCE_FORMAT;
-  cellSizeMeters: number;
   modelIds: string[];
-  cells: Record<string, VegetationCellReference>;
 }
 
 export interface VegetationManifest {
@@ -187,17 +179,11 @@ export function createVegetationStoragePayload(
   }
 
   const cells: VegetationCellPayload[] = [];
-  const references: Record<string, VegetationCellReference> = {};
   for (const key of sortPageKeys(groupedInstances.keys())) {
     const instances = groupedInstances.get(key) ?? [];
     const { px: cx, pz: cz } = parsePageKey(key);
     const path = getVegetationCellPath(cx, cz);
     const bytes = encodeVegetationCellInstances(instances, modelIndexById);
-    references[key] = {
-      path,
-      count: instances.length,
-      byteLength: bytes.byteLength,
-    };
     cells.push({ key, path, bytes });
   }
 
@@ -207,9 +193,7 @@ export function createVegetationStoragePayload(
       models,
       instances: {
         format: VEGETATION_INSTANCE_FORMAT,
-        cellSizeMeters,
         modelIds,
-        cells: references,
       },
     },
     cells,
@@ -229,17 +213,15 @@ export function createVegetationDataFromManifest(
   cells: Record<string, Uint8Array>,
 ): VegetationMapData {
   const instances: VegetationInstance[] = [];
-  const cellReferences = manifest.instances.cells;
   const modelIds = manifest.instances.modelIds;
 
-  for (const key of sortPageKeys(Object.keys(cellReferences))) {
-    const reference = cellReferences[key];
+  for (const key of sortPageKeys(Object.keys(cells))) {
     const bytes = cells[key];
     if (!bytes) {
       throw new Error(`Vegetation cell '${key}' is missing binary data`);
     }
 
-    instances.push(...decodeVegetationCellInstances(key, reference, modelIds, bytes));
+    instances.push(...decodeVegetationCellInstances(key, modelIds, bytes));
   }
 
   return {
@@ -394,11 +376,6 @@ function normalizeInstanceManifest(
     throw new Error(`Vegetation instance format '${String(value.format ?? "unknown")}' is not supported`);
   }
 
-  const cellSizeMeters = readFiniteNumber(value.cellSizeMeters, 0);
-  if (cellSizeMeters <= 0) {
-    throw new Error("Vegetation instance manifest has invalid cell size");
-  }
-
   if (!Array.isArray(value.modelIds) || !value.modelIds.every((id) => typeof id === "string")) {
     throw new Error("Vegetation instance manifest must contain model id order");
   }
@@ -415,41 +392,9 @@ function normalizeInstanceManifest(
     }
   }
 
-  if (!isRecord(value.cells)) {
-    throw new Error("Vegetation instance manifest must contain cell references");
-  }
-
-  const cells: Record<string, VegetationCellReference> = {};
-  for (const [key, reference] of Object.entries(value.cells)) {
-    parsePageKey(key);
-    if (!isRecord(reference)) {
-      throw new Error(`Vegetation cell '${key}' must be an object`);
-    }
-
-    const path = readString(reference.path) ?? "";
-    const count = readFiniteNumber(reference.count, -1);
-    const byteLength = readFiniteNumber(reference.byteLength, -1);
-    if (!path.startsWith(`${VEGETATION_CELLS_DIRECTORY}/`)) {
-      throw new Error(`Vegetation cell '${key}' has an invalid path`);
-    }
-
-    if (!Number.isInteger(count) || count < 0) {
-      throw new Error(`Vegetation cell '${key}' has invalid instance count`);
-    }
-
-    const expectedByteLength = count * VEGETATION_INSTANCE_RECORD_BYTE_LENGTH;
-    if (byteLength !== expectedByteLength) {
-      throw new Error(`Vegetation cell '${key}' has invalid byte length ${byteLength}`);
-    }
-
-    cells[key] = { path, count, byteLength };
-  }
-
   return {
     format: VEGETATION_INSTANCE_FORMAT,
-    cellSizeMeters,
     modelIds,
-    cells,
   };
 }
 
@@ -467,6 +412,11 @@ function getVegetationCellKey(x: number, z: number, cellSizeMeters: number): str
 
 export function getVegetationCellPath(cx: number, cz: number): string {
   return `${VEGETATION_CELLS_DIRECTORY}/c_${formatCellCoordinate(cx)}_${formatCellCoordinate(cz)}.instances.f32`;
+}
+
+export function getVegetationCellPathForKey(key: string): string {
+  const { px, pz } = parsePageKey(key);
+  return getVegetationCellPath(px, pz);
 }
 
 function encodeVegetationCellInstances(
@@ -498,19 +448,17 @@ function encodeVegetationCellInstances(
 
 function decodeVegetationCellInstances(
   cellKeyValue: string,
-  reference: VegetationCellReference,
   modelIds: readonly string[],
   bytes: Uint8Array,
 ): VegetationInstance[] {
-  if (bytes.byteLength !== reference.byteLength) {
-    throw new Error(
-      `Vegetation cell '${cellKeyValue}' byte length mismatch: expected ${reference.byteLength}, got ${bytes.byteLength}`,
-    );
+  if (bytes.byteLength % VEGETATION_INSTANCE_RECORD_BYTE_LENGTH !== 0) {
+    throw new Error(`Vegetation cell '${cellKeyValue}' has invalid byte length ${bytes.byteLength}`);
   }
 
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const instances: VegetationInstance[] = [];
-  for (let index = 0; index < reference.count; index += 1) {
+  const count = bytes.byteLength / VEGETATION_INSTANCE_RECORD_BYTE_LENGTH;
+  for (let index = 0; index < count; index += 1) {
     const offset = index * VEGETATION_INSTANCE_RECORD_BYTE_LENGTH;
     const modelIndex = view.getUint16(offset, true);
     const modelId = modelIds[modelIndex];

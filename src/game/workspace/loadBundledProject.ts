@@ -20,6 +20,7 @@ import type { TextureDefinition } from "@game/world/terrain/TextureData";
 import {
   createVegetationDataFromManifest,
   deserializeVegetationManifest,
+  getVegetationCellPathForKey,
   type VegetationMapData,
 } from "@game/world/vegetation";
 
@@ -132,7 +133,7 @@ export async function loadBundledGameProject(
   const settings = mergeSettingsWithDefaults(settingsJson);
   const textureDefinition = textureJson ? JSON.parse(textureJson) as TextureDefinition : null;
   const vegetationData = vegetationJson
-    ? await loadBundledVegetationData(mapDirectoryUrl, vegetationJson)
+    ? await loadBundledVegetationData(mapDirectoryUrl, vegetationJson, map.vegetation.cellKeys)
     : null;
 
   return {
@@ -150,12 +151,13 @@ export async function loadBundledGameProject(
 async function loadBundledVegetationData(
   mapDirectoryUrl: string,
   vegetationJson: string,
+  cellKeys: readonly string[],
 ): Promise<VegetationMapData> {
   const manifest = deserializeVegetationManifest(vegetationJson);
   const cellEntries = await Promise.all(
-    Object.entries(manifest.instances.cells).map(async ([key, reference]) => {
+    cellKeys.map(async (key) => {
       const bytes = await fetchRequiredBytes(
-        resolveProjectUrl(mapDirectoryUrl, reference.path),
+        resolveProjectUrl(mapDirectoryUrl, getVegetationCellPathForKey(key)),
         `vegetation cell ${key}`,
       );
       return [key, bytes] as const;

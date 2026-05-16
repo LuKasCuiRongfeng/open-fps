@@ -10,26 +10,21 @@ import {
   createVegetationStoragePayload,
   createEmptyVegetationData,
   deserializeVegetationManifest,
+  getVegetationCellPathForKey,
   serializeVegetationManifest,
-  type VegetationManifest,
   type VegetationMapData,
 } from "@game/world/vegetation";
+import { sortPageKeys, type MapData } from "@project/MapData";
 
 const platform = getPlatform();
 
 export class VegetationStorage {
-  static async loadVegetationData(mapDirectory: string): Promise<VegetationMapData> {
+  static async loadVegetationData(mapDirectory: string, mapData?: MapData | null): Promise<VegetationMapData> {
     const jsonPath = `${mapDirectory}/${VEGETATION_MODELS_PATH}`;
+    let manifestText: string;
 
     try {
-      const manifest = deserializeVegetationManifest(await platform.files.readText(jsonPath));
-      const cellEntries = await Promise.all(
-        Object.entries(manifest.instances.cells).map(async ([key, reference]) => {
-          const base64 = await platform.files.readBinaryBase64(`${mapDirectory}/${reference.path}`);
-          return [key, base64ToUint8Array(base64)] as const;
-        }),
-      );
-      return createVegetationDataFromManifest(manifest, Object.fromEntries(cellEntries));
+      manifestText = await platform.files.readText(jsonPath);
     } catch (error) {
       if (isMissingFileSystemResourceError(error)) {
         console.warn(`[VegetationStorage] Vegetation data not found: ${jsonPath}`, error);
@@ -42,15 +37,34 @@ export class VegetationStorage {
       );
       throw error;
     }
+
+    try {
+      const manifest = deserializeVegetationManifest(manifestText);
+      const cellKeys = mapData?.vegetation.cellKeys ?? [];
+      const cellEntries = await Promise.all(
+        sortPageKeys(cellKeys).map(async (key) => {
+          const base64 = await platform.files.readBinaryBase64(`${mapDirectory}/${getVegetationCellPathForKey(key)}`);
+          return [key, base64ToUint8Array(base64)] as const;
+        }),
+      );
+      return createVegetationDataFromManifest(manifest, Object.fromEntries(cellEntries));
+    } catch (error) {
+      console.error(
+        `[VegetationStorage] Failed to load vegetation data: ${jsonPath}: ${formatUnknownError(error)}`,
+        error,
+      );
+      throw error;
+    }
   }
 
   static async saveVegetationData(
     mapDirectory: string,
     data: VegetationMapData,
     cellSizeMeters: number,
+    previousCellKeys: Iterable<string> = [],
   ): Promise<void> {
     const jsonPath = `${mapDirectory}/${VEGETATION_MODELS_PATH}`;
-    const previousCellPaths = await loadPreviousCellPaths(jsonPath);
+    const previousCellPaths = new Set(sortPageKeys(previousCellKeys).map(getVegetationCellPathForKey));
     const { manifest, cells } = createVegetationStoragePayload(data, cellSizeMeters);
 
     // EN: Instance cell files are written before the manifest so the manifest never points at missing binary data.
@@ -64,23 +78,6 @@ export class VegetationStorage {
     const nextCellPaths = new Set(cells.map((cell) => cell.path));
     await removeStaleCells(mapDirectory, previousCellPaths, nextCellPaths);
   }
-}
-
-async function loadPreviousCellPaths(jsonPath: string): Promise<Set<string>> {
-  try {
-    const manifest = deserializeVegetationManifest(await platform.files.readText(jsonPath));
-    return getManifestCellPaths(manifest);
-  } catch (error) {
-    if (!isMissingFileSystemResourceError(error)) {
-      console.warn(`[VegetationStorage] Ignoring previous vegetation manifest during cleanup: ${jsonPath}`, error);
-    }
-
-    return new Set();
-  }
-}
-
-function getManifestCellPaths(manifest: VegetationManifest): Set<string> {
-  return new Set(Object.values(manifest.instances.cells).map((reference) => reference.path));
 }
 
 async function removeStaleCells(

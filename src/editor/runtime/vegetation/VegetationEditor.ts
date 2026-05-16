@@ -33,6 +33,7 @@ export class VegetationEditor {
   private placementAccumulator = 0;
   private sequence = 0;
   private cellSizeMeters = DEFAULT_VEGETATION_CELL_SIZE_METERS;
+  private loadedCellKeys = new Set<string>();
   private _dirty = false;
   private onDirtyChange?: (dirty: boolean) => void;
   private readonly changeSubscribers = new Set<() => void>();
@@ -100,7 +101,8 @@ export class VegetationEditor {
 
   async loadFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void> {
     this.cellSizeMeters = mapData?.vegetation.cellSizeMeters ?? DEFAULT_VEGETATION_CELL_SIZE_METERS;
-    this.data = await VegetationStorage.loadVegetationData(mapDirectory);
+    this.loadedCellKeys = new Set(mapData?.vegetation.cellKeys ?? []);
+    this.data = await VegetationStorage.loadVegetationData(mapDirectory, mapData);
     this.selectedModelId = this.modelDefinitions[0]?.id ?? "";
     this.placementAccumulator = 0;
     await this.scene.setData(mapDirectory, this.data);
@@ -111,7 +113,8 @@ export class VegetationEditor {
   async saveToMapDirectory(mapDirectory: string): Promise<void> {
     if (!this.shouldSave) return;
 
-    await VegetationStorage.saveVegetationData(mapDirectory, this.data, this.cellSizeMeters);
+    await VegetationStorage.saveVegetationData(mapDirectory, this.data, this.cellSizeMeters, this.loadedCellKeys);
+    this.loadedCellKeys = new Set(getVegetationCellKeys(this.data, this.cellSizeMeters));
     this.setDirty(false);
   }
 
