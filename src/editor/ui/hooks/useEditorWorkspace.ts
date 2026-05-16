@@ -6,7 +6,7 @@ import {
   type EditorAppSettings,
 } from "@editor/settings";
 import type { MapData } from "@project/MapData";
-import type { ProjectMetadata } from "@project/ProjectData";
+import type { ProjectMapRecord, ProjectMetadata } from "@project/ProjectData";
 import {
   addRecentProject,
   getProjectNameFromPath,
@@ -57,6 +57,7 @@ export interface EditorWorkspaceController {
   terrainMode: TerrainMode;
   currentProjectPath: string | null;
   currentProjectMetadata: ProjectMetadata | null;
+  currentProjectMaps: ProjectMapRecord[];
   currentMapId: string | null;
   currentMapName: string | null;
   currentMapDirectory: string | null;
@@ -80,6 +81,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
   const [terrainMode, setTerrainMode] = useState<TerrainMode>("procedural");
   const [currentProjectPath, setCurrentProjectPath] = useState<string | null>(null);
   const [currentProjectMetadata, setCurrentProjectMetadata] = useState<ProjectMetadata | null>(null);
+  const [currentProjectMaps, setCurrentProjectMaps] = useState<ProjectMapRecord[]>([]);
   const [currentMapId, setCurrentMapId] = useState<string | null>(null);
   const [currentMapDirectory, setCurrentMapDirectory] = useState<string | null>(null);
   const [recentProjects, setRecentProjects] = useState<string[]>([]);
@@ -100,6 +102,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
   const syncProjectState = (project: LoadedWorkspaceProject | null) => {
     setCurrentProjectPath(project?.projectPath ?? null);
     setCurrentProjectMetadata(project?.metadata ?? null);
+    setCurrentProjectMaps(project?.availableMaps ?? []);
     setCurrentMapId(project?.activeMap.id ?? null);
     setCurrentMapDirectory(project?.activeMapDirectory ?? null);
     setCurrentProjectReference(project?.projectPath ?? null, project?.metadata ?? null);
@@ -293,7 +296,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     const savedProject = await saveProjectMap(mapData, {
       settings,
       projectName: currentProjectMetadata?.name,
-      mapName: currentProjectMetadata?.maps.find((entry) => entry.id === currentMapId)?.name,
+      mapName: currentProjectMaps.find((entry) => entry.id === currentMapId)?.name,
       mapId: currentMapId ?? undefined,
     });
 
@@ -312,7 +315,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
   };
 
   const currentMapName =
-    currentProjectMetadata?.maps.find((entry) => entry.id === currentMapId)?.name ?? null;
+    currentProjectMaps.find((entry) => entry.id === currentMapId)?.name ?? null;
 
   return {
     showProjectScreen,
@@ -321,6 +324,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     terrainMode,
     currentProjectPath,
     currentProjectMetadata,
+    currentProjectMaps,
     currentMapId,
     currentMapName,
     currentMapDirectory,

@@ -61,7 +61,7 @@ export function ProjectFileTab({
   const vegetationDirty = vegetationEditor?.dirty ?? false;
   const dirty = terrainDirty || textureDirty || vegetationDirty;
   const hasProject = editorWorkspace.currentProjectPath !== null;
-  const mapList = editorWorkspace.currentProjectMetadata?.maps ?? [];
+  const mapList = editorWorkspace.currentProjectMaps;
   const statusTone = statusMessage ? getStatusTone(statusMessage) : "success";
   const StatusIcon = statusTone === "success" ? CheckCircle2 : CircleAlert;
 

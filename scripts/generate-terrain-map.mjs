@@ -352,35 +352,17 @@ async function updateProjectMetadata(presets) {
   const existingProject = await readExistingProject();
   const created = existingProject?.created ?? now;
   const projectName = existingProject?.name ?? path.basename(projectDir);
-  const existingMaps = Array.isArray(existingProject?.maps) ? existingProject.maps : [];
-  const generatedMaps = new Map(presets.map((preset) => [preset.id, preset]));
-  const existingIds = new Set(existingMaps.map((entry) => entry.id));
-
-  const maps = existingMaps.map((entry) => {
-    const preset = generatedMaps.get(entry.id);
-    if (!preset) {
-      return entry;
-    }
-
-    return {
-      id: preset.id,
-      name: preset.name,
-      created: entry.created ?? created,
-      modified: now,
-    };
-  });
+  const existingMaps = Array.isArray(existingProject?.maps)
+    ? existingProject.maps.filter((entry) => typeof entry === "string" && entry.trim().length > 0)
+    : [];
+  const maps = [...new Set(existingMaps)];
 
   for (const preset of presets) {
-    if (existingIds.has(preset.id)) {
+    if (maps.includes(preset.id)) {
       continue;
     }
 
-    maps.push({
-      id: preset.id,
-      name: preset.name,
-      created,
-      modified: now,
-    });
+    maps.push(preset.id);
   }
 
   const project = {
@@ -388,7 +370,7 @@ async function updateProjectMetadata(presets) {
     created,
     modified: now,
     version: projectVersion,
-    currentMapId: maps.some((entry) => entry.id === existingProject?.currentMapId)
+    currentMapId: maps.includes(existingProject?.currentMapId)
       ? existingProject.currentMapId
       : presets[0]?.id ?? "main",
     maps,

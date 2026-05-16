@@ -10,8 +10,9 @@ import {
   type MapData,
 } from "@project/MapData";
 import {
+  createProjectMapRecord,
   deserializeProjectMetadata,
-  getCurrentProjectMapRecord,
+  getCurrentProjectMapId,
   type ProjectMapRecord,
   type ProjectMetadata,
 } from "@project/ProjectData";
@@ -87,8 +88,8 @@ export async function loadBundledGameProject(
     "project metadata",
   );
   const metadata = deserializeProjectMetadata(metadataJson);
-  const activeMap = getCurrentProjectMapRecord(metadata);
-  const mapDirectoryUrl = normalizeDirectoryUrl(resolveProjectUrl(projectBaseUrl, `maps/${activeMap.id}/`));
+  const activeMapId = getCurrentProjectMapId(metadata);
+  const mapDirectoryUrl = normalizeDirectoryUrl(resolveProjectUrl(projectBaseUrl, `maps/${activeMapId}/`));
 
   const [manifestJson, settingsJson, textureJson, vegetationJson] = await Promise.all([
     fetchRequiredText(resolveProjectUrl(mapDirectoryUrl, "map.json"), "map manifest"),
@@ -98,6 +99,7 @@ export async function loadBundledGameProject(
   ]);
 
   const manifest = deserializeMapManifest(manifestJson);
+  const activeMap = createProjectMapRecord(activeMapId, manifest.metadata);
   const chunkEntries = await Promise.all(
     manifest.chunkKeys.map(async (key) => {
       const bytes = await fetchRequiredBytes(

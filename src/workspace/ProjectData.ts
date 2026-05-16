@@ -1,9 +1,11 @@
 // ProjectData: project folder structure and serialization.
 // ProjectData：项目文件夹结构和序列化
 
-import type { MapData } from "./MapData";
+import type { MapData, MapMetadata } from "./MapData";
 import type { GameSettings } from "@game/settings";
 
+// EN: Project files store only map IDs; this record is a runtime view hydrated from each map manifest.
+// 中文: 项目文件只存地图 ID；这个记录是在运行时从每个地图清单补全的视图。
 export interface ProjectMapRecord {
   id: string;
   name: string;
@@ -17,7 +19,7 @@ export interface ProjectMetadata {
   modified: number;
   version: number;
   currentMapId: string | null;
-  maps: ProjectMapRecord[];
+  maps: string[];
 }
 
 export interface ProjectData<TSettings extends GameSettings = GameSettings> {
@@ -38,26 +40,24 @@ export const PROJECT_FILES = {
   vegetation: "vegetation.json",
 } as const;
 
-export function createProjectMetadata(name: string, initialMapName = "Main Map"): ProjectMetadata {
+export function createProjectMetadata(name: string, initialMapId = DEFAULT_PROJECT_MAP_ID): ProjectMetadata {
   const now = Date.now();
-  const initialMap = createProjectMapRecord(initialMapName, DEFAULT_PROJECT_MAP_ID);
   return {
     name,
     created: now,
     modified: now,
     version: PROJECT_VERSION,
-    currentMapId: initialMap.id,
-    maps: [initialMap],
+    currentMapId: initialMapId,
+    maps: [initialMapId],
   };
 }
 
-export function createProjectMapRecord(name: string, id: string): ProjectMapRecord {
-  const now = Date.now();
+export function createProjectMapRecord(id: string, metadata: MapMetadata): ProjectMapRecord {
   return {
     id,
-    name,
-    created: now,
-    modified: now,
+    name: metadata.name,
+    created: metadata.created,
+    modified: metadata.modified,
   };
 }
 
@@ -71,9 +71,9 @@ export function sanitizeProjectMapId(name: string): string {
   return normalized || "map";
 }
 
-export function createUniqueProjectMapId(name: string, existingMaps: readonly ProjectMapRecord[]): string {
+export function createUniqueProjectMapId(name: string, existingMapIds: readonly string[]): string {
   const baseId = sanitizeProjectMapId(name);
-  const existingIds = new Set(existingMaps.map((entry) => entry.id));
+  const existingIds = new Set(existingMapIds);
   if (!existingIds.has(baseId)) {
     return baseId;
   }
@@ -86,20 +86,12 @@ export function createUniqueProjectMapId(name: string, existingMaps: readonly Pr
   return `${baseId}-${suffix}`;
 }
 
-export function upsertProjectMapRecord(
+export function upsertProjectMapId(
   metadata: ProjectMetadata,
   mapId: string,
-  mapName: string,
 ): ProjectMetadata {
   const now = Date.now();
-  const existing = metadata.maps.find((entry) => entry.id === mapId);
-  const nextMaps = existing
-    ? metadata.maps.map((entry) =>
-        entry.id === mapId
-          ? { ...entry, name: mapName, modified: now }
-          : entry,
-      )
-    : [...metadata.maps, createProjectMapRecord(mapName, mapId)];
+  const nextMaps = metadata.maps.includes(mapId) ? metadata.maps : [...metadata.maps, mapId];
 
   return {
     ...metadata,
@@ -109,24 +101,24 @@ export function upsertProjectMapRecord(
   };
 }
 
-export function getProjectMapRecord(
+export function getProjectMapId(
   metadata: ProjectMetadata,
   mapId: string,
-): ProjectMapRecord | null {
-  return metadata.maps.find((entry) => entry.id === mapId) ?? null;
+): string | null {
+  return metadata.maps.includes(mapId) ? mapId : null;
 }
 
-export function getCurrentProjectMapRecord(metadata: ProjectMetadata): ProjectMapRecord {
+export function getCurrentProjectMapId(metadata: ProjectMetadata): string {
   if (!metadata.currentMapId) {
     throw new Error("Project metadata is missing currentMapId");
   }
 
-  const record = getProjectMapRecord(metadata, metadata.currentMapId);
-  if (!record) {
+  const mapId = getProjectMapId(metadata, metadata.currentMapId);
+  if (!mapId) {
     throw new Error(`Project metadata references missing map '${metadata.currentMapId}'`);
   }
 
-  return record;
+  return mapId;
 }
 
 export function getProjectMapDirectory(projectPath: string, mapId: string): string {
@@ -157,14 +149,8 @@ export function deserializeProjectMetadata(json: string): ProjectMetadata {
     throw new Error("Project metadata must contain at least one map");
   }
 
-  const maps = parsed.maps
-    .filter((entry): entry is ProjectMapRecord => Boolean(entry?.id) && Boolean(entry?.name))
-    .map((entry) => ({
-      id: entry.id,
-      name: entry.name,
-      created: entry.created ?? now,
-      modified: entry.modified ?? now,
-    }));
+  const mapIds = parsed.maps.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0);
+  const maps = [...new Set(mapIds.map((entry) => entry.trim()))];
 
   if (maps.length === 0) {
     throw new Error("Project metadata does not contain any valid maps");
@@ -174,7 +160,7 @@ export function deserializeProjectMetadata(json: string): ProjectMetadata {
     throw new Error("Project metadata is missing currentMapId");
   }
 
-  if (!maps.some((entry) => entry.id === parsed.currentMapId)) {
+  if (!maps.includes(parsed.currentMapId)) {
     throw new Error(`Current map '${parsed.currentMapId}' does not exist in project metadata`);
   }
 
