@@ -4,6 +4,11 @@
 import { getPlatform } from "@/platform";
 import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
 import { commitSidecarAsset, type SidecarRegionPayload } from "./SidecarAssetCommit";
+import {
+  createSidecarRegionIntegrityMap,
+  validateSidecarRegionIntegrity,
+  type SidecarRegionIntegrityMap,
+} from "./SidecarAssetIntegrity";
 import type { HeightPageData, MapData } from "./MapData";
 import {
   createMapDataFromManifest,
@@ -70,6 +75,7 @@ type SaveProjectMapOptions<TSettings extends GameSettings = GameSettings> = {
 interface TerrainHeightSavePlan {
   regionsToWrite: TerrainHeightRegionManifest[];
   staleRegionPaths?: string[];
+  baseIntegrity?: SidecarRegionIntegrityMap;
 }
 
 let currentProject: CurrentProjectState | null = null;
@@ -418,6 +424,10 @@ function loadProjectHeightRegionPack(
     if (bytes.byteLength !== expectedByteLength) {
       throw new Error(`Invalid height region '${region.key}' byte length`);
     }
+    if (!region.integrity) {
+      throw new Error(`Height region '${region.key}' is missing integrity metadata`);
+    }
+    await validateSidecarRegionIntegrity("Height region", region.key, bytes, region.integrity);
 
     return bytes;
   })();
@@ -488,6 +498,10 @@ async function saveProjectMapData(
   for (const region of terrainSavePlan.regionsToWrite) {
     regionPayloads.push(await createHeightRegionPackPayload(mapData, nextTerrainManifest, region));
   }
+  nextTerrainManifest.regionIntegrity = await createSidecarRegionIntegrityMap(
+    regionPayloads,
+    terrainSavePlan.baseIntegrity,
+  );
 
   await commitSidecarAsset({
     mapDirectory,
@@ -545,6 +559,7 @@ async function createTerrainHeightSavePlan(
 
   return {
     regionsToWrite: nextRegions.filter((region) => dirtyRegionKeys.has(region.key)),
+    baseIntegrity: existingTerrainManifest.regionIntegrity,
   };
 }
 
@@ -566,6 +581,7 @@ async function createHeightRegionPackPayload(
   }
 
   return {
+    key: region.key,
     path: region.path,
     bytes: packBytes,
   };

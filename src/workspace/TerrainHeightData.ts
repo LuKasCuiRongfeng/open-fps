@@ -3,6 +3,11 @@
 
 import { base64ToUint8Array, uint8ArrayToBase64 } from "@/lib/base64";
 import {
+  normalizeSidecarRegionIntegrityMap,
+  type SidecarRegionIntegrity,
+  type SidecarRegionIntegrityMap,
+} from "./SidecarAssetIntegrity";
+import {
   formatGridCoordinate,
   normalizePageKeys,
   parsePageKey,
@@ -21,6 +26,7 @@ export interface TerrainHeightRegionManifest {
   z: number;
   path: string;
   mask: bigint;
+  integrity?: SidecarRegionIntegrity;
 }
 
 export interface TerrainHeightManifest {
@@ -32,6 +38,7 @@ export interface TerrainHeightManifest {
   regionSizePages: number;
   regionsDirectory: typeof MAP_HEIGHT_REGIONS_DIRECTORY;
   regions: Record<string, string>;
+  regionIntegrity: SidecarRegionIntegrityMap;
 }
 
 export interface TerrainHeightPageLocation {
@@ -80,6 +87,7 @@ export function createTerrainHeightManifest(
     regionSizePages: settings.regionSizePages,
     regionsDirectory: MAP_HEIGHT_REGIONS_DIRECTORY,
     regions,
+    regionIntegrity: {},
   };
 }
 
@@ -115,6 +123,8 @@ export function deserializeTerrainHeightManifest(json: string): TerrainHeightMan
     throw new Error("Terrain height manifest has invalid regions directory");
   }
 
+  const regions = normalizeTerrainHeightRegions(parsed.regions, settings.regionSizePages);
+
   return {
     version: TERRAIN_HEIGHT_MANIFEST_VERSION,
     format: MAP_HEIGHT_REGION_FORMAT,
@@ -123,7 +133,12 @@ export function deserializeTerrainHeightManifest(json: string): TerrainHeightMan
     pageSizeMeters: settings.pageSizeMeters,
     regionSizePages: settings.regionSizePages,
     regionsDirectory: MAP_HEIGHT_REGIONS_DIRECTORY,
-    regions: normalizeTerrainHeightRegions(parsed.regions, settings.regionSizePages),
+    regions,
+    regionIntegrity: normalizeSidecarRegionIntegrityMap(
+      parsed.regionIntegrity,
+      Object.keys(regions),
+      "Terrain height manifest regionIntegrity",
+    ),
   };
 }
 
@@ -137,6 +152,7 @@ export function getTerrainHeightRegions(manifest: TerrainHeightManifest): Terrai
         z,
         path: getHeightRegionPath(x, z),
         mask: parseRegionMask(maskHex, key, manifest.regionSizePages),
+        integrity: manifest.regionIntegrity[key],
       };
     })
     .sort((left, right) => compareRegionCoords(left.x, left.z, right.x, right.z));

@@ -2,6 +2,7 @@
 // TextureData：地形纹理绘制系统的数据结构
 
 import {
+  clonePaintData,
   normalizePaintData,
   type MapPaintData,
 } from "@project/MapData";
@@ -147,7 +148,10 @@ export function deserializePaintManifest(json: string): PaintManifest {
     throw new Error("Paint manifest must contain splat map metadata");
   }
 
-  return createPaintManifest(normalizeTextureDefinition(parsed.layers), normalizePaintData({ splatMaps: parsed.splatMaps }));
+  return createPaintManifest(
+    normalizeTextureDefinition(parsed.layers),
+    clonePaintData({ splatMaps: parsed.splatMaps as MapPaintData["splatMaps"] }),
+  );
 }
 
 export function createPaintDataFromManifest(manifest: PaintManifest): MapPaintData {

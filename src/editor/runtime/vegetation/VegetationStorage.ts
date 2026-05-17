@@ -5,6 +5,7 @@ import { getPlatform } from "@/platform";
 import { base64ToUint8Array } from "@/lib/base64";
 import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
 import { commitSidecarAsset } from "@workspace/SidecarAssetCommit";
+import { createSidecarRegionIntegrityMap, validateSidecarRegionIntegrity } from "@workspace/SidecarAssetIntegrity";
 import {
   DEFAULT_VEGETATION_CELL_SIZE_METERS,
   VEGETATION_MODELS_PATH,
@@ -57,7 +58,12 @@ export class VegetationStorage {
       const regionEntries = await Promise.all(
         regions.map(async (region) => {
           const base64 = await platform.files.readBinaryBase64(`${mapDirectory}/${region.path}`);
-          return [region.key, base64ToUint8Array(base64)] as const;
+          const bytes = base64ToUint8Array(base64);
+          if (!region.integrity) {
+            throw new Error(`Vegetation region '${region.key}' is missing integrity metadata`);
+          }
+          await validateSidecarRegionIntegrity("Vegetation region", region.key, bytes, region.integrity);
+          return [region.key, bytes] as const;
         }),
       );
       return {
@@ -82,6 +88,7 @@ export class VegetationStorage {
   ): Promise<void> {
     const previousRegionPaths = new Set(sortPageKeys(previousRegionKeys).map(getVegetationRegionPathForKey));
     const { manifest, regions } = createVegetationStoragePayload(data, cellSizeMeters);
+    manifest.instances.regionIntegrity = await createSidecarRegionIntegrityMap(regions);
 
     await commitSidecarAsset({
       mapDirectory,

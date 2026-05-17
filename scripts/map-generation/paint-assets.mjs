@@ -2,6 +2,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   clamp,
+  createRegionIntegrity,
   ensureMapManifestPaths,
   formatGridCoordinate,
   getMapDir,
@@ -59,10 +60,9 @@ export async function generatePaintAssets(context, preset) {
       regionsDirectory: paintRegionsDirectory,
       indices: [0],
       regions: createPaintRegionMasks(pageBounds),
+      regionIntegrity: {},
     },
   };
-
-  await writeFile(path.join(paintDir, "layers.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 
   const pixels = Buffer.alloc(splatResolution * splatResolution * 4);
   for (let pixelZ = 0; pixelZ < splatResolution; pixelZ += 1) {
@@ -81,7 +81,8 @@ export async function generatePaintAssets(context, preset) {
     }
   }
 
-  const regionByteLength = await writePaintRegionPacks(paintDir, pageBounds, pixels, splatResolution);
+  const regionByteLength = await writePaintRegionPacks(paintDir, pageBounds, pixels, splatResolution, manifest);
+  await writeFile(path.join(paintDir, "layers.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
   return {
     id: preset.id,
     name: preset.name,
@@ -109,7 +110,7 @@ function createPaintRegionMasks(pageBounds) {
   );
 }
 
-async function writePaintRegionPacks(paintDir, pageBounds, fullPixels, fullResolution) {
+async function writePaintRegionPacks(paintDir, pageBounds, fullPixels, fullResolution, manifest) {
   let totalByteLength = 0;
   for (const [regionKey, maskHex] of Object.entries(createPaintRegionMasks(pageBounds))) {
     const [regionX, regionZ] = regionKey.split(",").map(Number);
@@ -131,6 +132,7 @@ async function writePaintRegionPacks(paintDir, pageBounds, fullPixels, fullResol
     }
 
     await writeFile(path.join(paintDir, getPaintRegionPath(regionX, regionZ)), regionBytes);
+    manifest.splatMaps.regionIntegrity[regionKey] = createRegionIntegrity(regionBytes);
     totalByteLength += regionBytes.byteLength;
   }
 

@@ -37,7 +37,8 @@
 - 纹理绘制使用 `paint/layers.json` + `.paintpack` region pack。
 - 植被实例使用 `vegetation/models.json` + `.vegpack` region pack。
 - 已有 dirty region/page 保存、编辑器 undo/redo 和安全写入；terrain、paint、vegetation 的 region-pack sidecar 保存均向 manifest-last 提交协议收敛。
-- 已有基础 `main` 地图资产验证脚本，可检查 manifest、region pack、孤儿文件和截断文件。
+- terrain、paint、vegetation manifest 已记录 region pack 的 byte length 与 SHA-256，并在加载、保存、生成和资产校验中统一验证。
+- 已有 `main` 地图资产验证脚本，可检查 manifest、region pack、孤儿文件、截断文件和内容 hash。
 
 当前最重要的方向是把这些能力从“能用的资产格式”推进到“可验证、可恢复、可 cook、可流式加载的生产级世界管线”。
 
@@ -65,9 +66,9 @@
 
 当前重点：
 
-- 在 manifest 或 pack header 中记录 byte length、format version、checksum 或 content hash。
-- 加载时严格校验格式、长度、mask、索引和 hash。
-- 增加地图资产健康检查工具，能输出缺失、损坏、过期和孤儿文件。
+- 保持 terrain、paint、vegetation manifest 中的 `regionIntegrity` 与实际 pack 同步。
+- 加载时严格校验格式、长度、mask、索引和 SHA-256。
+- 扩展地图资产健康检查工具，继续覆盖 cooked 输出、world partition 索引、过期 cook 和孤儿文件。
 
 验收标准：
 
@@ -317,11 +318,11 @@
 
 ## 近期优先级
 
-1. 为 height/paint/vegetation pack 增加 checksum 或 content hash 校验。
-2. 扩展 `main` 地图资产验证脚本，让它检查 checksum/content hash、cooked 输出和 world partition 索引。
-3. 设计 cooked map 输出结构，让游戏运行时逐步脱离编辑器 source 结构。
-4. 建立 world partition cell schema，先统一 terrain、paint、vegetation，再接 object/collision/nav。
-5. 起草 `main` 的 10 平方公里世界设计规格，包括道路、水体、区域主题和兴趣点密度，并保留向约 20 平方公里整页扩展的空间。
+1. 设计 cooked map 输出结构，让游戏运行时逐步脱离编辑器 source 结构。
+2. 建立 world partition cell schema，先统一 terrain、paint、vegetation，再接 object/collision/nav。
+3. 扩展 `main` 地图资产验证脚本，让它检查 cooked 输出、world partition 索引和过期 cook。
+4. 起草 `main` 的 10 平方公里世界设计规格，包括道路、水体、区域主题和兴趣点密度，并保留向约 20 平方公里整页扩展的空间。
+5. 把 region pack integrity 作为后续 source/cooked 增量构建和缓存失效的基础约束。
 
 ## 路线对齐自检
 

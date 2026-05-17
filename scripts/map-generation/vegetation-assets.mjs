@@ -3,6 +3,7 @@ import path from "node:path";
 import { buildHeightConfig, generateHeight } from "./height-field.mjs";
 import {
   compareRegionCoords,
+  createRegionIntegrity,
   ensureMapManifestPaths,
   formatGridCoordinate,
   getMapDir,
@@ -57,6 +58,7 @@ export async function generateVegetationAssets(context, preset) {
   }
 
   const regionMasks = {};
+  const regionIntegrity = {};
   const sortedRegions = Array.from(groupedRegions.values()).sort(compareRegionCoords);
   for (const region of sortedRegions) {
     region.cells.sort((left, right) => left.localIndex - right.localIndex);
@@ -65,11 +67,11 @@ export async function generateVegetationAssets(context, preset) {
       mask |= 1n << BigInt(cell.localIndex);
     }
 
-    await writeFile(
-      path.join(mapDir, vegetationRegionPath(region.x, region.z)),
-      encodeVegetationRegionPack(region.cells),
-    );
-    regionMasks[vegetationRegionKey(region.x, region.z)] = formatVegetationRegionMask(mask);
+    const regionBytes = encodeVegetationRegionPack(region.cells);
+    const regionKey = vegetationRegionKey(region.x, region.z);
+    await writeFile(path.join(mapDir, vegetationRegionPath(region.x, region.z)), regionBytes);
+    regionMasks[regionKey] = formatVegetationRegionMask(mask);
+    regionIntegrity[regionKey] = createRegionIntegrity(regionBytes);
   }
 
   const manifest = {
@@ -82,6 +84,7 @@ export async function generateVegetationAssets(context, preset) {
       regionSizeCells: vegetationRegionSizeCells,
       regionsDirectory: vegetationRegionsDirectory,
       regions: regionMasks,
+      regionIntegrity,
       modelIds,
     },
   };

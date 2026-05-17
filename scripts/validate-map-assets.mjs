@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 
 const PROJECT_FILE = "project.json";
@@ -119,12 +120,17 @@ async function validateTerrain(mapDirectory, mapManifest) {
     addError(label, `Terrain height regionsDirectory must be '${TERRAIN_REGION_DIRECTORY}'.`);
   }
 
+  const regions = readRegionMasks(manifest.regions, regionSizePages, label);
+  const integrityMap = readRegionIntegrityMap(manifest.regionIntegrity, regions.map((region) => region.key), label);
   const expectedPaths = new Set();
-  for (const region of readRegionMasks(manifest.regions, regionSizePages, label)) {
+  for (const region of regions) {
     const regionPath = `${TERRAIN_REGION_DIRECTORY}/r_${formatGridCoordinate(region.x)}_${formatGridCoordinate(region.z)}${TERRAIN_REGION_EXTENSION}`;
     expectedPaths.add(regionPath);
     const expectedByteLength = countSetBits(region.mask) * pageResolution * pageResolution * HEIGHT_SAMPLE_BYTE_LENGTH;
-    await validateFileSize(path.join(mapDirectory, regionPath), expectedByteLength, regionPath);
+    const bytes = await validateRegionPackFile(path.join(mapDirectory, regionPath), expectedByteLength, regionPath);
+    if (bytes) {
+      validateRegionPackIntegrity(bytes, integrityMap[region.key], region.key, regionPath);
+    }
   }
 
   await validateNoOrphanRegionPacks(mapDirectory, TERRAIN_REGION_DIRECTORY, TERRAIN_REGION_EXTENSION, expectedPaths);
@@ -168,12 +174,17 @@ async function validatePaint(mapDirectory, mapManifest) {
     addError(label, `Paint regionsDirectory must be '${PAINT_REGION_DIRECTORY}'.`);
   }
 
+  const regions = readRegionMasks(splatMaps.regions, regionSizePages, label);
+  const integrityMap = readRegionIntegrityMap(splatMaps.regionIntegrity, regions.map((region) => region.key), label);
   const expectedPaths = new Set();
-  for (const region of readRegionMasks(splatMaps.regions, regionSizePages, label)) {
+  for (const region of regions) {
     const regionPath = `${PAINT_REGION_DIRECTORY}/r_${formatGridCoordinate(region.x)}_${formatGridCoordinate(region.z)}${PAINT_REGION_EXTENSION}`;
     expectedPaths.add(regionPath);
     const expectedByteLength = countSetBits(region.mask) * pageResolution * pageResolution * RGBA8_BYTE_LENGTH * indices.length;
-    await validateFileSize(path.join(mapDirectory, regionPath), expectedByteLength, regionPath);
+    const bytes = await validateRegionPackFile(path.join(mapDirectory, regionPath), expectedByteLength, regionPath);
+    if (bytes) {
+      validateRegionPackIntegrity(bytes, integrityMap[region.key], region.key, regionPath);
+    }
   }
 
   await validateNoOrphanRegionPacks(mapDirectory, PAINT_REGION_DIRECTORY, PAINT_REGION_EXTENSION, expectedPaths);
@@ -207,11 +218,16 @@ async function validateVegetation(mapDirectory) {
     addError(label, `Vegetation regionsDirectory must be '${VEGETATION_REGION_DIRECTORY}'.`);
   }
 
+  const regions = readRegionMasks(instances.regions, regionSizeCells, label);
+  const integrityMap = readRegionIntegrityMap(instances.regionIntegrity, regions.map((region) => region.key), label);
   const expectedPaths = new Set();
-  for (const region of readRegionMasks(instances.regions, regionSizeCells, label)) {
+  for (const region of regions) {
     const regionPath = `${VEGETATION_REGION_DIRECTORY}/r_${formatGridCoordinate(region.x)}_${formatGridCoordinate(region.z)}${VEGETATION_REGION_EXTENSION}`;
     expectedPaths.add(regionPath);
-    await validateVegetationRegionPack(path.join(mapDirectory, regionPath), region, regionSizeCells, regionPath);
+    const bytes = await validateVegetationRegionPack(path.join(mapDirectory, regionPath), region, regionSizeCells, regionPath);
+    if (bytes) {
+      validateRegionPackIntegrity(bytes, integrityMap[region.key], region.key, regionPath);
+    }
   }
 
   await validateNoOrphanRegionPacks(mapDirectory, VEGETATION_REGION_DIRECTORY, VEGETATION_REGION_EXTENSION, expectedPaths);
@@ -220,14 +236,14 @@ async function validateVegetation(mapDirectory) {
 async function validateVegetationRegionPack(filePath, region, regionSizeCells, label) {
   if (!existsSync(filePath)) {
     addError(label, "Region pack is missing.");
-    return;
+    return null;
   }
 
   checkedFiles += 1;
   const bytes = await readFile(filePath);
   if (bytes.byteLength < VEGETATION_REGION_HEADER_BYTE_LENGTH) {
     addError(label, "Vegetation region pack is shorter than its header.");
-    return;
+    return bytes;
   }
 
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -247,7 +263,7 @@ async function validateVegetationRegionPack(filePath, region, regionSizeCells, l
   const indexByteLength = VEGETATION_REGION_HEADER_BYTE_LENGTH + cellCount * VEGETATION_REGION_ENTRY_BYTE_LENGTH;
   if (bytes.byteLength < indexByteLength) {
     addError(label, "Vegetation region pack has a truncated cell index.");
-    return;
+    return bytes;
   }
 
   let entryMask = 0n;
@@ -283,22 +299,70 @@ async function validateVegetationRegionPack(filePath, region, regionSizeCells, l
   if (bytes.byteLength !== expectedByteLength) {
     addError(label, `Vegetation region pack requires ${expectedByteLength} bytes, got ${bytes.byteLength}.`);
   }
+
+  return bytes;
 }
 
-async function validateFileSize(filePath, expectedByteLength, label) {
+async function validateRegionPackFile(filePath, expectedByteLength, label) {
   try {
-    const fileStat = await stat(filePath);
+    const bytes = await readFile(filePath);
     checkedFiles += 1;
-    if (fileStat.size !== expectedByteLength) {
-      addError(label, `Expected ${expectedByteLength} bytes, got ${fileStat.size}.`);
+    if (bytes.byteLength !== expectedByteLength) {
+      addError(label, `Expected ${expectedByteLength} bytes, got ${bytes.byteLength}.`);
     }
+    return bytes;
   } catch (error) {
     if (error?.code === "ENOENT") {
       addError(label, "Region pack is missing.");
-      return;
+      return null;
     }
 
     throw error;
+  }
+}
+
+function readRegionIntegrityMap(value, regionKeys, label) {
+  if (!isRecord(value)) {
+    addError(label, "Region integrity must be a JSON object.");
+    return {};
+  }
+
+  const expectedKeys = new Set(regionKeys);
+  for (const key of regionKeys) {
+    if (!Object.hasOwn(value, key)) {
+      addError(label, `Region '${key}' is missing integrity metadata.`);
+    }
+  }
+
+  for (const key of Object.keys(value)) {
+    if (!expectedKeys.has(key)) {
+      addError(label, `Region integrity contains unknown region '${key}'.`);
+    }
+  }
+
+  return value;
+}
+
+function validateRegionPackIntegrity(bytes, integrity, regionKey, label) {
+  if (!isRecord(integrity)) {
+    addError(label, `Region '${regionKey}' integrity metadata is invalid.`);
+    return;
+  }
+
+  if (!Number.isInteger(integrity.byteLength) || integrity.byteLength < 0) {
+    addError(label, `Region '${regionKey}' integrity byteLength must be a non-negative integer.`);
+  } else if (integrity.byteLength !== bytes.byteLength) {
+    addError(label, `Region '${regionKey}' integrity byteLength ${integrity.byteLength} does not match ${bytes.byteLength}.`);
+  }
+
+  if (typeof integrity.sha256 !== "string" || !/^[0-9a-f]{64}$/.test(integrity.sha256)) {
+    addError(label, `Region '${regionKey}' integrity sha256 must be a lowercase hex SHA-256 digest.`);
+    return;
+  }
+
+  const actualSha256 = createHash("sha256").update(bytes).digest("hex");
+  if (integrity.sha256 !== actualSha256) {
+    addError(label, `Region '${regionKey}' sha256 mismatch.`);
   }
 }
 

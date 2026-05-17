@@ -2,6 +2,11 @@
 // VegetationRegionData：紧凑植被 region pack 辅助函数。
 
 import { pageKey, parsePageKey } from "@project/MapData";
+import {
+  normalizeSidecarRegionIntegrityMap,
+  type SidecarRegionIntegrity,
+  type SidecarRegionIntegrityMap,
+} from "@workspace/SidecarAssetIntegrity";
 
 export const VEGETATION_REGIONS_DIRECTORY = "vegetation/regions";
 export const VEGETATION_REGION_FORMAT = "vegetation-region-pack-v1";
@@ -22,6 +27,7 @@ export interface VegetationInstanceManifest {
   regionSizeCells: number;
   regionsDirectory: typeof VEGETATION_REGIONS_DIRECTORY;
   regions: Record<string, string>;
+  regionIntegrity: SidecarRegionIntegrityMap;
   modelIds: string[];
 }
 
@@ -37,6 +43,7 @@ export interface VegetationRegionManifest {
   z: number;
   path: string;
   mask: bigint;
+  integrity?: SidecarRegionIntegrity;
 }
 
 export interface VegetationCellPayload {
@@ -59,6 +66,7 @@ export function getVegetationRegions(manifest: VegetationManifestWithRegions): V
         z,
         path: getVegetationRegionPath(x, z),
         mask: parseRegionMask(maskHex, key, manifest.instances.regionSizeCells),
+        integrity: manifest.instances.regionIntegrity[key],
       };
     })
     .sort((left, right) => compareRegionCoords(left, right));
@@ -113,6 +121,17 @@ export function normalizeVegetationRegions(value: unknown, regionSizeCells: numb
         return [key, formatRegionMask(parseRegionMask(maskValue, key, regionSizeCells))] as const;
       })
       .sort(([left], [right]) => compareRegionKeys(left, right)),
+  );
+}
+
+export function normalizeVegetationRegionIntegrity(
+  value: unknown,
+  regions: Record<string, string>,
+): SidecarRegionIntegrityMap {
+  return normalizeSidecarRegionIntegrityMap(
+    value,
+    Object.keys(regions),
+    "Vegetation manifest regionIntegrity",
   );
 }
 

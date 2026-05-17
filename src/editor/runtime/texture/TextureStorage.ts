@@ -5,6 +5,11 @@ import { getPlatform } from "@/platform";
 import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
 import { commitSidecarAsset, writeSidecarRegionPacks } from "@workspace/SidecarAssetCommit";
 import {
+  createSidecarRegionIntegrityMap,
+  validateSidecarRegionIntegrity,
+  type SidecarRegionIntegrityMap,
+} from "@workspace/SidecarAssetIntegrity";
+import {
   MAP_PAINT_PATH,
   assemblePaintSplatMapPixels,
   createPaintDataForMap,
@@ -98,6 +103,10 @@ export class TextureStorage {
         const base64 = await platform.files.readBinaryBase64(`${mapDirectory}/${region.path}`);
         const bytes = decodePaintRegionPackBase64(base64);
         validatePaintRegionPackByteLength(mapData, region, bytes);
+        if (!region.integrity) {
+          throw new Error(`Paint region pack '${region.key}' is missing integrity metadata`);
+        }
+        await validateSidecarRegionIntegrity("Paint region pack", region.key, bytes, region.integrity);
         return [region.key, bytes] as const;
       }));
       const regionBytesByKey = Object.fromEntries(regionEntries);
@@ -132,6 +141,10 @@ export class TextureStorage {
     options: SavePaintPagesOptions = {},
   ): Promise<void> {
     const commit = preparePaintRegionCommit(mapData, splatMaps, options);
+    mapData.paint.splatMaps.regionIntegrity = await createSidecarRegionIntegrityMap(
+      commit.regions,
+      commit.keepPreviousIntegrity ? commit.previousRegionIntegrity : undefined,
+    );
     await commitSidecarAsset({
       mapDirectory,
       manifestPath: mapData.paintPath,
@@ -170,8 +183,10 @@ export class TextureStorage {
 
 interface PreparedPaintRegionCommit {
   previousRegionPaths: ReadonlySet<string>;
+  previousRegionIntegrity: SidecarRegionIntegrityMap;
   regions: PaintRegionPackPayload[];
   deleteStaleRegions: boolean;
+  keepPreviousIntegrity: boolean;
 }
 
 function preparePaintRegionCommit(
@@ -180,6 +195,7 @@ function preparePaintRegionCommit(
   options: SavePaintPagesOptions,
 ): PreparedPaintRegionCommit {
   const previousRegionPaths = new Set(Object.keys(mapData.paint.splatMaps.regions).map(getPaintRegionPathForKey));
+  const previousRegionIntegrity = mapData.paint.splatMaps.regionIntegrity;
   const resolution = splatMaps[0]?.resolution ?? mapData.paint.splatMaps.resolution;
   const indices = getPaintSplatMapIndices(splatMaps.length);
   mapData.paint = createPaintDataForMap(mapData.worldSizeMeters, mapData.pageSizeMeters, indices, resolution);
@@ -194,8 +210,10 @@ function preparePaintRegionCommit(
 
   return {
     previousRegionPaths,
+    previousRegionIntegrity,
     regions,
     deleteStaleRegions: !dirtyRegionKeys,
+    keepPreviousIntegrity: Boolean(dirtyRegionKeys),
   };
 }
 

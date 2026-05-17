@@ -3,6 +3,7 @@ import path from "node:path";
 import { buildHeightConfig, createHeightPage } from "./height-field.mjs";
 import {
   compareRegionCoords,
+  createRegionIntegrity,
   formatGridCoordinate,
   getMapDir,
   getMapPath,
@@ -66,6 +67,7 @@ export async function generateTerrainAssets(context, preset) {
     regionSizePages: heightRegionSizePages,
     regionsDirectory: heightRegionsDirectory,
     regions: {},
+    regionIntegrity: {},
   };
 
   for (const region of Array.from(regionGroups.values()).sort(compareRegionCoords)) {
@@ -80,6 +82,7 @@ export async function generateTerrainAssets(context, preset) {
     await mkdir(path.dirname(regionFilePath), { recursive: true });
     await writeFile(regionFilePath, packBytes);
     terrainHeightManifest.regions[heightRegionKey(region.x, region.z)] = formatHeightRegionMask(regionMask);
+    terrainHeightManifest.regionIntegrity[heightRegionKey(region.x, region.z)] = createRegionIntegrity(packBytes);
   }
 
   const existingMap = await readMapManifest(context, preset);

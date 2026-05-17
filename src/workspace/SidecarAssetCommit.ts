@@ -7,6 +7,7 @@ import { getPlatform } from "@/platform";
 const platform = getPlatform();
 
 export interface SidecarRegionPayload {
+  key: string;
   path: string;
   bytes: Uint8Array;
 }

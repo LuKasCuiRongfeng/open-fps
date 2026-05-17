@@ -3,6 +3,11 @@
 
 import { base64ToUint8Array, uint8ArrayToBase64 } from "@/lib/base64";
 import {
+  normalizeSidecarRegionIntegrityMap,
+  type SidecarRegionIntegrity,
+  type SidecarRegionIntegrityMap,
+} from "./SidecarAssetIntegrity";
+import {
   formatGridCoordinate,
   pageKey,
   parsePageKey,
@@ -19,6 +24,7 @@ export interface MapPaintData {
     regionsDirectory: typeof MAP_PAINT_REGIONS_DIRECTORY;
     indices: number[];
     regions: Record<string, string>;
+    regionIntegrity: SidecarRegionIntegrityMap;
   };
 }
 
@@ -28,6 +34,7 @@ export interface PaintRegionManifest {
   z: number;
   path: string;
   mask: bigint;
+  integrity?: SidecarRegionIntegrity;
 }
 
 export interface PaintRegionPage {
@@ -69,6 +76,7 @@ export function createEmptyPaintData(): MapPaintData {
       regionsDirectory: MAP_PAINT_REGIONS_DIRECTORY,
       indices: [],
       regions: {},
+      regionIntegrity: {},
     },
   };
 }
@@ -93,17 +101,24 @@ export function createPaintDataForMap(
       regionsDirectory: MAP_PAINT_REGIONS_DIRECTORY,
       indices,
       regions: createPaintRegionMaskMap(pageKeys, regionSizePages),
+      regionIntegrity: {},
     },
   };
 }
 
 export function clonePaintData(paintData: MapPaintData): MapPaintData {
   const normalized = normalizePaintData(paintData);
+  const regionIntegrity = normalizeSidecarRegionIntegrityMap(
+    normalized.splatMaps.regionIntegrity,
+    Object.keys(normalized.splatMaps.regions),
+    "Paint manifest regionIntegrity",
+  );
   return {
     splatMaps: {
       ...normalized.splatMaps,
       indices: [...normalized.splatMaps.indices],
       regions: { ...normalized.splatMaps.regions },
+      regionIntegrity,
     },
   };
 }
@@ -130,6 +145,7 @@ export function normalizePaintData(value: unknown): MapPaintData {
       regionsDirectory: normalizePaintRegionsDirectory(splatMaps.regionsDirectory),
       indices: normalizeSplatMapIndices(splatMaps.indices ?? []),
       regions: normalizePaintRegions(splatMaps.regions ?? {}, regionSizePages),
+      regionIntegrity: isRecord(splatMaps.regionIntegrity) ? (splatMaps.regionIntegrity as SidecarRegionIntegrityMap) : {},
     },
   };
 }
@@ -173,6 +189,7 @@ export function getPaintRegions(paintData: MapPaintData): PaintRegionManifest[] 
         z,
         path: getPaintRegionPath(x, z),
         mask: parseRegionMask(maskHex, key, normalized.splatMaps.regionSizePages),
+        integrity: normalized.splatMaps.regionIntegrity[key] ?? undefined,
       };
     })
     .sort((left, right) => compareRegionCoords(left.x, left.z, right.x, right.z));

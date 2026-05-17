@@ -22,6 +22,7 @@ import {
   getVegetationRegionLocalCellIndex,
   getVegetationRegionPath,
   getVegetationRegions,
+  normalizeVegetationRegionIntegrity,
   normalizeVegetationRegions,
   validateVegetationRegionSize,
   vegetationRegionKey,
@@ -231,6 +232,7 @@ export function createVegetationStoragePayload(
             .sort(([left], [right]) => compareRegionKeys(left, right))
             .map(([key, mask]) => [key, formatRegionMask(mask)]),
         ),
+        regionIntegrity: {},
         modelIds,
       },
     },
@@ -495,6 +497,7 @@ function normalizeInstanceManifest(
     regionSizeCells,
     regionsDirectory: VEGETATION_REGIONS_DIRECTORY,
     regions,
+    regionIntegrity: normalizeVegetationRegionIntegrity(value.regionIntegrity, regions),
     modelIds,
   };
 }

@@ -39,14 +39,33 @@
     "regionSizeCells": 8,
     "regionsDirectory": "vegetation/regions",
     "regions": {
-      "-1,-2": "0xc2d0000000000000",
-      "0,-2": "0x0576100000000000",
-      "-1,-1": "0xe6fcedf2bbea2e22",
-      "0,-1": "0x3f1e3e3faf3f6d71",
-      "-1,0": "0x380040c0181960f8",
-      "0,0": "0x0000006020040c03",
-      "1,0": "0x0000000000000100",
-      "-1,1": "0x0000000000000038"
+      "-1,-1": "0x00040c0003620000",
+      "0,-1": "0x3018020381000000",
+      "-1,0": "0x000040c018190000",
+      "0,0": "0x0000006020040c00",
+      "1,0": "0x0000000000000100"
+    },
+    "regionIntegrity": {
+      "-1,-1": {
+        "byteLength": 504,
+        "sha256": "67c10c1de489ca0e17ea4cc0e683698da2acc29237ee5eca9fce5189cc16ba28"
+      },
+      "0,-1": {
+        "byteLength": 392,
+        "sha256": "784a04beeb1bf36fbbc32995e3c8c938b04d5d36b42924b593b680907608e180"
+      },
+      "-1,0": {
+        "byteLength": 384,
+        "sha256": "13137541ea3e8ceed0a8db551d132233060ee62ae51c15865452c4a1ef5d620c"
+      },
+      "0,0": {
+        "byteLength": 344,
+        "sha256": "f254f56cbb8cdf6b83c091ea4324d842fbd7ad8cfead3d4274e7cf8ed03b29a4"
+      },
+      "1,0": {
+        "byteLength": 40,
+        "sha256": "931dd9cae97aef47df186ff83f2fcc1d6e18b497fac1c251ef1d4ffb7c679ff2"
+      }
     },
     "modelIds": [
       "fern",
