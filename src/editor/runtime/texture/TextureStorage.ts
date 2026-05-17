@@ -3,16 +3,20 @@
 
 import { getPlatform } from "@/platform";
 import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
+import { commitSidecarAsset, writeSidecarRegionPacks } from "@workspace/SidecarAssetCommit";
 import {
   MAP_PAINT_PATH,
   assemblePaintSplatMapPixels,
   createPaintDataForMap,
   createPaintRegionPackPayload,
   decodePaintRegionPackBase64,
-  encodePaintRegionPackBase64,
+  getExpectedPaintRegionPageByteLength,
+  getPaintRegionPages,
   getPaintRegionPathForKey,
   getPaintRegions,
   type MapData,
+  type PaintRegionManifest,
+  type PaintRegionPackPayload,
 } from "@project/MapData";
 import {
   createPaintDataFromManifest,
@@ -92,7 +96,9 @@ export class TextureStorage {
     try {
       const regionEntries = await Promise.all(regions.map(async (region) => {
         const base64 = await platform.files.readBinaryBase64(`${mapDirectory}/${region.path}`);
-        return [region.key, decodePaintRegionPackBase64(base64)] as const;
+        const bytes = decodePaintRegionPackBase64(base64);
+        validatePaintRegionPackByteLength(mapData, region, bytes);
+        return [region.key, bytes] as const;
       }));
       const regionBytesByKey = Object.fromEntries(regionEntries);
       return Array.from({ length: splatMapCount }, (_, index) => {
@@ -113,13 +119,27 @@ export class TextureStorage {
         };
       });
     } catch (error) {
-      if (isMissingFileSystemResourceError(error)) {
-        return Array.from({ length: splatMapCount }, () => null);
-      }
-
       console.error(`[TextureStorage] Failed to load paint regions: ${formatUnknownError(error)}`, error);
       throw error;
     }
+  }
+
+  static async savePaintData(
+    mapDirectory: string,
+    definition: TextureDefinition,
+    mapData: MapData,
+    splatMaps: readonly SplatMapData[],
+    options: SavePaintPagesOptions = {},
+  ): Promise<void> {
+    const commit = preparePaintRegionCommit(mapData, splatMaps, options);
+    await commitSidecarAsset({
+      mapDirectory,
+      manifestPath: mapData.paintPath,
+      manifestText: serializePaintManifest(createPaintManifest(definition, mapData.paint)),
+      regions: commit.regions,
+      staleRegionPaths: commit.deleteStaleRegions ? commit.previousRegionPaths : undefined,
+      staleDeleteLabel: "paint region",
+    });
   }
 
   static async savePaintPages(
@@ -128,29 +148,10 @@ export class TextureStorage {
     splatMaps: readonly SplatMapData[],
     options: SavePaintPagesOptions = {},
   ): Promise<void> {
-    const previousRegionPaths = new Set(Object.keys(mapData.paint.splatMaps.regions).map(getPaintRegionPathForKey));
-    const resolution = splatMaps[0]?.resolution ?? mapData.paint.splatMaps.resolution;
-    const indices = getPaintSplatMapIndices(splatMaps.length);
-    mapData.paint = createPaintDataForMap(mapData.worldSizeMeters, mapData.pageSizeMeters, indices, resolution);
-    const dirtyRegionKeys = options.dirtyRegionKeys?.length ? options.dirtyRegionKeys : null;
-    const regions = createPaintRegionPackPayload(
-      mapData.paint,
-      mapData.worldSizeMeters,
-      mapData.pageSizeMeters,
-      splatMaps,
-      dirtyRegionKeys ?? undefined,
-    );
-
-    // EN: Region packs are written before the manifest so the manifest never points at missing binary data.
-    // 中文: 先写入 region pack，再写清单，避免清单指向尚未写好的二进制数据。
-    await Promise.all(regions.map(async (region) => {
-      await platform.files.writeBinaryBase64(`${mapDirectory}/${region.path}`, encodePaintRegionPackBase64(region.bytes));
-    }));
-
-    if (!dirtyRegionKeys) {
-      const nextRegionPaths = new Set(regions.map((region) => region.path));
-      await removeStalePaintRegions(mapDirectory, previousRegionPaths, nextRegionPaths);
-    }
+    // EN: This writes binary packs only; use savePaintData when publishing a manifest-visible paint commit.
+    // 中文: 这里只写二进制 pack；需要发布清单可见的绘制提交时应使用 savePaintData。
+    const commit = preparePaintRegionCommit(mapData, splatMaps, options);
+    await writeSidecarRegionPacks(mapDirectory, commit.regions);
   }
 
   static async ensurePaintPage(
@@ -167,20 +168,56 @@ export class TextureStorage {
   }
 }
 
-async function removeStalePaintRegions(
-  mapDirectory: string,
-  previousRegionPaths: ReadonlySet<string>,
-  nextRegionPaths: ReadonlySet<string>,
-): Promise<void> {
-  await Promise.all(Array.from(previousRegionPaths).map(async (path) => {
-    if (nextRegionPaths.has(path)) {
-      return;
-    }
+interface PreparedPaintRegionCommit {
+  previousRegionPaths: ReadonlySet<string>;
+  regions: PaintRegionPackPayload[];
+  deleteStaleRegions: boolean;
+}
 
-    try {
-      await platform.files.deleteFile(`${mapDirectory}/${path}`);
-    } catch (error) {
-      console.warn(`[TextureStorage] Failed to delete stale paint region: ${path}`, error);
-    }
-  }));
+function preparePaintRegionCommit(
+  mapData: MapData,
+  splatMaps: readonly SplatMapData[],
+  options: SavePaintPagesOptions,
+): PreparedPaintRegionCommit {
+  const previousRegionPaths = new Set(Object.keys(mapData.paint.splatMaps.regions).map(getPaintRegionPathForKey));
+  const resolution = splatMaps[0]?.resolution ?? mapData.paint.splatMaps.resolution;
+  const indices = getPaintSplatMapIndices(splatMaps.length);
+  mapData.paint = createPaintDataForMap(mapData.worldSizeMeters, mapData.pageSizeMeters, indices, resolution);
+  const dirtyRegionKeys = options.dirtyRegionKeys?.length ? options.dirtyRegionKeys : null;
+  const regions = createPaintRegionPackPayload(
+    mapData.paint,
+    mapData.worldSizeMeters,
+    mapData.pageSizeMeters,
+    splatMaps,
+    dirtyRegionKeys ?? undefined,
+  );
+
+  return {
+    previousRegionPaths,
+    regions,
+    deleteStaleRegions: !dirtyRegionKeys,
+  };
+}
+
+function validatePaintRegionPackByteLength(
+  mapData: MapData,
+  region: PaintRegionManifest,
+  bytes: Uint8Array,
+): void {
+  const paintData = mapData.paint.splatMaps;
+  const pages = getPaintRegionPages(
+    region,
+    paintData.pageResolution,
+    paintData.indices.length,
+    paintData.regionSizePages,
+  );
+  const expectedByteLength = pages.length * getExpectedPaintRegionPageByteLength(
+    paintData.pageResolution,
+    paintData.indices.length,
+  );
+  if (bytes.byteLength !== expectedByteLength) {
+    throw new Error(
+      `Paint region pack '${region.key}' requires ${expectedByteLength} bytes, got ${bytes.byteLength}`,
+    );
+  }
 }

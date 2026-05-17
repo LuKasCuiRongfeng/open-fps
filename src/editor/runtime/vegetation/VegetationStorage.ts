@@ -2,8 +2,9 @@
 // VegetationStorage：加载与保存植被模型清单及二进制 region pack。
 
 import { getPlatform } from "@/platform";
-import { base64ToUint8Array, uint8ArrayToBase64 } from "@/lib/base64";
+import { base64ToUint8Array } from "@/lib/base64";
 import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
+import { commitSidecarAsset } from "@workspace/SidecarAssetCommit";
 import {
   DEFAULT_VEGETATION_CELL_SIZE_METERS,
   VEGETATION_MODELS_PATH,
@@ -79,37 +80,16 @@ export class VegetationStorage {
     cellSizeMeters: number,
     previousRegionKeys: Iterable<string> = [],
   ): Promise<void> {
-    const jsonPath = `${mapDirectory}/${VEGETATION_MODELS_PATH}`;
     const previousRegionPaths = new Set(sortPageKeys(previousRegionKeys).map(getVegetationRegionPathForKey));
     const { manifest, regions } = createVegetationStoragePayload(data, cellSizeMeters);
 
-    // EN: Region packs are written before the manifest so the manifest never points at missing binary data.
-    // 中文: 先写入 region pack，再写清单，避免清单指向尚未写好的二进制数据。
-    await Promise.all(regions.map(async (region) => {
-      await platform.files.writeBinaryBase64(`${mapDirectory}/${region.path}`, uint8ArrayToBase64(region.bytes));
-    }));
-
-    await platform.files.writeText(jsonPath, serializeVegetationManifest(manifest));
-
-    const nextRegionPaths = new Set(regions.map((region) => region.path));
-    await removeStaleRegions(mapDirectory, previousRegionPaths, nextRegionPaths);
+    await commitSidecarAsset({
+      mapDirectory,
+      manifestPath: VEGETATION_MODELS_PATH,
+      manifestText: serializeVegetationManifest(manifest),
+      regions,
+      staleRegionPaths: previousRegionPaths,
+      staleDeleteLabel: "vegetation region",
+    });
   }
-}
-
-async function removeStaleRegions(
-  mapDirectory: string,
-  previousRegionPaths: ReadonlySet<string>,
-  nextRegionPaths: ReadonlySet<string>,
-): Promise<void> {
-  await Promise.all(Array.from(previousRegionPaths).map(async (path) => {
-    if (nextRegionPaths.has(path)) {
-      return;
-    }
-
-    try {
-      await platform.files.deleteFile(`${mapDirectory}/${path}`);
-    } catch (error) {
-      console.warn(`[VegetationStorage] Failed to delete stale vegetation region: ${path}`, error);
-    }
-  }));
 }

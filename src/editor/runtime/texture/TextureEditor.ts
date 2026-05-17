@@ -185,9 +185,7 @@ export class TextureEditor {
       const dirtyRegionKeys = this.dirtyPaintRegionKeys.size > 0
         ? Array.from(this.dirtyPaintRegionKeys)
         : undefined;
-      await TextureStorage.savePaintPages(mapDirectory, mapData, splatMaps, { dirtyRegionKeys });
-      mapData.paint.splatMaps.indices = getPaintSplatMapIndices(splatMapCount);
-      await TextureStorage.saveTextureDefinition(mapDirectory, this._textureDefinition, mapData);
+      await TextureStorage.savePaintData(mapDirectory, this._textureDefinition, mapData, splatMaps, { dirtyRegionKeys });
     } else {
       await TextureStorage.saveTextureDefinition(mapDirectory, this._textureDefinition, mapData);
     }
