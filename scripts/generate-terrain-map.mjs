@@ -4,11 +4,12 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
-const projectArg = process.argv[2] ?? "test_pro";
+const cliArgs = process.argv.slice(2);
+const projectArg = readProjectArg();
 const projectDir = path.resolve(rootDir, projectArg);
 const legacyMapPath = path.join(projectDir, "map.json");
 const projectPath = path.join(projectDir, "project.json");
-const generateAll = process.argv.includes("--all");
+const generateAll = cliArgs.includes("--all");
 const mapFilter = readFlagValue("--map");
 
 const pageSizeMeters = 64;
@@ -20,9 +21,13 @@ const defaultPageBounds = {
   maxPageZ: 7,
 };
 const projectVersion = 3;
-const mapVersion = 7;
-const heightPagesDirectory = "terrain/height/pages";
-const heightFormat = "float32le";
+const mapVersion = 8;
+const terrainHeightPath = "terrain/height/manifest.json";
+const terrainHeightManifestVersion = 1;
+const heightRegionsDirectory = "terrain/height/regions";
+const heightRegionFormat = "height-region-pack-v1";
+const heightSampleFormat = "float32le";
+const heightRegionSizePages = 8;
 
 const baseHeightConfig = {
   baseHeightMeters: 6,
@@ -330,8 +335,27 @@ function createHeightPage(px, pz, preset, heightConfig) {
   return heights;
 }
 
-function heightPagePathFor(px, pz) {
-  return `${heightPagesDirectory}/p_${formatGridCoordinate(px)}_${formatGridCoordinate(pz)}.height.f32`;
+function heightRegionKey(rx, rz) {
+  return `${rx},${rz}`;
+}
+
+function heightRegionPathFor(rx, rz) {
+  return `${heightRegionsDirectory}/r_${formatGridCoordinate(rx)}_${formatGridCoordinate(rz)}.heightpack`;
+}
+
+function heightRegionCoordsForPage(px, pz) {
+  return {
+    x: Math.floor(px / heightRegionSizePages),
+    z: Math.floor(pz / heightRegionSizePages),
+  };
+}
+
+function comparePageKeys(left, right) {
+  return left.pz - right.pz || left.px - right.px;
+}
+
+function compareRegionCoords(left, right) {
+  return left.z - right.z || left.x - right.x;
 }
 
 function formatGridCoordinate(value) {
@@ -396,17 +420,18 @@ async function generateMap(preset) {
   const now = Date.now();
   const mapDir = path.join(projectDir, "maps", preset.id);
   const mapPath = path.join(mapDir, "map.json");
-  const heightPagesDir = path.join(mapDir, heightPagesDirectory);
+  const heightRootDir = path.join(mapDir, "terrain", "height");
   const heightConfig = buildHeightConfig(preset);
   const bounds = getPageBounds(preset);
   const pageKeys = [];
+  const regionGroups = new Map();
   let minHeight = Number.POSITIVE_INFINITY;
   let maxHeight = Number.NEGATIVE_INFINITY;
 
   await clearMapAuthoringAssets(mapDir);
   await Promise.all([
     rm(path.join(mapDir, "terrain", "chunks"), { recursive: true, force: true }),
-    rm(heightPagesDir, { recursive: true, force: true }),
+    rm(heightRootDir, { recursive: true, force: true }),
   ]);
 
   for (let pz = bounds.minPageZ; pz <= bounds.maxPageZ; pz += 1) {
@@ -417,13 +442,48 @@ async function generateMap(preset) {
         maxHeight = Math.max(maxHeight, value);
       }
 
-      const relativePagePath = heightPagePathFor(px, pz);
-      const pageFilePath = path.join(mapDir, relativePagePath);
-      await mkdir(path.dirname(pageFilePath), { recursive: true });
-      await writeFile(pageFilePath, Buffer.from(heights.buffer, heights.byteOffset, heights.byteLength));
-
-      pageKeys.push(`${px},${pz}`);
+      const key = `${px},${pz}`;
+      const region = heightRegionCoordsForPage(px, pz);
+      const regionKey = heightRegionKey(region.x, region.z);
+      const group = regionGroups.get(regionKey) ?? { x: region.x, z: region.z, pages: [] };
+      group.pages.push({ key, px, pz, bytes: Buffer.from(heights.buffer, heights.byteOffset, heights.byteLength) });
+      regionGroups.set(regionKey, group);
+      pageKeys.push(key);
     }
+  }
+
+  const terrainHeightManifest = {
+    version: terrainHeightManifestVersion,
+    format: heightRegionFormat,
+    sampleFormat: heightSampleFormat,
+    pageResolution: heightPageResolution,
+    pageSizeMeters,
+    regionSizePages: heightRegionSizePages,
+    regionsDirectory: heightRegionsDirectory,
+    regions: [],
+  };
+
+  for (const region of Array.from(regionGroups.values()).sort(compareRegionCoords)) {
+    const pages = region.pages.sort(comparePageKeys);
+    const packBytes = Buffer.concat(pages.map((page) => page.bytes));
+    const regionManifest = {
+      key: heightRegionKey(region.x, region.z),
+      x: region.x,
+      z: region.z,
+      path: heightRegionPathFor(region.x, region.z),
+      pages: [],
+    };
+
+    let offset = 0;
+    for (const page of pages) {
+      regionManifest.pages.push({ key: page.key, offset, byteLength: page.bytes.byteLength });
+      offset += page.bytes.byteLength;
+    }
+
+    const regionFilePath = path.join(mapDir, regionManifest.path);
+    await mkdir(path.dirname(regionFilePath), { recursive: true });
+    await writeFile(regionFilePath, packBytes);
+    terrainHeightManifest.regions.push(regionManifest);
   }
 
   const pageCountX = bounds.maxPageX - bounds.minPageX + 1;
@@ -439,14 +499,7 @@ async function generateMap(preset) {
       originX: 0,
       originZ: 0,
     },
-    terrain: {
-      height: {
-        format: heightFormat,
-        pagesDirectory: heightPagesDirectory,
-        pageResolution: heightPageResolution,
-        pageKeys,
-      },
-    },
+    terrainPath: terrainHeightPath,
     paintPath: "paint/layers.json",
     vegetationPath: "vegetation/models.json",
     metadata: {
@@ -457,7 +510,9 @@ async function generateMap(preset) {
   };
 
   await mkdir(mapDir, { recursive: true });
+  await mkdir(path.dirname(path.join(mapDir, terrainHeightPath)), { recursive: true });
   await writeFile(mapPath, `${JSON.stringify(mapData, null, 2)}\n`, "utf8");
+  await writeFile(path.join(mapDir, terrainHeightPath), `${JSON.stringify(terrainHeightManifest, null, 2)}\n`, "utf8");
 
   return {
     id: preset.id,
@@ -466,6 +521,7 @@ async function generateMap(preset) {
     minHeight,
     maxHeight,
     pageCount: pageKeys.length,
+    regionCount: terrainHeightManifest.regions.length,
     areaSquareKilometers: pageKeys.length * pageSizeMeters * pageSizeMeters / 1_000_000,
   };
 }
@@ -483,12 +539,38 @@ function selectPresets() {
 }
 
 function readFlagValue(flag) {
-  const index = process.argv.indexOf(flag);
-  if (index >= 0 && index + 1 < process.argv.length) {
-    return process.argv[index + 1];
+  const inlinePrefix = `${flag}=`;
+  const inlineValue = cliArgs.find((arg) => arg.startsWith(inlinePrefix));
+  if (inlineValue) {
+    return inlineValue.slice(inlinePrefix.length);
+  }
+
+  const index = cliArgs.indexOf(flag);
+  if (index >= 0 && index + 1 < cliArgs.length) {
+    return cliArgs[index + 1];
   }
 
   return null;
+}
+
+function readProjectArg() {
+  for (let index = 0; index < cliArgs.length; index += 1) {
+    const arg = cliArgs[index];
+    if (arg === "--map") {
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--all" || arg.startsWith("--map=")) {
+      continue;
+    }
+
+    if (!arg.startsWith("--")) {
+      return arg;
+    }
+  }
+
+  return "test_pro";
 }
 
 async function main() {
@@ -506,6 +588,7 @@ async function main() {
   for (const result of results) {
     console.log(`- ${result.id}: ${result.name}`);
     console.log(`  Height pages: ${result.pageCount}`);
+    console.log(`  Height regions: ${result.regionCount}`);
     console.log(`  Area: ${result.areaSquareKilometers.toFixed(2)} km^2`);
     console.log(`  Height range: ${result.minHeight.toFixed(2)}m .. ${result.maxHeight.toFixed(2)}m`);
     console.log(`  Map path: ${result.mapPath}`);

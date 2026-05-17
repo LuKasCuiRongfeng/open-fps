@@ -7,13 +7,22 @@ import type { HeightPageData, MapData } from "./MapData";
 import {
   createMapDataFromManifest,
   createMapManifest,
-  decodeHeightPageBase64,
+  createTerrainHeightManifest,
+  createTerrainHeightPageIndex,
+  decodeHeightPageBytes,
+  decodeHeightRegionPackBase64,
+  deserializeTerrainHeightManifest,
+  encodeHeightPageBytes,
+  encodeHeightRegionPackBase64,
   deserializeMapManifest,
-  encodeHeightPageBase64,
   getHeightPageKeys,
-  getHeightPagePathForKey,
-  sortPageKeys,
+  getHeightRegionPackByteLength,
+  getHeightRegionPageBytes,
+  getTerrainHeightPageKeys,
+  serializeTerrainHeightManifest,
   type MapManifest,
+  type TerrainHeightManifest,
+  type TerrainHeightRegionManifest,
 } from "./MapData";
 import type { ProjectMapRecord, ProjectMetadata } from "./ProjectData";
 import {
@@ -337,25 +346,74 @@ async function saveProjectMetadata(projectPath: string, metadata: ProjectMetadat
 async function loadProjectMapData(projectPath: string, mapId: string): Promise<MapData> {
   const manifestJson = await platform.projects.readMapManifest(projectPath, mapId);
   const manifest = deserializeMapManifest(manifestJson);
-  const heightPageEntries = await Promise.all(
-    manifest.terrain.height.pageKeys.map(async (key) => {
-      const base64 = await platform.projects.readMapChunk(
-        projectPath,
-        mapId,
-        getHeightPagePathForKey(key),
-      );
-      return [key, { heights: decodeHeightPageBase64(base64, manifest.terrain.height.pageResolution) }] as const;
-    }),
-  );
-
-  const heightPages: Record<string, HeightPageData> = Object.fromEntries(heightPageEntries);
-  const mapData = createMapDataFromManifest(manifest, heightPages);
+  const terrainManifest = await loadProjectTerrainHeightManifest(projectPath, mapId, manifest.terrainPath);
+  const mapData = createMapDataFromManifest(manifest, terrainManifest, {});
+  mapData.loadHeightPage = createProjectHeightPageLoader(projectPath, mapId, terrainManifest);
   const paintManifest = await loadProjectPaintManifest(projectPath, mapId, mapData.paintPath);
   if (paintManifest) {
     mapData.paint = createPaintDataFromManifest(paintManifest);
   }
 
   return mapData;
+}
+
+async function loadProjectTerrainHeightManifest(
+  projectPath: string,
+  mapId: string,
+  terrainPath: MapManifest["terrainPath"],
+): Promise<TerrainHeightManifest> {
+  const jsonPath = `${getProjectMapDirectory(projectPath, mapId)}/${terrainPath}`;
+  return deserializeTerrainHeightManifest(await platform.files.readText(jsonPath));
+}
+
+function createProjectHeightPageLoader(
+  projectPath: string,
+  mapId: string,
+  terrainManifest: TerrainHeightManifest,
+): NonNullable<MapData["loadHeightPage"]> {
+  const pageIndex = createTerrainHeightPageIndex(terrainManifest);
+  const regionPackCache = new Map<string, Promise<Uint8Array>>();
+
+  return async (key) => {
+    const location = pageIndex.get(key);
+    if (!location) {
+      throw new Error(`Map height page '${key}' is not declared in the terrain manifest`);
+    }
+
+    const regionBytes = await loadProjectHeightRegionPack(
+      projectPath,
+      mapId,
+      location.region,
+      regionPackCache,
+    );
+    const pageBytes = getHeightRegionPageBytes(regionBytes, location.page);
+    return { heights: decodeHeightPageBytes(pageBytes, terrainManifest.pageResolution) };
+  };
+}
+
+function loadProjectHeightRegionPack(
+  projectPath: string,
+  mapId: string,
+  region: TerrainHeightRegionManifest,
+  cache: Map<string, Promise<Uint8Array>>,
+): Promise<Uint8Array> {
+  const cached = cache.get(region.key);
+  if (cached) {
+    return cached;
+  }
+
+  const request = (async () => {
+    const base64 = await platform.projects.readMapChunk(projectPath, mapId, region.path);
+    const bytes = decodeHeightRegionPackBase64(base64);
+    const expectedByteLength = getHeightRegionPackByteLength(region);
+    if (bytes.byteLength !== expectedByteLength) {
+      throw new Error(`Invalid height region '${region.key}' byte length`);
+    }
+
+    return bytes;
+  })();
+  cache.set(region.key, request);
+  return request;
 }
 
 async function loadProjectPaintManifest(
@@ -402,74 +460,121 @@ async function saveProjectMapData(
   writeAllPages: boolean,
 ): Promise<void> {
   const nextManifest = createMapManifest(mapData);
+  const nextTerrainManifest = createTerrainHeightManifest(
+    getHeightPageKeys(mapData),
+    mapData.heightPageResolution,
+    mapData.pageSizeMeters,
+  );
   const dirtyHeightPageKeys = new Set(mapData.dirtyHeightPageKeys ?? []);
-  const heightPageKeys = Object.keys(mapData.heightPages);
-  const pageKeysToWrite = writeAllPages
-    ? heightPageKeys
-    : heightPageKeys.filter((key) => dirtyHeightPageKeys.has(key));
-  const manifest = writeAllPages
-    ? nextManifest
-    : await createPartialSaveManifest(projectPath, mapId, mapData, nextManifest, dirtyHeightPageKeys);
-  const manifestHeightPageKeys = new Set(manifest.terrain.height.pageKeys);
+  const regionsToWrite = await getHeightRegionsToWrite(
+    projectPath,
+    mapId,
+    nextTerrainManifest,
+    dirtyHeightPageKeys,
+    writeAllPages,
+  );
 
-  // EN: Height page payloads are written before the manifest so the manifest never points at missing new page files.
-  // 中文: 高度 page 数据先于清单写入，避免清单指向尚未写好的新 page 文件。
-  await Promise.all(pageKeysToWrite.map(async (key) => {
-    const heightPage = mapData.heightPages[key];
-    if (!manifestHeightPageKeys.has(key) || !heightPage) {
-      throw new Error(`Map height page '${key}' is missing during save`);
-    }
+  // EN: Region packs are written before their manifest so the manifest never points at missing binary data.
+  // 中文: region pack 先于清单写入，避免清单指向尚未写好的二进制数据。
+  for (const region of regionsToWrite) {
+    await saveHeightRegionPack(projectPath, mapId, mapData, region);
+  }
 
-    const base64 = encodeHeightPageBase64(heightPage.heights, mapData.heightPageResolution);
-    await platform.projects.saveMapChunk(projectPath, mapId, getHeightPagePathForKey(key), base64);
-  }));
-
-  await platform.projects.saveMapManifest(projectPath, mapId, serializeManifest(manifest));
+  const terrainManifestPath = `${getProjectMapDirectory(projectPath, mapId)}/${nextManifest.terrainPath}`;
+  await platform.files.writeText(terrainManifestPath, serializeTerrainHeightManifest(nextTerrainManifest));
+  await platform.projects.saveMapManifest(projectPath, mapId, serializeManifest(nextManifest));
 }
 
-async function createPartialSaveManifest(
+async function getHeightRegionsToWrite(
   projectPath: string,
   mapId: string,
-  mapData: MapData,
-  nextManifest: MapManifest,
+  nextTerrainManifest: TerrainHeightManifest,
   dirtyHeightPageKeys: ReadonlySet<string>,
-): Promise<MapManifest> {
-  let existingManifest: MapManifest | null = null;
+  writeAllPages: boolean,
+): Promise<TerrainHeightRegionManifest[]> {
+  if (writeAllPages) {
+    return nextTerrainManifest.regions;
+  }
+
+  let existingTerrainManifest: TerrainHeightManifest | null = null;
   try {
-    existingManifest = deserializeMapManifest(await platform.projects.readMapManifest(projectPath, mapId));
+    const manifestJson = await platform.projects.readMapManifest(projectPath, mapId);
+    const manifest = deserializeMapManifest(manifestJson);
+    existingTerrainManifest = await loadProjectTerrainHeightManifest(projectPath, mapId, manifest.terrainPath);
   } catch (error) {
     if (!isMissingFileSystemResourceError(error)) {
       throw error;
     }
   }
 
-  if (!existingManifest) {
-    return nextManifest;
+  if (!existingTerrainManifest || !hasSameTerrainPageKeys(existingTerrainManifest, nextTerrainManifest)) {
+    return nextTerrainManifest.regions;
   }
 
-  const exportedPageKeys = new Set(getHeightPageKeys(mapData));
-  const pageKeys = new Set<string>();
-
-  for (const key of existingManifest.terrain.height.pageKeys) {
-    if (exportedPageKeys.has(key)) {
-      pageKeys.add(key);
+  const pageIndex = createTerrainHeightPageIndex(nextTerrainManifest);
+  const dirtyRegionKeys = new Set<string>();
+  for (const key of dirtyHeightPageKeys) {
+    const location = pageIndex.get(key);
+    if (!location) {
+      throw new Error(`Dirty map height page '${key}' is not declared in the terrain manifest`);
     }
+
+    dirtyRegionKeys.add(location.region.key);
   }
 
-  // EN: Partial saves preserve the existing sparse page index; expanding map pages must be an explicit operation.
-  // 中文: 部分保存保持现有稀疏 page 索引；扩展地图 page 必须走显式操作。
-  void dirtyHeightPageKeys;
+  return nextTerrainManifest.regions.filter((region) => dirtyRegionKeys.has(region.key));
+}
 
-  return {
-    ...nextManifest,
-    terrain: {
-      ...nextManifest.terrain,
-      height: {
-        ...nextManifest.terrain.height,
-        pageKeys: sortPageKeys(pageKeys),
-      },
-    },
-  };
+async function saveHeightRegionPack(
+  projectPath: string,
+  mapId: string,
+  mapData: MapData,
+  region: TerrainHeightRegionManifest,
+): Promise<void> {
+  const packBytes = new Uint8Array(getHeightRegionPackByteLength(region));
+
+  for (const page of region.pages) {
+    const heightPage = await loadHeightPageForSave(mapData, page.key);
+    const pageBytes = encodeHeightPageBytes(heightPage.heights, mapData.heightPageResolution);
+    if (pageBytes.byteLength !== page.byteLength) {
+      throw new Error(`Map height page '${page.key}' has invalid byte length during save`);
+    }
+
+    packBytes.set(pageBytes, page.offset);
+  }
+
+  await platform.projects.saveMapChunk(
+    projectPath,
+    mapId,
+    region.path,
+    encodeHeightRegionPackBase64(packBytes),
+  );
+}
+
+async function loadHeightPageForSave(mapData: MapData, key: string): Promise<HeightPageData> {
+  const cached = mapData.heightPages[key];
+  if (cached) {
+    return cached;
+  }
+
+  if (mapData.loadHeightPage) {
+    return mapData.loadHeightPage(key);
+  }
+
+  throw new Error(`Map height page '${key}' is missing during save`);
+}
+
+function hasSameTerrainPageKeys(
+  left: TerrainHeightManifest,
+  right: TerrainHeightManifest,
+): boolean {
+  const leftKeys = getTerrainHeightPageKeys(left);
+  const rightKeys = getTerrainHeightPageKeys(right);
+  if (leftKeys.length !== rightKeys.length) {
+    return false;
+  }
+
+  return leftKeys.every((key, index) => key === rightKeys[index]);
 }
 
 function serializeManifest(manifest: MapManifest): string {

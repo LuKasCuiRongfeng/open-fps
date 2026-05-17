@@ -4,9 +4,13 @@
 import {
   createMapDataFromManifest,
   decodeHeightPageBytes,
+  deserializeTerrainHeightManifest,
   deserializeMapManifest,
-  getHeightPagePathForKey,
+  createTerrainHeightPageIndex,
+  getHeightRegionPackByteLength,
+  getHeightRegionPageBytes,
   type MapData,
+  type TerrainHeightRegionManifest,
 } from "@project/MapData";
 import {
   createProjectMapRecord,
@@ -102,29 +106,36 @@ export async function loadBundledGameProject(
 
   const manifest = deserializeMapManifest(manifestJson);
   const activeMap = createProjectMapRecord(activeMapId, manifest.metadata);
-  const [paintJson, vegetationJson] = await Promise.all([
+  const [terrainJson, paintJson, vegetationJson] = await Promise.all([
+    fetchRequiredText(resolveProjectUrl(mapDirectoryUrl, manifest.terrainPath), "terrain height manifest"),
     fetchOptionalText(resolveProjectUrl(mapDirectoryUrl, manifest.paintPath)),
     fetchOptionalText(resolveProjectUrl(mapDirectoryUrl, manifest.vegetationPath)),
   ]);
 
+  const terrainManifest = deserializeTerrainHeightManifest(terrainJson);
+  const heightPageIndex = createTerrainHeightPageIndex(terrainManifest);
   const heightPageCache = new Map<string, ReturnType<NonNullable<MapData["loadHeightPage"]>>>();
-  const map = createMapDataFromManifest(manifest, {});
+  const heightRegionCache = new Map<string, Promise<Uint8Array>>();
+  const map = createMapDataFromManifest(manifest, terrainManifest, {});
   map.loadHeightPage = async (key) => {
     const cached = heightPageCache.get(key);
     if (cached) {
       return cached;
     }
 
-    if (!map.heightPageKeys.includes(key)) {
-      throw new Error(`Map height page '${key}' is not declared in the manifest`);
+    const location = heightPageIndex.get(key);
+    if (!location) {
+      throw new Error(`Map height page '${key}' is not declared in the terrain manifest`);
     }
 
     const request = (async () => {
-      const bytes = await fetchRequiredBytes(
-        resolveProjectUrl(mapDirectoryUrl, getHeightPagePathForKey(key)),
-        `map height page ${key}`,
+      const regionBytes = await loadBundledHeightRegionPack(
+        mapDirectoryUrl,
+        location.region,
+        heightRegionCache,
       );
-      return { heights: decodeHeightPageBytes(bytes, manifest.terrain.height.pageResolution) };
+      const pageBytes = getHeightRegionPageBytes(regionBytes, location.page);
+      return { heights: decodeHeightPageBytes(pageBytes, terrainManifest.pageResolution) };
     })();
     heightPageCache.set(key, request);
     return request;
@@ -151,6 +162,32 @@ export async function loadBundledGameProject(
     textureDefinition,
     vegetationData,
   };
+}
+
+async function loadBundledHeightRegionPack(
+  mapDirectoryUrl: string,
+  region: TerrainHeightRegionManifest,
+  cache: Map<string, Promise<Uint8Array>>,
+): Promise<Uint8Array> {
+  const cached = cache.get(region.key);
+  if (cached) {
+    return cached;
+  }
+
+  const request = (async () => {
+    const bytes = await fetchRequiredBytes(
+      resolveProjectUrl(mapDirectoryUrl, region.path),
+      `height region ${region.key}`,
+    );
+    const expectedByteLength = getHeightRegionPackByteLength(region);
+    if (bytes.byteLength !== expectedByteLength) {
+      throw new Error(`Invalid height region '${region.key}' byte length`);
+    }
+
+    return bytes;
+  })();
+  cache.set(region.key, request);
+  return request;
 }
 
 async function loadBundledVegetationData(

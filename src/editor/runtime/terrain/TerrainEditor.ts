@@ -429,6 +429,7 @@ export class TerrainEditor {
       heightPageKeys: [...mapData.heightPageKeys],
       heightPages: {},
       loadHeightPage: mapData.loadHeightPage,
+      terrainPath: mapData.terrainPath,
       paintPath: mapData.paintPath,
       paint: clonePaintData(mapData.paint),
       vegetationPath: mapData.vegetationPath,

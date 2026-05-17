@@ -2,6 +2,18 @@
 // MapData：虚拟开放世界地图 page 架构与清单辅助函数。
 
 import { base64ToUint8Array, uint8ArrayToBase64 } from "@/lib/base64";
+import {
+  pageKey,
+  sortPageKeys,
+} from "./PageGrid";
+import {
+  getTerrainHeightPageKeys,
+  MAP_TERRAIN_HEIGHT_PATH,
+  type TerrainHeightManifest,
+} from "./TerrainHeightData";
+
+export { pageKey, parsePageKey, sortPageKeys } from "./PageGrid";
+export * from "./TerrainHeightData";
 
 /** Height page payload stored as float32 little-endian binary. / 以 float32 小端二进制保存的高度 page 数据。 */
 export interface HeightPageData {
@@ -41,6 +53,7 @@ export interface MapData {
   heightPageKeys: string[];
   heightPages: Record<string, HeightPageData>;
   loadHeightPage?: HeightPageLoader;
+  terrainPath: typeof MAP_TERRAIN_HEIGHT_PATH;
   paintPath: typeof MAP_PAINT_PATH;
   paint: MapPaintData;
   vegetationPath: typeof MAP_VEGETATION_MODELS_PATH;
@@ -57,24 +70,13 @@ export interface MapManifest {
     originX: 0;
     originZ: 0;
   };
-  terrain: {
-    height: {
-      format: typeof MAP_HEIGHT_FORMAT;
-      pagesDirectory: typeof MAP_HEIGHT_PAGES_DIRECTORY;
-      pageResolution: number;
-      // EN: Sparse height page keys are authoritative; file paths are always derived from each key.
-      // 中文: 稀疏高度 page key 是权威清单；文件路径始终由 key 推导。
-      pageKeys: string[];
-    };
-  };
+  terrainPath: typeof MAP_TERRAIN_HEIGHT_PATH;
   paintPath: typeof MAP_PAINT_PATH;
   vegetationPath: typeof MAP_VEGETATION_MODELS_PATH;
   metadata: MapMetadata;
 }
 
-export const MAP_DATA_VERSION = 7;
-export const MAP_HEIGHT_FORMAT = "float32le";
-export const MAP_HEIGHT_PAGES_DIRECTORY = "terrain/height/pages";
+export const MAP_DATA_VERSION = 8;
 export const MAP_PAINT_PATH = "paint/layers.json";
 export const MAP_PAINT_PAGES_DIRECTORY = "paint/pages";
 export const MAP_PAINT_PAGE_FORMAT = "rgba8-splat-v1";
@@ -100,6 +102,7 @@ export function createEmptyMapData(
     heightPageResolution,
     heightPageKeys: [],
     heightPages: {},
+    terrainPath: MAP_TERRAIN_HEIGHT_PATH,
     paintPath: MAP_PAINT_PATH,
     paint: createEmptyPaintData(),
     vegetationPath: MAP_VEGETATION_MODELS_PATH,
@@ -130,21 +133,6 @@ export function clonePaintData(paintData: MapPaintData): MapPaintData {
       indices: [...normalized.splatMaps.indices],
     },
   };
-}
-
-export function pageKey(px: number, pz: number): string {
-  return `${px},${pz}`;
-}
-
-export function parsePageKey(key: string): { px: number; pz: number } {
-  const match = key.match(/^(-?\d+),(-?\d+)$/);
-  if (!match) {
-    throw new Error(`Invalid page key '${key}'`);
-  }
-
-  const px = Number(match[1]);
-  const pz = Number(match[2]);
-  return { px, pz };
 }
 
 export function hasHeightPages(mapData: MapData): boolean {
@@ -190,14 +178,7 @@ export function createMapManifest(mapData: MapData): MapManifest {
       originX: 0,
       originZ: 0,
     },
-    terrain: {
-      height: {
-        format: MAP_HEIGHT_FORMAT,
-        pagesDirectory: MAP_HEIGHT_PAGES_DIRECTORY,
-        pageResolution: mapData.heightPageResolution,
-        pageKeys: getHeightPageKeys(mapData),
-      },
-    },
+    terrainPath: normalizeTerrainPath(mapData.terrainPath),
     paintPath: normalizePaintPath(mapData.paintPath),
     vegetationPath: normalizeVegetationPath(mapData.vegetationPath),
     metadata: { ...mapData.metadata },
@@ -217,7 +198,6 @@ export function deserializeMapManifest(json: string): MapManifest {
 
   const seed = parsed.seed;
   const world = parsed.world;
-  const height = parsed.terrain?.height;
 
   if (!Number.isFinite(seed) || !world || !Number.isFinite(world.sizeMeters) || !Number.isFinite(world.pageSizeMeters)) {
     throw new Error("Map manifest has invalid world settings");
@@ -227,19 +207,9 @@ export function deserializeMapManifest(json: string): MapManifest {
     throw new Error("Map manifest origin must be zero for the current virtual page coordinate system");
   }
 
-  if (!height || height.format !== MAP_HEIGHT_FORMAT || height.pagesDirectory !== MAP_HEIGHT_PAGES_DIRECTORY) {
-    throw new Error("Map manifest has invalid height page settings");
-  }
-
-  if (!Number.isFinite(height.pageResolution) || height.pageResolution <= 1) {
-    throw new Error("Map manifest has invalid height page resolution");
-  }
-
   if (!parsed.metadata?.name || !Number.isFinite(parsed.metadata.created) || !Number.isFinite(parsed.metadata.modified)) {
     throw new Error("Map manifest has invalid metadata");
   }
-
-  const heightPageKeys = normalizePageKeys(height.pageKeys, "height page");
 
   return {
     version: MAP_DATA_VERSION,
@@ -250,14 +220,7 @@ export function deserializeMapManifest(json: string): MapManifest {
       originX: 0,
       originZ: 0,
     },
-    terrain: {
-      height: {
-        format: MAP_HEIGHT_FORMAT,
-        pagesDirectory: MAP_HEIGHT_PAGES_DIRECTORY,
-        pageResolution: height.pageResolution,
-        pageKeys: heightPageKeys,
-      },
-    },
+    terrainPath: normalizeTerrainPath(parsed.terrainPath),
     paintPath: normalizePaintPath(parsed.paintPath),
     vegetationPath: normalizeVegetationPath(parsed.vegetationPath),
     metadata: {
@@ -270,16 +233,22 @@ export function deserializeMapManifest(json: string): MapManifest {
 
 export function createMapDataFromManifest(
   manifest: MapManifest,
+  terrainManifest: TerrainHeightManifest,
   heightPages: Record<string, HeightPageData>,
 ): MapData {
+  if (terrainManifest.pageSizeMeters !== manifest.world.pageSizeMeters) {
+    throw new Error("Terrain height manifest page size does not match map manifest");
+  }
+
   return {
     version: MAP_DATA_VERSION,
     seed: manifest.seed,
     worldSizeMeters: manifest.world.sizeMeters,
     pageSizeMeters: manifest.world.pageSizeMeters,
-    heightPageResolution: manifest.terrain.height.pageResolution,
-    heightPageKeys: sortPageKeys(manifest.terrain.height.pageKeys),
+    heightPageResolution: terrainManifest.pageResolution,
+    heightPageKeys: getTerrainHeightPageKeys(terrainManifest),
     heightPages,
+    terrainPath: normalizeTerrainPath(manifest.terrainPath),
     paintPath: normalizePaintPath(manifest.paintPath),
     paint: createEmptyPaintData(),
     vegetationPath: normalizeVegetationPath(manifest.vegetationPath),
@@ -287,37 +256,8 @@ export function createMapDataFromManifest(
   };
 }
 
-export function getHeightPagePath(px: number, pz: number): string {
-  return `${MAP_HEIGHT_PAGES_DIRECTORY}/p_${formatGridCoordinate(px)}_${formatGridCoordinate(pz)}.height.f32`;
-}
-
-export function getHeightPagePathForKey(key: string): string {
-  const { px, pz } = parsePageKey(key);
-  return getHeightPagePath(px, pz);
-}
-
 export function getPaintPagePath(splatMapIndex: number): string {
   return `${MAP_PAINT_PAGES_DIRECTORY}/splat_${formatSplatMapIndex(splatMapIndex)}.paint.rgba`;
-}
-
-export function sortPageKeys(keys: Iterable<string>): string[] {
-  return Array.from(keys).sort(comparePageKeys);
-}
-
-export function encodeHeightPageBase64(heights: Float32Array, pageResolution: number): string {
-  validateHeightPageLength(heights, pageResolution);
-
-  const bytes = new Uint8Array(heights.length * Float32Array.BYTES_PER_ELEMENT);
-  const view = new DataView(bytes.buffer);
-  for (let index = 0; index < heights.length; index += 1) {
-    view.setFloat32(index * Float32Array.BYTES_PER_ELEMENT, heights[index], true);
-  }
-
-  return uint8ArrayToBase64(bytes);
-}
-
-export function decodeHeightPageBase64(base64: string, pageResolution: number): Float32Array {
-  return decodeHeightPageBytes(base64ToUint8Array(base64), pageResolution);
 }
 
 export function encodePaintPageBase64(pixels: Uint8Array | ArrayLike<number>, pageResolution: number): string {
@@ -342,27 +282,6 @@ export function decodePaintPageBytes(bytes: Uint8Array, pageResolution: number):
   return new Uint8Array(bytes);
 }
 
-export function decodeHeightPageBytes(bytes: Uint8Array, pageResolution: number): Float32Array {
-  // EN: Bundled game data is fetched as raw binary, while editor storage still uses base64 over native commands.
-  // 中文: 随游戏打包的数据以原始二进制读取，而编辑器存储仍通过原生命令传递 base64。
-  const expectedByteLength = getExpectedHeightPageByteLength(pageResolution);
-  if (bytes.byteLength !== expectedByteLength) {
-    throw new Error(`Invalid height page byte length: expected ${expectedByteLength}, got ${bytes.byteLength}`);
-  }
-
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const heights = new Float32Array(pageResolution * pageResolution);
-  for (let index = 0; index < heights.length; index += 1) {
-    heights[index] = view.getFloat32(index * Float32Array.BYTES_PER_ELEMENT, true);
-  }
-
-  return heights;
-}
-
-export function getExpectedHeightPageByteLength(pageResolution: number): number {
-  return pageResolution * pageResolution * Float32Array.BYTES_PER_ELEMENT;
-}
-
 export function getExpectedPaintPageByteLength(pageResolution: number): number {
   return pageResolution * pageResolution * 4;
 }
@@ -378,6 +297,14 @@ export function normalizePaintData(value: unknown): MapPaintData {
       indices: normalizeSplatMapIndices(splatMaps.indices ?? []),
     },
   };
+}
+
+function normalizeTerrainPath(value: unknown): typeof MAP_TERRAIN_HEIGHT_PATH {
+  if (value !== MAP_TERRAIN_HEIGHT_PATH) {
+    throw new Error("Map manifest has invalid terrain height path");
+  }
+
+  return MAP_TERRAIN_HEIGHT_PATH;
 }
 
 function normalizePaintPath(value: unknown): typeof MAP_PAINT_PATH {
@@ -433,28 +360,6 @@ function normalizeSplatMapIndices(value: unknown): number[] {
   return Array.from(indices).sort((left, right) => left - right);
 }
 
-function normalizePageKeys(value: unknown, label: string): string[] {
-  if (!Array.isArray(value)) {
-    throw new Error(`Map manifest ${label} keys must be an array`);
-  }
-
-  const keys = new Set<string>();
-  for (const key of value) {
-    if (typeof key !== "string") {
-      throw new Error(`Map manifest ${label} keys must be strings`);
-    }
-
-    parsePageKey(key);
-    if (keys.has(key)) {
-      throw new Error(`Map manifest has duplicate ${label} key '${key}'`);
-    }
-
-    keys.add(key);
-  }
-
-  return sortPageKeys(keys);
-}
-
 function formatSplatMapIndex(value: number): string {
   if (!Number.isInteger(value) || value < 0) {
     throw new Error(`Splat map index must be a non-negative integer: ${value}`);
@@ -479,23 +384,3 @@ function readPositiveNumber(value: unknown, fallback: number, label: string): nu
   return value;
 }
 
-function validateHeightPageLength(heights: Float32Array, pageResolution: number): void {
-  const expectedLength = pageResolution * pageResolution;
-  if (heights.length !== expectedLength) {
-    throw new Error(`Invalid height page length: expected ${expectedLength}, got ${heights.length}`);
-  }
-}
-
-function comparePageKeys(left: string, right: string): number {
-  const a = parsePageKey(left);
-  const b = parsePageKey(right);
-  return a.pz - b.pz || a.px - b.px;
-}
-
-function formatGridCoordinate(value: number): string {
-  if (!Number.isInteger(value)) {
-    throw new Error(`Grid coordinate must be an integer: ${value}`);
-  }
-
-  return value < 0 ? `m${Math.abs(value)}` : String(value);
-}
