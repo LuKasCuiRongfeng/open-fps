@@ -15,6 +15,7 @@
 - 平台特定行为应封装在 `src/platform/` 能力层之后；应用代码不得直接调用原生命令名。
 - 可编辑地形高度存储为 `terrain/height/manifest.json` + `terrain/height/regions/*.heightpack` 的 v1 region pack；manifest 使用 region key 到 64 位十六进制稀疏 mask 的紧凑索引，`map.json` 只保留 `terrainPath`，不要添加旧高度页格式或冗长 page 表兼容性。
 - 可编辑植被实例存储为 `vegetation/models.json` + `vegetation/regions/*.vegpack` 的 v5 region pack；manifest 使用 region key 到 64 位十六进制稀疏 mask 的紧凑索引，变长 cell 实例计数保存在 pack 头中，不要恢复逐 cell 文件存储。
+- 地形、纹理和植被生成脚本应保持独立：`gen:terrain` 只重建地形高度和地图清单，`gen:paint` 只重建纹理绘制资源，`gen:vegetation` 只重建植被资源；只有显式使用 `gen:all` 时才重建全部地图生成资源。
 - 非文档类项目文本的新增或修改内容使用英文：UI 文案、测试名、日志、错误、配置描述、fixture 文本、文件名和资产元数据。
 - 除非本地化工作要求修改，否则保留现有非英文文本不变。
 - 使用清晰的英文代码标识符。

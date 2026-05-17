@@ -13,7 +13,10 @@
     "desktop": "node scripts/run-tauri-target.mjs",
     "web": "node scripts/run-web-target.mjs",
     "version:sync": "node scripts/sync-version-from-tag.mjs",
-    "gen:terrain": "node scripts/generate-terrain-map.mjs"
+    "gen:terrain": "node scripts/generate-terrain-map.mjs",
+    "gen:paint": "node scripts/generate-paint-map.mjs",
+    "gen:vegetation": "node scripts/generate-vegetation-map.mjs",
+    "gen:all": "node scripts/generate-map-assets.mjs"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.6",
