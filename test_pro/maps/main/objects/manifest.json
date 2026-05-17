@@ -1,0 +1,463 @@
+{
+  "version": 1,
+  "format": "world-object-manifest-v1",
+  "cellFormat": "world-object-cell-pack-v1",
+  "cellSizePages": 8,
+  "cellSizeMeters": 512,
+  "cellsDirectory": "objects/cells",
+  "designSource": "OPEN_WORLD_DESIGN_SPEC.md",
+  "archetypes": {
+    "road-dirt-segment": {
+      "layer": "road",
+      "navCost": 0.45,
+      "clearsVegetation": true
+    },
+    "road-rocky-segment": {
+      "layer": "road",
+      "navCost": 0.65,
+      "clearsVegetation": true
+    },
+    "road-forest-path": {
+      "layer": "road",
+      "navCost": 0.55,
+      "clearsVegetation": true
+    },
+    "river-segment": {
+      "layer": "water",
+      "navCost": 3.5,
+      "clearsVegetation": true
+    },
+    "stream-segment": {
+      "layer": "water",
+      "navCost": 2.5,
+      "clearsVegetation": true
+    },
+    "camp": {
+      "layer": "poi",
+      "navCost": 0.8,
+      "collision": true
+    },
+    "lookout-tower": {
+      "layer": "poi",
+      "navCost": 1.1,
+      "collision": true
+    },
+    "broken-bridge": {
+      "layer": "poi",
+      "navCost": 1.4,
+      "collision": true
+    },
+    "abandoned-homestead": {
+      "layer": "poi",
+      "navCost": 1,
+      "collision": true
+    },
+    "forest-clearing": {
+      "layer": "poi",
+      "navCost": 0.7,
+      "collision": false
+    },
+    "road-sign": {
+      "layer": "prop",
+      "collision": true
+    },
+    "split-rail-fence": {
+      "layer": "prop",
+      "collision": true
+    },
+    "supply-crates": {
+      "layer": "prop",
+      "collision": true
+    },
+    "bridge-debris": {
+      "layer": "prop",
+      "collision": true
+    }
+  },
+  "cells": {
+    "-4,-4": {
+      "path": "objects/cells/c_m4_m4.objectpack",
+      "objectCount": 0,
+      "byteLength": 351,
+      "sha256": "abb8c1b49fb6fd53acb1f42c95361f29e511257dd3357d6786441343531ff585"
+    },
+    "-3,-4": {
+      "path": "objects/cells/c_m3_m4.objectpack",
+      "objectCount": 0,
+      "byteLength": 351,
+      "sha256": "e3b5f31c3027eac53d0e28e41353c2e29c1cfdbd88e95d13c75c263fb10b3614"
+    },
+    "-2,-4": {
+      "path": "objects/cells/c_m2_m4.objectpack",
+      "objectCount": 0,
+      "byteLength": 349,
+      "sha256": "112e9cacabd84fa3e90727df723af50928ca2b588705106ff00569f8f010feb6"
+    },
+    "-1,-4": {
+      "path": "objects/cells/c_m1_m4.objectpack",
+      "objectCount": 0,
+      "byteLength": 344,
+      "sha256": "bbca87a37d912c11ef30dad67cec276728c8076f4b049f7c7305ebadd63d3bee"
+    },
+    "0,-4": {
+      "path": "objects/cells/c_0_m4.objectpack",
+      "objectCount": 0,
+      "byteLength": 339,
+      "sha256": "35e46c2f185052247e2e07a18478e828f83efc261f313b39354be956bc5eb5f4"
+    },
+    "1,-4": {
+      "path": "objects/cells/c_1_m4.objectpack",
+      "objectCount": 0,
+      "byteLength": 343,
+      "sha256": "dd02db3f8d89b44ec2bd987ac8ea067ba2ae83b5a2ae452bd69142dc01036981"
+    },
+    "2,-4": {
+      "path": "objects/cells/c_2_m4.objectpack",
+      "objectCount": 0,
+      "byteLength": 345,
+      "sha256": "68b73f2e36f562c6b9d35bbd6d5e9e115f48422349b5ed7ef9cf0ddfc2eba801"
+    },
+    "3,-4": {
+      "path": "objects/cells/c_3_m4.objectpack",
+      "objectCount": 0,
+      "byteLength": 345,
+      "sha256": "cf75c308b18728d62247974b07718b04002c2b92c2e4abfc1556ba8493b53f82"
+    },
+    "-4,-3": {
+      "path": "objects/cells/c_m4_m3.objectpack",
+      "objectCount": 0,
+      "byteLength": 351,
+      "sha256": "159bcfb1c8600a8b08d18015a1068ff93ffd67b1aa339f25bc484aac27fdcb79"
+    },
+    "-3,-3": {
+      "path": "objects/cells/c_m3_m3.objectpack",
+      "objectCount": 0,
+      "byteLength": 351,
+      "sha256": "e176e203e5a293c27f9d2ee520a34e2e0d40081408205b041eecf5bfc1efd426"
+    },
+    "-2,-3": {
+      "path": "objects/cells/c_m2_m3.objectpack",
+      "objectCount": 1,
+      "byteLength": 1025,
+      "sha256": "4d4b83b5b1752690d0e916b5dee560a662db7f9024461c30e2da1955a414bcb4"
+    },
+    "-1,-3": {
+      "path": "objects/cells/c_m1_m3.objectpack",
+      "objectCount": 2,
+      "byteLength": 1554,
+      "sha256": "b6466a3d70d84be921e68819fe4a1a750bbc20cb1913ad55bef44fbe3ad3c5c6"
+    },
+    "0,-3": {
+      "path": "objects/cells/c_0_m3.objectpack",
+      "objectCount": 0,
+      "byteLength": 339,
+      "sha256": "daa1aca632be1943cfcfa3ed1944daef0696e83604a4c58d16c8eb5108ace80b"
+    },
+    "1,-3": {
+      "path": "objects/cells/c_1_m3.objectpack",
+      "objectCount": 0,
+      "byteLength": 343,
+      "sha256": "b6a20b35b09e49078c2b42657305fd2fb638919656439feab3c55abc457b28d7"
+    },
+    "2,-3": {
+      "path": "objects/cells/c_2_m3.objectpack",
+      "objectCount": 0,
+      "byteLength": 345,
+      "sha256": "dc79c9b7136e9b294474dcf3854fa06015b04001f074375532f165e388865950"
+    },
+    "3,-3": {
+      "path": "objects/cells/c_3_m3.objectpack",
+      "objectCount": 0,
+      "byteLength": 345,
+      "sha256": "5f03cae22e21461e0ff872f96a5757837ded97ec161bf296160bb9c26785ab0b"
+    },
+    "-4,-2": {
+      "path": "objects/cells/c_m4_m2.objectpack",
+      "objectCount": 0,
+      "byteLength": 349,
+      "sha256": "180e982566303a1a04ea1170d2c4bc9e39a5225f67c8677220501e38180defce"
+    },
+    "-3,-2": {
+      "path": "objects/cells/c_m3_m2.objectpack",
+      "objectCount": 0,
+      "byteLength": 349,
+      "sha256": "ce040ed7a8285089a313be7e25f139940009689e39c3b72be380bd9ccc10f727"
+    },
+    "-2,-2": {
+      "path": "objects/cells/c_m2_m2.objectpack",
+      "objectCount": 2,
+      "byteLength": 1692,
+      "sha256": "9a5f4143f4d062c9dbeacabb5422124c4d3845f1c3be5a05939440db19e60e7b"
+    },
+    "-1,-2": {
+      "path": "objects/cells/c_m1_m2.objectpack",
+      "objectCount": 3,
+      "byteLength": 2196,
+      "sha256": "5f56cf946a497b3d72b4ffa4919a4ccf33ae204ddde9dd49b802add6927f76fe"
+    },
+    "0,-2": {
+      "path": "objects/cells/c_0_m2.objectpack",
+      "objectCount": 1,
+      "byteLength": 1005,
+      "sha256": "3e81a40ac5f24f87c52216f6307f6b4f4af40e641515137eeb62c3ff50393811"
+    },
+    "1,-2": {
+      "path": "objects/cells/c_1_m2.objectpack",
+      "objectCount": 1,
+      "byteLength": 1006,
+      "sha256": "193a8d384fe3c9084975a58c259fc50b724bcf010db36382012de46e8c9370df"
+    },
+    "2,-2": {
+      "path": "objects/cells/c_2_m2.objectpack",
+      "objectCount": 0,
+      "byteLength": 343,
+      "sha256": "4a3677fb90ae702fe46e835ca8702d6e2187b40bb7e2ffb73b6dea52b2ca9a29"
+    },
+    "3,-2": {
+      "path": "objects/cells/c_3_m2.objectpack",
+      "objectCount": 0,
+      "byteLength": 343,
+      "sha256": "a5c0971acf924372d916aa59574fb209c4f2adbe4f2803d905a9c67535187fcd"
+    },
+    "-4,-1": {
+      "path": "objects/cells/c_m4_m1.objectpack",
+      "objectCount": 0,
+      "byteLength": 344,
+      "sha256": "2a3f25d498049d8339ff90ff11dc8e8d579592957b3d7a2063396df72d3ee3ad"
+    },
+    "-3,-1": {
+      "path": "objects/cells/c_m3_m1.objectpack",
+      "objectCount": 1,
+      "byteLength": 1017,
+      "sha256": "61aedebd87c6a469db78619af3648ea39bd00add02ccad8e71560d25ab59af94"
+    },
+    "-2,-1": {
+      "path": "objects/cells/c_m2_m1.objectpack",
+      "objectCount": 0,
+      "byteLength": 342,
+      "sha256": "2e43975480fe6faa8213ba6219a897c038b7e3204245c9cc37a384fc26851aa5"
+    },
+    "-1,-1": {
+      "path": "objects/cells/c_m1_m1.objectpack",
+      "objectCount": 2,
+      "byteLength": 1397,
+      "sha256": "395c8f03349ca4a7c4d6133537acf7d452124d5f5c4a8c49040006b151d61dec"
+    },
+    "0,-1": {
+      "path": "objects/cells/c_0_m1.objectpack",
+      "objectCount": 2,
+      "byteLength": 1654,
+      "sha256": "c4b8f301a2599cf1c2a38d558541fed59c47da8a4cb28e5fa08cea150cb564c8"
+    },
+    "1,-1": {
+      "path": "objects/cells/c_1_m1.objectpack",
+      "objectCount": 4,
+      "byteLength": 2743,
+      "sha256": "0935a9cf72bff4c678371155f38d2fb2f0955fa211da7d8b68c0388027bc7c0f"
+    },
+    "2,-1": {
+      "path": "objects/cells/c_2_m1.objectpack",
+      "objectCount": 0,
+      "byteLength": 338,
+      "sha256": "9e50134c0c0325bd195bfd66b406441da4db27a23305a4de89363545cdd5521a"
+    },
+    "3,-1": {
+      "path": "objects/cells/c_3_m1.objectpack",
+      "objectCount": 0,
+      "byteLength": 338,
+      "sha256": "0dbdc45717bfbe1325e57faf8c60e6cb66c8c2e1ebaeea7e7dfae7382f96592f"
+    },
+    "-4,0": {
+      "path": "objects/cells/c_m4_0.objectpack",
+      "objectCount": 0,
+      "byteLength": 339,
+      "sha256": "0ba0ce2104ab50bbe68e1cf7d418342eb386136ec560fc00a50aec1bb6c02bc2"
+    },
+    "-3,0": {
+      "path": "objects/cells/c_m3_0.objectpack",
+      "objectCount": 1,
+      "byteLength": 892,
+      "sha256": "714b3e0548bea28264f959398ad2b7d9be48e8943384896aebdd74e8dc228689"
+    },
+    "-2,0": {
+      "path": "objects/cells/c_m2_0.objectpack",
+      "objectCount": 3,
+      "byteLength": 2052,
+      "sha256": "93ba5ab3249a3c0f155f29299184277b8608ee62c3afbc7412089b940ae07ed6"
+    },
+    "-1,0": {
+      "path": "objects/cells/c_m1_0.objectpack",
+      "objectCount": 0,
+      "byteLength": 332,
+      "sha256": "abbb33d81a5ad30f2c9512986894f88a13fa0b5b81a6b6bd643dbcc74068644d"
+    },
+    "0,0": {
+      "path": "objects/cells/c_0_0.objectpack",
+      "objectCount": 2,
+      "byteLength": 1633,
+      "sha256": "d0a6f360f06f6821c477f5f5d7e19de06ba040d737fac2b7a03bd9275bab6d74"
+    },
+    "1,0": {
+      "path": "objects/cells/c_1_0.objectpack",
+      "objectCount": 1,
+      "byteLength": 976,
+      "sha256": "a2059b5d21268627a54d8b378a7669ad5691f1626c23beb3af2014f2e835dca4"
+    },
+    "2,0": {
+      "path": "objects/cells/c_2_0.objectpack",
+      "objectCount": 0,
+      "byteLength": 333,
+      "sha256": "2cc2576d8893fc1277ac2f56700acce6a0ffd50cd1e840826e7cbb986744bbdb"
+    },
+    "3,0": {
+      "path": "objects/cells/c_3_0.objectpack",
+      "objectCount": 0,
+      "byteLength": 333,
+      "sha256": "e40a64c1a6416d8bac5c3cbe0edd1ef95f3de4086dea6071c273f1ff9e82a8ee"
+    },
+    "-4,1": {
+      "path": "objects/cells/c_m4_1.objectpack",
+      "objectCount": 0,
+      "byteLength": 343,
+      "sha256": "abd4502a3abb2cb2b89983e0b5c971d5b59e114be6a9fe8478c9d00665f79cea"
+    },
+    "-3,1": {
+      "path": "objects/cells/c_m3_1.objectpack",
+      "objectCount": 0,
+      "byteLength": 343,
+      "sha256": "672a52a4819d8806c026f501f16f8502c72a7ad826c8ef06a6033ddde99b1368"
+    },
+    "-2,1": {
+      "path": "objects/cells/c_m2_1.objectpack",
+      "objectCount": 0,
+      "byteLength": 341,
+      "sha256": "6ab172611c135e07fa46ca9c6046331b1d0eb802a695677ff604bb9592b4938b"
+    },
+    "-1,1": {
+      "path": "objects/cells/c_m1_1.objectpack",
+      "objectCount": 0,
+      "byteLength": 336,
+      "sha256": "8bfea171b5ca8f8260b1b788044566dfaf8bb452e6247d1ad23b0c9ed4529fb0"
+    },
+    "0,1": {
+      "path": "objects/cells/c_0_1.objectpack",
+      "objectCount": 4,
+      "byteLength": 2703,
+      "sha256": "43a07c429b4fd392f8478c1a111d8ce1a6e8f7cdcb2456e29b7e2d0e4fefaa72"
+    },
+    "1,1": {
+      "path": "objects/cells/c_1_1.objectpack",
+      "objectCount": 0,
+      "byteLength": 335,
+      "sha256": "b34962f5598fbd9697e5d3fcdf20aaede038698fa33e8d20b5bc15cbe6345502"
+    },
+    "2,1": {
+      "path": "objects/cells/c_2_1.objectpack",
+      "objectCount": 0,
+      "byteLength": 337,
+      "sha256": "5602d4dd6e9cd1f964e04c2da8c646c0cae87bba8917b872d07b79591db1ec0a"
+    },
+    "3,1": {
+      "path": "objects/cells/c_3_1.objectpack",
+      "objectCount": 0,
+      "byteLength": 337,
+      "sha256": "e938699bb61694aefa3ea8d619c8779293e7b2c02f170c2b0ec81872d01ed3b7"
+    },
+    "-4,2": {
+      "path": "objects/cells/c_m4_2.objectpack",
+      "objectCount": 0,
+      "byteLength": 345,
+      "sha256": "2964288093e16aad591cc97c2fbf57d46a98728e6aaf82da5167bc12e85f083c"
+    },
+    "-3,2": {
+      "path": "objects/cells/c_m3_2.objectpack",
+      "objectCount": 0,
+      "byteLength": 345,
+      "sha256": "6ae9ea61fe17807332c5281c74ab2bebbc60f4c32acdd70a89a662fc440df4b2"
+    },
+    "-2,2": {
+      "path": "objects/cells/c_m2_2.objectpack",
+      "objectCount": 0,
+      "byteLength": 343,
+      "sha256": "1bf601ba38ba01a7ac0f194bfd9d7c85937569b80afffeb2ac6e1e7800ac42c3"
+    },
+    "-1,2": {
+      "path": "objects/cells/c_m1_2.objectpack",
+      "objectCount": 0,
+      "byteLength": 338,
+      "sha256": "bbe01a9f0c8611f3e51e6779dcc9c4785ad9f6c0a40244c015d0f2429fca75d6"
+    },
+    "0,2": {
+      "path": "objects/cells/c_0_2.objectpack",
+      "objectCount": 1,
+      "byteLength": 991,
+      "sha256": "d21f688c245e6307c3d4883b84330a409f14071a3d2ac16af5ad3ef9b6dbc097"
+    },
+    "1,2": {
+      "path": "objects/cells/c_1_2.objectpack",
+      "objectCount": 0,
+      "byteLength": 337,
+      "sha256": "83ae3f4fdec53fe33fd526f072230ff99e7611e235d1d35334808a2720b9a85a"
+    },
+    "2,2": {
+      "path": "objects/cells/c_2_2.objectpack",
+      "objectCount": 0,
+      "byteLength": 339,
+      "sha256": "5f0379f9681ce0983be74826964ffcfaf78977090f107bd36e42b96ebc6c8ad0"
+    },
+    "3,2": {
+      "path": "objects/cells/c_3_2.objectpack",
+      "objectCount": 0,
+      "byteLength": 339,
+      "sha256": "49e009a067dc552d1550907e93ccbe19d49d443655ad33c4d618b8913de62459"
+    },
+    "-4,3": {
+      "path": "objects/cells/c_m4_3.objectpack",
+      "objectCount": 0,
+      "byteLength": 345,
+      "sha256": "3cbd89ca9008a83f1d33cfa55ba74d19d419b105d1a74137511f1452c9e23c9d"
+    },
+    "-3,3": {
+      "path": "objects/cells/c_m3_3.objectpack",
+      "objectCount": 0,
+      "byteLength": 345,
+      "sha256": "cc49718540216a6ab37d09d3b5d62ed1a4aca6aaadd4d3e8372274ce91342547"
+    },
+    "-2,3": {
+      "path": "objects/cells/c_m2_3.objectpack",
+      "objectCount": 0,
+      "byteLength": 343,
+      "sha256": "ba30be5bc8f46080fa6a6e6d40453a471c159a71e74098c2e8f5deaf000a02a0"
+    },
+    "-1,3": {
+      "path": "objects/cells/c_m1_3.objectpack",
+      "objectCount": 0,
+      "byteLength": 338,
+      "sha256": "d2f2dffaf06d3a4825c608827ca083af055c1f1de23c40e610accd0c4940e63a"
+    },
+    "0,3": {
+      "path": "objects/cells/c_0_3.objectpack",
+      "objectCount": 0,
+      "byteLength": 333,
+      "sha256": "bcc85178596f64021e4f80e384098b69cc659b0151846ccd1218921618902a6e"
+    },
+    "1,3": {
+      "path": "objects/cells/c_1_3.objectpack",
+      "objectCount": 0,
+      "byteLength": 337,
+      "sha256": "4fce12e3d0d54c1f7d41695a7f8feb4ba4bf03f38257d278d3d5b091e4e371f7"
+    },
+    "2,3": {
+      "path": "objects/cells/c_2_3.objectpack",
+      "objectCount": 0,
+      "byteLength": 339,
+      "sha256": "b5a62133da7d8c7634e83fc7d7720b3f79598a8ffe248ee4d860967ccf51b2fc"
+    },
+    "3,3": {
+      "path": "objects/cells/c_3_3.objectpack",
+      "objectCount": 0,
+      "byteLength": 339,
+      "sha256": "6b5ae9374ac1ad612a8fc9c23f0b5b1d5872a9fc9b80cd08c2bf75f83e3b1a94"
+    }
+  }
+}

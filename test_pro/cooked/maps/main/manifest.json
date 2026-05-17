@@ -1,13 +1,13 @@
 {
-  "version": 3,
-  "format": "open-fps-cooked-map-v3",
+  "version": 4,
+  "format": "open-fps-cooked-map-v4",
   "mapId": "main",
   "build": {
     "tool": "open-fps-cook-map-assets",
-    "toolVersion": 3,
-    "generatedAt": "2026-05-17T10:23:57.171Z",
-    "inputSignature": "ed70503733be9aff15c2d36e97d55f81d9a02b643981dddb1ac17ea79d6a3671",
-    "previousInputSignature": null,
+    "toolVersion": 4,
+    "generatedAt": "2026-05-17T12:52:57.086Z",
+    "inputSignature": "f9571173b0d0306f3f7b4eb0bc526205f859329547e710a738cc1a77cc930a05",
+    "previousInputSignature": "ed70503733be9aff15c2d36e97d55f81d9a02b643981dddb1ac17ea79d6a3671",
     "packageLayout": "content-addressed-sha256-v1",
     "artifactCount": 351
   },
@@ -16,7 +16,7 @@
     "metadata": {
       "name": "Frontier Basin",
       "created": 1778997569115,
-      "modified": 1779006894860
+      "modified": 1779022372336
     }
   },
   "source": {
@@ -26,7 +26,7 @@
     },
     "map": {
       "path": "maps/main/map.json",
-      "sha256": "2fd59d5e2e37ee24207f040e08ee023d45f463e175f6161776f56aa4e8d9674a"
+      "sha256": "9306735ae4d026c8b16086702af7acf845ac577a11fe46b5e82f23a397f56e61"
     },
     "terrain": {
       "path": "maps/main/terrain/height/manifest.json",
@@ -39,6 +39,10 @@
     "vegetation": {
       "path": "maps/main/vegetation/models.json",
       "sha256": "aaedba4d896befc58e5a50d6249b4a9fee409c8fc46358e5d3c7ed082a305dc8"
+    },
+    "objects": {
+      "path": "maps/main/objects/manifest.json",
+      "sha256": "77717cef6b26b9866976a015797924100346b83b2ddf5b3039da2c9ba6fa76b5"
     }
   },
   "world": {
@@ -939,329 +943,394 @@
       }
     },
     "objects": {
+      "manifestPath": "maps/main/objects/manifest.json",
       "format": "world-object-cell-pack-v1",
       "cellSizePages": 8,
       "cellSizeMeters": 512,
       "cells": {
         "-4,-4": {
           "path": "cooked/maps/main/objects/cells/c_m4_m4.objectpack",
-          "byteLength": 227,
-          "sha256": "6d53d60b50af812244ea00fd146ab654709dca495be14241b4d739d4f364691e"
+          "objectCount": 0,
+          "byteLength": 351,
+          "sha256": "abb8c1b49fb6fd53acb1f42c95361f29e511257dd3357d6786441343531ff585"
         },
         "-3,-4": {
           "path": "cooked/maps/main/objects/cells/c_m3_m4.objectpack",
-          "byteLength": 227,
-          "sha256": "01c577d405c9ab3b8ebbdbc6ac524c528bb39b8887e9b4f21a1b5c1b66a40e45"
+          "objectCount": 0,
+          "byteLength": 351,
+          "sha256": "e3b5f31c3027eac53d0e28e41353c2e29c1cfdbd88e95d13c75c263fb10b3614"
         },
         "-2,-4": {
           "path": "cooked/maps/main/objects/cells/c_m2_m4.objectpack",
-          "byteLength": 225,
-          "sha256": "f229c489d8edb6cc7a7abb459fe8b8f8e697bf5c6a753c60d75d7de34a14c5d4"
+          "objectCount": 0,
+          "byteLength": 349,
+          "sha256": "112e9cacabd84fa3e90727df723af50928ca2b588705106ff00569f8f010feb6"
         },
         "-1,-4": {
           "path": "cooked/maps/main/objects/cells/c_m1_m4.objectpack",
-          "byteLength": 220,
-          "sha256": "58f76b350173c233745133e76854eed5e5deb94e528118cebc7a1f75c438170c"
+          "objectCount": 0,
+          "byteLength": 344,
+          "sha256": "bbca87a37d912c11ef30dad67cec276728c8076f4b049f7c7305ebadd63d3bee"
         },
         "0,-4": {
           "path": "cooked/maps/main/objects/cells/c_0_m4.objectpack",
-          "byteLength": 215,
-          "sha256": "bea4ff957f3a5b0b3f58d0863ca83420b943be2274bc703947867c6f01161cd7"
+          "objectCount": 0,
+          "byteLength": 339,
+          "sha256": "35e46c2f185052247e2e07a18478e828f83efc261f313b39354be956bc5eb5f4"
         },
         "1,-4": {
           "path": "cooked/maps/main/objects/cells/c_1_m4.objectpack",
-          "byteLength": 219,
-          "sha256": "17ed2bd1d0e8966ec99de0f717e06b4d6647a7fcfdc40daebdd29c4e9c14dabb"
+          "objectCount": 0,
+          "byteLength": 343,
+          "sha256": "dd02db3f8d89b44ec2bd987ac8ea067ba2ae83b5a2ae452bd69142dc01036981"
         },
         "2,-4": {
           "path": "cooked/maps/main/objects/cells/c_2_m4.objectpack",
-          "byteLength": 221,
-          "sha256": "d7d2058bcba28557f56c438ffb9c38ca32004df095bd248251394837bb20f257"
+          "objectCount": 0,
+          "byteLength": 345,
+          "sha256": "68b73f2e36f562c6b9d35bbd6d5e9e115f48422349b5ed7ef9cf0ddfc2eba801"
         },
         "3,-4": {
           "path": "cooked/maps/main/objects/cells/c_3_m4.objectpack",
-          "byteLength": 221,
-          "sha256": "cd5c627ab8647e1ca1dbad1cde683db04f7d9e1ab07ae5f047d1bf2a72ee09df"
+          "objectCount": 0,
+          "byteLength": 345,
+          "sha256": "cf75c308b18728d62247974b07718b04002c2b92c2e4abfc1556ba8493b53f82"
         },
         "-4,-3": {
           "path": "cooked/maps/main/objects/cells/c_m4_m3.objectpack",
-          "byteLength": 227,
-          "sha256": "f18681c3b980646c91ea9655c48a88909644cc8c00e22474eff11aa5bc7ac6a7"
+          "objectCount": 0,
+          "byteLength": 351,
+          "sha256": "159bcfb1c8600a8b08d18015a1068ff93ffd67b1aa339f25bc484aac27fdcb79"
         },
         "-3,-3": {
           "path": "cooked/maps/main/objects/cells/c_m3_m3.objectpack",
-          "byteLength": 227,
-          "sha256": "874643c24233dbc92190b2ef498db71b8a4b5d40107c6447297c40392ed1d7f5"
+          "objectCount": 0,
+          "byteLength": 351,
+          "sha256": "e176e203e5a293c27f9d2ee520a34e2e0d40081408205b041eecf5bfc1efd426"
         },
         "-2,-3": {
           "path": "cooked/maps/main/objects/cells/c_m2_m3.objectpack",
-          "byteLength": 225,
-          "sha256": "4db69d8f8e796688ec08bf31d0bc885a1a3299d16dca436bf112a75ffcab6c18"
+          "objectCount": 1,
+          "byteLength": 1025,
+          "sha256": "4d4b83b5b1752690d0e916b5dee560a662db7f9024461c30e2da1955a414bcb4"
         },
         "-1,-3": {
           "path": "cooked/maps/main/objects/cells/c_m1_m3.objectpack",
-          "byteLength": 220,
-          "sha256": "eb65b280f9552ad82bfea8c9f849f0582bd667697619f7f6e4aceba36a34590a"
+          "objectCount": 2,
+          "byteLength": 1554,
+          "sha256": "b6466a3d70d84be921e68819fe4a1a750bbc20cb1913ad55bef44fbe3ad3c5c6"
         },
         "0,-3": {
           "path": "cooked/maps/main/objects/cells/c_0_m3.objectpack",
-          "byteLength": 215,
-          "sha256": "a30044f74ea3f40118b5d9895f4fffd54776cbb43a5e0d3e98af11a13de36a00"
+          "objectCount": 0,
+          "byteLength": 339,
+          "sha256": "daa1aca632be1943cfcfa3ed1944daef0696e83604a4c58d16c8eb5108ace80b"
         },
         "1,-3": {
           "path": "cooked/maps/main/objects/cells/c_1_m3.objectpack",
-          "byteLength": 219,
-          "sha256": "da4af24289b9d3cd40e7203b5cfa9229b889fc821455bea4fc537abe5caa54db"
+          "objectCount": 0,
+          "byteLength": 343,
+          "sha256": "b6a20b35b09e49078c2b42657305fd2fb638919656439feab3c55abc457b28d7"
         },
         "2,-3": {
           "path": "cooked/maps/main/objects/cells/c_2_m3.objectpack",
-          "byteLength": 221,
-          "sha256": "e182af04954a40e164307c0b20d9cb1eb39138c8b1c97c1e0158f5f49736e11d"
+          "objectCount": 0,
+          "byteLength": 345,
+          "sha256": "dc79c9b7136e9b294474dcf3854fa06015b04001f074375532f165e388865950"
         },
         "3,-3": {
           "path": "cooked/maps/main/objects/cells/c_3_m3.objectpack",
-          "byteLength": 221,
-          "sha256": "27fbff3cb1cb1e9130d5396c772022819f80a4fffc659e2a7021085b2c50878d"
+          "objectCount": 0,
+          "byteLength": 345,
+          "sha256": "5f03cae22e21461e0ff872f96a5757837ded97ec161bf296160bb9c26785ab0b"
         },
         "-4,-2": {
           "path": "cooked/maps/main/objects/cells/c_m4_m2.objectpack",
-          "byteLength": 225,
-          "sha256": "b99f5aa950dcd67da4bce6d65d4dbbfa5e598cce0da5b577c4acb5d5d54dbf2d"
+          "objectCount": 0,
+          "byteLength": 349,
+          "sha256": "180e982566303a1a04ea1170d2c4bc9e39a5225f67c8677220501e38180defce"
         },
         "-3,-2": {
           "path": "cooked/maps/main/objects/cells/c_m3_m2.objectpack",
-          "byteLength": 225,
-          "sha256": "384ce0fbef97d9739edaec4f4102dc2f4a5d4f9e6c415d5dfd1410f846af9b58"
+          "objectCount": 0,
+          "byteLength": 349,
+          "sha256": "ce040ed7a8285089a313be7e25f139940009689e39c3b72be380bd9ccc10f727"
         },
         "-2,-2": {
           "path": "cooked/maps/main/objects/cells/c_m2_m2.objectpack",
-          "byteLength": 223,
-          "sha256": "a9bbadbddb302d5c3d74a0467a4d662adda263343a769dfb8df7a83cfec396ed"
+          "objectCount": 2,
+          "byteLength": 1692,
+          "sha256": "9a5f4143f4d062c9dbeacabb5422124c4d3845f1c3be5a05939440db19e60e7b"
         },
         "-1,-2": {
           "path": "cooked/maps/main/objects/cells/c_m1_m2.objectpack",
-          "byteLength": 218,
-          "sha256": "c94445b0e2801f6267115a3119ba5a8afcc867afd35c8d8414d8cec94ec74f8e"
+          "objectCount": 3,
+          "byteLength": 2196,
+          "sha256": "5f56cf946a497b3d72b4ffa4919a4ccf33ae204ddde9dd49b802add6927f76fe"
         },
         "0,-2": {
           "path": "cooked/maps/main/objects/cells/c_0_m2.objectpack",
-          "byteLength": 213,
-          "sha256": "c7de9b953c9053bc182e2904e8baa3ca800c299b1d8db293da07dbfbe3b412f3"
+          "objectCount": 1,
+          "byteLength": 1005,
+          "sha256": "3e81a40ac5f24f87c52216f6307f6b4f4af40e641515137eeb62c3ff50393811"
         },
         "1,-2": {
           "path": "cooked/maps/main/objects/cells/c_1_m2.objectpack",
-          "byteLength": 217,
-          "sha256": "13d7c16e7a09d086c5e670309013ff05be53da80a0fe98462ef9442a76a322b0"
+          "objectCount": 1,
+          "byteLength": 1006,
+          "sha256": "193a8d384fe3c9084975a58c259fc50b724bcf010db36382012de46e8c9370df"
         },
         "2,-2": {
           "path": "cooked/maps/main/objects/cells/c_2_m2.objectpack",
-          "byteLength": 219,
-          "sha256": "6848446d8edc2aa6d3953cb69111c59c571e674e1e16f0b83203aef75bbd3f16"
+          "objectCount": 0,
+          "byteLength": 343,
+          "sha256": "4a3677fb90ae702fe46e835ca8702d6e2187b40bb7e2ffb73b6dea52b2ca9a29"
         },
         "3,-2": {
           "path": "cooked/maps/main/objects/cells/c_3_m2.objectpack",
-          "byteLength": 219,
-          "sha256": "de3e5950eda8b2a80715da3bceae2298d91cef3e38a4ea571e55e683d9fb882d"
+          "objectCount": 0,
+          "byteLength": 343,
+          "sha256": "a5c0971acf924372d916aa59574fb209c4f2adbe4f2803d905a9c67535187fcd"
         },
         "-4,-1": {
           "path": "cooked/maps/main/objects/cells/c_m4_m1.objectpack",
-          "byteLength": 220,
-          "sha256": "1f50e6b60f7c954eb41619b3630c6d41eb526a862df9138caad39a08a08de095"
+          "objectCount": 0,
+          "byteLength": 344,
+          "sha256": "2a3f25d498049d8339ff90ff11dc8e8d579592957b3d7a2063396df72d3ee3ad"
         },
         "-3,-1": {
           "path": "cooked/maps/main/objects/cells/c_m3_m1.objectpack",
-          "byteLength": 220,
-          "sha256": "95c4df325679bf343b79a9c3eac5ae1dcaaa1838efc94222e7f4b36a8456475d"
+          "objectCount": 1,
+          "byteLength": 1017,
+          "sha256": "61aedebd87c6a469db78619af3648ea39bd00add02ccad8e71560d25ab59af94"
         },
         "-2,-1": {
           "path": "cooked/maps/main/objects/cells/c_m2_m1.objectpack",
-          "byteLength": 218,
-          "sha256": "266e1552836e04d8548b7e42b664fac142f6260d8922301ed69cf0ba5f056973"
+          "objectCount": 0,
+          "byteLength": 342,
+          "sha256": "2e43975480fe6faa8213ba6219a897c038b7e3204245c9cc37a384fc26851aa5"
         },
         "-1,-1": {
           "path": "cooked/maps/main/objects/cells/c_m1_m1.objectpack",
-          "byteLength": 213,
-          "sha256": "c9c90202145a7eaad10262ded86b731c9e36bb2ed5c54e3a10c0befb52073d83"
+          "objectCount": 2,
+          "byteLength": 1397,
+          "sha256": "395c8f03349ca4a7c4d6133537acf7d452124d5f5c4a8c49040006b151d61dec"
         },
         "0,-1": {
           "path": "cooked/maps/main/objects/cells/c_0_m1.objectpack",
-          "byteLength": 208,
-          "sha256": "e0ddd14ea93446550c4da2a8fffa4aec4697c37cebcf7973694b32a628f516ce"
+          "objectCount": 2,
+          "byteLength": 1654,
+          "sha256": "c4b8f301a2599cf1c2a38d558541fed59c47da8a4cb28e5fa08cea150cb564c8"
         },
         "1,-1": {
           "path": "cooked/maps/main/objects/cells/c_1_m1.objectpack",
-          "byteLength": 212,
-          "sha256": "c32157944be6f56395d9a084d265074f5590a4b228a10c42ebc1559028e62dab"
+          "objectCount": 4,
+          "byteLength": 2743,
+          "sha256": "0935a9cf72bff4c678371155f38d2fb2f0955fa211da7d8b68c0388027bc7c0f"
         },
         "2,-1": {
           "path": "cooked/maps/main/objects/cells/c_2_m1.objectpack",
-          "byteLength": 214,
-          "sha256": "a44ee37b96f5bce208ffce3a84adfc053276c648b53ca173daab45056486e739"
+          "objectCount": 0,
+          "byteLength": 338,
+          "sha256": "9e50134c0c0325bd195bfd66b406441da4db27a23305a4de89363545cdd5521a"
         },
         "3,-1": {
           "path": "cooked/maps/main/objects/cells/c_3_m1.objectpack",
-          "byteLength": 214,
-          "sha256": "150268684a032ac63ca680c712b6fa5e9c73ca02007d629dfb8f69cb2599bc15"
+          "objectCount": 0,
+          "byteLength": 338,
+          "sha256": "0dbdc45717bfbe1325e57faf8c60e6cb66c8c2e1ebaeea7e7dfae7382f96592f"
         },
         "-4,0": {
           "path": "cooked/maps/main/objects/cells/c_m4_0.objectpack",
-          "byteLength": 215,
-          "sha256": "38d06f848f8dea89a02bb75d23d7d4076101bba28d1bb22549e2667bfb0a6ec5"
+          "objectCount": 0,
+          "byteLength": 339,
+          "sha256": "0ba0ce2104ab50bbe68e1cf7d418342eb386136ec560fc00a50aec1bb6c02bc2"
         },
         "-3,0": {
           "path": "cooked/maps/main/objects/cells/c_m3_0.objectpack",
-          "byteLength": 215,
-          "sha256": "f82077dbde8e3c065cf2ea8948236c2f73b8482c91251f14829eb60a3d3b2039"
+          "objectCount": 1,
+          "byteLength": 892,
+          "sha256": "714b3e0548bea28264f959398ad2b7d9be48e8943384896aebdd74e8dc228689"
         },
         "-2,0": {
           "path": "cooked/maps/main/objects/cells/c_m2_0.objectpack",
-          "byteLength": 213,
-          "sha256": "7c371807ffcad0b2b78b516db7c45ffa8e1dbb902848898cf85d6dcc20cf0135"
+          "objectCount": 3,
+          "byteLength": 2052,
+          "sha256": "93ba5ab3249a3c0f155f29299184277b8608ee62c3afbc7412089b940ae07ed6"
         },
         "-1,0": {
           "path": "cooked/maps/main/objects/cells/c_m1_0.objectpack",
-          "byteLength": 208,
-          "sha256": "7e735e559c5f64bb4dc2ebfebd804240eff1e0b1fe376d5659809ca383c3aea1"
+          "objectCount": 0,
+          "byteLength": 332,
+          "sha256": "abbb33d81a5ad30f2c9512986894f88a13fa0b5b81a6b6bd643dbcc74068644d"
         },
         "0,0": {
           "path": "cooked/maps/main/objects/cells/c_0_0.objectpack",
-          "byteLength": 203,
-          "sha256": "2498383985c040299c739068f3df181ae4729d781d32ab9bab5264614a461bb4"
+          "objectCount": 2,
+          "byteLength": 1633,
+          "sha256": "d0a6f360f06f6821c477f5f5d7e19de06ba040d737fac2b7a03bd9275bab6d74"
         },
         "1,0": {
           "path": "cooked/maps/main/objects/cells/c_1_0.objectpack",
-          "byteLength": 207,
-          "sha256": "08dcc44d69f2cfa44f8bf05a8a08616236e8d51f8d245efc8deba2ec6b303b60"
+          "objectCount": 1,
+          "byteLength": 976,
+          "sha256": "a2059b5d21268627a54d8b378a7669ad5691f1626c23beb3af2014f2e835dca4"
         },
         "2,0": {
           "path": "cooked/maps/main/objects/cells/c_2_0.objectpack",
-          "byteLength": 209,
-          "sha256": "ae3b3bb481b1c31da2ed7765a12f132d3f99efdd9ae7f9d7ab4c883b11daf446"
+          "objectCount": 0,
+          "byteLength": 333,
+          "sha256": "2cc2576d8893fc1277ac2f56700acce6a0ffd50cd1e840826e7cbb986744bbdb"
         },
         "3,0": {
           "path": "cooked/maps/main/objects/cells/c_3_0.objectpack",
-          "byteLength": 209,
-          "sha256": "9f66cb8cefd45520cdf3c07fa7dbe40e87a604ca8077bab1febec247758aa7c9"
+          "objectCount": 0,
+          "byteLength": 333,
+          "sha256": "e40a64c1a6416d8bac5c3cbe0edd1ef95f3de4086dea6071c273f1ff9e82a8ee"
         },
         "-4,1": {
           "path": "cooked/maps/main/objects/cells/c_m4_1.objectpack",
-          "byteLength": 219,
-          "sha256": "50ea0313434e7972ebb21ed6373345c1019403073edbef4e6ebe6ac9bbb9b1cc"
+          "objectCount": 0,
+          "byteLength": 343,
+          "sha256": "abd4502a3abb2cb2b89983e0b5c971d5b59e114be6a9fe8478c9d00665f79cea"
         },
         "-3,1": {
           "path": "cooked/maps/main/objects/cells/c_m3_1.objectpack",
-          "byteLength": 219,
-          "sha256": "650c5a5bd10b0ce60aab9f8031ac0366af6b57d7ddc4229af6955fd18f4f34c7"
+          "objectCount": 0,
+          "byteLength": 343,
+          "sha256": "672a52a4819d8806c026f501f16f8502c72a7ad826c8ef06a6033ddde99b1368"
         },
         "-2,1": {
           "path": "cooked/maps/main/objects/cells/c_m2_1.objectpack",
-          "byteLength": 217,
-          "sha256": "a520b107317915b431ae2980ac1e98f86b79f1763d286088623b372bb0c45019"
+          "objectCount": 0,
+          "byteLength": 341,
+          "sha256": "6ab172611c135e07fa46ca9c6046331b1d0eb802a695677ff604bb9592b4938b"
         },
         "-1,1": {
           "path": "cooked/maps/main/objects/cells/c_m1_1.objectpack",
-          "byteLength": 212,
-          "sha256": "4fb717faa030a3d0bc6a764044a55c6d0464013e259693c10ac670821fd2be0f"
+          "objectCount": 0,
+          "byteLength": 336,
+          "sha256": "8bfea171b5ca8f8260b1b788044566dfaf8bb452e6247d1ad23b0c9ed4529fb0"
         },
         "0,1": {
           "path": "cooked/maps/main/objects/cells/c_0_1.objectpack",
-          "byteLength": 207,
-          "sha256": "ca7ad5022062ec11883f15753190493a20ca37c4579cd22f6f461ef130f7171e"
+          "objectCount": 4,
+          "byteLength": 2703,
+          "sha256": "43a07c429b4fd392f8478c1a111d8ce1a6e8f7cdcb2456e29b7e2d0e4fefaa72"
         },
         "1,1": {
           "path": "cooked/maps/main/objects/cells/c_1_1.objectpack",
-          "byteLength": 211,
-          "sha256": "1cdd74b6a6a883b3fe645613fbb49366e5bad95a73e6405ffce0cfd6ad0bb214"
+          "objectCount": 0,
+          "byteLength": 335,
+          "sha256": "b34962f5598fbd9697e5d3fcdf20aaede038698fa33e8d20b5bc15cbe6345502"
         },
         "2,1": {
           "path": "cooked/maps/main/objects/cells/c_2_1.objectpack",
-          "byteLength": 213,
-          "sha256": "f1bd8a8ef1f732917d5e7638687c2347b90d69d4710be1a582659bcfc75836d5"
+          "objectCount": 0,
+          "byteLength": 337,
+          "sha256": "5602d4dd6e9cd1f964e04c2da8c646c0cae87bba8917b872d07b79591db1ec0a"
         },
         "3,1": {
           "path": "cooked/maps/main/objects/cells/c_3_1.objectpack",
-          "byteLength": 213,
-          "sha256": "45649837c9e0f980947a34c3dc3a7a188b881111438dac147a61172fe30c8645"
+          "objectCount": 0,
+          "byteLength": 337,
+          "sha256": "e938699bb61694aefa3ea8d619c8779293e7b2c02f170c2b0ec81872d01ed3b7"
         },
         "-4,2": {
           "path": "cooked/maps/main/objects/cells/c_m4_2.objectpack",
-          "byteLength": 221,
-          "sha256": "ce7e2360b63bbf378d442239b11ba8ef71deb1fa398616fbf5fa6236173b447f"
+          "objectCount": 0,
+          "byteLength": 345,
+          "sha256": "2964288093e16aad591cc97c2fbf57d46a98728e6aaf82da5167bc12e85f083c"
         },
         "-3,2": {
           "path": "cooked/maps/main/objects/cells/c_m3_2.objectpack",
-          "byteLength": 221,
-          "sha256": "84f6875cc399aa71dc923bbe2d332b935fc5fdefc792cb3f565371538d83dc22"
+          "objectCount": 0,
+          "byteLength": 345,
+          "sha256": "6ae9ea61fe17807332c5281c74ab2bebbc60f4c32acdd70a89a662fc440df4b2"
         },
         "-2,2": {
           "path": "cooked/maps/main/objects/cells/c_m2_2.objectpack",
-          "byteLength": 219,
-          "sha256": "ba232664c1131d2c361dc0613edb4f42c20d8b34503bdd2ae13221a48fee752c"
+          "objectCount": 0,
+          "byteLength": 343,
+          "sha256": "1bf601ba38ba01a7ac0f194bfd9d7c85937569b80afffeb2ac6e1e7800ac42c3"
         },
         "-1,2": {
           "path": "cooked/maps/main/objects/cells/c_m1_2.objectpack",
-          "byteLength": 214,
-          "sha256": "08f5a4ab571a8afba582ba3044fb14fdf1547363d57538ea5a46cf7e88317c38"
+          "objectCount": 0,
+          "byteLength": 338,
+          "sha256": "bbe01a9f0c8611f3e51e6779dcc9c4785ad9f6c0a40244c015d0f2429fca75d6"
         },
         "0,2": {
           "path": "cooked/maps/main/objects/cells/c_0_2.objectpack",
-          "byteLength": 209,
-          "sha256": "f380d84af5bab1fac14f6db0a19a8491f9c4b564f4e34ae1f56bcb979922e514"
+          "objectCount": 1,
+          "byteLength": 991,
+          "sha256": "d21f688c245e6307c3d4883b84330a409f14071a3d2ac16af5ad3ef9b6dbc097"
         },
         "1,2": {
           "path": "cooked/maps/main/objects/cells/c_1_2.objectpack",
-          "byteLength": 213,
-          "sha256": "660e716cf38ca5abc5a64da22072bd396f10f8c9c009d08e1cbee17783c4118c"
+          "objectCount": 0,
+          "byteLength": 337,
+          "sha256": "83ae3f4fdec53fe33fd526f072230ff99e7611e235d1d35334808a2720b9a85a"
         },
         "2,2": {
           "path": "cooked/maps/main/objects/cells/c_2_2.objectpack",
-          "byteLength": 215,
-          "sha256": "c663eed1c9f1cdbebe4ae7f6b549d39a14fd72453e223f3aea9d0719d80ed66c"
+          "objectCount": 0,
+          "byteLength": 339,
+          "sha256": "5f0379f9681ce0983be74826964ffcfaf78977090f107bd36e42b96ebc6c8ad0"
         },
         "3,2": {
           "path": "cooked/maps/main/objects/cells/c_3_2.objectpack",
-          "byteLength": 215,
-          "sha256": "6a49ec366f80dfdc9e72972a0bb6bfcfc4722726dd6fde1ebaad07bd210e214b"
+          "objectCount": 0,
+          "byteLength": 339,
+          "sha256": "49e009a067dc552d1550907e93ccbe19d49d443655ad33c4d618b8913de62459"
         },
         "-4,3": {
           "path": "cooked/maps/main/objects/cells/c_m4_3.objectpack",
-          "byteLength": 221,
-          "sha256": "ed9a89cb2b2bda4c1f465b44ab76a35145bbea61c95e67dd5319119dc55116a6"
+          "objectCount": 0,
+          "byteLength": 345,
+          "sha256": "3cbd89ca9008a83f1d33cfa55ba74d19d419b105d1a74137511f1452c9e23c9d"
         },
         "-3,3": {
           "path": "cooked/maps/main/objects/cells/c_m3_3.objectpack",
-          "byteLength": 221,
-          "sha256": "33bcc52faf7ee4f4324796c4a10d5d52f36d6b842b34a6bd6f79115f2fa74149"
+          "objectCount": 0,
+          "byteLength": 345,
+          "sha256": "cc49718540216a6ab37d09d3b5d62ed1a4aca6aaadd4d3e8372274ce91342547"
         },
         "-2,3": {
           "path": "cooked/maps/main/objects/cells/c_m2_3.objectpack",
-          "byteLength": 219,
-          "sha256": "7270d9e5e2144e8ce22522685a3ce0661e5679233e3e48003ce9e67f910a280b"
+          "objectCount": 0,
+          "byteLength": 343,
+          "sha256": "ba30be5bc8f46080fa6a6e6d40453a471c159a71e74098c2e8f5deaf000a02a0"
         },
         "-1,3": {
           "path": "cooked/maps/main/objects/cells/c_m1_3.objectpack",
-          "byteLength": 214,
-          "sha256": "96cdfb61dcf8926e22166b86e38ba49a1d718d0868ff0495549e71ed57fc47c4"
+          "objectCount": 0,
+          "byteLength": 338,
+          "sha256": "d2f2dffaf06d3a4825c608827ca083af055c1f1de23c40e610accd0c4940e63a"
         },
         "0,3": {
           "path": "cooked/maps/main/objects/cells/c_0_3.objectpack",
-          "byteLength": 209,
-          "sha256": "1c579d939eba93d653467f926325b24f531576cb9f900a32ce5317e32923f94b"
+          "objectCount": 0,
+          "byteLength": 333,
+          "sha256": "bcc85178596f64021e4f80e384098b69cc659b0151846ccd1218921618902a6e"
         },
         "1,3": {
           "path": "cooked/maps/main/objects/cells/c_1_3.objectpack",
-          "byteLength": 213,
-          "sha256": "6fd626ea417efa14824c93e6538f885ccdba4c01bd29ff606f9a7b96a1fb021e"
+          "objectCount": 0,
+          "byteLength": 337,
+          "sha256": "4fce12e3d0d54c1f7d41695a7f8feb4ba4bf03f38257d278d3d5b091e4e371f7"
         },
         "2,3": {
           "path": "cooked/maps/main/objects/cells/c_2_3.objectpack",
-          "byteLength": 215,
-          "sha256": "fea8679ef989e5e22dc6810d1582fa8eb34b2c31234c24fad6b324bc79f59512"
+          "objectCount": 0,
+          "byteLength": 339,
+          "sha256": "b5a62133da7d8c7634e83fc7d7720b3f79598a8ffe248ee4d860967ccf51b2fc"
         },
         "3,3": {
           "path": "cooked/maps/main/objects/cells/c_3_3.objectpack",
-          "byteLength": 215,
-          "sha256": "32ca7b39ae389dfc28994ce0cf916c6c174ee7b54fc22fd573392b5b37589a06"
+          "objectCount": 0,
+          "byteLength": 339,
+          "sha256": "6b5ae9374ac1ad612a8fc9c23f0b5b1d5872a9fc9b80cd08c2bf75f83e3b1a94"
         }
       }
     },
@@ -1272,323 +1341,323 @@
       "cells": {
         "-4,-4": {
           "path": "cooked/maps/main/collision/cells/c_m4_m4.collisionpack",
-          "byteLength": 229,
-          "sha256": "f0f4f6a9178bf29aa160eefc2e5d863f0d4b5c56f259096b802a36aa231746a2"
+          "byteLength": 714,
+          "sha256": "e461e5a17946547535bb4da9e74c69eb82ab514b13a1c07333b29e8a49f08213"
         },
         "-3,-4": {
           "path": "cooked/maps/main/collision/cells/c_m3_m4.collisionpack",
-          "byteLength": 229,
-          "sha256": "2f7e62ff71e0e99bf2f45bad885cd362d80cdabec065e8bd4e39bfbcab810f79"
+          "byteLength": 714,
+          "sha256": "21cfa0cd7b5afcef0f0b1877022a63d286ab68c4636d518b7ae31be119c5697c"
         },
         "-2,-4": {
           "path": "cooked/maps/main/collision/cells/c_m2_m4.collisionpack",
-          "byteLength": 227,
-          "sha256": "2e5415ca19c27d0a1997f5d22dc8b767ca97c3a64cfad489f23cdc2d048a9af1"
+          "byteLength": 711,
+          "sha256": "54e18a7f229d68c5b0cbb2e4396c2dba7f9b016f33af5a88eaec1791b9618ef7"
         },
         "-1,-4": {
           "path": "cooked/maps/main/collision/cells/c_m1_m4.collisionpack",
-          "byteLength": 222,
-          "sha256": "9a1efeab7cea565608d299160cf977825c2a59a5cc0f1bb230126e966f4e1385"
+          "byteLength": 702,
+          "sha256": "58f1cb88009059b5e53d9ec2cf0aa50a83bd8b8863948edb98bef62ed188c194"
         },
         "0,-4": {
           "path": "cooked/maps/main/collision/cells/c_0_m4.collisionpack",
-          "byteLength": 217,
-          "sha256": "730e7eaceed2c6f01e9342cd58f86a59f0c42db2224f7f101af274eb43e3909a"
+          "byteLength": 692,
+          "sha256": "3513b8e0cace5b31797edfb89f9d94065ecf60ce6824c7dc857980d8c2762190"
         },
         "1,-4": {
           "path": "cooked/maps/main/collision/cells/c_1_m4.collisionpack",
-          "byteLength": 221,
-          "sha256": "1b0709416ed55a454524aab3580b480136aacd841237ea099b3227ce53f7fc4b"
+          "byteLength": 699,
+          "sha256": "65f747c13e04c85b6e37706ebed4e51f0e14ef448c17283b93cc62a14b5d970d"
         },
         "2,-4": {
           "path": "cooked/maps/main/collision/cells/c_2_m4.collisionpack",
-          "byteLength": 223,
-          "sha256": "f5fe18bc32036b04ded0569a88f8d1c7fb093d1aee1ca7175c8d9d503b1a03cd"
+          "byteLength": 702,
+          "sha256": "5840e2b7475b2b858f4090079fef8f35622d44aa501e8ba89d1a0444b6355925"
         },
         "3,-4": {
           "path": "cooked/maps/main/collision/cells/c_3_m4.collisionpack",
-          "byteLength": 223,
-          "sha256": "eb169b25b7e616e9dfccd10f7b502b02dc8191cc581cfaaf454b12e5849ad6e8"
+          "byteLength": 702,
+          "sha256": "45938f15fa833cd1f2878465c03a38f470d9f8ed44604c4a6edae38ae0546fb4"
         },
         "-4,-3": {
           "path": "cooked/maps/main/collision/cells/c_m4_m3.collisionpack",
-          "byteLength": 229,
-          "sha256": "54ff1c741c707bb82de8f4aabb6f9404b7a3ed806937784abe69f970e965c927"
+          "byteLength": 714,
+          "sha256": "9fd3c6ed0a56655959a86d3b81af97ff7f942b174fc5537782afbd96c8daa693"
         },
         "-3,-3": {
           "path": "cooked/maps/main/collision/cells/c_m3_m3.collisionpack",
-          "byteLength": 229,
-          "sha256": "d4ad4e742a4e0935deaccee562a5b1e01e9745a2c973e94beef4b5cd5b430989"
+          "byteLength": 714,
+          "sha256": "1979850282200c91360ec0a6dc8d2bf81e038361821caa3cf9e2cb678fc244c0"
         },
         "-2,-3": {
           "path": "cooked/maps/main/collision/cells/c_m2_m3.collisionpack",
-          "byteLength": 227,
-          "sha256": "d2773ccb4d6d2284487b70ff7b190989d9a536e842bb688b00fed3a35a079784"
+          "byteLength": 711,
+          "sha256": "46e5cc2af27093a0cc1ee9eab4952c1cd5e47fe4d82ed81ff0a4be21d4addd68"
         },
         "-1,-3": {
           "path": "cooked/maps/main/collision/cells/c_m1_m3.collisionpack",
-          "byteLength": 222,
-          "sha256": "546dd6069ac6d67bdc65061b6d5776a5cf53ad39833bccfe1fcc72d66af2a371"
+          "byteLength": 1347,
+          "sha256": "0a6b11633d15d574f47c937b8e8d7a749baaeed971b2940960fa626a653d9ba5"
         },
         "0,-3": {
           "path": "cooked/maps/main/collision/cells/c_0_m3.collisionpack",
-          "byteLength": 217,
-          "sha256": "dfa992c8469873299fd09c21203513d199fc14a38876fb74b634f3be779472dd"
+          "byteLength": 692,
+          "sha256": "f03e00abbcbeca0cdf22a16c85c56ba35229bd7dc4891fd88ae76437929ca7d6"
         },
         "1,-3": {
           "path": "cooked/maps/main/collision/cells/c_1_m3.collisionpack",
-          "byteLength": 221,
-          "sha256": "b74a85b90e5822ae1a4915091f3ef0539e9f534f21dc5aa7c1e200afaa6afe80"
+          "byteLength": 699,
+          "sha256": "09977e4509a07cf9a0adac8c671c3f17ec2cf22ed8c814809ad27fe4f9512242"
         },
         "2,-3": {
           "path": "cooked/maps/main/collision/cells/c_2_m3.collisionpack",
-          "byteLength": 223,
-          "sha256": "f3e142693a2737c4a9b6e97ecc1b3b6a8e2798c0c1b57b828a9895481eb3d26f"
+          "byteLength": 702,
+          "sha256": "5fd445310ba73cdf63167165a2cea2fd6f6093e625b843a461acc83aa29e0a7c"
         },
         "3,-3": {
           "path": "cooked/maps/main/collision/cells/c_3_m3.collisionpack",
-          "byteLength": 223,
-          "sha256": "fe7f49d5a6f8e500dfc12686dc0d8e7570f7bfdd3d5d9c7cbd0311cedcd907b1"
+          "byteLength": 702,
+          "sha256": "1162a540b12524d27319f46524f942c115d5291294e8dae96deb8d07f9560cde"
         },
         "-4,-2": {
           "path": "cooked/maps/main/collision/cells/c_m4_m2.collisionpack",
-          "byteLength": 227,
-          "sha256": "ed39190dc486a454639d8424bd72d24b36a3f9bbafec481aed73d2e5455bfcee"
+          "byteLength": 711,
+          "sha256": "1b89a75e36092ff8b04dedaf36026a94ccf8379ee1dfa01ac50c64cbf0dbf3ce"
         },
         "-3,-2": {
           "path": "cooked/maps/main/collision/cells/c_m3_m2.collisionpack",
-          "byteLength": 227,
-          "sha256": "709e9b53d33b8407a445d2bd27e6b74d7a86812c466ca51294c1ae66ad4e706c"
+          "byteLength": 711,
+          "sha256": "f16d5bf4b40760dc3041761b003a634fbf79d94cb182bcb78cca865861a4368b"
         },
         "-2,-2": {
           "path": "cooked/maps/main/collision/cells/c_m2_m2.collisionpack",
-          "byteLength": 225,
-          "sha256": "f265b1db8688ac46170468a8de2f14be60d608ddd4d405c0b3246268456609ca"
+          "byteLength": 708,
+          "sha256": "2d5066cf747ae2c242f0bcd68fe57bd9ea164bcf184774cdbb68b901d47f4564"
         },
         "-1,-2": {
           "path": "cooked/maps/main/collision/cells/c_m1_m2.collisionpack",
-          "byteLength": 220,
-          "sha256": "108c4efef217f13e1adf8426a047e6997099307c11df195312b21a9f178bc21c"
+          "byteLength": 1342,
+          "sha256": "6c70af40ced9c9ac4c72fd3a2e6aabac66be1d1c88eef63614e64482500c5388"
         },
         "0,-2": {
           "path": "cooked/maps/main/collision/cells/c_0_m2.collisionpack",
-          "byteLength": 215,
-          "sha256": "cc413b4aa611d1cf9a4f8c6f6883feebca7997103481fbf885bec5c463cb12e0"
+          "byteLength": 689,
+          "sha256": "a57fcd71f51466ebbfcb2dfdb19bb8ab778d7a363c23dbd7572b0e23d872e691"
         },
         "1,-2": {
           "path": "cooked/maps/main/collision/cells/c_1_m2.collisionpack",
-          "byteLength": 219,
-          "sha256": "773aedd2578acea651aa1ffbfbe717c2dfd707fcc805c7594b94a5f902552168"
+          "byteLength": 973,
+          "sha256": "ecc555c0d06095de4840b9157e62fd8996168c49c4f11671e50bc22cee81c362"
         },
         "2,-2": {
           "path": "cooked/maps/main/collision/cells/c_2_m2.collisionpack",
-          "byteLength": 221,
-          "sha256": "48d74fd191fa50f86989547d291ee31005cbe4f9a8788ea6296db680e4a16800"
+          "byteLength": 699,
+          "sha256": "287b56b8e00b6d2385658bc07ae67258022e46fa71347195d8d0681d60c64a09"
         },
         "3,-2": {
           "path": "cooked/maps/main/collision/cells/c_3_m2.collisionpack",
-          "byteLength": 221,
-          "sha256": "2b8b0fd10bd7de53a274a8118a5a15bf9968a8f2f830824991888198baccd626"
+          "byteLength": 699,
+          "sha256": "e1b1a92ae62dc9fb31ff79667fc1ab0a6a8f323b8dacc79734b866ab377d3781"
         },
         "-4,-1": {
           "path": "cooked/maps/main/collision/cells/c_m4_m1.collisionpack",
-          "byteLength": 222,
-          "sha256": "098d36ed543bc7f954882cf6bc887279b6545251bcd87ba7ab3290abe641580b"
+          "byteLength": 702,
+          "sha256": "990047a75b1274af2adb9f23acfb4d12118c1c2f5f0a2e875d140ed879c0e755"
         },
         "-3,-1": {
           "path": "cooked/maps/main/collision/cells/c_m3_m1.collisionpack",
-          "byteLength": 222,
-          "sha256": "e301b1d96816a4ccd777ea2a7265ca4bc43f18834a3c83806e46dbca2acb9ae0"
+          "byteLength": 702,
+          "sha256": "9c0250b5a2917a7476b94c27d634d439a4eeb5826b164f25f61b9d2189077cfe"
         },
         "-2,-1": {
           "path": "cooked/maps/main/collision/cells/c_m2_m1.collisionpack",
-          "byteLength": 220,
-          "sha256": "02e06cdb37a2436d5b7e6f4b85842288afbcbf3ab21de798a8117f538304c11b"
+          "byteLength": 699,
+          "sha256": "ab7aad23a4e06c046150f4384949fe5dd1525b997457f1969b1efb42d9742638"
         },
         "-1,-1": {
           "path": "cooked/maps/main/collision/cells/c_m1_m1.collisionpack",
-          "byteLength": 215,
-          "sha256": "8ce86d29b578ce197ad210c5c0ebe36aeccc79a89a6191422e4700a76a7e8930"
+          "byteLength": 1414,
+          "sha256": "eeb5fcc158da7e7cbd8e9924da3495a19fdab088a746c9e25abf623f5aa66b7d"
         },
         "0,-1": {
           "path": "cooked/maps/main/collision/cells/c_0_m1.collisionpack",
-          "byteLength": 210,
-          "sha256": "845712a8c930e22d64abfc8edfa5cdc0b6376836bc70d5cabf0fa2a5534973ed"
+          "byteLength": 955,
+          "sha256": "18ae4f79f941611893be41ec13c6889751c488a486fc075dff7a4f395521b136"
         },
         "1,-1": {
           "path": "cooked/maps/main/collision/cells/c_1_m1.collisionpack",
-          "byteLength": 214,
-          "sha256": "24275cd6b2f3e8c2398a6def52afd74368a28a6e02c4fa53ccf9205ceebf32b1"
+          "byteLength": 1426,
+          "sha256": "4a985b2dff58fb8f8ede98994e14d360aa58d19ae716030805e3b7b0fe553fd0"
         },
         "2,-1": {
           "path": "cooked/maps/main/collision/cells/c_2_m1.collisionpack",
-          "byteLength": 216,
-          "sha256": "008d5b9d73ad4ad7e9e157c9d45bd9b3345504ff1d5230b6d49c7562bcc67d16"
+          "byteLength": 690,
+          "sha256": "0a8ca8525b8ee0b0073882a86e624646c05cc3ae370a96b7a522fef0801ef8d2"
         },
         "3,-1": {
           "path": "cooked/maps/main/collision/cells/c_3_m1.collisionpack",
-          "byteLength": 216,
-          "sha256": "fadb2e322a96947d2d463f8ced35fe7f526635bf9d64a05cebfcf4046e7823c9"
+          "byteLength": 690,
+          "sha256": "28b895026b866b13f86742be30ccd8b340614e56f357ed143a062d770259ca27"
         },
         "-4,0": {
           "path": "cooked/maps/main/collision/cells/c_m4_0.collisionpack",
-          "byteLength": 217,
-          "sha256": "d12ab5a1ecb31bf0526994e7cac145dce56f7acd4f13e660fba1b43385b12903"
+          "byteLength": 692,
+          "sha256": "9646d50dcdea50cf785cb6b67963296455c9ec747b86aa88068193377f2bf22c"
         },
         "-3,0": {
           "path": "cooked/maps/main/collision/cells/c_m3_0.collisionpack",
-          "byteLength": 217,
-          "sha256": "96f7ed9bb85eec626dd3c456c16728454ebf9d6a17bbaf5635ab40294dd9e56c"
+          "byteLength": 1063,
+          "sha256": "cb2ae657f6631e4a3a1aa61171ba12ee1c141a5a28b4f6eed5fa90266ba5800d"
         },
         "-2,0": {
           "path": "cooked/maps/main/collision/cells/c_m2_0.collisionpack",
-          "byteLength": 215,
-          "sha256": "8e52d324ed8f6e3bc18b8fd1845450b56d8bea5c423bf73182af49cc8b6c2f82"
+          "byteLength": 1407,
+          "sha256": "cc3d074e4e8931bd95f6e77dab57d3090d7603e44b0acf6614f6f0be8d19215d"
         },
         "-1,0": {
           "path": "cooked/maps/main/collision/cells/c_m1_0.collisionpack",
-          "byteLength": 210,
-          "sha256": "4b0e0938e3aa42b4208ae5c444ff44311ba72a2318457737d0243b541113379c"
+          "byteLength": 680,
+          "sha256": "e7d62f3d887b2864acafbc6eefb3ef35a25aa27d249944573f5b6d54754876e5"
         },
         "0,0": {
           "path": "cooked/maps/main/collision/cells/c_0_0.collisionpack",
-          "byteLength": 205,
-          "sha256": "5643fd08e2ba93c9c7ca2d88bd73daf91a8ab1703cc4c74d8ee575c9a0f4e501"
+          "byteLength": 1210,
+          "sha256": "4d8b2231b26d1cccd0f693c2330eb3fd508a6bc6f06d223629229ed0fe5b3229"
         },
         "1,0": {
           "path": "cooked/maps/main/collision/cells/c_1_0.collisionpack",
-          "byteLength": 209,
-          "sha256": "f1acfd68b8d8a728bd49793ba468902d5640899307dfa5c473eb0b32468dde1e"
+          "byteLength": 677,
+          "sha256": "f2b8c899dfe3148606cf8cc9cfa416a9a6261314d411eaf1edf27d014e1eb72e"
         },
         "2,0": {
           "path": "cooked/maps/main/collision/cells/c_2_0.collisionpack",
-          "byteLength": 211,
-          "sha256": "4a9848dccd9d09db329d5488b56006714fc90056347a2ea8ebf519b86bbe1b84"
+          "byteLength": 680,
+          "sha256": "3e57ba4212b660e79a9d1b7ee563e01d10ac477fc0b4536e326d31560e7f4e6b"
         },
         "3,0": {
           "path": "cooked/maps/main/collision/cells/c_3_0.collisionpack",
-          "byteLength": 211,
-          "sha256": "0bd3ef548c2c934516b888d42d8ab14adf2f4dfc279c3e09807830b77a6c2ebd"
+          "byteLength": 680,
+          "sha256": "e89f841bdc5aba22dca7eddc3150484f923879cefacdd594aaf5158f6a5413a0"
         },
         "-4,1": {
           "path": "cooked/maps/main/collision/cells/c_m4_1.collisionpack",
-          "byteLength": 221,
-          "sha256": "9135a297a347a6def3b4765ca0036a8cd999f6a06a741d412525e593862094e9"
+          "byteLength": 699,
+          "sha256": "3aa371519285dbe5f2d510c0d2d51ae4f4368772e370b24210211affe5aedbe5"
         },
         "-3,1": {
           "path": "cooked/maps/main/collision/cells/c_m3_1.collisionpack",
-          "byteLength": 221,
-          "sha256": "ce2b61037903245c918998cb1bbaf7dd7508e9105fa31758c0103c788cf320ba"
+          "byteLength": 699,
+          "sha256": "328cafc0a5f11eb9cd4573fd9006a10079855d3282ffb3064e9be9ace627e48d"
         },
         "-2,1": {
           "path": "cooked/maps/main/collision/cells/c_m2_1.collisionpack",
-          "byteLength": 219,
-          "sha256": "4e243fe4cc0231e91b1eaae7b47a247a51fb10b89def0e2d00563515e3860b40"
+          "byteLength": 696,
+          "sha256": "1db61937490d751b08abfcccd55eb919b6e757ce9fef39259469da75eddf627a"
         },
         "-1,1": {
           "path": "cooked/maps/main/collision/cells/c_m1_1.collisionpack",
-          "byteLength": 214,
-          "sha256": "cf8aaab85eb0e739eb6899bfd9d38b4013c76a0791580da60a6b8c4b6875e652"
+          "byteLength": 687,
+          "sha256": "4c0aa5056b47560e6f156b1e19cfad44d1fa5966c3235f53a7a41c47049f14e7"
         },
         "0,1": {
           "path": "cooked/maps/main/collision/cells/c_0_1.collisionpack",
-          "byteLength": 209,
-          "sha256": "6cdc9fb6709804eb85dfd1dc67219c2efeb888b5f805ac76fbf6bccd21fdc338"
+          "byteLength": 1660,
+          "sha256": "304a53844df64f91914716496e7066870e0cb54b602752b48b9acd0c9038def5"
         },
         "1,1": {
           "path": "cooked/maps/main/collision/cells/c_1_1.collisionpack",
-          "byteLength": 213,
-          "sha256": "b5039ed195f30017b33ec249681a55dba80eb46305f92c24cfa49331e392a5ce"
+          "byteLength": 684,
+          "sha256": "0849d7423e52133837475e2977caaeb55b96838d69983300e05c4ca3f81278a3"
         },
         "2,1": {
           "path": "cooked/maps/main/collision/cells/c_2_1.collisionpack",
-          "byteLength": 215,
-          "sha256": "4895e762a0b13e1e49d90543d1091c09b7b7c4fc86e0729125fa343cf8007c3b"
+          "byteLength": 687,
+          "sha256": "87de6b4b5e0f6dc0e9bdc5cc1b2a084506e165df54c50a542f55d3b4bca57105"
         },
         "3,1": {
           "path": "cooked/maps/main/collision/cells/c_3_1.collisionpack",
-          "byteLength": 215,
-          "sha256": "46ac5391d40026466914dc69a5e4591e075b264de0031e6d4c26cd0736c9a499"
+          "byteLength": 687,
+          "sha256": "21451db941c771ed9df84253817729023cd078d93a7c2dfe75fe917f927511a1"
         },
         "-4,2": {
           "path": "cooked/maps/main/collision/cells/c_m4_2.collisionpack",
-          "byteLength": 223,
-          "sha256": "4b237192b96a8a8edd8e9d384f300285f54953207330858d9456c91aa3c60a18"
+          "byteLength": 702,
+          "sha256": "caf1103c8c0b8db45a267fcd71d2a74f57b42b4bc322c19490eb3424f05540cf"
         },
         "-3,2": {
           "path": "cooked/maps/main/collision/cells/c_m3_2.collisionpack",
-          "byteLength": 223,
-          "sha256": "5b346d23f7689048dfbb5c6ba64d7fc46fc6e369d8f91546f38f522caac524a8"
+          "byteLength": 702,
+          "sha256": "81eb9f6a74aaaf1538374e2c37ccd0a0f18e68a4907eee8f1cff29076b824cb6"
         },
         "-2,2": {
           "path": "cooked/maps/main/collision/cells/c_m2_2.collisionpack",
-          "byteLength": 221,
-          "sha256": "4d5f18aa15e568921b7d371212e2a2744159931a27749324caa61a16d99f7987"
+          "byteLength": 699,
+          "sha256": "46dd99820dc9aeda505bf848387e169a46947989996806f1eb967934232e074c"
         },
         "-1,2": {
           "path": "cooked/maps/main/collision/cells/c_m1_2.collisionpack",
-          "byteLength": 216,
-          "sha256": "253dc736162eeec9c21dfa0b224f910c9fb6d06a8e4f2bf6b8142acd141668ed"
+          "byteLength": 690,
+          "sha256": "c203fc04a74e7852c429fa49d8cd4e6cfaeb8c803c3146c4cb0adf2bc156fa9a"
         },
         "0,2": {
           "path": "cooked/maps/main/collision/cells/c_0_2.collisionpack",
-          "byteLength": 211,
-          "sha256": "4bb4b179acd24c5be45e00f22522a4c4a94de7c44c6c115ffcd414b040e2e55e"
+          "byteLength": 950,
+          "sha256": "3e0849724896b682e39cfe205d4061063aa29f0bcd8af9fd376a31357f8b9217"
         },
         "1,2": {
           "path": "cooked/maps/main/collision/cells/c_1_2.collisionpack",
-          "byteLength": 215,
-          "sha256": "34cc204460048fe0f5a0164ab56e50952ce9de0d552b248a6491bd7256ec2524"
+          "byteLength": 687,
+          "sha256": "85f3ae0ae10df54b434dfb10e5859f8a4575e254df18ae1b3d02de2f8bf25a0b"
         },
         "2,2": {
           "path": "cooked/maps/main/collision/cells/c_2_2.collisionpack",
-          "byteLength": 217,
-          "sha256": "6eead2ac09d7ec4568721b4b59307764ca3d96fe9062e3dd6fd57a0c0e981578"
+          "byteLength": 690,
+          "sha256": "1df5649bdece4269510adfcaf8150f0a14f9786fdd0732fee9839e9458fff5f3"
         },
         "3,2": {
           "path": "cooked/maps/main/collision/cells/c_3_2.collisionpack",
-          "byteLength": 217,
-          "sha256": "2829e50df6e3c2d8882eccf3f9df672b02d6c15f51b001760e41b0238df24d6d"
+          "byteLength": 690,
+          "sha256": "06f5cc5c93fe0d5e104b6944db61c393ca41db0b3fcd2588cb6e651fbc580641"
         },
         "-4,3": {
           "path": "cooked/maps/main/collision/cells/c_m4_3.collisionpack",
-          "byteLength": 223,
-          "sha256": "d69a4fcdb9239182f52d43d9a34f6dadcda92299732cf7f9c78b176e08bb75a8"
+          "byteLength": 702,
+          "sha256": "23dde65f06a60333e739ad61a3362439e206f509d99a1b2f2c9d55556a237cb2"
         },
         "-3,3": {
           "path": "cooked/maps/main/collision/cells/c_m3_3.collisionpack",
-          "byteLength": 223,
-          "sha256": "31dfcd7942afc9ed213d97b2e3f44ef826327e305db1d302c3ca7bf4ef572a81"
+          "byteLength": 702,
+          "sha256": "3c414a845eb7699c6a0adff7288e335c534c461bba207eda2149fd96ca4ec402"
         },
         "-2,3": {
           "path": "cooked/maps/main/collision/cells/c_m2_3.collisionpack",
-          "byteLength": 221,
-          "sha256": "87b1cf1ce5f0d76fc30e46ef8983584d42ccfc9e11c039cd057383d381715b90"
+          "byteLength": 699,
+          "sha256": "16eb5d6b77a9c01e88e10d0976279869e336a81eeb13e2e6dfb43e372dd1866f"
         },
         "-1,3": {
           "path": "cooked/maps/main/collision/cells/c_m1_3.collisionpack",
-          "byteLength": 216,
-          "sha256": "01217a6820944c2511280a90eaa78f15d64f01fa94783e5c40ffc3c13f7ca235"
+          "byteLength": 690,
+          "sha256": "5d79d8a23ff5a2d024c88b159d19e09e8280dd0650b67d9feb7e0b7afac3c342"
         },
         "0,3": {
           "path": "cooked/maps/main/collision/cells/c_0_3.collisionpack",
-          "byteLength": 211,
-          "sha256": "4f5e76a377aa711598bee77cd5754d59ec3959370bb8aabdad4c248441d3babf"
+          "byteLength": 680,
+          "sha256": "d6a16c1d92f8bf9ea11001f67e94835dddd451c7a100e2b0df6d045f1b8245b7"
         },
         "1,3": {
           "path": "cooked/maps/main/collision/cells/c_1_3.collisionpack",
-          "byteLength": 215,
-          "sha256": "668aaf25b6a6b9a5cbdfdf861de2ffa4aba54fc0c61a3328c874b4ca9231ee04"
+          "byteLength": 687,
+          "sha256": "1c720452fb8ec143060f6ebc74080f1fcf44b962938c52923c39891b40ae854f"
         },
         "2,3": {
           "path": "cooked/maps/main/collision/cells/c_2_3.collisionpack",
-          "byteLength": 217,
-          "sha256": "a653756382c5a5fd7c4eb0793d9b839bdf78421eeadc89048b694a9a1add935a"
+          "byteLength": 690,
+          "sha256": "5425fabbd80b48f04031bef08e287b2e84b03338e0c946c9ad35daf669e28f36"
         },
         "3,3": {
           "path": "cooked/maps/main/collision/cells/c_3_3.collisionpack",
-          "byteLength": 217,
-          "sha256": "c950be0066843eb6e345f2f8436c13b20811755dc12a5d3a2b4d20a7da005c8c"
+          "byteLength": 690,
+          "sha256": "9825d77d661b551c255a647a070a42332781819b67248d8bcb37a95d322902de"
         }
       }
     },
@@ -1599,323 +1668,323 @@
       "cells": {
         "-4,-4": {
           "path": "cooked/maps/main/nav/cells/c_m4_m4.navpack",
-          "byteLength": 222,
-          "sha256": "1b485d531db52e6b6a914a72c5e1da2419ae8d8f5435747e0d45b6dc0f27ac24"
+          "byteLength": 6411,
+          "sha256": "3a11a74d73e933cb91a362c2e3f8ee3d63c695d3b3a86c97fcbba29d08ad7fc3"
         },
         "-3,-4": {
           "path": "cooked/maps/main/nav/cells/c_m3_m4.navpack",
-          "byteLength": 222,
-          "sha256": "2357b48f6fb8f39620ebfe95a7f0c434b85ce0f7f449321b641e92d332f5ee64"
+          "byteLength": 6423,
+          "sha256": "8a6a64170e2505381324a8fb703a0ea8210dfc3934084dd96db20aad1e2bae5c"
         },
         "-2,-4": {
           "path": "cooked/maps/main/nav/cells/c_m2_m4.navpack",
-          "byteLength": 220,
-          "sha256": "999c3c2365408103ddd88775cd136f9cbf76825b1ba7ded2614cd8a003c825d8"
+          "byteLength": 6395,
+          "sha256": "61cd22420c498e804c3cc821631fae6e6f1693274fb513c8823add40cb605b86"
         },
         "-1,-4": {
           "path": "cooked/maps/main/nav/cells/c_m1_m4.navpack",
-          "byteLength": 215,
-          "sha256": "9b165925ef61b893e0d6318607808b136821ebe0caaceb88a595f03a4ec8d4ee"
+          "byteLength": 6383,
+          "sha256": "bc74af6a9685f275b338035b0b58935e5d983d334a0e8072bf97c61cc7ff55e5"
         },
         "0,-4": {
           "path": "cooked/maps/main/nav/cells/c_0_m4.navpack",
-          "byteLength": 210,
-          "sha256": "642cdae7ace21858863c11d1743309385263bcf7f91a941b488a0b6fd67e851f"
+          "byteLength": 6295,
+          "sha256": "20a6def76ac117e575c1ba0cdd4e2389f478077383aada8a399ace2042bd3e6b"
         },
         "1,-4": {
           "path": "cooked/maps/main/nav/cells/c_1_m4.navpack",
-          "byteLength": 214,
-          "sha256": "d15e18433ae4a1c56eaedf2a42c32ef9c93e0de99375981bc5134a57d34c8b7c"
+          "byteLength": 6303,
+          "sha256": "797e5f131d9696305fff22bd840f311f2be871f35b645a6fed4c3db268dc6de3"
         },
         "2,-4": {
           "path": "cooked/maps/main/nav/cells/c_2_m4.navpack",
-          "byteLength": 216,
-          "sha256": "44ddeb0c9cf182f457928acbebc55506866709197b22d146af943808ad419405"
+          "byteLength": 6339,
+          "sha256": "641c86d1746ed2d61c3d829f65c5ba32105c7c2db87634ef2ba41a5ba8863ccb"
         },
         "3,-4": {
           "path": "cooked/maps/main/nav/cells/c_3_m4.navpack",
-          "byteLength": 216,
-          "sha256": "f81724c6200b88f3fba26fb2cde74b6ef1728ca4c19420f26e98e83ddd6ad544"
+          "byteLength": 6334,
+          "sha256": "ae9288b509387ad9dda97219b67cbc63b3f3287bee1880c56866a885bdeb1695"
         },
         "-4,-3": {
           "path": "cooked/maps/main/nav/cells/c_m4_m3.navpack",
-          "byteLength": 222,
-          "sha256": "dd448795bc2adff00ff9eea87de069a724ebf3aface656781af08f3b3623ac6e"
+          "byteLength": 6471,
+          "sha256": "8a0051c7768e38cc0097949ee92a644bf71e9945acf530a4efde5c402e754ecf"
         },
         "-3,-3": {
           "path": "cooked/maps/main/nav/cells/c_m3_m3.navpack",
-          "byteLength": 222,
-          "sha256": "410c4251f15b6f220b66cdfcfb349a852f92381bbfa8cfb3579a873a7f5b0ac0"
+          "byteLength": 6433,
+          "sha256": "39a851efc1e86f11133bb26d7e65c90cff977344fef2fab2051a2d0e213fa205"
         },
         "-2,-3": {
           "path": "cooked/maps/main/nav/cells/c_m2_m3.navpack",
-          "byteLength": 220,
-          "sha256": "d4f29c67e58a254fb4f135dea46784e2f5224856f5ed0767b5ace0de5c69c3f3"
+          "byteLength": 6584,
+          "sha256": "e2b19c1720f79057337ccf4251a2603dd7d42f0d5cc86f7428cf39cc199df158"
         },
         "-1,-3": {
           "path": "cooked/maps/main/nav/cells/c_m1_m3.navpack",
-          "byteLength": 215,
-          "sha256": "20af1368e47ae52ce3d0206cd373f98b487d87cb5a78afd3e3726439bec26610"
+          "byteLength": 6191,
+          "sha256": "c90299a1987524b00e7d8e17c0d650c1609b9fe4fd0c704b2ad4410c8dc9a4e8"
         },
         "0,-3": {
           "path": "cooked/maps/main/nav/cells/c_0_m3.navpack",
-          "byteLength": 210,
-          "sha256": "e6d09aff99cabb10f1354b28afada08d3718424640ac83fbd14293ad799d6afa"
+          "byteLength": 6330,
+          "sha256": "3ba144cd2bad38bd0a17314ffcfcee3fc81b23f0f4ba81cdac154db73089620c"
         },
         "1,-3": {
           "path": "cooked/maps/main/nav/cells/c_1_m3.navpack",
-          "byteLength": 214,
-          "sha256": "7307aeb3309243c37a89f9cba4987259deb7fe69f2dab3a97879b8ec9cca0b37"
+          "byteLength": 6321,
+          "sha256": "a2e08965e01bba6fa75645d0a2b21b04610a1dd0f48c1da22e906e6493ee45f2"
         },
         "2,-3": {
           "path": "cooked/maps/main/nav/cells/c_2_m3.navpack",
-          "byteLength": 216,
-          "sha256": "90e5963e0c5fcda78fae361ec2446f944fc626605dae2afcdffc2dccf4ade7a6"
+          "byteLength": 6419,
+          "sha256": "30122dbed28204206a5dc2e34ab100fadf359006ec365252aa588c5061272bb4"
         },
         "3,-3": {
           "path": "cooked/maps/main/nav/cells/c_3_m3.navpack",
-          "byteLength": 216,
-          "sha256": "b809671eef4d5c0d3f5244ed092a203ff8a2d5ab1adec9ee007a31274bf5cf8a"
+          "byteLength": 6338,
+          "sha256": "51e7a17aa9eb9ad8a73ba5cf316678966e0fe123989b4e72753b09d766fee146"
         },
         "-4,-2": {
           "path": "cooked/maps/main/nav/cells/c_m4_m2.navpack",
-          "byteLength": 220,
-          "sha256": "329d9789d4cdd189a1b7e3c94e4b3e279f686e30f4fe4681ff73f57851543eb1"
+          "byteLength": 6437,
+          "sha256": "4318d6cda30c8972a8db8c0876408fb18bd812d5d3f88b93b0dd83398f9c8d26"
         },
         "-3,-2": {
           "path": "cooked/maps/main/nav/cells/c_m3_m2.navpack",
-          "byteLength": 220,
-          "sha256": "5cb907cdc198587872c9200e1d8a7cffc11d8f47dfad3b60f5752c12c16c70dd"
+          "byteLength": 6443,
+          "sha256": "b24d3e840c33fe5858e7e764ff30202aae313d524b1365db69889d98abd50baa"
         },
         "-2,-2": {
           "path": "cooked/maps/main/nav/cells/c_m2_m2.navpack",
-          "byteLength": 218,
-          "sha256": "ad23f181e9a44828a7873a34b7ad07da1577685de6db50bf216b9b8cd92933e5"
+          "byteLength": 6766,
+          "sha256": "51164e30b390a371dcefd8ff6a92875ea51b62ad1b1dc439fc2e6205df55da4f"
         },
         "-1,-2": {
           "path": "cooked/maps/main/nav/cells/c_m1_m2.navpack",
-          "byteLength": 213,
-          "sha256": "e150561d924a0310ca4c8a65524ac9ce968208dd03da443780b7169febd4206e"
+          "byteLength": 6754,
+          "sha256": "6d16d2b2a670730c66331266554f971604c1a919fbfe6f864ddd207b04895d8c"
         },
         "0,-2": {
           "path": "cooked/maps/main/nav/cells/c_0_m2.navpack",
-          "byteLength": 208,
-          "sha256": "cadcca72c1c79141773240e8cdaca1e77b5697e67ab401b8c1ac4c4688f68cc5"
+          "byteLength": 6526,
+          "sha256": "2199239b3af84f47029429cc22222e7e6002cd8ed6ab423948dff3f2ffce89b0"
         },
         "1,-2": {
           "path": "cooked/maps/main/nav/cells/c_1_m2.navpack",
-          "byteLength": 212,
-          "sha256": "95169e6e5746cbee3a329b79df2f486807572fc47d7e8ede14b0992bf1be6103"
+          "byteLength": 6589,
+          "sha256": "b41b1f58d91c2e7edb2984d2ed5958152a3a449144fc9302cfa22323799318c8"
         },
         "2,-2": {
           "path": "cooked/maps/main/nav/cells/c_2_m2.navpack",
-          "byteLength": 214,
-          "sha256": "9bd97df5a8c4d847df749d3fa5a112c87d00d96a26ddb1eaa147d392f76d3436"
+          "byteLength": 6430,
+          "sha256": "50b6a6cfd14b21bed8a33b4b8afc8f0d35a198b2c326555b0b2910543701441c"
         },
         "3,-2": {
           "path": "cooked/maps/main/nav/cells/c_3_m2.navpack",
-          "byteLength": 214,
-          "sha256": "71817ea8778f07543209e40099c19b97a667baed2d33a91aaef6eb73d4ff82c4"
+          "byteLength": 6443,
+          "sha256": "3a264733dc9bf61f0a97e1c98eaab658608352057982652dffd6b0b99439487a"
         },
         "-4,-1": {
           "path": "cooked/maps/main/nav/cells/c_m4_m1.navpack",
-          "byteLength": 215,
-          "sha256": "55b79c77378b69e48c49684b6ade52f3fb0624a032ad54a685ebf5479daddf2c"
+          "byteLength": 6410,
+          "sha256": "78fa0fd5666af224919a2d4c309af29d5aac4f787d23bb870fef4947a352979e"
         },
         "-3,-1": {
           "path": "cooked/maps/main/nav/cells/c_m3_m1.navpack",
-          "byteLength": 215,
-          "sha256": "529fe2091c5b728e3b02264dabb072da73c8c8ebcd532b263df04b2140689173"
+          "byteLength": 6645,
+          "sha256": "8304e6721d84901e6b33612819bcfca7949735a28d35795816b344bc6546435a"
         },
         "-2,-1": {
           "path": "cooked/maps/main/nav/cells/c_m2_m1.navpack",
-          "byteLength": 213,
-          "sha256": "b4ab4f9b85541c41ad7ea12f60e76a5aac445a4ec793731eb2a1f3b0c795818d"
+          "byteLength": 6474,
+          "sha256": "f2054322aa6cfd67eedd95d68e359abc0a10fdd783b89361bb0900c7e60ede31"
         },
         "-1,-1": {
           "path": "cooked/maps/main/nav/cells/c_m1_m1.navpack",
-          "byteLength": 208,
-          "sha256": "f1c1e812b52fe0eafe136b8ef55600650a1371a39c032f534ce781eedf99f77b"
+          "byteLength": 6355,
+          "sha256": "670e210b566cbc726e42a67a1623f9f491beaad2cace51b6a552d68c3248e8e0"
         },
         "0,-1": {
           "path": "cooked/maps/main/nav/cells/c_0_m1.navpack",
-          "byteLength": 203,
-          "sha256": "6fa4cdf97f2cb71032408a29b956a4984dd574046d6b77d8a5cb078de083f926"
+          "byteLength": 6677,
+          "sha256": "1d425d27bdb138eaec112b26c8e83f00f1d2d2961629510bea4b63e77262fcd3"
         },
         "1,-1": {
           "path": "cooked/maps/main/nav/cells/c_1_m1.navpack",
-          "byteLength": 207,
-          "sha256": "52e93722189272edf78ff900265a81acc71a8772fc506160eedc112f144e2ba8"
+          "byteLength": 6391,
+          "sha256": "bef8383b7d0d5bbf4d0e3e995aecf16dbaf14f35172e24ba413953ecc3a978d2"
         },
         "2,-1": {
           "path": "cooked/maps/main/nav/cells/c_2_m1.navpack",
-          "byteLength": 209,
-          "sha256": "afd684593a924b38ad78ac78115d1e7bf9a5facdb71f00b3797eadc9c0fa0a0a"
+          "byteLength": 6294,
+          "sha256": "5888cc420c991073d78ac8419b633c96a9479566da27461c5ab847ef55fe21d4"
         },
         "3,-1": {
           "path": "cooked/maps/main/nav/cells/c_3_m1.navpack",
-          "byteLength": 209,
-          "sha256": "0f91c4507fc918b130dbe584a565a11f9c9f4c8979e8042804e1222931655c91"
+          "byteLength": 6293,
+          "sha256": "5670a1175665ce8e3686f9a530acb017b7e751820481c4b807ad02164b36c824"
         },
         "-4,0": {
           "path": "cooked/maps/main/nav/cells/c_m4_0.navpack",
-          "byteLength": 210,
-          "sha256": "43a333651658404e86333a5c4b65dd79db54ef61eacc522244d70c930e68b0ad"
+          "byteLength": 6315,
+          "sha256": "8926514fb3af59302be202b1f851925f4c09453e66fbe45cc056ddb24d151914"
         },
         "-3,0": {
           "path": "cooked/maps/main/nav/cells/c_m3_0.navpack",
-          "byteLength": 210,
-          "sha256": "653ce022e2d1c95bea71f4113a2bc74c2d11c8b5797cba22ae7c488bc7c97181"
+          "byteLength": 6375,
+          "sha256": "e078702f28082313078e5b57832b9d94caa3f96329675560c057cb16c2429167"
         },
         "-2,0": {
           "path": "cooked/maps/main/nav/cells/c_m2_0.navpack",
-          "byteLength": 208,
-          "sha256": "902c4310a9ce6d26d12b3e4444a46af2dca29e65e48722ff8665095d3e033e1c"
+          "byteLength": 6542,
+          "sha256": "afbdd6b03b5fbfc4fa1d030f7513d969e66ba24e57809608802cbff8d8870164"
         },
         "-1,0": {
           "path": "cooked/maps/main/nav/cells/c_m1_0.navpack",
-          "byteLength": 203,
-          "sha256": "79689b3eae82f7ad4eb3fcb302994f49303d4c3c2565548a638dd9de72da880e"
+          "byteLength": 6270,
+          "sha256": "c8d0dbc122eca63c3d1ff2e9b56ee591f144499341aa7c7041f15c8bb2edee0c"
         },
         "0,0": {
           "path": "cooked/maps/main/nav/cells/c_0_0.navpack",
-          "byteLength": 198,
-          "sha256": "82efea291216ab36adb117765fec5e3e4b19741d5a587db5213edda4ed1938a2"
+          "byteLength": 6430,
+          "sha256": "0963698e00723bcb76ef02442628c043de5091f0d71aed484a8f697792fa6337"
         },
         "1,0": {
           "path": "cooked/maps/main/nav/cells/c_1_0.navpack",
-          "byteLength": 202,
-          "sha256": "b14fd68e4c5bb08b1215d699bd7a5f8408b5f88411a636307960d5adb9999017"
+          "byteLength": 6399,
+          "sha256": "7f3476d9810078f88aeca5ec9cf5953d05e71b10aad95ec9137d580565ca3617"
         },
         "2,0": {
           "path": "cooked/maps/main/nav/cells/c_2_0.navpack",
-          "byteLength": 204,
-          "sha256": "07c90fa3857550af2e9c66f0d81f77f248cec8f6e9ba5a35cd4ff7eef00ae7f7"
+          "byteLength": 6214,
+          "sha256": "83508aef14bbf17190477b72be12356676e7837f71626e24038e7ab73ce05576"
         },
         "3,0": {
           "path": "cooked/maps/main/nav/cells/c_3_0.navpack",
-          "byteLength": 204,
-          "sha256": "3b9a31bc2612c98755d1a1aa3805dfcb1e9bd24eaec8c94777facccfb657626e"
+          "byteLength": 6235,
+          "sha256": "b45129fda925d72a4754ad4ddcf9e923ffba0c369ed8016860ac3d0cd9d4c8f0"
         },
         "-4,1": {
           "path": "cooked/maps/main/nav/cells/c_m4_1.navpack",
-          "byteLength": 214,
-          "sha256": "466d6a2115027f5a61cf8ad76db81d399f1b61e4e23b03ce7776b5260eebeb40"
+          "byteLength": 6357,
+          "sha256": "d0efbe5936706af9677f4f38974c6001526d14c7d2d284846798dde73f9450d9"
         },
         "-3,1": {
           "path": "cooked/maps/main/nav/cells/c_m3_1.navpack",
-          "byteLength": 214,
-          "sha256": "3a77087eaf3e42cb058e2081cf71bff519976a4aea222df1a34f83c0ea1d10da"
+          "byteLength": 6344,
+          "sha256": "44cd12d4f713c1cdcc5de1d961006c7dd78cf202c865a28a885ccf3910282ddb"
         },
         "-2,1": {
           "path": "cooked/maps/main/nav/cells/c_m2_1.navpack",
-          "byteLength": 212,
-          "sha256": "ce78b92e27774f5000cc8c89af1cd0fd8c3267412b2d71e2834ee054a31830ca"
+          "byteLength": 6286,
+          "sha256": "d240e4f5ff34299b217d9d1a93efc6cb1822c8de7da2542e1cecc353264a1a4a"
         },
         "-1,1": {
           "path": "cooked/maps/main/nav/cells/c_m1_1.navpack",
-          "byteLength": 207,
-          "sha256": "9bf4f9d88ef30ad12fec7c57e3df5403aed71829a62b78a8da4c64ddafd21c0e"
+          "byteLength": 6276,
+          "sha256": "dcc16a3c80ef96005588107d84b0a65bfe9422d148893fcd5817afc478ef5844"
         },
         "0,1": {
           "path": "cooked/maps/main/nav/cells/c_0_1.navpack",
-          "byteLength": 202,
-          "sha256": "f39a2d28ccd64860caac98bdfae8575a6a30d9a52b2d37075be110d902767afd"
+          "byteLength": 6254,
+          "sha256": "03481fe5b65873d0644e2772dee044e76c8f780662fc8365f3611823dee2d59c"
         },
         "1,1": {
           "path": "cooked/maps/main/nav/cells/c_1_1.navpack",
-          "byteLength": 206,
-          "sha256": "f7caa8d147b14ea5ce58cef1d8b684faad5a1704b25ae0b614a28b3ea5d6704b"
+          "byteLength": 6208,
+          "sha256": "6525aec9361a6d5249af7b28eccae1aa719fe8da8574f8abca75c8495921b3cd"
         },
         "2,1": {
           "path": "cooked/maps/main/nav/cells/c_2_1.navpack",
-          "byteLength": 208,
-          "sha256": "5db8292ae5522d31d3a5e835a604af3b289098c09af8a0c3e4e9c62b45829cda"
+          "byteLength": 6291,
+          "sha256": "5133b47020be10062c73f944d8cb62135cbf2cf5018d773c5dec4339b1a656f8"
         },
         "3,1": {
           "path": "cooked/maps/main/nav/cells/c_3_1.navpack",
-          "byteLength": 208,
-          "sha256": "1240fab635b4fa65e4091b259821a94e3ae1640cbe6296ef1378e71aaf090d4f"
+          "byteLength": 6228,
+          "sha256": "48cbf11dda6f17e239f5f1730860bb865502df519565654d9f00fccb5e4ae05d"
         },
         "-4,2": {
           "path": "cooked/maps/main/nav/cells/c_m4_2.navpack",
-          "byteLength": 216,
-          "sha256": "18cb297a00d8b3d4e15b395e9b17b44d904de6423bd2af490b142bfa2f01fb94"
+          "byteLength": 6321,
+          "sha256": "4292bd3f0c7f02382e6c9cb9b15cd997a93cc86a80e68eec13abd0532156c423"
         },
         "-3,2": {
           "path": "cooked/maps/main/nav/cells/c_m3_2.navpack",
-          "byteLength": 216,
-          "sha256": "c496a2210596076ada87844118d43254fe42c96fad73086ec54baa6373e66eca"
+          "byteLength": 6321,
+          "sha256": "026eff0c392b3ba2598a8734d6c7159da933c1b337441c0527f32e8482b53002"
         },
         "-2,2": {
           "path": "cooked/maps/main/nav/cells/c_m2_2.navpack",
-          "byteLength": 214,
-          "sha256": "15fa255b84a95b595aef31af9abf3029f7eb8c091cfb2913cf6ed58dda40bfc9"
+          "byteLength": 6299,
+          "sha256": "ea694849636e38df2e8563ba0ecad7f93411ce99f2bec56871f9d78a06f35d8a"
         },
         "-1,2": {
           "path": "cooked/maps/main/nav/cells/c_m1_2.navpack",
-          "byteLength": 209,
-          "sha256": "a664811699a888bd497a8982837657f3c585f474a157ba534efc8060b0cdeca0"
+          "byteLength": 6304,
+          "sha256": "f273ce738fa76f03a7c5a3ddcd6de18a69d0dc06c680765c56c3a1b743202cd4"
         },
         "0,2": {
           "path": "cooked/maps/main/nav/cells/c_0_2.navpack",
-          "byteLength": 204,
-          "sha256": "a4fa0a4df26e0b89fcc9ba55f01ae8899a98dc8a287a1948ecdc2e4c7bba5974"
+          "byteLength": 6466,
+          "sha256": "6d326d68f6a7fb50cc10377f6ab7cd725a813b50d45ca0160b2338567e993537"
         },
         "1,2": {
           "path": "cooked/maps/main/nav/cells/c_1_2.navpack",
-          "byteLength": 208,
-          "sha256": "08de96d1f01e8c6899d491c0c39d34dd014be22c1b083047f4660d142786da87"
+          "byteLength": 6227,
+          "sha256": "5eb5c76f01ad2764b14bef1edc3182ab841c4d4fefb35741ca251366a42edc1e"
         },
         "2,2": {
           "path": "cooked/maps/main/nav/cells/c_2_2.navpack",
-          "byteLength": 210,
-          "sha256": "405892daed5c903bbac905e3a8557ac052d9d96626e78e8fe109c3a1257109c1"
+          "byteLength": 6248,
+          "sha256": "543fe890aa250a0255698d079d6e2042e4d48a03856943d661db738d3dcedd51"
         },
         "3,2": {
           "path": "cooked/maps/main/nav/cells/c_3_2.navpack",
-          "byteLength": 210,
-          "sha256": "333fb6e3fa398defca4ecc3a97e8727fb2ed16917d6ccea8fcdfc41c05f21a09"
+          "byteLength": 6227,
+          "sha256": "1ce03ae392cec9f6d25218f5137113276db9717a7b2470df4674b0c62f904255"
         },
         "-4,3": {
           "path": "cooked/maps/main/nav/cells/c_m4_3.navpack",
-          "byteLength": 216,
-          "sha256": "9a1760b85dee60508b284d4ec6bf798ebeb4d002abb7926f3283f0edd0cb0e96"
+          "byteLength": 6320,
+          "sha256": "23d04448d9b46bc26d7a1a5186bfc9c985c441ca700cfccd42e5a0fade8c6f85"
         },
         "-3,3": {
           "path": "cooked/maps/main/nav/cells/c_m3_3.navpack",
-          "byteLength": 216,
-          "sha256": "cf7f605c9e07bc708ecdfe35ca6847c6c60493d8b8d4a0d34b3ed97fa036d88e"
+          "byteLength": 6320,
+          "sha256": "802973dc1d84ad5ab238b49ee08e576d1deca5936969c20cf91b87e88df97cea"
         },
         "-2,3": {
           "path": "cooked/maps/main/nav/cells/c_m2_3.navpack",
-          "byteLength": 214,
-          "sha256": "5b84ccc3a61e44bfe6a3f9d16195e757682aecc4897868073854fa25983f0040"
+          "byteLength": 6303,
+          "sha256": "b921a3b9f32e685b29aa4b0972863262ebb7e6402afcba22a5d5fba104ef9324"
         },
         "-1,3": {
           "path": "cooked/maps/main/nav/cells/c_m1_3.navpack",
-          "byteLength": 209,
-          "sha256": "62791622ff0172c2f9b22d3d5d5c4734bc2e466f97e1cd782582777bae22ee7c"
+          "byteLength": 6296,
+          "sha256": "cfeb0174891ab3a6349eee5d0719b0ff67f663dc320ee51869f4e2f44cfc7811"
         },
         "0,3": {
           "path": "cooked/maps/main/nav/cells/c_0_3.navpack",
-          "byteLength": 204,
-          "sha256": "98d8fbf08cc80c6c035693f108cc897ad25903cc3b1219ba7c8afaf237c88df4"
+          "byteLength": 6202,
+          "sha256": "5b8181b9094a2c96be7d1e8737d44fcbdb52e53e6e66f09784d5da440977735a"
         },
         "1,3": {
           "path": "cooked/maps/main/nav/cells/c_1_3.navpack",
-          "byteLength": 208,
-          "sha256": "8df63b906aa1ff06f68fe0320ef6000f29523a11a9beb6a6d8c748a10e77ccbe"
+          "byteLength": 6245,
+          "sha256": "8b94010ad3fb10238596a90b54a590c6088844f406e206c8e60589685acbfec0"
         },
         "2,3": {
           "path": "cooked/maps/main/nav/cells/c_2_3.navpack",
-          "byteLength": 210,
-          "sha256": "3ea2722ee78d367d5e871c75dc20e0db89f18bd2e7d1d83874d902dfac504001"
+          "byteLength": 6234,
+          "sha256": "16876fc17dc7cebe1fbc4f939a92d172bac0bb5164687b5b004192331e88b420"
         },
         "3,3": {
           "path": "cooked/maps/main/nav/cells/c_3_3.navpack",
-          "byteLength": 210,
-          "sha256": "afce45d82bbf20765d82b0b3cca5fb18a7bfaf6262152f7734d448232d328b38"
+          "byteLength": 6242,
+          "sha256": "a11c09bbab004d5f42991e07749d0981633055e1944e150102c149ac82fa4303"
         }
       }
     }
@@ -4398,1347 +4467,1411 @@
       },
       "cooked/maps/main/collision/cells/c_0_0.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_0_0.collisionpack",
-        "blobPath": "cooked/blobs/sha256/56/5643fd08e2ba93c9c7ca2d88bd73daf91a8ab1703cc4c74d8ee575c9a0f4e501.collisionpack",
+        "blobPath": "cooked/blobs/sha256/4d/4d8b2231b26d1cccd0f693c2330eb3fd508a6bc6f06d223629229ed0fe5b3229.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 205,
-        "sha256": "5643fd08e2ba93c9c7ca2d88bd73daf91a8ab1703cc4c74d8ee575c9a0f4e501"
+        "byteLength": 1210,
+        "sha256": "4d8b2231b26d1cccd0f693c2330eb3fd508a6bc6f06d223629229ed0fe5b3229"
       },
       "cooked/maps/main/collision/cells/c_0_1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_0_1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/6c/6cdc9fb6709804eb85dfd1dc67219c2efeb888b5f805ac76fbf6bccd21fdc338.collisionpack",
+        "blobPath": "cooked/blobs/sha256/30/304a53844df64f91914716496e7066870e0cb54b602752b48b9acd0c9038def5.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 209,
-        "sha256": "6cdc9fb6709804eb85dfd1dc67219c2efeb888b5f805ac76fbf6bccd21fdc338"
+        "byteLength": 1660,
+        "sha256": "304a53844df64f91914716496e7066870e0cb54b602752b48b9acd0c9038def5"
       },
       "cooked/maps/main/collision/cells/c_0_2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_0_2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/4b/4bb4b179acd24c5be45e00f22522a4c4a94de7c44c6c115ffcd414b040e2e55e.collisionpack",
+        "blobPath": "cooked/blobs/sha256/3e/3e0849724896b682e39cfe205d4061063aa29f0bcd8af9fd376a31357f8b9217.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 211,
-        "sha256": "4bb4b179acd24c5be45e00f22522a4c4a94de7c44c6c115ffcd414b040e2e55e"
+        "byteLength": 950,
+        "sha256": "3e0849724896b682e39cfe205d4061063aa29f0bcd8af9fd376a31357f8b9217"
       },
       "cooked/maps/main/collision/cells/c_0_3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_0_3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/4f/4f5e76a377aa711598bee77cd5754d59ec3959370bb8aabdad4c248441d3babf.collisionpack",
+        "blobPath": "cooked/blobs/sha256/d6/d6a16c1d92f8bf9ea11001f67e94835dddd451c7a100e2b0df6d045f1b8245b7.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 211,
-        "sha256": "4f5e76a377aa711598bee77cd5754d59ec3959370bb8aabdad4c248441d3babf"
+        "byteLength": 680,
+        "sha256": "d6a16c1d92f8bf9ea11001f67e94835dddd451c7a100e2b0df6d045f1b8245b7"
       },
       "cooked/maps/main/collision/cells/c_0_m1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_0_m1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/84/845712a8c930e22d64abfc8edfa5cdc0b6376836bc70d5cabf0fa2a5534973ed.collisionpack",
+        "blobPath": "cooked/blobs/sha256/18/18ae4f79f941611893be41ec13c6889751c488a486fc075dff7a4f395521b136.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 210,
-        "sha256": "845712a8c930e22d64abfc8edfa5cdc0b6376836bc70d5cabf0fa2a5534973ed"
+        "byteLength": 955,
+        "sha256": "18ae4f79f941611893be41ec13c6889751c488a486fc075dff7a4f395521b136"
       },
       "cooked/maps/main/collision/cells/c_0_m2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_0_m2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/cc/cc413b4aa611d1cf9a4f8c6f6883feebca7997103481fbf885bec5c463cb12e0.collisionpack",
+        "blobPath": "cooked/blobs/sha256/a5/a57fcd71f51466ebbfcb2dfdb19bb8ab778d7a363c23dbd7572b0e23d872e691.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 215,
-        "sha256": "cc413b4aa611d1cf9a4f8c6f6883feebca7997103481fbf885bec5c463cb12e0"
+        "byteLength": 689,
+        "sha256": "a57fcd71f51466ebbfcb2dfdb19bb8ab778d7a363c23dbd7572b0e23d872e691"
       },
       "cooked/maps/main/collision/cells/c_0_m3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_0_m3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/df/dfa992c8469873299fd09c21203513d199fc14a38876fb74b634f3be779472dd.collisionpack",
+        "blobPath": "cooked/blobs/sha256/f0/f03e00abbcbeca0cdf22a16c85c56ba35229bd7dc4891fd88ae76437929ca7d6.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 217,
-        "sha256": "dfa992c8469873299fd09c21203513d199fc14a38876fb74b634f3be779472dd"
+        "byteLength": 692,
+        "sha256": "f03e00abbcbeca0cdf22a16c85c56ba35229bd7dc4891fd88ae76437929ca7d6"
       },
       "cooked/maps/main/collision/cells/c_0_m4.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_0_m4.collisionpack",
-        "blobPath": "cooked/blobs/sha256/73/730e7eaceed2c6f01e9342cd58f86a59f0c42db2224f7f101af274eb43e3909a.collisionpack",
+        "blobPath": "cooked/blobs/sha256/35/3513b8e0cace5b31797edfb89f9d94065ecf60ce6824c7dc857980d8c2762190.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 217,
-        "sha256": "730e7eaceed2c6f01e9342cd58f86a59f0c42db2224f7f101af274eb43e3909a"
+        "byteLength": 692,
+        "sha256": "3513b8e0cace5b31797edfb89f9d94065ecf60ce6824c7dc857980d8c2762190"
       },
       "cooked/maps/main/collision/cells/c_1_0.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_1_0.collisionpack",
-        "blobPath": "cooked/blobs/sha256/f1/f1acfd68b8d8a728bd49793ba468902d5640899307dfa5c473eb0b32468dde1e.collisionpack",
+        "blobPath": "cooked/blobs/sha256/f2/f2b8c899dfe3148606cf8cc9cfa416a9a6261314d411eaf1edf27d014e1eb72e.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 209,
-        "sha256": "f1acfd68b8d8a728bd49793ba468902d5640899307dfa5c473eb0b32468dde1e"
+        "byteLength": 677,
+        "sha256": "f2b8c899dfe3148606cf8cc9cfa416a9a6261314d411eaf1edf27d014e1eb72e"
       },
       "cooked/maps/main/collision/cells/c_1_1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_1_1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/b5/b5039ed195f30017b33ec249681a55dba80eb46305f92c24cfa49331e392a5ce.collisionpack",
+        "blobPath": "cooked/blobs/sha256/08/0849d7423e52133837475e2977caaeb55b96838d69983300e05c4ca3f81278a3.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 213,
-        "sha256": "b5039ed195f30017b33ec249681a55dba80eb46305f92c24cfa49331e392a5ce"
+        "byteLength": 684,
+        "sha256": "0849d7423e52133837475e2977caaeb55b96838d69983300e05c4ca3f81278a3"
       },
       "cooked/maps/main/collision/cells/c_1_2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_1_2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/34/34cc204460048fe0f5a0164ab56e50952ce9de0d552b248a6491bd7256ec2524.collisionpack",
+        "blobPath": "cooked/blobs/sha256/85/85f3ae0ae10df54b434dfb10e5859f8a4575e254df18ae1b3d02de2f8bf25a0b.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 215,
-        "sha256": "34cc204460048fe0f5a0164ab56e50952ce9de0d552b248a6491bd7256ec2524"
+        "byteLength": 687,
+        "sha256": "85f3ae0ae10df54b434dfb10e5859f8a4575e254df18ae1b3d02de2f8bf25a0b"
       },
       "cooked/maps/main/collision/cells/c_1_3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_1_3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/66/668aaf25b6a6b9a5cbdfdf861de2ffa4aba54fc0c61a3328c874b4ca9231ee04.collisionpack",
+        "blobPath": "cooked/blobs/sha256/1c/1c720452fb8ec143060f6ebc74080f1fcf44b962938c52923c39891b40ae854f.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 215,
-        "sha256": "668aaf25b6a6b9a5cbdfdf861de2ffa4aba54fc0c61a3328c874b4ca9231ee04"
+        "byteLength": 687,
+        "sha256": "1c720452fb8ec143060f6ebc74080f1fcf44b962938c52923c39891b40ae854f"
       },
       "cooked/maps/main/collision/cells/c_1_m1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_1_m1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/24/24275cd6b2f3e8c2398a6def52afd74368a28a6e02c4fa53ccf9205ceebf32b1.collisionpack",
+        "blobPath": "cooked/blobs/sha256/4a/4a985b2dff58fb8f8ede98994e14d360aa58d19ae716030805e3b7b0fe553fd0.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 214,
-        "sha256": "24275cd6b2f3e8c2398a6def52afd74368a28a6e02c4fa53ccf9205ceebf32b1"
+        "byteLength": 1426,
+        "sha256": "4a985b2dff58fb8f8ede98994e14d360aa58d19ae716030805e3b7b0fe553fd0"
       },
       "cooked/maps/main/collision/cells/c_1_m2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_1_m2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/77/773aedd2578acea651aa1ffbfbe717c2dfd707fcc805c7594b94a5f902552168.collisionpack",
+        "blobPath": "cooked/blobs/sha256/ec/ecc555c0d06095de4840b9157e62fd8996168c49c4f11671e50bc22cee81c362.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 219,
-        "sha256": "773aedd2578acea651aa1ffbfbe717c2dfd707fcc805c7594b94a5f902552168"
+        "byteLength": 973,
+        "sha256": "ecc555c0d06095de4840b9157e62fd8996168c49c4f11671e50bc22cee81c362"
       },
       "cooked/maps/main/collision/cells/c_1_m3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_1_m3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/b7/b74a85b90e5822ae1a4915091f3ef0539e9f534f21dc5aa7c1e200afaa6afe80.collisionpack",
+        "blobPath": "cooked/blobs/sha256/09/09977e4509a07cf9a0adac8c671c3f17ec2cf22ed8c814809ad27fe4f9512242.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 221,
-        "sha256": "b74a85b90e5822ae1a4915091f3ef0539e9f534f21dc5aa7c1e200afaa6afe80"
+        "byteLength": 699,
+        "sha256": "09977e4509a07cf9a0adac8c671c3f17ec2cf22ed8c814809ad27fe4f9512242"
       },
       "cooked/maps/main/collision/cells/c_1_m4.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_1_m4.collisionpack",
-        "blobPath": "cooked/blobs/sha256/1b/1b0709416ed55a454524aab3580b480136aacd841237ea099b3227ce53f7fc4b.collisionpack",
+        "blobPath": "cooked/blobs/sha256/65/65f747c13e04c85b6e37706ebed4e51f0e14ef448c17283b93cc62a14b5d970d.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 221,
-        "sha256": "1b0709416ed55a454524aab3580b480136aacd841237ea099b3227ce53f7fc4b"
+        "byteLength": 699,
+        "sha256": "65f747c13e04c85b6e37706ebed4e51f0e14ef448c17283b93cc62a14b5d970d"
       },
       "cooked/maps/main/collision/cells/c_2_0.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_2_0.collisionpack",
-        "blobPath": "cooked/blobs/sha256/4a/4a9848dccd9d09db329d5488b56006714fc90056347a2ea8ebf519b86bbe1b84.collisionpack",
+        "blobPath": "cooked/blobs/sha256/3e/3e57ba4212b660e79a9d1b7ee563e01d10ac477fc0b4536e326d31560e7f4e6b.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 211,
-        "sha256": "4a9848dccd9d09db329d5488b56006714fc90056347a2ea8ebf519b86bbe1b84"
+        "byteLength": 680,
+        "sha256": "3e57ba4212b660e79a9d1b7ee563e01d10ac477fc0b4536e326d31560e7f4e6b"
       },
       "cooked/maps/main/collision/cells/c_2_1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_2_1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/48/4895e762a0b13e1e49d90543d1091c09b7b7c4fc86e0729125fa343cf8007c3b.collisionpack",
+        "blobPath": "cooked/blobs/sha256/87/87de6b4b5e0f6dc0e9bdc5cc1b2a084506e165df54c50a542f55d3b4bca57105.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 215,
-        "sha256": "4895e762a0b13e1e49d90543d1091c09b7b7c4fc86e0729125fa343cf8007c3b"
+        "byteLength": 687,
+        "sha256": "87de6b4b5e0f6dc0e9bdc5cc1b2a084506e165df54c50a542f55d3b4bca57105"
       },
       "cooked/maps/main/collision/cells/c_2_2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_2_2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/6e/6eead2ac09d7ec4568721b4b59307764ca3d96fe9062e3dd6fd57a0c0e981578.collisionpack",
+        "blobPath": "cooked/blobs/sha256/1d/1df5649bdece4269510adfcaf8150f0a14f9786fdd0732fee9839e9458fff5f3.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 217,
-        "sha256": "6eead2ac09d7ec4568721b4b59307764ca3d96fe9062e3dd6fd57a0c0e981578"
+        "byteLength": 690,
+        "sha256": "1df5649bdece4269510adfcaf8150f0a14f9786fdd0732fee9839e9458fff5f3"
       },
       "cooked/maps/main/collision/cells/c_2_3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_2_3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/a6/a653756382c5a5fd7c4eb0793d9b839bdf78421eeadc89048b694a9a1add935a.collisionpack",
+        "blobPath": "cooked/blobs/sha256/54/5425fabbd80b48f04031bef08e287b2e84b03338e0c946c9ad35daf669e28f36.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 217,
-        "sha256": "a653756382c5a5fd7c4eb0793d9b839bdf78421eeadc89048b694a9a1add935a"
+        "byteLength": 690,
+        "sha256": "5425fabbd80b48f04031bef08e287b2e84b03338e0c946c9ad35daf669e28f36"
       },
       "cooked/maps/main/collision/cells/c_2_m1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_2_m1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/00/008d5b9d73ad4ad7e9e157c9d45bd9b3345504ff1d5230b6d49c7562bcc67d16.collisionpack",
+        "blobPath": "cooked/blobs/sha256/0a/0a8ca8525b8ee0b0073882a86e624646c05cc3ae370a96b7a522fef0801ef8d2.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 216,
-        "sha256": "008d5b9d73ad4ad7e9e157c9d45bd9b3345504ff1d5230b6d49c7562bcc67d16"
+        "byteLength": 690,
+        "sha256": "0a8ca8525b8ee0b0073882a86e624646c05cc3ae370a96b7a522fef0801ef8d2"
       },
       "cooked/maps/main/collision/cells/c_2_m2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_2_m2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/48/48d74fd191fa50f86989547d291ee31005cbe4f9a8788ea6296db680e4a16800.collisionpack",
+        "blobPath": "cooked/blobs/sha256/28/287b56b8e00b6d2385658bc07ae67258022e46fa71347195d8d0681d60c64a09.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 221,
-        "sha256": "48d74fd191fa50f86989547d291ee31005cbe4f9a8788ea6296db680e4a16800"
+        "byteLength": 699,
+        "sha256": "287b56b8e00b6d2385658bc07ae67258022e46fa71347195d8d0681d60c64a09"
       },
       "cooked/maps/main/collision/cells/c_2_m3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_2_m3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/f3/f3e142693a2737c4a9b6e97ecc1b3b6a8e2798c0c1b57b828a9895481eb3d26f.collisionpack",
+        "blobPath": "cooked/blobs/sha256/5f/5fd445310ba73cdf63167165a2cea2fd6f6093e625b843a461acc83aa29e0a7c.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 223,
-        "sha256": "f3e142693a2737c4a9b6e97ecc1b3b6a8e2798c0c1b57b828a9895481eb3d26f"
+        "byteLength": 702,
+        "sha256": "5fd445310ba73cdf63167165a2cea2fd6f6093e625b843a461acc83aa29e0a7c"
       },
       "cooked/maps/main/collision/cells/c_2_m4.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_2_m4.collisionpack",
-        "blobPath": "cooked/blobs/sha256/f5/f5fe18bc32036b04ded0569a88f8d1c7fb093d1aee1ca7175c8d9d503b1a03cd.collisionpack",
+        "blobPath": "cooked/blobs/sha256/58/5840e2b7475b2b858f4090079fef8f35622d44aa501e8ba89d1a0444b6355925.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 223,
-        "sha256": "f5fe18bc32036b04ded0569a88f8d1c7fb093d1aee1ca7175c8d9d503b1a03cd"
+        "byteLength": 702,
+        "sha256": "5840e2b7475b2b858f4090079fef8f35622d44aa501e8ba89d1a0444b6355925"
       },
       "cooked/maps/main/collision/cells/c_3_0.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_3_0.collisionpack",
-        "blobPath": "cooked/blobs/sha256/0b/0bd3ef548c2c934516b888d42d8ab14adf2f4dfc279c3e09807830b77a6c2ebd.collisionpack",
+        "blobPath": "cooked/blobs/sha256/e8/e89f841bdc5aba22dca7eddc3150484f923879cefacdd594aaf5158f6a5413a0.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 211,
-        "sha256": "0bd3ef548c2c934516b888d42d8ab14adf2f4dfc279c3e09807830b77a6c2ebd"
+        "byteLength": 680,
+        "sha256": "e89f841bdc5aba22dca7eddc3150484f923879cefacdd594aaf5158f6a5413a0"
       },
       "cooked/maps/main/collision/cells/c_3_1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_3_1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/46/46ac5391d40026466914dc69a5e4591e075b264de0031e6d4c26cd0736c9a499.collisionpack",
+        "blobPath": "cooked/blobs/sha256/21/21451db941c771ed9df84253817729023cd078d93a7c2dfe75fe917f927511a1.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 215,
-        "sha256": "46ac5391d40026466914dc69a5e4591e075b264de0031e6d4c26cd0736c9a499"
+        "byteLength": 687,
+        "sha256": "21451db941c771ed9df84253817729023cd078d93a7c2dfe75fe917f927511a1"
       },
       "cooked/maps/main/collision/cells/c_3_2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_3_2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/28/2829e50df6e3c2d8882eccf3f9df672b02d6c15f51b001760e41b0238df24d6d.collisionpack",
+        "blobPath": "cooked/blobs/sha256/06/06f5cc5c93fe0d5e104b6944db61c393ca41db0b3fcd2588cb6e651fbc580641.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 217,
-        "sha256": "2829e50df6e3c2d8882eccf3f9df672b02d6c15f51b001760e41b0238df24d6d"
+        "byteLength": 690,
+        "sha256": "06f5cc5c93fe0d5e104b6944db61c393ca41db0b3fcd2588cb6e651fbc580641"
       },
       "cooked/maps/main/collision/cells/c_3_3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_3_3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/c9/c950be0066843eb6e345f2f8436c13b20811755dc12a5d3a2b4d20a7da005c8c.collisionpack",
+        "blobPath": "cooked/blobs/sha256/98/9825d77d661b551c255a647a070a42332781819b67248d8bcb37a95d322902de.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 217,
-        "sha256": "c950be0066843eb6e345f2f8436c13b20811755dc12a5d3a2b4d20a7da005c8c"
+        "byteLength": 690,
+        "sha256": "9825d77d661b551c255a647a070a42332781819b67248d8bcb37a95d322902de"
       },
       "cooked/maps/main/collision/cells/c_3_m1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_3_m1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/fa/fadb2e322a96947d2d463f8ced35fe7f526635bf9d64a05cebfcf4046e7823c9.collisionpack",
+        "blobPath": "cooked/blobs/sha256/28/28b895026b866b13f86742be30ccd8b340614e56f357ed143a062d770259ca27.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 216,
-        "sha256": "fadb2e322a96947d2d463f8ced35fe7f526635bf9d64a05cebfcf4046e7823c9"
+        "byteLength": 690,
+        "sha256": "28b895026b866b13f86742be30ccd8b340614e56f357ed143a062d770259ca27"
       },
       "cooked/maps/main/collision/cells/c_3_m2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_3_m2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/2b/2b8b0fd10bd7de53a274a8118a5a15bf9968a8f2f830824991888198baccd626.collisionpack",
+        "blobPath": "cooked/blobs/sha256/e1/e1b1a92ae62dc9fb31ff79667fc1ab0a6a8f323b8dacc79734b866ab377d3781.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 221,
-        "sha256": "2b8b0fd10bd7de53a274a8118a5a15bf9968a8f2f830824991888198baccd626"
+        "byteLength": 699,
+        "sha256": "e1b1a92ae62dc9fb31ff79667fc1ab0a6a8f323b8dacc79734b866ab377d3781"
       },
       "cooked/maps/main/collision/cells/c_3_m3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_3_m3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/fe/fe7f49d5a6f8e500dfc12686dc0d8e7570f7bfdd3d5d9c7cbd0311cedcd907b1.collisionpack",
+        "blobPath": "cooked/blobs/sha256/11/1162a540b12524d27319f46524f942c115d5291294e8dae96deb8d07f9560cde.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 223,
-        "sha256": "fe7f49d5a6f8e500dfc12686dc0d8e7570f7bfdd3d5d9c7cbd0311cedcd907b1"
+        "byteLength": 702,
+        "sha256": "1162a540b12524d27319f46524f942c115d5291294e8dae96deb8d07f9560cde"
       },
       "cooked/maps/main/collision/cells/c_3_m4.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_3_m4.collisionpack",
-        "blobPath": "cooked/blobs/sha256/eb/eb169b25b7e616e9dfccd10f7b502b02dc8191cc581cfaaf454b12e5849ad6e8.collisionpack",
+        "blobPath": "cooked/blobs/sha256/45/45938f15fa833cd1f2878465c03a38f470d9f8ed44604c4a6edae38ae0546fb4.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 223,
-        "sha256": "eb169b25b7e616e9dfccd10f7b502b02dc8191cc581cfaaf454b12e5849ad6e8"
+        "byteLength": 702,
+        "sha256": "45938f15fa833cd1f2878465c03a38f470d9f8ed44604c4a6edae38ae0546fb4"
       },
       "cooked/maps/main/collision/cells/c_m1_0.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m1_0.collisionpack",
-        "blobPath": "cooked/blobs/sha256/4b/4b0e0938e3aa42b4208ae5c444ff44311ba72a2318457737d0243b541113379c.collisionpack",
+        "blobPath": "cooked/blobs/sha256/e7/e7d62f3d887b2864acafbc6eefb3ef35a25aa27d249944573f5b6d54754876e5.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 210,
-        "sha256": "4b0e0938e3aa42b4208ae5c444ff44311ba72a2318457737d0243b541113379c"
+        "byteLength": 680,
+        "sha256": "e7d62f3d887b2864acafbc6eefb3ef35a25aa27d249944573f5b6d54754876e5"
       },
       "cooked/maps/main/collision/cells/c_m1_1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m1_1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/cf/cf8aaab85eb0e739eb6899bfd9d38b4013c76a0791580da60a6b8c4b6875e652.collisionpack",
+        "blobPath": "cooked/blobs/sha256/4c/4c0aa5056b47560e6f156b1e19cfad44d1fa5966c3235f53a7a41c47049f14e7.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 214,
-        "sha256": "cf8aaab85eb0e739eb6899bfd9d38b4013c76a0791580da60a6b8c4b6875e652"
+        "byteLength": 687,
+        "sha256": "4c0aa5056b47560e6f156b1e19cfad44d1fa5966c3235f53a7a41c47049f14e7"
       },
       "cooked/maps/main/collision/cells/c_m1_2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m1_2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/25/253dc736162eeec9c21dfa0b224f910c9fb6d06a8e4f2bf6b8142acd141668ed.collisionpack",
+        "blobPath": "cooked/blobs/sha256/c2/c203fc04a74e7852c429fa49d8cd4e6cfaeb8c803c3146c4cb0adf2bc156fa9a.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 216,
-        "sha256": "253dc736162eeec9c21dfa0b224f910c9fb6d06a8e4f2bf6b8142acd141668ed"
+        "byteLength": 690,
+        "sha256": "c203fc04a74e7852c429fa49d8cd4e6cfaeb8c803c3146c4cb0adf2bc156fa9a"
       },
       "cooked/maps/main/collision/cells/c_m1_3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m1_3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/01/01217a6820944c2511280a90eaa78f15d64f01fa94783e5c40ffc3c13f7ca235.collisionpack",
+        "blobPath": "cooked/blobs/sha256/5d/5d79d8a23ff5a2d024c88b159d19e09e8280dd0650b67d9feb7e0b7afac3c342.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 216,
-        "sha256": "01217a6820944c2511280a90eaa78f15d64f01fa94783e5c40ffc3c13f7ca235"
+        "byteLength": 690,
+        "sha256": "5d79d8a23ff5a2d024c88b159d19e09e8280dd0650b67d9feb7e0b7afac3c342"
       },
       "cooked/maps/main/collision/cells/c_m1_m1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m1_m1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/8c/8ce86d29b578ce197ad210c5c0ebe36aeccc79a89a6191422e4700a76a7e8930.collisionpack",
+        "blobPath": "cooked/blobs/sha256/ee/eeb5fcc158da7e7cbd8e9924da3495a19fdab088a746c9e25abf623f5aa66b7d.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 215,
-        "sha256": "8ce86d29b578ce197ad210c5c0ebe36aeccc79a89a6191422e4700a76a7e8930"
+        "byteLength": 1414,
+        "sha256": "eeb5fcc158da7e7cbd8e9924da3495a19fdab088a746c9e25abf623f5aa66b7d"
       },
       "cooked/maps/main/collision/cells/c_m1_m2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m1_m2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/10/108c4efef217f13e1adf8426a047e6997099307c11df195312b21a9f178bc21c.collisionpack",
+        "blobPath": "cooked/blobs/sha256/6c/6c70af40ced9c9ac4c72fd3a2e6aabac66be1d1c88eef63614e64482500c5388.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 220,
-        "sha256": "108c4efef217f13e1adf8426a047e6997099307c11df195312b21a9f178bc21c"
+        "byteLength": 1342,
+        "sha256": "6c70af40ced9c9ac4c72fd3a2e6aabac66be1d1c88eef63614e64482500c5388"
       },
       "cooked/maps/main/collision/cells/c_m1_m3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m1_m3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/54/546dd6069ac6d67bdc65061b6d5776a5cf53ad39833bccfe1fcc72d66af2a371.collisionpack",
+        "blobPath": "cooked/blobs/sha256/0a/0a6b11633d15d574f47c937b8e8d7a749baaeed971b2940960fa626a653d9ba5.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 222,
-        "sha256": "546dd6069ac6d67bdc65061b6d5776a5cf53ad39833bccfe1fcc72d66af2a371"
+        "byteLength": 1347,
+        "sha256": "0a6b11633d15d574f47c937b8e8d7a749baaeed971b2940960fa626a653d9ba5"
       },
       "cooked/maps/main/collision/cells/c_m1_m4.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m1_m4.collisionpack",
-        "blobPath": "cooked/blobs/sha256/9a/9a1efeab7cea565608d299160cf977825c2a59a5cc0f1bb230126e966f4e1385.collisionpack",
+        "blobPath": "cooked/blobs/sha256/58/58f1cb88009059b5e53d9ec2cf0aa50a83bd8b8863948edb98bef62ed188c194.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 222,
-        "sha256": "9a1efeab7cea565608d299160cf977825c2a59a5cc0f1bb230126e966f4e1385"
+        "byteLength": 702,
+        "sha256": "58f1cb88009059b5e53d9ec2cf0aa50a83bd8b8863948edb98bef62ed188c194"
       },
       "cooked/maps/main/collision/cells/c_m2_0.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m2_0.collisionpack",
-        "blobPath": "cooked/blobs/sha256/8e/8e52d324ed8f6e3bc18b8fd1845450b56d8bea5c423bf73182af49cc8b6c2f82.collisionpack",
+        "blobPath": "cooked/blobs/sha256/cc/cc3d074e4e8931bd95f6e77dab57d3090d7603e44b0acf6614f6f0be8d19215d.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 215,
-        "sha256": "8e52d324ed8f6e3bc18b8fd1845450b56d8bea5c423bf73182af49cc8b6c2f82"
+        "byteLength": 1407,
+        "sha256": "cc3d074e4e8931bd95f6e77dab57d3090d7603e44b0acf6614f6f0be8d19215d"
       },
       "cooked/maps/main/collision/cells/c_m2_1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m2_1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/4e/4e243fe4cc0231e91b1eaae7b47a247a51fb10b89def0e2d00563515e3860b40.collisionpack",
+        "blobPath": "cooked/blobs/sha256/1d/1db61937490d751b08abfcccd55eb919b6e757ce9fef39259469da75eddf627a.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 219,
-        "sha256": "4e243fe4cc0231e91b1eaae7b47a247a51fb10b89def0e2d00563515e3860b40"
+        "byteLength": 696,
+        "sha256": "1db61937490d751b08abfcccd55eb919b6e757ce9fef39259469da75eddf627a"
       },
       "cooked/maps/main/collision/cells/c_m2_2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m2_2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/4d/4d5f18aa15e568921b7d371212e2a2744159931a27749324caa61a16d99f7987.collisionpack",
+        "blobPath": "cooked/blobs/sha256/46/46dd99820dc9aeda505bf848387e169a46947989996806f1eb967934232e074c.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 221,
-        "sha256": "4d5f18aa15e568921b7d371212e2a2744159931a27749324caa61a16d99f7987"
+        "byteLength": 699,
+        "sha256": "46dd99820dc9aeda505bf848387e169a46947989996806f1eb967934232e074c"
       },
       "cooked/maps/main/collision/cells/c_m2_3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m2_3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/87/87b1cf1ce5f0d76fc30e46ef8983584d42ccfc9e11c039cd057383d381715b90.collisionpack",
+        "blobPath": "cooked/blobs/sha256/16/16eb5d6b77a9c01e88e10d0976279869e336a81eeb13e2e6dfb43e372dd1866f.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 221,
-        "sha256": "87b1cf1ce5f0d76fc30e46ef8983584d42ccfc9e11c039cd057383d381715b90"
+        "byteLength": 699,
+        "sha256": "16eb5d6b77a9c01e88e10d0976279869e336a81eeb13e2e6dfb43e372dd1866f"
       },
       "cooked/maps/main/collision/cells/c_m2_m1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m2_m1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/02/02e06cdb37a2436d5b7e6f4b85842288afbcbf3ab21de798a8117f538304c11b.collisionpack",
+        "blobPath": "cooked/blobs/sha256/ab/ab7aad23a4e06c046150f4384949fe5dd1525b997457f1969b1efb42d9742638.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 220,
-        "sha256": "02e06cdb37a2436d5b7e6f4b85842288afbcbf3ab21de798a8117f538304c11b"
+        "byteLength": 699,
+        "sha256": "ab7aad23a4e06c046150f4384949fe5dd1525b997457f1969b1efb42d9742638"
       },
       "cooked/maps/main/collision/cells/c_m2_m2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m2_m2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/f2/f265b1db8688ac46170468a8de2f14be60d608ddd4d405c0b3246268456609ca.collisionpack",
+        "blobPath": "cooked/blobs/sha256/2d/2d5066cf747ae2c242f0bcd68fe57bd9ea164bcf184774cdbb68b901d47f4564.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 225,
-        "sha256": "f265b1db8688ac46170468a8de2f14be60d608ddd4d405c0b3246268456609ca"
+        "byteLength": 708,
+        "sha256": "2d5066cf747ae2c242f0bcd68fe57bd9ea164bcf184774cdbb68b901d47f4564"
       },
       "cooked/maps/main/collision/cells/c_m2_m3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m2_m3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/d2/d2773ccb4d6d2284487b70ff7b190989d9a536e842bb688b00fed3a35a079784.collisionpack",
+        "blobPath": "cooked/blobs/sha256/46/46e5cc2af27093a0cc1ee9eab4952c1cd5e47fe4d82ed81ff0a4be21d4addd68.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 227,
-        "sha256": "d2773ccb4d6d2284487b70ff7b190989d9a536e842bb688b00fed3a35a079784"
+        "byteLength": 711,
+        "sha256": "46e5cc2af27093a0cc1ee9eab4952c1cd5e47fe4d82ed81ff0a4be21d4addd68"
       },
       "cooked/maps/main/collision/cells/c_m2_m4.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m2_m4.collisionpack",
-        "blobPath": "cooked/blobs/sha256/2e/2e5415ca19c27d0a1997f5d22dc8b767ca97c3a64cfad489f23cdc2d048a9af1.collisionpack",
+        "blobPath": "cooked/blobs/sha256/54/54e18a7f229d68c5b0cbb2e4396c2dba7f9b016f33af5a88eaec1791b9618ef7.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 227,
-        "sha256": "2e5415ca19c27d0a1997f5d22dc8b767ca97c3a64cfad489f23cdc2d048a9af1"
+        "byteLength": 711,
+        "sha256": "54e18a7f229d68c5b0cbb2e4396c2dba7f9b016f33af5a88eaec1791b9618ef7"
       },
       "cooked/maps/main/collision/cells/c_m3_0.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m3_0.collisionpack",
-        "blobPath": "cooked/blobs/sha256/96/96f7ed9bb85eec626dd3c456c16728454ebf9d6a17bbaf5635ab40294dd9e56c.collisionpack",
+        "blobPath": "cooked/blobs/sha256/cb/cb2ae657f6631e4a3a1aa61171ba12ee1c141a5a28b4f6eed5fa90266ba5800d.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 217,
-        "sha256": "96f7ed9bb85eec626dd3c456c16728454ebf9d6a17bbaf5635ab40294dd9e56c"
+        "byteLength": 1063,
+        "sha256": "cb2ae657f6631e4a3a1aa61171ba12ee1c141a5a28b4f6eed5fa90266ba5800d"
       },
       "cooked/maps/main/collision/cells/c_m3_1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m3_1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/ce/ce2b61037903245c918998cb1bbaf7dd7508e9105fa31758c0103c788cf320ba.collisionpack",
+        "blobPath": "cooked/blobs/sha256/32/328cafc0a5f11eb9cd4573fd9006a10079855d3282ffb3064e9be9ace627e48d.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 221,
-        "sha256": "ce2b61037903245c918998cb1bbaf7dd7508e9105fa31758c0103c788cf320ba"
+        "byteLength": 699,
+        "sha256": "328cafc0a5f11eb9cd4573fd9006a10079855d3282ffb3064e9be9ace627e48d"
       },
       "cooked/maps/main/collision/cells/c_m3_2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m3_2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/5b/5b346d23f7689048dfbb5c6ba64d7fc46fc6e369d8f91546f38f522caac524a8.collisionpack",
+        "blobPath": "cooked/blobs/sha256/81/81eb9f6a74aaaf1538374e2c37ccd0a0f18e68a4907eee8f1cff29076b824cb6.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 223,
-        "sha256": "5b346d23f7689048dfbb5c6ba64d7fc46fc6e369d8f91546f38f522caac524a8"
+        "byteLength": 702,
+        "sha256": "81eb9f6a74aaaf1538374e2c37ccd0a0f18e68a4907eee8f1cff29076b824cb6"
       },
       "cooked/maps/main/collision/cells/c_m3_3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m3_3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/31/31dfcd7942afc9ed213d97b2e3f44ef826327e305db1d302c3ca7bf4ef572a81.collisionpack",
+        "blobPath": "cooked/blobs/sha256/3c/3c414a845eb7699c6a0adff7288e335c534c461bba207eda2149fd96ca4ec402.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 223,
-        "sha256": "31dfcd7942afc9ed213d97b2e3f44ef826327e305db1d302c3ca7bf4ef572a81"
+        "byteLength": 702,
+        "sha256": "3c414a845eb7699c6a0adff7288e335c534c461bba207eda2149fd96ca4ec402"
       },
       "cooked/maps/main/collision/cells/c_m3_m1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m3_m1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/e3/e301b1d96816a4ccd777ea2a7265ca4bc43f18834a3c83806e46dbca2acb9ae0.collisionpack",
+        "blobPath": "cooked/blobs/sha256/9c/9c0250b5a2917a7476b94c27d634d439a4eeb5826b164f25f61b9d2189077cfe.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 222,
-        "sha256": "e301b1d96816a4ccd777ea2a7265ca4bc43f18834a3c83806e46dbca2acb9ae0"
+        "byteLength": 702,
+        "sha256": "9c0250b5a2917a7476b94c27d634d439a4eeb5826b164f25f61b9d2189077cfe"
       },
       "cooked/maps/main/collision/cells/c_m3_m2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m3_m2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/70/709e9b53d33b8407a445d2bd27e6b74d7a86812c466ca51294c1ae66ad4e706c.collisionpack",
+        "blobPath": "cooked/blobs/sha256/f1/f16d5bf4b40760dc3041761b003a634fbf79d94cb182bcb78cca865861a4368b.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 227,
-        "sha256": "709e9b53d33b8407a445d2bd27e6b74d7a86812c466ca51294c1ae66ad4e706c"
+        "byteLength": 711,
+        "sha256": "f16d5bf4b40760dc3041761b003a634fbf79d94cb182bcb78cca865861a4368b"
       },
       "cooked/maps/main/collision/cells/c_m3_m3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m3_m3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/d4/d4ad4e742a4e0935deaccee562a5b1e01e9745a2c973e94beef4b5cd5b430989.collisionpack",
+        "blobPath": "cooked/blobs/sha256/19/1979850282200c91360ec0a6dc8d2bf81e038361821caa3cf9e2cb678fc244c0.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 229,
-        "sha256": "d4ad4e742a4e0935deaccee562a5b1e01e9745a2c973e94beef4b5cd5b430989"
+        "byteLength": 714,
+        "sha256": "1979850282200c91360ec0a6dc8d2bf81e038361821caa3cf9e2cb678fc244c0"
       },
       "cooked/maps/main/collision/cells/c_m3_m4.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m3_m4.collisionpack",
-        "blobPath": "cooked/blobs/sha256/2f/2f7e62ff71e0e99bf2f45bad885cd362d80cdabec065e8bd4e39bfbcab810f79.collisionpack",
+        "blobPath": "cooked/blobs/sha256/21/21cfa0cd7b5afcef0f0b1877022a63d286ab68c4636d518b7ae31be119c5697c.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 229,
-        "sha256": "2f7e62ff71e0e99bf2f45bad885cd362d80cdabec065e8bd4e39bfbcab810f79"
+        "byteLength": 714,
+        "sha256": "21cfa0cd7b5afcef0f0b1877022a63d286ab68c4636d518b7ae31be119c5697c"
       },
       "cooked/maps/main/collision/cells/c_m4_0.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m4_0.collisionpack",
-        "blobPath": "cooked/blobs/sha256/d1/d12ab5a1ecb31bf0526994e7cac145dce56f7acd4f13e660fba1b43385b12903.collisionpack",
+        "blobPath": "cooked/blobs/sha256/96/9646d50dcdea50cf785cb6b67963296455c9ec747b86aa88068193377f2bf22c.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 217,
-        "sha256": "d12ab5a1ecb31bf0526994e7cac145dce56f7acd4f13e660fba1b43385b12903"
+        "byteLength": 692,
+        "sha256": "9646d50dcdea50cf785cb6b67963296455c9ec747b86aa88068193377f2bf22c"
       },
       "cooked/maps/main/collision/cells/c_m4_1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m4_1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/91/9135a297a347a6def3b4765ca0036a8cd999f6a06a741d412525e593862094e9.collisionpack",
+        "blobPath": "cooked/blobs/sha256/3a/3aa371519285dbe5f2d510c0d2d51ae4f4368772e370b24210211affe5aedbe5.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 221,
-        "sha256": "9135a297a347a6def3b4765ca0036a8cd999f6a06a741d412525e593862094e9"
+        "byteLength": 699,
+        "sha256": "3aa371519285dbe5f2d510c0d2d51ae4f4368772e370b24210211affe5aedbe5"
       },
       "cooked/maps/main/collision/cells/c_m4_2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m4_2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/4b/4b237192b96a8a8edd8e9d384f300285f54953207330858d9456c91aa3c60a18.collisionpack",
+        "blobPath": "cooked/blobs/sha256/ca/caf1103c8c0b8db45a267fcd71d2a74f57b42b4bc322c19490eb3424f05540cf.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 223,
-        "sha256": "4b237192b96a8a8edd8e9d384f300285f54953207330858d9456c91aa3c60a18"
+        "byteLength": 702,
+        "sha256": "caf1103c8c0b8db45a267fcd71d2a74f57b42b4bc322c19490eb3424f05540cf"
       },
       "cooked/maps/main/collision/cells/c_m4_3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m4_3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/d6/d69a4fcdb9239182f52d43d9a34f6dadcda92299732cf7f9c78b176e08bb75a8.collisionpack",
+        "blobPath": "cooked/blobs/sha256/23/23dde65f06a60333e739ad61a3362439e206f509d99a1b2f2c9d55556a237cb2.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 223,
-        "sha256": "d69a4fcdb9239182f52d43d9a34f6dadcda92299732cf7f9c78b176e08bb75a8"
+        "byteLength": 702,
+        "sha256": "23dde65f06a60333e739ad61a3362439e206f509d99a1b2f2c9d55556a237cb2"
       },
       "cooked/maps/main/collision/cells/c_m4_m1.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m4_m1.collisionpack",
-        "blobPath": "cooked/blobs/sha256/09/098d36ed543bc7f954882cf6bc887279b6545251bcd87ba7ab3290abe641580b.collisionpack",
+        "blobPath": "cooked/blobs/sha256/99/990047a75b1274af2adb9f23acfb4d12118c1c2f5f0a2e875d140ed879c0e755.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 222,
-        "sha256": "098d36ed543bc7f954882cf6bc887279b6545251bcd87ba7ab3290abe641580b"
+        "byteLength": 702,
+        "sha256": "990047a75b1274af2adb9f23acfb4d12118c1c2f5f0a2e875d140ed879c0e755"
       },
       "cooked/maps/main/collision/cells/c_m4_m2.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m4_m2.collisionpack",
-        "blobPath": "cooked/blobs/sha256/ed/ed39190dc486a454639d8424bd72d24b36a3f9bbafec481aed73d2e5455bfcee.collisionpack",
+        "blobPath": "cooked/blobs/sha256/1b/1b89a75e36092ff8b04dedaf36026a94ccf8379ee1dfa01ac50c64cbf0dbf3ce.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 227,
-        "sha256": "ed39190dc486a454639d8424bd72d24b36a3f9bbafec481aed73d2e5455bfcee"
+        "byteLength": 711,
+        "sha256": "1b89a75e36092ff8b04dedaf36026a94ccf8379ee1dfa01ac50c64cbf0dbf3ce"
       },
       "cooked/maps/main/collision/cells/c_m4_m3.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m4_m3.collisionpack",
-        "blobPath": "cooked/blobs/sha256/54/54ff1c741c707bb82de8f4aabb6f9404b7a3ed806937784abe69f970e965c927.collisionpack",
+        "blobPath": "cooked/blobs/sha256/9f/9fd3c6ed0a56655959a86d3b81af97ff7f942b174fc5537782afbd96c8daa693.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 229,
-        "sha256": "54ff1c741c707bb82de8f4aabb6f9404b7a3ed806937784abe69f970e965c927"
+        "byteLength": 714,
+        "sha256": "9fd3c6ed0a56655959a86d3b81af97ff7f942b174fc5537782afbd96c8daa693"
       },
       "cooked/maps/main/collision/cells/c_m4_m4.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_m4_m4.collisionpack",
-        "blobPath": "cooked/blobs/sha256/f0/f0f4f6a9178bf29aa160eefc2e5d863f0d4b5c56f259096b802a36aa231746a2.collisionpack",
+        "blobPath": "cooked/blobs/sha256/e4/e461e5a17946547535bb4da9e74c69eb82ab514b13a1c07333b29e8a49f08213.collisionpack",
         "kind": "world-collision-cell",
-        "byteLength": 229,
-        "sha256": "f0f4f6a9178bf29aa160eefc2e5d863f0d4b5c56f259096b802a36aa231746a2"
+        "byteLength": 714,
+        "sha256": "e461e5a17946547535bb4da9e74c69eb82ab514b13a1c07333b29e8a49f08213"
       },
       "cooked/maps/main/nav/cells/c_0_0.navpack": {
         "path": "cooked/maps/main/nav/cells/c_0_0.navpack",
-        "blobPath": "cooked/blobs/sha256/82/82efea291216ab36adb117765fec5e3e4b19741d5a587db5213edda4ed1938a2.navpack",
+        "blobPath": "cooked/blobs/sha256/09/0963698e00723bcb76ef02442628c043de5091f0d71aed484a8f697792fa6337.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 198,
-        "sha256": "82efea291216ab36adb117765fec5e3e4b19741d5a587db5213edda4ed1938a2"
+        "byteLength": 6430,
+        "sha256": "0963698e00723bcb76ef02442628c043de5091f0d71aed484a8f697792fa6337"
       },
       "cooked/maps/main/nav/cells/c_0_1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_0_1.navpack",
-        "blobPath": "cooked/blobs/sha256/f3/f39a2d28ccd64860caac98bdfae8575a6a30d9a52b2d37075be110d902767afd.navpack",
+        "blobPath": "cooked/blobs/sha256/03/03481fe5b65873d0644e2772dee044e76c8f780662fc8365f3611823dee2d59c.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 202,
-        "sha256": "f39a2d28ccd64860caac98bdfae8575a6a30d9a52b2d37075be110d902767afd"
+        "byteLength": 6254,
+        "sha256": "03481fe5b65873d0644e2772dee044e76c8f780662fc8365f3611823dee2d59c"
       },
       "cooked/maps/main/nav/cells/c_0_2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_0_2.navpack",
-        "blobPath": "cooked/blobs/sha256/a4/a4fa0a4df26e0b89fcc9ba55f01ae8899a98dc8a287a1948ecdc2e4c7bba5974.navpack",
+        "blobPath": "cooked/blobs/sha256/6d/6d326d68f6a7fb50cc10377f6ab7cd725a813b50d45ca0160b2338567e993537.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 204,
-        "sha256": "a4fa0a4df26e0b89fcc9ba55f01ae8899a98dc8a287a1948ecdc2e4c7bba5974"
+        "byteLength": 6466,
+        "sha256": "6d326d68f6a7fb50cc10377f6ab7cd725a813b50d45ca0160b2338567e993537"
       },
       "cooked/maps/main/nav/cells/c_0_3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_0_3.navpack",
-        "blobPath": "cooked/blobs/sha256/98/98d8fbf08cc80c6c035693f108cc897ad25903cc3b1219ba7c8afaf237c88df4.navpack",
+        "blobPath": "cooked/blobs/sha256/5b/5b8181b9094a2c96be7d1e8737d44fcbdb52e53e6e66f09784d5da440977735a.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 204,
-        "sha256": "98d8fbf08cc80c6c035693f108cc897ad25903cc3b1219ba7c8afaf237c88df4"
+        "byteLength": 6202,
+        "sha256": "5b8181b9094a2c96be7d1e8737d44fcbdb52e53e6e66f09784d5da440977735a"
       },
       "cooked/maps/main/nav/cells/c_0_m1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_0_m1.navpack",
-        "blobPath": "cooked/blobs/sha256/6f/6fa4cdf97f2cb71032408a29b956a4984dd574046d6b77d8a5cb078de083f926.navpack",
+        "blobPath": "cooked/blobs/sha256/1d/1d425d27bdb138eaec112b26c8e83f00f1d2d2961629510bea4b63e77262fcd3.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 203,
-        "sha256": "6fa4cdf97f2cb71032408a29b956a4984dd574046d6b77d8a5cb078de083f926"
+        "byteLength": 6677,
+        "sha256": "1d425d27bdb138eaec112b26c8e83f00f1d2d2961629510bea4b63e77262fcd3"
       },
       "cooked/maps/main/nav/cells/c_0_m2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_0_m2.navpack",
-        "blobPath": "cooked/blobs/sha256/ca/cadcca72c1c79141773240e8cdaca1e77b5697e67ab401b8c1ac4c4688f68cc5.navpack",
+        "blobPath": "cooked/blobs/sha256/21/2199239b3af84f47029429cc22222e7e6002cd8ed6ab423948dff3f2ffce89b0.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 208,
-        "sha256": "cadcca72c1c79141773240e8cdaca1e77b5697e67ab401b8c1ac4c4688f68cc5"
+        "byteLength": 6526,
+        "sha256": "2199239b3af84f47029429cc22222e7e6002cd8ed6ab423948dff3f2ffce89b0"
       },
       "cooked/maps/main/nav/cells/c_0_m3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_0_m3.navpack",
-        "blobPath": "cooked/blobs/sha256/e6/e6d09aff99cabb10f1354b28afada08d3718424640ac83fbd14293ad799d6afa.navpack",
+        "blobPath": "cooked/blobs/sha256/3b/3ba144cd2bad38bd0a17314ffcfcee3fc81b23f0f4ba81cdac154db73089620c.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 210,
-        "sha256": "e6d09aff99cabb10f1354b28afada08d3718424640ac83fbd14293ad799d6afa"
+        "byteLength": 6330,
+        "sha256": "3ba144cd2bad38bd0a17314ffcfcee3fc81b23f0f4ba81cdac154db73089620c"
       },
       "cooked/maps/main/nav/cells/c_0_m4.navpack": {
         "path": "cooked/maps/main/nav/cells/c_0_m4.navpack",
-        "blobPath": "cooked/blobs/sha256/64/642cdae7ace21858863c11d1743309385263bcf7f91a941b488a0b6fd67e851f.navpack",
+        "blobPath": "cooked/blobs/sha256/20/20a6def76ac117e575c1ba0cdd4e2389f478077383aada8a399ace2042bd3e6b.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 210,
-        "sha256": "642cdae7ace21858863c11d1743309385263bcf7f91a941b488a0b6fd67e851f"
+        "byteLength": 6295,
+        "sha256": "20a6def76ac117e575c1ba0cdd4e2389f478077383aada8a399ace2042bd3e6b"
       },
       "cooked/maps/main/nav/cells/c_1_0.navpack": {
         "path": "cooked/maps/main/nav/cells/c_1_0.navpack",
-        "blobPath": "cooked/blobs/sha256/b1/b14fd68e4c5bb08b1215d699bd7a5f8408b5f88411a636307960d5adb9999017.navpack",
+        "blobPath": "cooked/blobs/sha256/7f/7f3476d9810078f88aeca5ec9cf5953d05e71b10aad95ec9137d580565ca3617.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 202,
-        "sha256": "b14fd68e4c5bb08b1215d699bd7a5f8408b5f88411a636307960d5adb9999017"
+        "byteLength": 6399,
+        "sha256": "7f3476d9810078f88aeca5ec9cf5953d05e71b10aad95ec9137d580565ca3617"
       },
       "cooked/maps/main/nav/cells/c_1_1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_1_1.navpack",
-        "blobPath": "cooked/blobs/sha256/f7/f7caa8d147b14ea5ce58cef1d8b684faad5a1704b25ae0b614a28b3ea5d6704b.navpack",
+        "blobPath": "cooked/blobs/sha256/65/6525aec9361a6d5249af7b28eccae1aa719fe8da8574f8abca75c8495921b3cd.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 206,
-        "sha256": "f7caa8d147b14ea5ce58cef1d8b684faad5a1704b25ae0b614a28b3ea5d6704b"
+        "byteLength": 6208,
+        "sha256": "6525aec9361a6d5249af7b28eccae1aa719fe8da8574f8abca75c8495921b3cd"
       },
       "cooked/maps/main/nav/cells/c_1_2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_1_2.navpack",
-        "blobPath": "cooked/blobs/sha256/08/08de96d1f01e8c6899d491c0c39d34dd014be22c1b083047f4660d142786da87.navpack",
+        "blobPath": "cooked/blobs/sha256/5e/5eb5c76f01ad2764b14bef1edc3182ab841c4d4fefb35741ca251366a42edc1e.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 208,
-        "sha256": "08de96d1f01e8c6899d491c0c39d34dd014be22c1b083047f4660d142786da87"
+        "byteLength": 6227,
+        "sha256": "5eb5c76f01ad2764b14bef1edc3182ab841c4d4fefb35741ca251366a42edc1e"
       },
       "cooked/maps/main/nav/cells/c_1_3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_1_3.navpack",
-        "blobPath": "cooked/blobs/sha256/8d/8df63b906aa1ff06f68fe0320ef6000f29523a11a9beb6a6d8c748a10e77ccbe.navpack",
+        "blobPath": "cooked/blobs/sha256/8b/8b94010ad3fb10238596a90b54a590c6088844f406e206c8e60589685acbfec0.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 208,
-        "sha256": "8df63b906aa1ff06f68fe0320ef6000f29523a11a9beb6a6d8c748a10e77ccbe"
+        "byteLength": 6245,
+        "sha256": "8b94010ad3fb10238596a90b54a590c6088844f406e206c8e60589685acbfec0"
       },
       "cooked/maps/main/nav/cells/c_1_m1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_1_m1.navpack",
-        "blobPath": "cooked/blobs/sha256/52/52e93722189272edf78ff900265a81acc71a8772fc506160eedc112f144e2ba8.navpack",
+        "blobPath": "cooked/blobs/sha256/be/bef8383b7d0d5bbf4d0e3e995aecf16dbaf14f35172e24ba413953ecc3a978d2.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 207,
-        "sha256": "52e93722189272edf78ff900265a81acc71a8772fc506160eedc112f144e2ba8"
+        "byteLength": 6391,
+        "sha256": "bef8383b7d0d5bbf4d0e3e995aecf16dbaf14f35172e24ba413953ecc3a978d2"
       },
       "cooked/maps/main/nav/cells/c_1_m2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_1_m2.navpack",
-        "blobPath": "cooked/blobs/sha256/95/95169e6e5746cbee3a329b79df2f486807572fc47d7e8ede14b0992bf1be6103.navpack",
+        "blobPath": "cooked/blobs/sha256/b4/b41b1f58d91c2e7edb2984d2ed5958152a3a449144fc9302cfa22323799318c8.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 212,
-        "sha256": "95169e6e5746cbee3a329b79df2f486807572fc47d7e8ede14b0992bf1be6103"
+        "byteLength": 6589,
+        "sha256": "b41b1f58d91c2e7edb2984d2ed5958152a3a449144fc9302cfa22323799318c8"
       },
       "cooked/maps/main/nav/cells/c_1_m3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_1_m3.navpack",
-        "blobPath": "cooked/blobs/sha256/73/7307aeb3309243c37a89f9cba4987259deb7fe69f2dab3a97879b8ec9cca0b37.navpack",
+        "blobPath": "cooked/blobs/sha256/a2/a2e08965e01bba6fa75645d0a2b21b04610a1dd0f48c1da22e906e6493ee45f2.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 214,
-        "sha256": "7307aeb3309243c37a89f9cba4987259deb7fe69f2dab3a97879b8ec9cca0b37"
+        "byteLength": 6321,
+        "sha256": "a2e08965e01bba6fa75645d0a2b21b04610a1dd0f48c1da22e906e6493ee45f2"
       },
       "cooked/maps/main/nav/cells/c_1_m4.navpack": {
         "path": "cooked/maps/main/nav/cells/c_1_m4.navpack",
-        "blobPath": "cooked/blobs/sha256/d1/d15e18433ae4a1c56eaedf2a42c32ef9c93e0de99375981bc5134a57d34c8b7c.navpack",
+        "blobPath": "cooked/blobs/sha256/79/797e5f131d9696305fff22bd840f311f2be871f35b645a6fed4c3db268dc6de3.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 214,
-        "sha256": "d15e18433ae4a1c56eaedf2a42c32ef9c93e0de99375981bc5134a57d34c8b7c"
+        "byteLength": 6303,
+        "sha256": "797e5f131d9696305fff22bd840f311f2be871f35b645a6fed4c3db268dc6de3"
       },
       "cooked/maps/main/nav/cells/c_2_0.navpack": {
         "path": "cooked/maps/main/nav/cells/c_2_0.navpack",
-        "blobPath": "cooked/blobs/sha256/07/07c90fa3857550af2e9c66f0d81f77f248cec8f6e9ba5a35cd4ff7eef00ae7f7.navpack",
+        "blobPath": "cooked/blobs/sha256/83/83508aef14bbf17190477b72be12356676e7837f71626e24038e7ab73ce05576.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 204,
-        "sha256": "07c90fa3857550af2e9c66f0d81f77f248cec8f6e9ba5a35cd4ff7eef00ae7f7"
+        "byteLength": 6214,
+        "sha256": "83508aef14bbf17190477b72be12356676e7837f71626e24038e7ab73ce05576"
       },
       "cooked/maps/main/nav/cells/c_2_1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_2_1.navpack",
-        "blobPath": "cooked/blobs/sha256/5d/5db8292ae5522d31d3a5e835a604af3b289098c09af8a0c3e4e9c62b45829cda.navpack",
+        "blobPath": "cooked/blobs/sha256/51/5133b47020be10062c73f944d8cb62135cbf2cf5018d773c5dec4339b1a656f8.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 208,
-        "sha256": "5db8292ae5522d31d3a5e835a604af3b289098c09af8a0c3e4e9c62b45829cda"
+        "byteLength": 6291,
+        "sha256": "5133b47020be10062c73f944d8cb62135cbf2cf5018d773c5dec4339b1a656f8"
       },
       "cooked/maps/main/nav/cells/c_2_2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_2_2.navpack",
-        "blobPath": "cooked/blobs/sha256/40/405892daed5c903bbac905e3a8557ac052d9d96626e78e8fe109c3a1257109c1.navpack",
+        "blobPath": "cooked/blobs/sha256/54/543fe890aa250a0255698d079d6e2042e4d48a03856943d661db738d3dcedd51.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 210,
-        "sha256": "405892daed5c903bbac905e3a8557ac052d9d96626e78e8fe109c3a1257109c1"
+        "byteLength": 6248,
+        "sha256": "543fe890aa250a0255698d079d6e2042e4d48a03856943d661db738d3dcedd51"
       },
       "cooked/maps/main/nav/cells/c_2_3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_2_3.navpack",
-        "blobPath": "cooked/blobs/sha256/3e/3ea2722ee78d367d5e871c75dc20e0db89f18bd2e7d1d83874d902dfac504001.navpack",
+        "blobPath": "cooked/blobs/sha256/16/16876fc17dc7cebe1fbc4f939a92d172bac0bb5164687b5b004192331e88b420.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 210,
-        "sha256": "3ea2722ee78d367d5e871c75dc20e0db89f18bd2e7d1d83874d902dfac504001"
+        "byteLength": 6234,
+        "sha256": "16876fc17dc7cebe1fbc4f939a92d172bac0bb5164687b5b004192331e88b420"
       },
       "cooked/maps/main/nav/cells/c_2_m1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_2_m1.navpack",
-        "blobPath": "cooked/blobs/sha256/af/afd684593a924b38ad78ac78115d1e7bf9a5facdb71f00b3797eadc9c0fa0a0a.navpack",
+        "blobPath": "cooked/blobs/sha256/58/5888cc420c991073d78ac8419b633c96a9479566da27461c5ab847ef55fe21d4.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 209,
-        "sha256": "afd684593a924b38ad78ac78115d1e7bf9a5facdb71f00b3797eadc9c0fa0a0a"
+        "byteLength": 6294,
+        "sha256": "5888cc420c991073d78ac8419b633c96a9479566da27461c5ab847ef55fe21d4"
       },
       "cooked/maps/main/nav/cells/c_2_m2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_2_m2.navpack",
-        "blobPath": "cooked/blobs/sha256/9b/9bd97df5a8c4d847df749d3fa5a112c87d00d96a26ddb1eaa147d392f76d3436.navpack",
+        "blobPath": "cooked/blobs/sha256/50/50b6a6cfd14b21bed8a33b4b8afc8f0d35a198b2c326555b0b2910543701441c.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 214,
-        "sha256": "9bd97df5a8c4d847df749d3fa5a112c87d00d96a26ddb1eaa147d392f76d3436"
+        "byteLength": 6430,
+        "sha256": "50b6a6cfd14b21bed8a33b4b8afc8f0d35a198b2c326555b0b2910543701441c"
       },
       "cooked/maps/main/nav/cells/c_2_m3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_2_m3.navpack",
-        "blobPath": "cooked/blobs/sha256/90/90e5963e0c5fcda78fae361ec2446f944fc626605dae2afcdffc2dccf4ade7a6.navpack",
+        "blobPath": "cooked/blobs/sha256/30/30122dbed28204206a5dc2e34ab100fadf359006ec365252aa588c5061272bb4.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 216,
-        "sha256": "90e5963e0c5fcda78fae361ec2446f944fc626605dae2afcdffc2dccf4ade7a6"
+        "byteLength": 6419,
+        "sha256": "30122dbed28204206a5dc2e34ab100fadf359006ec365252aa588c5061272bb4"
       },
       "cooked/maps/main/nav/cells/c_2_m4.navpack": {
         "path": "cooked/maps/main/nav/cells/c_2_m4.navpack",
-        "blobPath": "cooked/blobs/sha256/44/44ddeb0c9cf182f457928acbebc55506866709197b22d146af943808ad419405.navpack",
+        "blobPath": "cooked/blobs/sha256/64/641c86d1746ed2d61c3d829f65c5ba32105c7c2db87634ef2ba41a5ba8863ccb.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 216,
-        "sha256": "44ddeb0c9cf182f457928acbebc55506866709197b22d146af943808ad419405"
+        "byteLength": 6339,
+        "sha256": "641c86d1746ed2d61c3d829f65c5ba32105c7c2db87634ef2ba41a5ba8863ccb"
       },
       "cooked/maps/main/nav/cells/c_3_0.navpack": {
         "path": "cooked/maps/main/nav/cells/c_3_0.navpack",
-        "blobPath": "cooked/blobs/sha256/3b/3b9a31bc2612c98755d1a1aa3805dfcb1e9bd24eaec8c94777facccfb657626e.navpack",
+        "blobPath": "cooked/blobs/sha256/b4/b45129fda925d72a4754ad4ddcf9e923ffba0c369ed8016860ac3d0cd9d4c8f0.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 204,
-        "sha256": "3b9a31bc2612c98755d1a1aa3805dfcb1e9bd24eaec8c94777facccfb657626e"
+        "byteLength": 6235,
+        "sha256": "b45129fda925d72a4754ad4ddcf9e923ffba0c369ed8016860ac3d0cd9d4c8f0"
       },
       "cooked/maps/main/nav/cells/c_3_1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_3_1.navpack",
-        "blobPath": "cooked/blobs/sha256/12/1240fab635b4fa65e4091b259821a94e3ae1640cbe6296ef1378e71aaf090d4f.navpack",
+        "blobPath": "cooked/blobs/sha256/48/48cbf11dda6f17e239f5f1730860bb865502df519565654d9f00fccb5e4ae05d.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 208,
-        "sha256": "1240fab635b4fa65e4091b259821a94e3ae1640cbe6296ef1378e71aaf090d4f"
+        "byteLength": 6228,
+        "sha256": "48cbf11dda6f17e239f5f1730860bb865502df519565654d9f00fccb5e4ae05d"
       },
       "cooked/maps/main/nav/cells/c_3_2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_3_2.navpack",
-        "blobPath": "cooked/blobs/sha256/33/333fb6e3fa398defca4ecc3a97e8727fb2ed16917d6ccea8fcdfc41c05f21a09.navpack",
+        "blobPath": "cooked/blobs/sha256/1c/1ce03ae392cec9f6d25218f5137113276db9717a7b2470df4674b0c62f904255.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 210,
-        "sha256": "333fb6e3fa398defca4ecc3a97e8727fb2ed16917d6ccea8fcdfc41c05f21a09"
+        "byteLength": 6227,
+        "sha256": "1ce03ae392cec9f6d25218f5137113276db9717a7b2470df4674b0c62f904255"
       },
       "cooked/maps/main/nav/cells/c_3_3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_3_3.navpack",
-        "blobPath": "cooked/blobs/sha256/af/afce45d82bbf20765d82b0b3cca5fb18a7bfaf6262152f7734d448232d328b38.navpack",
+        "blobPath": "cooked/blobs/sha256/a1/a11c09bbab004d5f42991e07749d0981633055e1944e150102c149ac82fa4303.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 210,
-        "sha256": "afce45d82bbf20765d82b0b3cca5fb18a7bfaf6262152f7734d448232d328b38"
+        "byteLength": 6242,
+        "sha256": "a11c09bbab004d5f42991e07749d0981633055e1944e150102c149ac82fa4303"
       },
       "cooked/maps/main/nav/cells/c_3_m1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_3_m1.navpack",
-        "blobPath": "cooked/blobs/sha256/0f/0f91c4507fc918b130dbe584a565a11f9c9f4c8979e8042804e1222931655c91.navpack",
+        "blobPath": "cooked/blobs/sha256/56/5670a1175665ce8e3686f9a530acb017b7e751820481c4b807ad02164b36c824.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 209,
-        "sha256": "0f91c4507fc918b130dbe584a565a11f9c9f4c8979e8042804e1222931655c91"
+        "byteLength": 6293,
+        "sha256": "5670a1175665ce8e3686f9a530acb017b7e751820481c4b807ad02164b36c824"
       },
       "cooked/maps/main/nav/cells/c_3_m2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_3_m2.navpack",
-        "blobPath": "cooked/blobs/sha256/71/71817ea8778f07543209e40099c19b97a667baed2d33a91aaef6eb73d4ff82c4.navpack",
+        "blobPath": "cooked/blobs/sha256/3a/3a264733dc9bf61f0a97e1c98eaab658608352057982652dffd6b0b99439487a.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 214,
-        "sha256": "71817ea8778f07543209e40099c19b97a667baed2d33a91aaef6eb73d4ff82c4"
+        "byteLength": 6443,
+        "sha256": "3a264733dc9bf61f0a97e1c98eaab658608352057982652dffd6b0b99439487a"
       },
       "cooked/maps/main/nav/cells/c_3_m3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_3_m3.navpack",
-        "blobPath": "cooked/blobs/sha256/b8/b809671eef4d5c0d3f5244ed092a203ff8a2d5ab1adec9ee007a31274bf5cf8a.navpack",
+        "blobPath": "cooked/blobs/sha256/51/51e7a17aa9eb9ad8a73ba5cf316678966e0fe123989b4e72753b09d766fee146.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 216,
-        "sha256": "b809671eef4d5c0d3f5244ed092a203ff8a2d5ab1adec9ee007a31274bf5cf8a"
+        "byteLength": 6338,
+        "sha256": "51e7a17aa9eb9ad8a73ba5cf316678966e0fe123989b4e72753b09d766fee146"
       },
       "cooked/maps/main/nav/cells/c_3_m4.navpack": {
         "path": "cooked/maps/main/nav/cells/c_3_m4.navpack",
-        "blobPath": "cooked/blobs/sha256/f8/f81724c6200b88f3fba26fb2cde74b6ef1728ca4c19420f26e98e83ddd6ad544.navpack",
+        "blobPath": "cooked/blobs/sha256/ae/ae9288b509387ad9dda97219b67cbc63b3f3287bee1880c56866a885bdeb1695.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 216,
-        "sha256": "f81724c6200b88f3fba26fb2cde74b6ef1728ca4c19420f26e98e83ddd6ad544"
+        "byteLength": 6334,
+        "sha256": "ae9288b509387ad9dda97219b67cbc63b3f3287bee1880c56866a885bdeb1695"
       },
       "cooked/maps/main/nav/cells/c_m1_0.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m1_0.navpack",
-        "blobPath": "cooked/blobs/sha256/79/79689b3eae82f7ad4eb3fcb302994f49303d4c3c2565548a638dd9de72da880e.navpack",
+        "blobPath": "cooked/blobs/sha256/c8/c8d0dbc122eca63c3d1ff2e9b56ee591f144499341aa7c7041f15c8bb2edee0c.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 203,
-        "sha256": "79689b3eae82f7ad4eb3fcb302994f49303d4c3c2565548a638dd9de72da880e"
+        "byteLength": 6270,
+        "sha256": "c8d0dbc122eca63c3d1ff2e9b56ee591f144499341aa7c7041f15c8bb2edee0c"
       },
       "cooked/maps/main/nav/cells/c_m1_1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m1_1.navpack",
-        "blobPath": "cooked/blobs/sha256/9b/9bf4f9d88ef30ad12fec7c57e3df5403aed71829a62b78a8da4c64ddafd21c0e.navpack",
+        "blobPath": "cooked/blobs/sha256/dc/dcc16a3c80ef96005588107d84b0a65bfe9422d148893fcd5817afc478ef5844.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 207,
-        "sha256": "9bf4f9d88ef30ad12fec7c57e3df5403aed71829a62b78a8da4c64ddafd21c0e"
+        "byteLength": 6276,
+        "sha256": "dcc16a3c80ef96005588107d84b0a65bfe9422d148893fcd5817afc478ef5844"
       },
       "cooked/maps/main/nav/cells/c_m1_2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m1_2.navpack",
-        "blobPath": "cooked/blobs/sha256/a6/a664811699a888bd497a8982837657f3c585f474a157ba534efc8060b0cdeca0.navpack",
+        "blobPath": "cooked/blobs/sha256/f2/f273ce738fa76f03a7c5a3ddcd6de18a69d0dc06c680765c56c3a1b743202cd4.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 209,
-        "sha256": "a664811699a888bd497a8982837657f3c585f474a157ba534efc8060b0cdeca0"
+        "byteLength": 6304,
+        "sha256": "f273ce738fa76f03a7c5a3ddcd6de18a69d0dc06c680765c56c3a1b743202cd4"
       },
       "cooked/maps/main/nav/cells/c_m1_3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m1_3.navpack",
-        "blobPath": "cooked/blobs/sha256/62/62791622ff0172c2f9b22d3d5d5c4734bc2e466f97e1cd782582777bae22ee7c.navpack",
+        "blobPath": "cooked/blobs/sha256/cf/cfeb0174891ab3a6349eee5d0719b0ff67f663dc320ee51869f4e2f44cfc7811.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 209,
-        "sha256": "62791622ff0172c2f9b22d3d5d5c4734bc2e466f97e1cd782582777bae22ee7c"
+        "byteLength": 6296,
+        "sha256": "cfeb0174891ab3a6349eee5d0719b0ff67f663dc320ee51869f4e2f44cfc7811"
       },
       "cooked/maps/main/nav/cells/c_m1_m1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m1_m1.navpack",
-        "blobPath": "cooked/blobs/sha256/f1/f1c1e812b52fe0eafe136b8ef55600650a1371a39c032f534ce781eedf99f77b.navpack",
+        "blobPath": "cooked/blobs/sha256/67/670e210b566cbc726e42a67a1623f9f491beaad2cace51b6a552d68c3248e8e0.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 208,
-        "sha256": "f1c1e812b52fe0eafe136b8ef55600650a1371a39c032f534ce781eedf99f77b"
+        "byteLength": 6355,
+        "sha256": "670e210b566cbc726e42a67a1623f9f491beaad2cace51b6a552d68c3248e8e0"
       },
       "cooked/maps/main/nav/cells/c_m1_m2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m1_m2.navpack",
-        "blobPath": "cooked/blobs/sha256/e1/e150561d924a0310ca4c8a65524ac9ce968208dd03da443780b7169febd4206e.navpack",
+        "blobPath": "cooked/blobs/sha256/6d/6d16d2b2a670730c66331266554f971604c1a919fbfe6f864ddd207b04895d8c.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 213,
-        "sha256": "e150561d924a0310ca4c8a65524ac9ce968208dd03da443780b7169febd4206e"
+        "byteLength": 6754,
+        "sha256": "6d16d2b2a670730c66331266554f971604c1a919fbfe6f864ddd207b04895d8c"
       },
       "cooked/maps/main/nav/cells/c_m1_m3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m1_m3.navpack",
-        "blobPath": "cooked/blobs/sha256/20/20af1368e47ae52ce3d0206cd373f98b487d87cb5a78afd3e3726439bec26610.navpack",
+        "blobPath": "cooked/blobs/sha256/c9/c90299a1987524b00e7d8e17c0d650c1609b9fe4fd0c704b2ad4410c8dc9a4e8.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 215,
-        "sha256": "20af1368e47ae52ce3d0206cd373f98b487d87cb5a78afd3e3726439bec26610"
+        "byteLength": 6191,
+        "sha256": "c90299a1987524b00e7d8e17c0d650c1609b9fe4fd0c704b2ad4410c8dc9a4e8"
       },
       "cooked/maps/main/nav/cells/c_m1_m4.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m1_m4.navpack",
-        "blobPath": "cooked/blobs/sha256/9b/9b165925ef61b893e0d6318607808b136821ebe0caaceb88a595f03a4ec8d4ee.navpack",
+        "blobPath": "cooked/blobs/sha256/bc/bc74af6a9685f275b338035b0b58935e5d983d334a0e8072bf97c61cc7ff55e5.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 215,
-        "sha256": "9b165925ef61b893e0d6318607808b136821ebe0caaceb88a595f03a4ec8d4ee"
+        "byteLength": 6383,
+        "sha256": "bc74af6a9685f275b338035b0b58935e5d983d334a0e8072bf97c61cc7ff55e5"
       },
       "cooked/maps/main/nav/cells/c_m2_0.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m2_0.navpack",
-        "blobPath": "cooked/blobs/sha256/90/902c4310a9ce6d26d12b3e4444a46af2dca29e65e48722ff8665095d3e033e1c.navpack",
+        "blobPath": "cooked/blobs/sha256/af/afbdd6b03b5fbfc4fa1d030f7513d969e66ba24e57809608802cbff8d8870164.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 208,
-        "sha256": "902c4310a9ce6d26d12b3e4444a46af2dca29e65e48722ff8665095d3e033e1c"
+        "byteLength": 6542,
+        "sha256": "afbdd6b03b5fbfc4fa1d030f7513d969e66ba24e57809608802cbff8d8870164"
       },
       "cooked/maps/main/nav/cells/c_m2_1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m2_1.navpack",
-        "blobPath": "cooked/blobs/sha256/ce/ce78b92e27774f5000cc8c89af1cd0fd8c3267412b2d71e2834ee054a31830ca.navpack",
+        "blobPath": "cooked/blobs/sha256/d2/d240e4f5ff34299b217d9d1a93efc6cb1822c8de7da2542e1cecc353264a1a4a.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 212,
-        "sha256": "ce78b92e27774f5000cc8c89af1cd0fd8c3267412b2d71e2834ee054a31830ca"
+        "byteLength": 6286,
+        "sha256": "d240e4f5ff34299b217d9d1a93efc6cb1822c8de7da2542e1cecc353264a1a4a"
       },
       "cooked/maps/main/nav/cells/c_m2_2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m2_2.navpack",
-        "blobPath": "cooked/blobs/sha256/15/15fa255b84a95b595aef31af9abf3029f7eb8c091cfb2913cf6ed58dda40bfc9.navpack",
+        "blobPath": "cooked/blobs/sha256/ea/ea694849636e38df2e8563ba0ecad7f93411ce99f2bec56871f9d78a06f35d8a.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 214,
-        "sha256": "15fa255b84a95b595aef31af9abf3029f7eb8c091cfb2913cf6ed58dda40bfc9"
+        "byteLength": 6299,
+        "sha256": "ea694849636e38df2e8563ba0ecad7f93411ce99f2bec56871f9d78a06f35d8a"
       },
       "cooked/maps/main/nav/cells/c_m2_3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m2_3.navpack",
-        "blobPath": "cooked/blobs/sha256/5b/5b84ccc3a61e44bfe6a3f9d16195e757682aecc4897868073854fa25983f0040.navpack",
+        "blobPath": "cooked/blobs/sha256/b9/b921a3b9f32e685b29aa4b0972863262ebb7e6402afcba22a5d5fba104ef9324.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 214,
-        "sha256": "5b84ccc3a61e44bfe6a3f9d16195e757682aecc4897868073854fa25983f0040"
+        "byteLength": 6303,
+        "sha256": "b921a3b9f32e685b29aa4b0972863262ebb7e6402afcba22a5d5fba104ef9324"
       },
       "cooked/maps/main/nav/cells/c_m2_m1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m2_m1.navpack",
-        "blobPath": "cooked/blobs/sha256/b4/b4ab4f9b85541c41ad7ea12f60e76a5aac445a4ec793731eb2a1f3b0c795818d.navpack",
+        "blobPath": "cooked/blobs/sha256/f2/f2054322aa6cfd67eedd95d68e359abc0a10fdd783b89361bb0900c7e60ede31.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 213,
-        "sha256": "b4ab4f9b85541c41ad7ea12f60e76a5aac445a4ec793731eb2a1f3b0c795818d"
+        "byteLength": 6474,
+        "sha256": "f2054322aa6cfd67eedd95d68e359abc0a10fdd783b89361bb0900c7e60ede31"
       },
       "cooked/maps/main/nav/cells/c_m2_m2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m2_m2.navpack",
-        "blobPath": "cooked/blobs/sha256/ad/ad23f181e9a44828a7873a34b7ad07da1577685de6db50bf216b9b8cd92933e5.navpack",
+        "blobPath": "cooked/blobs/sha256/51/51164e30b390a371dcefd8ff6a92875ea51b62ad1b1dc439fc2e6205df55da4f.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 218,
-        "sha256": "ad23f181e9a44828a7873a34b7ad07da1577685de6db50bf216b9b8cd92933e5"
+        "byteLength": 6766,
+        "sha256": "51164e30b390a371dcefd8ff6a92875ea51b62ad1b1dc439fc2e6205df55da4f"
       },
       "cooked/maps/main/nav/cells/c_m2_m3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m2_m3.navpack",
-        "blobPath": "cooked/blobs/sha256/d4/d4f29c67e58a254fb4f135dea46784e2f5224856f5ed0767b5ace0de5c69c3f3.navpack",
+        "blobPath": "cooked/blobs/sha256/e2/e2b19c1720f79057337ccf4251a2603dd7d42f0d5cc86f7428cf39cc199df158.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 220,
-        "sha256": "d4f29c67e58a254fb4f135dea46784e2f5224856f5ed0767b5ace0de5c69c3f3"
+        "byteLength": 6584,
+        "sha256": "e2b19c1720f79057337ccf4251a2603dd7d42f0d5cc86f7428cf39cc199df158"
       },
       "cooked/maps/main/nav/cells/c_m2_m4.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m2_m4.navpack",
-        "blobPath": "cooked/blobs/sha256/99/999c3c2365408103ddd88775cd136f9cbf76825b1ba7ded2614cd8a003c825d8.navpack",
+        "blobPath": "cooked/blobs/sha256/61/61cd22420c498e804c3cc821631fae6e6f1693274fb513c8823add40cb605b86.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 220,
-        "sha256": "999c3c2365408103ddd88775cd136f9cbf76825b1ba7ded2614cd8a003c825d8"
+        "byteLength": 6395,
+        "sha256": "61cd22420c498e804c3cc821631fae6e6f1693274fb513c8823add40cb605b86"
       },
       "cooked/maps/main/nav/cells/c_m3_0.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m3_0.navpack",
-        "blobPath": "cooked/blobs/sha256/65/653ce022e2d1c95bea71f4113a2bc74c2d11c8b5797cba22ae7c488bc7c97181.navpack",
+        "blobPath": "cooked/blobs/sha256/e0/e078702f28082313078e5b57832b9d94caa3f96329675560c057cb16c2429167.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 210,
-        "sha256": "653ce022e2d1c95bea71f4113a2bc74c2d11c8b5797cba22ae7c488bc7c97181"
+        "byteLength": 6375,
+        "sha256": "e078702f28082313078e5b57832b9d94caa3f96329675560c057cb16c2429167"
       },
       "cooked/maps/main/nav/cells/c_m3_1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m3_1.navpack",
-        "blobPath": "cooked/blobs/sha256/3a/3a77087eaf3e42cb058e2081cf71bff519976a4aea222df1a34f83c0ea1d10da.navpack",
+        "blobPath": "cooked/blobs/sha256/44/44cd12d4f713c1cdcc5de1d961006c7dd78cf202c865a28a885ccf3910282ddb.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 214,
-        "sha256": "3a77087eaf3e42cb058e2081cf71bff519976a4aea222df1a34f83c0ea1d10da"
+        "byteLength": 6344,
+        "sha256": "44cd12d4f713c1cdcc5de1d961006c7dd78cf202c865a28a885ccf3910282ddb"
       },
       "cooked/maps/main/nav/cells/c_m3_2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m3_2.navpack",
-        "blobPath": "cooked/blobs/sha256/c4/c496a2210596076ada87844118d43254fe42c96fad73086ec54baa6373e66eca.navpack",
+        "blobPath": "cooked/blobs/sha256/02/026eff0c392b3ba2598a8734d6c7159da933c1b337441c0527f32e8482b53002.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 216,
-        "sha256": "c496a2210596076ada87844118d43254fe42c96fad73086ec54baa6373e66eca"
+        "byteLength": 6321,
+        "sha256": "026eff0c392b3ba2598a8734d6c7159da933c1b337441c0527f32e8482b53002"
       },
       "cooked/maps/main/nav/cells/c_m3_3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m3_3.navpack",
-        "blobPath": "cooked/blobs/sha256/cf/cf7f605c9e07bc708ecdfe35ca6847c6c60493d8b8d4a0d34b3ed97fa036d88e.navpack",
+        "blobPath": "cooked/blobs/sha256/80/802973dc1d84ad5ab238b49ee08e576d1deca5936969c20cf91b87e88df97cea.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 216,
-        "sha256": "cf7f605c9e07bc708ecdfe35ca6847c6c60493d8b8d4a0d34b3ed97fa036d88e"
+        "byteLength": 6320,
+        "sha256": "802973dc1d84ad5ab238b49ee08e576d1deca5936969c20cf91b87e88df97cea"
       },
       "cooked/maps/main/nav/cells/c_m3_m1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m3_m1.navpack",
-        "blobPath": "cooked/blobs/sha256/52/529fe2091c5b728e3b02264dabb072da73c8c8ebcd532b263df04b2140689173.navpack",
+        "blobPath": "cooked/blobs/sha256/83/8304e6721d84901e6b33612819bcfca7949735a28d35795816b344bc6546435a.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 215,
-        "sha256": "529fe2091c5b728e3b02264dabb072da73c8c8ebcd532b263df04b2140689173"
+        "byteLength": 6645,
+        "sha256": "8304e6721d84901e6b33612819bcfca7949735a28d35795816b344bc6546435a"
       },
       "cooked/maps/main/nav/cells/c_m3_m2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m3_m2.navpack",
-        "blobPath": "cooked/blobs/sha256/5c/5cb907cdc198587872c9200e1d8a7cffc11d8f47dfad3b60f5752c12c16c70dd.navpack",
+        "blobPath": "cooked/blobs/sha256/b2/b24d3e840c33fe5858e7e764ff30202aae313d524b1365db69889d98abd50baa.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 220,
-        "sha256": "5cb907cdc198587872c9200e1d8a7cffc11d8f47dfad3b60f5752c12c16c70dd"
+        "byteLength": 6443,
+        "sha256": "b24d3e840c33fe5858e7e764ff30202aae313d524b1365db69889d98abd50baa"
       },
       "cooked/maps/main/nav/cells/c_m3_m3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m3_m3.navpack",
-        "blobPath": "cooked/blobs/sha256/41/410c4251f15b6f220b66cdfcfb349a852f92381bbfa8cfb3579a873a7f5b0ac0.navpack",
+        "blobPath": "cooked/blobs/sha256/39/39a851efc1e86f11133bb26d7e65c90cff977344fef2fab2051a2d0e213fa205.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 222,
-        "sha256": "410c4251f15b6f220b66cdfcfb349a852f92381bbfa8cfb3579a873a7f5b0ac0"
+        "byteLength": 6433,
+        "sha256": "39a851efc1e86f11133bb26d7e65c90cff977344fef2fab2051a2d0e213fa205"
       },
       "cooked/maps/main/nav/cells/c_m3_m4.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m3_m4.navpack",
-        "blobPath": "cooked/blobs/sha256/23/2357b48f6fb8f39620ebfe95a7f0c434b85ce0f7f449321b641e92d332f5ee64.navpack",
+        "blobPath": "cooked/blobs/sha256/8a/8a6a64170e2505381324a8fb703a0ea8210dfc3934084dd96db20aad1e2bae5c.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 222,
-        "sha256": "2357b48f6fb8f39620ebfe95a7f0c434b85ce0f7f449321b641e92d332f5ee64"
+        "byteLength": 6423,
+        "sha256": "8a6a64170e2505381324a8fb703a0ea8210dfc3934084dd96db20aad1e2bae5c"
       },
       "cooked/maps/main/nav/cells/c_m4_0.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m4_0.navpack",
-        "blobPath": "cooked/blobs/sha256/43/43a333651658404e86333a5c4b65dd79db54ef61eacc522244d70c930e68b0ad.navpack",
+        "blobPath": "cooked/blobs/sha256/89/8926514fb3af59302be202b1f851925f4c09453e66fbe45cc056ddb24d151914.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 210,
-        "sha256": "43a333651658404e86333a5c4b65dd79db54ef61eacc522244d70c930e68b0ad"
+        "byteLength": 6315,
+        "sha256": "8926514fb3af59302be202b1f851925f4c09453e66fbe45cc056ddb24d151914"
       },
       "cooked/maps/main/nav/cells/c_m4_1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m4_1.navpack",
-        "blobPath": "cooked/blobs/sha256/46/466d6a2115027f5a61cf8ad76db81d399f1b61e4e23b03ce7776b5260eebeb40.navpack",
+        "blobPath": "cooked/blobs/sha256/d0/d0efbe5936706af9677f4f38974c6001526d14c7d2d284846798dde73f9450d9.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 214,
-        "sha256": "466d6a2115027f5a61cf8ad76db81d399f1b61e4e23b03ce7776b5260eebeb40"
+        "byteLength": 6357,
+        "sha256": "d0efbe5936706af9677f4f38974c6001526d14c7d2d284846798dde73f9450d9"
       },
       "cooked/maps/main/nav/cells/c_m4_2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m4_2.navpack",
-        "blobPath": "cooked/blobs/sha256/18/18cb297a00d8b3d4e15b395e9b17b44d904de6423bd2af490b142bfa2f01fb94.navpack",
+        "blobPath": "cooked/blobs/sha256/42/4292bd3f0c7f02382e6c9cb9b15cd997a93cc86a80e68eec13abd0532156c423.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 216,
-        "sha256": "18cb297a00d8b3d4e15b395e9b17b44d904de6423bd2af490b142bfa2f01fb94"
+        "byteLength": 6321,
+        "sha256": "4292bd3f0c7f02382e6c9cb9b15cd997a93cc86a80e68eec13abd0532156c423"
       },
       "cooked/maps/main/nav/cells/c_m4_3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m4_3.navpack",
-        "blobPath": "cooked/blobs/sha256/9a/9a1760b85dee60508b284d4ec6bf798ebeb4d002abb7926f3283f0edd0cb0e96.navpack",
+        "blobPath": "cooked/blobs/sha256/23/23d04448d9b46bc26d7a1a5186bfc9c985c441ca700cfccd42e5a0fade8c6f85.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 216,
-        "sha256": "9a1760b85dee60508b284d4ec6bf798ebeb4d002abb7926f3283f0edd0cb0e96"
+        "byteLength": 6320,
+        "sha256": "23d04448d9b46bc26d7a1a5186bfc9c985c441ca700cfccd42e5a0fade8c6f85"
       },
       "cooked/maps/main/nav/cells/c_m4_m1.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m4_m1.navpack",
-        "blobPath": "cooked/blobs/sha256/55/55b79c77378b69e48c49684b6ade52f3fb0624a032ad54a685ebf5479daddf2c.navpack",
+        "blobPath": "cooked/blobs/sha256/78/78fa0fd5666af224919a2d4c309af29d5aac4f787d23bb870fef4947a352979e.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 215,
-        "sha256": "55b79c77378b69e48c49684b6ade52f3fb0624a032ad54a685ebf5479daddf2c"
+        "byteLength": 6410,
+        "sha256": "78fa0fd5666af224919a2d4c309af29d5aac4f787d23bb870fef4947a352979e"
       },
       "cooked/maps/main/nav/cells/c_m4_m2.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m4_m2.navpack",
-        "blobPath": "cooked/blobs/sha256/32/329d9789d4cdd189a1b7e3c94e4b3e279f686e30f4fe4681ff73f57851543eb1.navpack",
+        "blobPath": "cooked/blobs/sha256/43/4318d6cda30c8972a8db8c0876408fb18bd812d5d3f88b93b0dd83398f9c8d26.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 220,
-        "sha256": "329d9789d4cdd189a1b7e3c94e4b3e279f686e30f4fe4681ff73f57851543eb1"
+        "byteLength": 6437,
+        "sha256": "4318d6cda30c8972a8db8c0876408fb18bd812d5d3f88b93b0dd83398f9c8d26"
       },
       "cooked/maps/main/nav/cells/c_m4_m3.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m4_m3.navpack",
-        "blobPath": "cooked/blobs/sha256/dd/dd448795bc2adff00ff9eea87de069a724ebf3aface656781af08f3b3623ac6e.navpack",
+        "blobPath": "cooked/blobs/sha256/8a/8a0051c7768e38cc0097949ee92a644bf71e9945acf530a4efde5c402e754ecf.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 222,
-        "sha256": "dd448795bc2adff00ff9eea87de069a724ebf3aface656781af08f3b3623ac6e"
+        "byteLength": 6471,
+        "sha256": "8a0051c7768e38cc0097949ee92a644bf71e9945acf530a4efde5c402e754ecf"
       },
       "cooked/maps/main/nav/cells/c_m4_m4.navpack": {
         "path": "cooked/maps/main/nav/cells/c_m4_m4.navpack",
-        "blobPath": "cooked/blobs/sha256/1b/1b485d531db52e6b6a914a72c5e1da2419ae8d8f5435747e0d45b6dc0f27ac24.navpack",
+        "blobPath": "cooked/blobs/sha256/3a/3a11a74d73e933cb91a362c2e3f8ee3d63c695d3b3a86c97fcbba29d08ad7fc3.navpack",
         "kind": "world-nav-cell",
-        "byteLength": 222,
-        "sha256": "1b485d531db52e6b6a914a72c5e1da2419ae8d8f5435747e0d45b6dc0f27ac24"
+        "byteLength": 6411,
+        "sha256": "3a11a74d73e933cb91a362c2e3f8ee3d63c695d3b3a86c97fcbba29d08ad7fc3"
       },
       "cooked/maps/main/objects/cells/c_0_0.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_0_0.objectpack",
-        "blobPath": "cooked/blobs/sha256/24/2498383985c040299c739068f3df181ae4729d781d32ab9bab5264614a461bb4.objectpack",
+        "blobPath": "cooked/blobs/sha256/d0/d0a6f360f06f6821c477f5f5d7e19de06ba040d737fac2b7a03bd9275bab6d74.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 203,
-        "sha256": "2498383985c040299c739068f3df181ae4729d781d32ab9bab5264614a461bb4"
+        "byteLength": 1633,
+        "sha256": "d0a6f360f06f6821c477f5f5d7e19de06ba040d737fac2b7a03bd9275bab6d74",
+        "sourcePath": "maps/main/objects/cells/c_0_0.objectpack"
       },
       "cooked/maps/main/objects/cells/c_0_1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_0_1.objectpack",
-        "blobPath": "cooked/blobs/sha256/ca/ca7ad5022062ec11883f15753190493a20ca37c4579cd22f6f461ef130f7171e.objectpack",
+        "blobPath": "cooked/blobs/sha256/43/43a07c429b4fd392f8478c1a111d8ce1a6e8f7cdcb2456e29b7e2d0e4fefaa72.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 207,
-        "sha256": "ca7ad5022062ec11883f15753190493a20ca37c4579cd22f6f461ef130f7171e"
+        "byteLength": 2703,
+        "sha256": "43a07c429b4fd392f8478c1a111d8ce1a6e8f7cdcb2456e29b7e2d0e4fefaa72",
+        "sourcePath": "maps/main/objects/cells/c_0_1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_0_2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_0_2.objectpack",
-        "blobPath": "cooked/blobs/sha256/f3/f380d84af5bab1fac14f6db0a19a8491f9c4b564f4e34ae1f56bcb979922e514.objectpack",
+        "blobPath": "cooked/blobs/sha256/d2/d21f688c245e6307c3d4883b84330a409f14071a3d2ac16af5ad3ef9b6dbc097.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 209,
-        "sha256": "f380d84af5bab1fac14f6db0a19a8491f9c4b564f4e34ae1f56bcb979922e514"
+        "byteLength": 991,
+        "sha256": "d21f688c245e6307c3d4883b84330a409f14071a3d2ac16af5ad3ef9b6dbc097",
+        "sourcePath": "maps/main/objects/cells/c_0_2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_0_3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_0_3.objectpack",
-        "blobPath": "cooked/blobs/sha256/1c/1c579d939eba93d653467f926325b24f531576cb9f900a32ce5317e32923f94b.objectpack",
+        "blobPath": "cooked/blobs/sha256/bc/bcc85178596f64021e4f80e384098b69cc659b0151846ccd1218921618902a6e.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 209,
-        "sha256": "1c579d939eba93d653467f926325b24f531576cb9f900a32ce5317e32923f94b"
+        "byteLength": 333,
+        "sha256": "bcc85178596f64021e4f80e384098b69cc659b0151846ccd1218921618902a6e",
+        "sourcePath": "maps/main/objects/cells/c_0_3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_0_m1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_0_m1.objectpack",
-        "blobPath": "cooked/blobs/sha256/e0/e0ddd14ea93446550c4da2a8fffa4aec4697c37cebcf7973694b32a628f516ce.objectpack",
+        "blobPath": "cooked/blobs/sha256/c4/c4b8f301a2599cf1c2a38d558541fed59c47da8a4cb28e5fa08cea150cb564c8.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 208,
-        "sha256": "e0ddd14ea93446550c4da2a8fffa4aec4697c37cebcf7973694b32a628f516ce"
+        "byteLength": 1654,
+        "sha256": "c4b8f301a2599cf1c2a38d558541fed59c47da8a4cb28e5fa08cea150cb564c8",
+        "sourcePath": "maps/main/objects/cells/c_0_m1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_0_m2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_0_m2.objectpack",
-        "blobPath": "cooked/blobs/sha256/c7/c7de9b953c9053bc182e2904e8baa3ca800c299b1d8db293da07dbfbe3b412f3.objectpack",
+        "blobPath": "cooked/blobs/sha256/3e/3e81a40ac5f24f87c52216f6307f6b4f4af40e641515137eeb62c3ff50393811.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 213,
-        "sha256": "c7de9b953c9053bc182e2904e8baa3ca800c299b1d8db293da07dbfbe3b412f3"
+        "byteLength": 1005,
+        "sha256": "3e81a40ac5f24f87c52216f6307f6b4f4af40e641515137eeb62c3ff50393811",
+        "sourcePath": "maps/main/objects/cells/c_0_m2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_0_m3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_0_m3.objectpack",
-        "blobPath": "cooked/blobs/sha256/a3/a30044f74ea3f40118b5d9895f4fffd54776cbb43a5e0d3e98af11a13de36a00.objectpack",
+        "blobPath": "cooked/blobs/sha256/da/daa1aca632be1943cfcfa3ed1944daef0696e83604a4c58d16c8eb5108ace80b.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 215,
-        "sha256": "a30044f74ea3f40118b5d9895f4fffd54776cbb43a5e0d3e98af11a13de36a00"
+        "byteLength": 339,
+        "sha256": "daa1aca632be1943cfcfa3ed1944daef0696e83604a4c58d16c8eb5108ace80b",
+        "sourcePath": "maps/main/objects/cells/c_0_m3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_0_m4.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_0_m4.objectpack",
-        "blobPath": "cooked/blobs/sha256/be/bea4ff957f3a5b0b3f58d0863ca83420b943be2274bc703947867c6f01161cd7.objectpack",
+        "blobPath": "cooked/blobs/sha256/35/35e46c2f185052247e2e07a18478e828f83efc261f313b39354be956bc5eb5f4.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 215,
-        "sha256": "bea4ff957f3a5b0b3f58d0863ca83420b943be2274bc703947867c6f01161cd7"
+        "byteLength": 339,
+        "sha256": "35e46c2f185052247e2e07a18478e828f83efc261f313b39354be956bc5eb5f4",
+        "sourcePath": "maps/main/objects/cells/c_0_m4.objectpack"
       },
       "cooked/maps/main/objects/cells/c_1_0.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_1_0.objectpack",
-        "blobPath": "cooked/blobs/sha256/08/08dcc44d69f2cfa44f8bf05a8a08616236e8d51f8d245efc8deba2ec6b303b60.objectpack",
+        "blobPath": "cooked/blobs/sha256/a2/a2059b5d21268627a54d8b378a7669ad5691f1626c23beb3af2014f2e835dca4.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 207,
-        "sha256": "08dcc44d69f2cfa44f8bf05a8a08616236e8d51f8d245efc8deba2ec6b303b60"
+        "byteLength": 976,
+        "sha256": "a2059b5d21268627a54d8b378a7669ad5691f1626c23beb3af2014f2e835dca4",
+        "sourcePath": "maps/main/objects/cells/c_1_0.objectpack"
       },
       "cooked/maps/main/objects/cells/c_1_1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_1_1.objectpack",
-        "blobPath": "cooked/blobs/sha256/1c/1cdd74b6a6a883b3fe645613fbb49366e5bad95a73e6405ffce0cfd6ad0bb214.objectpack",
+        "blobPath": "cooked/blobs/sha256/b3/b34962f5598fbd9697e5d3fcdf20aaede038698fa33e8d20b5bc15cbe6345502.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 211,
-        "sha256": "1cdd74b6a6a883b3fe645613fbb49366e5bad95a73e6405ffce0cfd6ad0bb214"
+        "byteLength": 335,
+        "sha256": "b34962f5598fbd9697e5d3fcdf20aaede038698fa33e8d20b5bc15cbe6345502",
+        "sourcePath": "maps/main/objects/cells/c_1_1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_1_2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_1_2.objectpack",
-        "blobPath": "cooked/blobs/sha256/66/660e716cf38ca5abc5a64da22072bd396f10f8c9c009d08e1cbee17783c4118c.objectpack",
+        "blobPath": "cooked/blobs/sha256/83/83ae3f4fdec53fe33fd526f072230ff99e7611e235d1d35334808a2720b9a85a.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 213,
-        "sha256": "660e716cf38ca5abc5a64da22072bd396f10f8c9c009d08e1cbee17783c4118c"
+        "byteLength": 337,
+        "sha256": "83ae3f4fdec53fe33fd526f072230ff99e7611e235d1d35334808a2720b9a85a",
+        "sourcePath": "maps/main/objects/cells/c_1_2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_1_3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_1_3.objectpack",
-        "blobPath": "cooked/blobs/sha256/6f/6fd626ea417efa14824c93e6538f885ccdba4c01bd29ff606f9a7b96a1fb021e.objectpack",
+        "blobPath": "cooked/blobs/sha256/4f/4fce12e3d0d54c1f7d41695a7f8feb4ba4bf03f38257d278d3d5b091e4e371f7.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 213,
-        "sha256": "6fd626ea417efa14824c93e6538f885ccdba4c01bd29ff606f9a7b96a1fb021e"
+        "byteLength": 337,
+        "sha256": "4fce12e3d0d54c1f7d41695a7f8feb4ba4bf03f38257d278d3d5b091e4e371f7",
+        "sourcePath": "maps/main/objects/cells/c_1_3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_1_m1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_1_m1.objectpack",
-        "blobPath": "cooked/blobs/sha256/c3/c32157944be6f56395d9a084d265074f5590a4b228a10c42ebc1559028e62dab.objectpack",
+        "blobPath": "cooked/blobs/sha256/09/0935a9cf72bff4c678371155f38d2fb2f0955fa211da7d8b68c0388027bc7c0f.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 212,
-        "sha256": "c32157944be6f56395d9a084d265074f5590a4b228a10c42ebc1559028e62dab"
+        "byteLength": 2743,
+        "sha256": "0935a9cf72bff4c678371155f38d2fb2f0955fa211da7d8b68c0388027bc7c0f",
+        "sourcePath": "maps/main/objects/cells/c_1_m1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_1_m2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_1_m2.objectpack",
-        "blobPath": "cooked/blobs/sha256/13/13d7c16e7a09d086c5e670309013ff05be53da80a0fe98462ef9442a76a322b0.objectpack",
+        "blobPath": "cooked/blobs/sha256/19/193a8d384fe3c9084975a58c259fc50b724bcf010db36382012de46e8c9370df.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 217,
-        "sha256": "13d7c16e7a09d086c5e670309013ff05be53da80a0fe98462ef9442a76a322b0"
+        "byteLength": 1006,
+        "sha256": "193a8d384fe3c9084975a58c259fc50b724bcf010db36382012de46e8c9370df",
+        "sourcePath": "maps/main/objects/cells/c_1_m2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_1_m3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_1_m3.objectpack",
-        "blobPath": "cooked/blobs/sha256/da/da4af24289b9d3cd40e7203b5cfa9229b889fc821455bea4fc537abe5caa54db.objectpack",
+        "blobPath": "cooked/blobs/sha256/b6/b6a20b35b09e49078c2b42657305fd2fb638919656439feab3c55abc457b28d7.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 219,
-        "sha256": "da4af24289b9d3cd40e7203b5cfa9229b889fc821455bea4fc537abe5caa54db"
+        "byteLength": 343,
+        "sha256": "b6a20b35b09e49078c2b42657305fd2fb638919656439feab3c55abc457b28d7",
+        "sourcePath": "maps/main/objects/cells/c_1_m3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_1_m4.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_1_m4.objectpack",
-        "blobPath": "cooked/blobs/sha256/17/17ed2bd1d0e8966ec99de0f717e06b4d6647a7fcfdc40daebdd29c4e9c14dabb.objectpack",
+        "blobPath": "cooked/blobs/sha256/dd/dd02db3f8d89b44ec2bd987ac8ea067ba2ae83b5a2ae452bd69142dc01036981.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 219,
-        "sha256": "17ed2bd1d0e8966ec99de0f717e06b4d6647a7fcfdc40daebdd29c4e9c14dabb"
+        "byteLength": 343,
+        "sha256": "dd02db3f8d89b44ec2bd987ac8ea067ba2ae83b5a2ae452bd69142dc01036981",
+        "sourcePath": "maps/main/objects/cells/c_1_m4.objectpack"
       },
       "cooked/maps/main/objects/cells/c_2_0.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_2_0.objectpack",
-        "blobPath": "cooked/blobs/sha256/ae/ae3b3bb481b1c31da2ed7765a12f132d3f99efdd9ae7f9d7ab4c883b11daf446.objectpack",
+        "blobPath": "cooked/blobs/sha256/2c/2cc2576d8893fc1277ac2f56700acce6a0ffd50cd1e840826e7cbb986744bbdb.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 209,
-        "sha256": "ae3b3bb481b1c31da2ed7765a12f132d3f99efdd9ae7f9d7ab4c883b11daf446"
+        "byteLength": 333,
+        "sha256": "2cc2576d8893fc1277ac2f56700acce6a0ffd50cd1e840826e7cbb986744bbdb",
+        "sourcePath": "maps/main/objects/cells/c_2_0.objectpack"
       },
       "cooked/maps/main/objects/cells/c_2_1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_2_1.objectpack",
-        "blobPath": "cooked/blobs/sha256/f1/f1bd8a8ef1f732917d5e7638687c2347b90d69d4710be1a582659bcfc75836d5.objectpack",
+        "blobPath": "cooked/blobs/sha256/56/5602d4dd6e9cd1f964e04c2da8c646c0cae87bba8917b872d07b79591db1ec0a.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 213,
-        "sha256": "f1bd8a8ef1f732917d5e7638687c2347b90d69d4710be1a582659bcfc75836d5"
+        "byteLength": 337,
+        "sha256": "5602d4dd6e9cd1f964e04c2da8c646c0cae87bba8917b872d07b79591db1ec0a",
+        "sourcePath": "maps/main/objects/cells/c_2_1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_2_2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_2_2.objectpack",
-        "blobPath": "cooked/blobs/sha256/c6/c663eed1c9f1cdbebe4ae7f6b549d39a14fd72453e223f3aea9d0719d80ed66c.objectpack",
+        "blobPath": "cooked/blobs/sha256/5f/5f0379f9681ce0983be74826964ffcfaf78977090f107bd36e42b96ebc6c8ad0.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 215,
-        "sha256": "c663eed1c9f1cdbebe4ae7f6b549d39a14fd72453e223f3aea9d0719d80ed66c"
+        "byteLength": 339,
+        "sha256": "5f0379f9681ce0983be74826964ffcfaf78977090f107bd36e42b96ebc6c8ad0",
+        "sourcePath": "maps/main/objects/cells/c_2_2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_2_3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_2_3.objectpack",
-        "blobPath": "cooked/blobs/sha256/fe/fea8679ef989e5e22dc6810d1582fa8eb34b2c31234c24fad6b324bc79f59512.objectpack",
+        "blobPath": "cooked/blobs/sha256/b5/b5a62133da7d8c7634e83fc7d7720b3f79598a8ffe248ee4d860967ccf51b2fc.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 215,
-        "sha256": "fea8679ef989e5e22dc6810d1582fa8eb34b2c31234c24fad6b324bc79f59512"
+        "byteLength": 339,
+        "sha256": "b5a62133da7d8c7634e83fc7d7720b3f79598a8ffe248ee4d860967ccf51b2fc",
+        "sourcePath": "maps/main/objects/cells/c_2_3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_2_m1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_2_m1.objectpack",
-        "blobPath": "cooked/blobs/sha256/a4/a44ee37b96f5bce208ffce3a84adfc053276c648b53ca173daab45056486e739.objectpack",
+        "blobPath": "cooked/blobs/sha256/9e/9e50134c0c0325bd195bfd66b406441da4db27a23305a4de89363545cdd5521a.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 214,
-        "sha256": "a44ee37b96f5bce208ffce3a84adfc053276c648b53ca173daab45056486e739"
+        "byteLength": 338,
+        "sha256": "9e50134c0c0325bd195bfd66b406441da4db27a23305a4de89363545cdd5521a",
+        "sourcePath": "maps/main/objects/cells/c_2_m1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_2_m2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_2_m2.objectpack",
-        "blobPath": "cooked/blobs/sha256/68/6848446d8edc2aa6d3953cb69111c59c571e674e1e16f0b83203aef75bbd3f16.objectpack",
+        "blobPath": "cooked/blobs/sha256/4a/4a3677fb90ae702fe46e835ca8702d6e2187b40bb7e2ffb73b6dea52b2ca9a29.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 219,
-        "sha256": "6848446d8edc2aa6d3953cb69111c59c571e674e1e16f0b83203aef75bbd3f16"
+        "byteLength": 343,
+        "sha256": "4a3677fb90ae702fe46e835ca8702d6e2187b40bb7e2ffb73b6dea52b2ca9a29",
+        "sourcePath": "maps/main/objects/cells/c_2_m2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_2_m3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_2_m3.objectpack",
-        "blobPath": "cooked/blobs/sha256/e1/e182af04954a40e164307c0b20d9cb1eb39138c8b1c97c1e0158f5f49736e11d.objectpack",
+        "blobPath": "cooked/blobs/sha256/dc/dc79c9b7136e9b294474dcf3854fa06015b04001f074375532f165e388865950.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 221,
-        "sha256": "e182af04954a40e164307c0b20d9cb1eb39138c8b1c97c1e0158f5f49736e11d"
+        "byteLength": 345,
+        "sha256": "dc79c9b7136e9b294474dcf3854fa06015b04001f074375532f165e388865950",
+        "sourcePath": "maps/main/objects/cells/c_2_m3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_2_m4.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_2_m4.objectpack",
-        "blobPath": "cooked/blobs/sha256/d7/d7d2058bcba28557f56c438ffb9c38ca32004df095bd248251394837bb20f257.objectpack",
+        "blobPath": "cooked/blobs/sha256/68/68b73f2e36f562c6b9d35bbd6d5e9e115f48422349b5ed7ef9cf0ddfc2eba801.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 221,
-        "sha256": "d7d2058bcba28557f56c438ffb9c38ca32004df095bd248251394837bb20f257"
+        "byteLength": 345,
+        "sha256": "68b73f2e36f562c6b9d35bbd6d5e9e115f48422349b5ed7ef9cf0ddfc2eba801",
+        "sourcePath": "maps/main/objects/cells/c_2_m4.objectpack"
       },
       "cooked/maps/main/objects/cells/c_3_0.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_3_0.objectpack",
-        "blobPath": "cooked/blobs/sha256/9f/9f66cb8cefd45520cdf3c07fa7dbe40e87a604ca8077bab1febec247758aa7c9.objectpack",
+        "blobPath": "cooked/blobs/sha256/e4/e40a64c1a6416d8bac5c3cbe0edd1ef95f3de4086dea6071c273f1ff9e82a8ee.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 209,
-        "sha256": "9f66cb8cefd45520cdf3c07fa7dbe40e87a604ca8077bab1febec247758aa7c9"
+        "byteLength": 333,
+        "sha256": "e40a64c1a6416d8bac5c3cbe0edd1ef95f3de4086dea6071c273f1ff9e82a8ee",
+        "sourcePath": "maps/main/objects/cells/c_3_0.objectpack"
       },
       "cooked/maps/main/objects/cells/c_3_1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_3_1.objectpack",
-        "blobPath": "cooked/blobs/sha256/45/45649837c9e0f980947a34c3dc3a7a188b881111438dac147a61172fe30c8645.objectpack",
+        "blobPath": "cooked/blobs/sha256/e9/e938699bb61694aefa3ea8d619c8779293e7b2c02f170c2b0ec81872d01ed3b7.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 213,
-        "sha256": "45649837c9e0f980947a34c3dc3a7a188b881111438dac147a61172fe30c8645"
+        "byteLength": 337,
+        "sha256": "e938699bb61694aefa3ea8d619c8779293e7b2c02f170c2b0ec81872d01ed3b7",
+        "sourcePath": "maps/main/objects/cells/c_3_1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_3_2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_3_2.objectpack",
-        "blobPath": "cooked/blobs/sha256/6a/6a49ec366f80dfdc9e72972a0bb6bfcfc4722726dd6fde1ebaad07bd210e214b.objectpack",
+        "blobPath": "cooked/blobs/sha256/49/49e009a067dc552d1550907e93ccbe19d49d443655ad33c4d618b8913de62459.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 215,
-        "sha256": "6a49ec366f80dfdc9e72972a0bb6bfcfc4722726dd6fde1ebaad07bd210e214b"
+        "byteLength": 339,
+        "sha256": "49e009a067dc552d1550907e93ccbe19d49d443655ad33c4d618b8913de62459",
+        "sourcePath": "maps/main/objects/cells/c_3_2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_3_3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_3_3.objectpack",
-        "blobPath": "cooked/blobs/sha256/32/32ca7b39ae389dfc28994ce0cf916c6c174ee7b54fc22fd573392b5b37589a06.objectpack",
+        "blobPath": "cooked/blobs/sha256/6b/6b5ae9374ac1ad612a8fc9c23f0b5b1d5872a9fc9b80cd08c2bf75f83e3b1a94.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 215,
-        "sha256": "32ca7b39ae389dfc28994ce0cf916c6c174ee7b54fc22fd573392b5b37589a06"
+        "byteLength": 339,
+        "sha256": "6b5ae9374ac1ad612a8fc9c23f0b5b1d5872a9fc9b80cd08c2bf75f83e3b1a94",
+        "sourcePath": "maps/main/objects/cells/c_3_3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_3_m1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_3_m1.objectpack",
-        "blobPath": "cooked/blobs/sha256/15/150268684a032ac63ca680c712b6fa5e9c73ca02007d629dfb8f69cb2599bc15.objectpack",
+        "blobPath": "cooked/blobs/sha256/0d/0dbdc45717bfbe1325e57faf8c60e6cb66c8c2e1ebaeea7e7dfae7382f96592f.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 214,
-        "sha256": "150268684a032ac63ca680c712b6fa5e9c73ca02007d629dfb8f69cb2599bc15"
+        "byteLength": 338,
+        "sha256": "0dbdc45717bfbe1325e57faf8c60e6cb66c8c2e1ebaeea7e7dfae7382f96592f",
+        "sourcePath": "maps/main/objects/cells/c_3_m1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_3_m2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_3_m2.objectpack",
-        "blobPath": "cooked/blobs/sha256/de/de3e5950eda8b2a80715da3bceae2298d91cef3e38a4ea571e55e683d9fb882d.objectpack",
+        "blobPath": "cooked/blobs/sha256/a5/a5c0971acf924372d916aa59574fb209c4f2adbe4f2803d905a9c67535187fcd.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 219,
-        "sha256": "de3e5950eda8b2a80715da3bceae2298d91cef3e38a4ea571e55e683d9fb882d"
+        "byteLength": 343,
+        "sha256": "a5c0971acf924372d916aa59574fb209c4f2adbe4f2803d905a9c67535187fcd",
+        "sourcePath": "maps/main/objects/cells/c_3_m2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_3_m3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_3_m3.objectpack",
-        "blobPath": "cooked/blobs/sha256/27/27fbff3cb1cb1e9130d5396c772022819f80a4fffc659e2a7021085b2c50878d.objectpack",
+        "blobPath": "cooked/blobs/sha256/5f/5f03cae22e21461e0ff872f96a5757837ded97ec161bf296160bb9c26785ab0b.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 221,
-        "sha256": "27fbff3cb1cb1e9130d5396c772022819f80a4fffc659e2a7021085b2c50878d"
+        "byteLength": 345,
+        "sha256": "5f03cae22e21461e0ff872f96a5757837ded97ec161bf296160bb9c26785ab0b",
+        "sourcePath": "maps/main/objects/cells/c_3_m3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_3_m4.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_3_m4.objectpack",
-        "blobPath": "cooked/blobs/sha256/cd/cd5c627ab8647e1ca1dbad1cde683db04f7d9e1ab07ae5f047d1bf2a72ee09df.objectpack",
+        "blobPath": "cooked/blobs/sha256/cf/cf75c308b18728d62247974b07718b04002c2b92c2e4abfc1556ba8493b53f82.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 221,
-        "sha256": "cd5c627ab8647e1ca1dbad1cde683db04f7d9e1ab07ae5f047d1bf2a72ee09df"
+        "byteLength": 345,
+        "sha256": "cf75c308b18728d62247974b07718b04002c2b92c2e4abfc1556ba8493b53f82",
+        "sourcePath": "maps/main/objects/cells/c_3_m4.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m1_0.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m1_0.objectpack",
-        "blobPath": "cooked/blobs/sha256/7e/7e735e559c5f64bb4dc2ebfebd804240eff1e0b1fe376d5659809ca383c3aea1.objectpack",
+        "blobPath": "cooked/blobs/sha256/ab/abbb33d81a5ad30f2c9512986894f88a13fa0b5b81a6b6bd643dbcc74068644d.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 208,
-        "sha256": "7e735e559c5f64bb4dc2ebfebd804240eff1e0b1fe376d5659809ca383c3aea1"
+        "byteLength": 332,
+        "sha256": "abbb33d81a5ad30f2c9512986894f88a13fa0b5b81a6b6bd643dbcc74068644d",
+        "sourcePath": "maps/main/objects/cells/c_m1_0.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m1_1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m1_1.objectpack",
-        "blobPath": "cooked/blobs/sha256/4f/4fb717faa030a3d0bc6a764044a55c6d0464013e259693c10ac670821fd2be0f.objectpack",
+        "blobPath": "cooked/blobs/sha256/8b/8bfea171b5ca8f8260b1b788044566dfaf8bb452e6247d1ad23b0c9ed4529fb0.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 212,
-        "sha256": "4fb717faa030a3d0bc6a764044a55c6d0464013e259693c10ac670821fd2be0f"
+        "byteLength": 336,
+        "sha256": "8bfea171b5ca8f8260b1b788044566dfaf8bb452e6247d1ad23b0c9ed4529fb0",
+        "sourcePath": "maps/main/objects/cells/c_m1_1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m1_2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m1_2.objectpack",
-        "blobPath": "cooked/blobs/sha256/08/08f5a4ab571a8afba582ba3044fb14fdf1547363d57538ea5a46cf7e88317c38.objectpack",
+        "blobPath": "cooked/blobs/sha256/bb/bbe01a9f0c8611f3e51e6779dcc9c4785ad9f6c0a40244c015d0f2429fca75d6.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 214,
-        "sha256": "08f5a4ab571a8afba582ba3044fb14fdf1547363d57538ea5a46cf7e88317c38"
+        "byteLength": 338,
+        "sha256": "bbe01a9f0c8611f3e51e6779dcc9c4785ad9f6c0a40244c015d0f2429fca75d6",
+        "sourcePath": "maps/main/objects/cells/c_m1_2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m1_3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m1_3.objectpack",
-        "blobPath": "cooked/blobs/sha256/96/96cdfb61dcf8926e22166b86e38ba49a1d718d0868ff0495549e71ed57fc47c4.objectpack",
+        "blobPath": "cooked/blobs/sha256/d2/d2f2dffaf06d3a4825c608827ca083af055c1f1de23c40e610accd0c4940e63a.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 214,
-        "sha256": "96cdfb61dcf8926e22166b86e38ba49a1d718d0868ff0495549e71ed57fc47c4"
+        "byteLength": 338,
+        "sha256": "d2f2dffaf06d3a4825c608827ca083af055c1f1de23c40e610accd0c4940e63a",
+        "sourcePath": "maps/main/objects/cells/c_m1_3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m1_m1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m1_m1.objectpack",
-        "blobPath": "cooked/blobs/sha256/c9/c9c90202145a7eaad10262ded86b731c9e36bb2ed5c54e3a10c0befb52073d83.objectpack",
+        "blobPath": "cooked/blobs/sha256/39/395c8f03349ca4a7c4d6133537acf7d452124d5f5c4a8c49040006b151d61dec.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 213,
-        "sha256": "c9c90202145a7eaad10262ded86b731c9e36bb2ed5c54e3a10c0befb52073d83"
+        "byteLength": 1397,
+        "sha256": "395c8f03349ca4a7c4d6133537acf7d452124d5f5c4a8c49040006b151d61dec",
+        "sourcePath": "maps/main/objects/cells/c_m1_m1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m1_m2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m1_m2.objectpack",
-        "blobPath": "cooked/blobs/sha256/c9/c94445b0e2801f6267115a3119ba5a8afcc867afd35c8d8414d8cec94ec74f8e.objectpack",
+        "blobPath": "cooked/blobs/sha256/5f/5f56cf946a497b3d72b4ffa4919a4ccf33ae204ddde9dd49b802add6927f76fe.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 218,
-        "sha256": "c94445b0e2801f6267115a3119ba5a8afcc867afd35c8d8414d8cec94ec74f8e"
+        "byteLength": 2196,
+        "sha256": "5f56cf946a497b3d72b4ffa4919a4ccf33ae204ddde9dd49b802add6927f76fe",
+        "sourcePath": "maps/main/objects/cells/c_m1_m2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m1_m3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m1_m3.objectpack",
-        "blobPath": "cooked/blobs/sha256/eb/eb65b280f9552ad82bfea8c9f849f0582bd667697619f7f6e4aceba36a34590a.objectpack",
+        "blobPath": "cooked/blobs/sha256/b6/b6466a3d70d84be921e68819fe4a1a750bbc20cb1913ad55bef44fbe3ad3c5c6.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 220,
-        "sha256": "eb65b280f9552ad82bfea8c9f849f0582bd667697619f7f6e4aceba36a34590a"
+        "byteLength": 1554,
+        "sha256": "b6466a3d70d84be921e68819fe4a1a750bbc20cb1913ad55bef44fbe3ad3c5c6",
+        "sourcePath": "maps/main/objects/cells/c_m1_m3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m1_m4.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m1_m4.objectpack",
-        "blobPath": "cooked/blobs/sha256/58/58f76b350173c233745133e76854eed5e5deb94e528118cebc7a1f75c438170c.objectpack",
+        "blobPath": "cooked/blobs/sha256/bb/bbca87a37d912c11ef30dad67cec276728c8076f4b049f7c7305ebadd63d3bee.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 220,
-        "sha256": "58f76b350173c233745133e76854eed5e5deb94e528118cebc7a1f75c438170c"
+        "byteLength": 344,
+        "sha256": "bbca87a37d912c11ef30dad67cec276728c8076f4b049f7c7305ebadd63d3bee",
+        "sourcePath": "maps/main/objects/cells/c_m1_m4.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m2_0.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m2_0.objectpack",
-        "blobPath": "cooked/blobs/sha256/7c/7c371807ffcad0b2b78b516db7c45ffa8e1dbb902848898cf85d6dcc20cf0135.objectpack",
+        "blobPath": "cooked/blobs/sha256/93/93ba5ab3249a3c0f155f29299184277b8608ee62c3afbc7412089b940ae07ed6.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 213,
-        "sha256": "7c371807ffcad0b2b78b516db7c45ffa8e1dbb902848898cf85d6dcc20cf0135"
+        "byteLength": 2052,
+        "sha256": "93ba5ab3249a3c0f155f29299184277b8608ee62c3afbc7412089b940ae07ed6",
+        "sourcePath": "maps/main/objects/cells/c_m2_0.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m2_1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m2_1.objectpack",
-        "blobPath": "cooked/blobs/sha256/a5/a520b107317915b431ae2980ac1e98f86b79f1763d286088623b372bb0c45019.objectpack",
+        "blobPath": "cooked/blobs/sha256/6a/6ab172611c135e07fa46ca9c6046331b1d0eb802a695677ff604bb9592b4938b.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 217,
-        "sha256": "a520b107317915b431ae2980ac1e98f86b79f1763d286088623b372bb0c45019"
+        "byteLength": 341,
+        "sha256": "6ab172611c135e07fa46ca9c6046331b1d0eb802a695677ff604bb9592b4938b",
+        "sourcePath": "maps/main/objects/cells/c_m2_1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m2_2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m2_2.objectpack",
-        "blobPath": "cooked/blobs/sha256/ba/ba232664c1131d2c361dc0613edb4f42c20d8b34503bdd2ae13221a48fee752c.objectpack",
+        "blobPath": "cooked/blobs/sha256/1b/1bf601ba38ba01a7ac0f194bfd9d7c85937569b80afffeb2ac6e1e7800ac42c3.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 219,
-        "sha256": "ba232664c1131d2c361dc0613edb4f42c20d8b34503bdd2ae13221a48fee752c"
+        "byteLength": 343,
+        "sha256": "1bf601ba38ba01a7ac0f194bfd9d7c85937569b80afffeb2ac6e1e7800ac42c3",
+        "sourcePath": "maps/main/objects/cells/c_m2_2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m2_3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m2_3.objectpack",
-        "blobPath": "cooked/blobs/sha256/72/7270d9e5e2144e8ce22522685a3ce0661e5679233e3e48003ce9e67f910a280b.objectpack",
+        "blobPath": "cooked/blobs/sha256/ba/ba30be5bc8f46080fa6a6e6d40453a471c159a71e74098c2e8f5deaf000a02a0.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 219,
-        "sha256": "7270d9e5e2144e8ce22522685a3ce0661e5679233e3e48003ce9e67f910a280b"
+        "byteLength": 343,
+        "sha256": "ba30be5bc8f46080fa6a6e6d40453a471c159a71e74098c2e8f5deaf000a02a0",
+        "sourcePath": "maps/main/objects/cells/c_m2_3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m2_m1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m2_m1.objectpack",
-        "blobPath": "cooked/blobs/sha256/26/266e1552836e04d8548b7e42b664fac142f6260d8922301ed69cf0ba5f056973.objectpack",
+        "blobPath": "cooked/blobs/sha256/2e/2e43975480fe6faa8213ba6219a897c038b7e3204245c9cc37a384fc26851aa5.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 218,
-        "sha256": "266e1552836e04d8548b7e42b664fac142f6260d8922301ed69cf0ba5f056973"
+        "byteLength": 342,
+        "sha256": "2e43975480fe6faa8213ba6219a897c038b7e3204245c9cc37a384fc26851aa5",
+        "sourcePath": "maps/main/objects/cells/c_m2_m1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m2_m2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m2_m2.objectpack",
-        "blobPath": "cooked/blobs/sha256/a9/a9bbadbddb302d5c3d74a0467a4d662adda263343a769dfb8df7a83cfec396ed.objectpack",
+        "blobPath": "cooked/blobs/sha256/9a/9a5f4143f4d062c9dbeacabb5422124c4d3845f1c3be5a05939440db19e60e7b.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 223,
-        "sha256": "a9bbadbddb302d5c3d74a0467a4d662adda263343a769dfb8df7a83cfec396ed"
+        "byteLength": 1692,
+        "sha256": "9a5f4143f4d062c9dbeacabb5422124c4d3845f1c3be5a05939440db19e60e7b",
+        "sourcePath": "maps/main/objects/cells/c_m2_m2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m2_m3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m2_m3.objectpack",
-        "blobPath": "cooked/blobs/sha256/4d/4db69d8f8e796688ec08bf31d0bc885a1a3299d16dca436bf112a75ffcab6c18.objectpack",
+        "blobPath": "cooked/blobs/sha256/4d/4d4b83b5b1752690d0e916b5dee560a662db7f9024461c30e2da1955a414bcb4.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 225,
-        "sha256": "4db69d8f8e796688ec08bf31d0bc885a1a3299d16dca436bf112a75ffcab6c18"
+        "byteLength": 1025,
+        "sha256": "4d4b83b5b1752690d0e916b5dee560a662db7f9024461c30e2da1955a414bcb4",
+        "sourcePath": "maps/main/objects/cells/c_m2_m3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m2_m4.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m2_m4.objectpack",
-        "blobPath": "cooked/blobs/sha256/f2/f229c489d8edb6cc7a7abb459fe8b8f8e697bf5c6a753c60d75d7de34a14c5d4.objectpack",
+        "blobPath": "cooked/blobs/sha256/11/112e9cacabd84fa3e90727df723af50928ca2b588705106ff00569f8f010feb6.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 225,
-        "sha256": "f229c489d8edb6cc7a7abb459fe8b8f8e697bf5c6a753c60d75d7de34a14c5d4"
+        "byteLength": 349,
+        "sha256": "112e9cacabd84fa3e90727df723af50928ca2b588705106ff00569f8f010feb6",
+        "sourcePath": "maps/main/objects/cells/c_m2_m4.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m3_0.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m3_0.objectpack",
-        "blobPath": "cooked/blobs/sha256/f8/f82077dbde8e3c065cf2ea8948236c2f73b8482c91251f14829eb60a3d3b2039.objectpack",
+        "blobPath": "cooked/blobs/sha256/71/714b3e0548bea28264f959398ad2b7d9be48e8943384896aebdd74e8dc228689.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 215,
-        "sha256": "f82077dbde8e3c065cf2ea8948236c2f73b8482c91251f14829eb60a3d3b2039"
+        "byteLength": 892,
+        "sha256": "714b3e0548bea28264f959398ad2b7d9be48e8943384896aebdd74e8dc228689",
+        "sourcePath": "maps/main/objects/cells/c_m3_0.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m3_1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m3_1.objectpack",
-        "blobPath": "cooked/blobs/sha256/65/650c5a5bd10b0ce60aab9f8031ac0366af6b57d7ddc4229af6955fd18f4f34c7.objectpack",
+        "blobPath": "cooked/blobs/sha256/67/672a52a4819d8806c026f501f16f8502c72a7ad826c8ef06a6033ddde99b1368.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 219,
-        "sha256": "650c5a5bd10b0ce60aab9f8031ac0366af6b57d7ddc4229af6955fd18f4f34c7"
+        "byteLength": 343,
+        "sha256": "672a52a4819d8806c026f501f16f8502c72a7ad826c8ef06a6033ddde99b1368",
+        "sourcePath": "maps/main/objects/cells/c_m3_1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m3_2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m3_2.objectpack",
-        "blobPath": "cooked/blobs/sha256/84/84f6875cc399aa71dc923bbe2d332b935fc5fdefc792cb3f565371538d83dc22.objectpack",
+        "blobPath": "cooked/blobs/sha256/6a/6ae9ea61fe17807332c5281c74ab2bebbc60f4c32acdd70a89a662fc440df4b2.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 221,
-        "sha256": "84f6875cc399aa71dc923bbe2d332b935fc5fdefc792cb3f565371538d83dc22"
+        "byteLength": 345,
+        "sha256": "6ae9ea61fe17807332c5281c74ab2bebbc60f4c32acdd70a89a662fc440df4b2",
+        "sourcePath": "maps/main/objects/cells/c_m3_2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m3_3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m3_3.objectpack",
-        "blobPath": "cooked/blobs/sha256/33/33bcc52faf7ee4f4324796c4a10d5d52f36d6b842b34a6bd6f79115f2fa74149.objectpack",
+        "blobPath": "cooked/blobs/sha256/cc/cc49718540216a6ab37d09d3b5d62ed1a4aca6aaadd4d3e8372274ce91342547.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 221,
-        "sha256": "33bcc52faf7ee4f4324796c4a10d5d52f36d6b842b34a6bd6f79115f2fa74149"
+        "byteLength": 345,
+        "sha256": "cc49718540216a6ab37d09d3b5d62ed1a4aca6aaadd4d3e8372274ce91342547",
+        "sourcePath": "maps/main/objects/cells/c_m3_3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m3_m1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m3_m1.objectpack",
-        "blobPath": "cooked/blobs/sha256/95/95c4df325679bf343b79a9c3eac5ae1dcaaa1838efc94222e7f4b36a8456475d.objectpack",
+        "blobPath": "cooked/blobs/sha256/61/61aedebd87c6a469db78619af3648ea39bd00add02ccad8e71560d25ab59af94.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 220,
-        "sha256": "95c4df325679bf343b79a9c3eac5ae1dcaaa1838efc94222e7f4b36a8456475d"
+        "byteLength": 1017,
+        "sha256": "61aedebd87c6a469db78619af3648ea39bd00add02ccad8e71560d25ab59af94",
+        "sourcePath": "maps/main/objects/cells/c_m3_m1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m3_m2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m3_m2.objectpack",
-        "blobPath": "cooked/blobs/sha256/38/384ce0fbef97d9739edaec4f4102dc2f4a5d4f9e6c415d5dfd1410f846af9b58.objectpack",
+        "blobPath": "cooked/blobs/sha256/ce/ce040ed7a8285089a313be7e25f139940009689e39c3b72be380bd9ccc10f727.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 225,
-        "sha256": "384ce0fbef97d9739edaec4f4102dc2f4a5d4f9e6c415d5dfd1410f846af9b58"
+        "byteLength": 349,
+        "sha256": "ce040ed7a8285089a313be7e25f139940009689e39c3b72be380bd9ccc10f727",
+        "sourcePath": "maps/main/objects/cells/c_m3_m2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m3_m3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m3_m3.objectpack",
-        "blobPath": "cooked/blobs/sha256/87/874643c24233dbc92190b2ef498db71b8a4b5d40107c6447297c40392ed1d7f5.objectpack",
+        "blobPath": "cooked/blobs/sha256/e1/e176e203e5a293c27f9d2ee520a34e2e0d40081408205b041eecf5bfc1efd426.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 227,
-        "sha256": "874643c24233dbc92190b2ef498db71b8a4b5d40107c6447297c40392ed1d7f5"
+        "byteLength": 351,
+        "sha256": "e176e203e5a293c27f9d2ee520a34e2e0d40081408205b041eecf5bfc1efd426",
+        "sourcePath": "maps/main/objects/cells/c_m3_m3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m3_m4.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m3_m4.objectpack",
-        "blobPath": "cooked/blobs/sha256/01/01c577d405c9ab3b8ebbdbc6ac524c528bb39b8887e9b4f21a1b5c1b66a40e45.objectpack",
+        "blobPath": "cooked/blobs/sha256/e3/e3b5f31c3027eac53d0e28e41353c2e29c1cfdbd88e95d13c75c263fb10b3614.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 227,
-        "sha256": "01c577d405c9ab3b8ebbdbc6ac524c528bb39b8887e9b4f21a1b5c1b66a40e45"
+        "byteLength": 351,
+        "sha256": "e3b5f31c3027eac53d0e28e41353c2e29c1cfdbd88e95d13c75c263fb10b3614",
+        "sourcePath": "maps/main/objects/cells/c_m3_m4.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m4_0.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m4_0.objectpack",
-        "blobPath": "cooked/blobs/sha256/38/38d06f848f8dea89a02bb75d23d7d4076101bba28d1bb22549e2667bfb0a6ec5.objectpack",
+        "blobPath": "cooked/blobs/sha256/0b/0ba0ce2104ab50bbe68e1cf7d418342eb386136ec560fc00a50aec1bb6c02bc2.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 215,
-        "sha256": "38d06f848f8dea89a02bb75d23d7d4076101bba28d1bb22549e2667bfb0a6ec5"
+        "byteLength": 339,
+        "sha256": "0ba0ce2104ab50bbe68e1cf7d418342eb386136ec560fc00a50aec1bb6c02bc2",
+        "sourcePath": "maps/main/objects/cells/c_m4_0.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m4_1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m4_1.objectpack",
-        "blobPath": "cooked/blobs/sha256/50/50ea0313434e7972ebb21ed6373345c1019403073edbef4e6ebe6ac9bbb9b1cc.objectpack",
+        "blobPath": "cooked/blobs/sha256/ab/abd4502a3abb2cb2b89983e0b5c971d5b59e114be6a9fe8478c9d00665f79cea.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 219,
-        "sha256": "50ea0313434e7972ebb21ed6373345c1019403073edbef4e6ebe6ac9bbb9b1cc"
+        "byteLength": 343,
+        "sha256": "abd4502a3abb2cb2b89983e0b5c971d5b59e114be6a9fe8478c9d00665f79cea",
+        "sourcePath": "maps/main/objects/cells/c_m4_1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m4_2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m4_2.objectpack",
-        "blobPath": "cooked/blobs/sha256/ce/ce7e2360b63bbf378d442239b11ba8ef71deb1fa398616fbf5fa6236173b447f.objectpack",
+        "blobPath": "cooked/blobs/sha256/29/2964288093e16aad591cc97c2fbf57d46a98728e6aaf82da5167bc12e85f083c.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 221,
-        "sha256": "ce7e2360b63bbf378d442239b11ba8ef71deb1fa398616fbf5fa6236173b447f"
+        "byteLength": 345,
+        "sha256": "2964288093e16aad591cc97c2fbf57d46a98728e6aaf82da5167bc12e85f083c",
+        "sourcePath": "maps/main/objects/cells/c_m4_2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m4_3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m4_3.objectpack",
-        "blobPath": "cooked/blobs/sha256/ed/ed9a89cb2b2bda4c1f465b44ab76a35145bbea61c95e67dd5319119dc55116a6.objectpack",
+        "blobPath": "cooked/blobs/sha256/3c/3cbd89ca9008a83f1d33cfa55ba74d19d419b105d1a74137511f1452c9e23c9d.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 221,
-        "sha256": "ed9a89cb2b2bda4c1f465b44ab76a35145bbea61c95e67dd5319119dc55116a6"
+        "byteLength": 345,
+        "sha256": "3cbd89ca9008a83f1d33cfa55ba74d19d419b105d1a74137511f1452c9e23c9d",
+        "sourcePath": "maps/main/objects/cells/c_m4_3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m4_m1.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m4_m1.objectpack",
-        "blobPath": "cooked/blobs/sha256/1f/1f50e6b60f7c954eb41619b3630c6d41eb526a862df9138caad39a08a08de095.objectpack",
+        "blobPath": "cooked/blobs/sha256/2a/2a3f25d498049d8339ff90ff11dc8e8d579592957b3d7a2063396df72d3ee3ad.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 220,
-        "sha256": "1f50e6b60f7c954eb41619b3630c6d41eb526a862df9138caad39a08a08de095"
+        "byteLength": 344,
+        "sha256": "2a3f25d498049d8339ff90ff11dc8e8d579592957b3d7a2063396df72d3ee3ad",
+        "sourcePath": "maps/main/objects/cells/c_m4_m1.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m4_m2.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m4_m2.objectpack",
-        "blobPath": "cooked/blobs/sha256/b9/b99f5aa950dcd67da4bce6d65d4dbbfa5e598cce0da5b577c4acb5d5d54dbf2d.objectpack",
+        "blobPath": "cooked/blobs/sha256/18/180e982566303a1a04ea1170d2c4bc9e39a5225f67c8677220501e38180defce.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 225,
-        "sha256": "b99f5aa950dcd67da4bce6d65d4dbbfa5e598cce0da5b577c4acb5d5d54dbf2d"
+        "byteLength": 349,
+        "sha256": "180e982566303a1a04ea1170d2c4bc9e39a5225f67c8677220501e38180defce",
+        "sourcePath": "maps/main/objects/cells/c_m4_m2.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m4_m3.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m4_m3.objectpack",
-        "blobPath": "cooked/blobs/sha256/f1/f18681c3b980646c91ea9655c48a88909644cc8c00e22474eff11aa5bc7ac6a7.objectpack",
+        "blobPath": "cooked/blobs/sha256/15/159bcfb1c8600a8b08d18015a1068ff93ffd67b1aa339f25bc484aac27fdcb79.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 227,
-        "sha256": "f18681c3b980646c91ea9655c48a88909644cc8c00e22474eff11aa5bc7ac6a7"
+        "byteLength": 351,
+        "sha256": "159bcfb1c8600a8b08d18015a1068ff93ffd67b1aa339f25bc484aac27fdcb79",
+        "sourcePath": "maps/main/objects/cells/c_m4_m3.objectpack"
       },
       "cooked/maps/main/objects/cells/c_m4_m4.objectpack": {
         "path": "cooked/maps/main/objects/cells/c_m4_m4.objectpack",
-        "blobPath": "cooked/blobs/sha256/6d/6d53d60b50af812244ea00fd146ab654709dca495be14241b4d739d4f364691e.objectpack",
+        "blobPath": "cooked/blobs/sha256/ab/abb8c1b49fb6fd53acb1f42c95361f29e511257dd3357d6786441343531ff585.objectpack",
         "kind": "world-object-cell",
-        "byteLength": 227,
-        "sha256": "6d53d60b50af812244ea00fd146ab654709dca495be14241b4d739d4f364691e"
+        "byteLength": 351,
+        "sha256": "abb8c1b49fb6fd53acb1f42c95361f29e511257dd3357d6786441343531ff585",
+        "sourcePath": "maps/main/objects/cells/c_m4_m4.objectpack"
       },
       "cooked/maps/main/paint/regions/r_0_0.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_0_0.paintpack",

@@ -5,6 +5,8 @@ import type { PerspectiveCamera, Scene, WebGPURenderer } from "three/webgpu";
 import type { InputManager } from "../input/InputManager";
 import type { RawInputState } from "../input/RawInputState";
 import type { GameSettings } from "../settings";
+import type { CookedWorldPartitionRuntime, CookedWorldPartitionPlan } from "../workspace/CookedWorldPartitionRuntime";
+import type { BundledWorldPartitionCellKind } from "../workspace/loadBundledProject";
 import type { TerrainSystemResource } from "../world/terrain/terrain";
 
 // --- Time Resource / 时间资源 ---
@@ -69,8 +71,16 @@ export type InputResources = {
 export type RuntimeResources = {
   /** Streaming terrain system. / 流式地形系统 */
   terrain: TerrainSystemResource;
+  /** Cooked world partition planner and cell-pack loader. / Cooked 世界分区规划器与 cell 包加载器 */
+  worldPartition: RuntimeWorldPartitionResource;
   /** Player-configurable settings. / 玩家可配置的设置 */
   settings: GameSettings;
+};
+
+export type RuntimeWorldPartitionResource = {
+  runtime: CookedWorldPartitionRuntime | null;
+  loadCellAsset: ((kind: BundledWorldPartitionCellKind, key: string) => Promise<unknown>) | null;
+  currentPlan: CookedWorldPartitionPlan | null;
 };
 
 // --- Combined GameResources / 合并的 GameResources ---

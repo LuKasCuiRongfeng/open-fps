@@ -14,6 +14,7 @@ import {
   MAP_PAINT_REGIONS_DIRECTORY,
   MAP_TERRAIN_HEIGHT_PATH,
   MAP_VEGETATION_MODELS_PATH,
+  MAP_WORLD_OBJECTS_PATH,
   TERRAIN_HEIGHT_MANIFEST_VERSION,
   type MapData,
   type MapManifest,
@@ -48,9 +49,12 @@ import {
 import {
   deserializeCookedMapManifest,
   getCookedMapManifestPath,
+  type CookedCellAsset,
+  type CookedCellRef,
   type CookedMapManifest,
   type CookedRegionTable,
 } from "./CookedMapManifest";
+import { CookedWorldPartitionRuntime } from "./CookedWorldPartitionRuntime";
 
 export const DEFAULT_BUNDLED_PROJECT_URL = "/game-data/test_pro/";
 
@@ -64,6 +68,14 @@ export interface BundledGameProject {
   settings: GameSettings;
   textureDefinition: TextureDefinition | null;
   vegetationData: VegetationMapData | null;
+  worldPartition: BundledWorldPartitionRuntime;
+}
+
+export type BundledWorldPartitionCellKind = "objects" | "collision" | "nav";
+
+export interface BundledWorldPartitionRuntime {
+  runtime: CookedWorldPartitionRuntime;
+  loadCellAsset(kind: BundledWorldPartitionCellKind, key: string): Promise<unknown>;
 }
 
 function normalizeDirectoryUrl(path: string): string {
@@ -125,6 +137,7 @@ export async function loadBundledGameProject(
   const cookedMap = deserializeCookedMapManifest(cookedJson);
   validateCookedMapSelection(cookedMap, activeMapId);
   const mapDirectoryUrl = resolveProjectFileDirectoryUrl(projectBaseUrl, getCookedMapManifestPath(activeMapId));
+  const worldPartition = createBundledWorldPartitionRuntime(projectBaseUrl, cookedMap);
 
   const manifest = createMapManifestFromCooked(cookedMap);
   const activeMap = createProjectMapRecord(activeMapId, manifest.metadata);
@@ -180,7 +193,42 @@ export async function loadBundledGameProject(
     settings,
     textureDefinition,
     vegetationData,
+    worldPartition,
   };
+}
+
+function createBundledWorldPartitionRuntime(
+  projectBaseUrl: string,
+  cookedMap: CookedMapManifest,
+): BundledWorldPartitionRuntime {
+  const runtime = new CookedWorldPartitionRuntime(cookedMap.partition);
+  const cache = new Map<string, Promise<unknown>>();
+  return {
+    runtime,
+    loadCellAsset(kind, key) {
+      const cacheKey = `${kind}:${key}`;
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
+
+      const request = loadCookedCellAsset(projectBaseUrl, cookedMap.assets[kind], kind, key);
+      cache.set(cacheKey, request);
+      return request;
+    },
+  };
+}
+
+async function loadCookedCellAsset(
+  projectBaseUrl: string,
+  asset: CookedCellAsset,
+  kind: BundledWorldPartitionCellKind,
+  key: string,
+): Promise<unknown> {
+  const cell = getCookedCell(asset, key, kind);
+  const bytes = await fetchRequiredBytes(resolveProjectUrl(projectBaseUrl, cell.path), `${kind} cell ${key}`);
+  await validateSidecarRegionIntegrity(`Cooked ${kind} cell`, key, bytes, cell);
+  return JSON.parse(new TextDecoder().decode(bytes)) as unknown;
 }
 
 async function loadBundledHeightRegionPack(
@@ -258,6 +306,7 @@ function createMapManifestFromCooked(cookedMap: CookedMapManifest): MapManifest 
     terrainPath: MAP_TERRAIN_HEIGHT_PATH,
     paintPath: MAP_PAINT_PATH,
     vegetationPath: MAP_VEGETATION_MODELS_PATH,
+    objectsPath: MAP_WORLD_OBJECTS_PATH,
     metadata: {
       name: cookedMap.map.metadata.name,
       created: cookedMap.map.metadata.created,
@@ -336,4 +385,13 @@ function getCookedRegion(regions: CookedRegionTable, regionKey: string, label: s
   }
 
   return region;
+}
+
+function getCookedCell(asset: CookedCellAsset, cellKey: string, label: string): CookedCellRef {
+  const cell = asset.cells[cellKey];
+  if (!cell) {
+    throw new Error(`Cooked ${label} cell '${cellKey}' is missing from the asset index`);
+  }
+
+  return cell;
 }

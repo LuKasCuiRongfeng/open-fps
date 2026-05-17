@@ -112,6 +112,7 @@ export function createTerrainSystem(
     paintPath: source.paintPath,
     paint: clonePaintData(source.paint),
     vegetationPath: source.vegetationPath,
+    objectsPath: source.objectsPath,
     metadata: { ...source.metadata },
   });
 

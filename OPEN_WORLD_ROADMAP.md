@@ -32,24 +32,25 @@
 
 项目已经完成了从原型 JSON/散文件向专业 sidecar 资产体系的关键转向：
 
-- `map.json` 保持为地图级 manifest，地形、纹理和植被数据移出主清单。
+- `map.json` 保持为地图级 manifest，地形、纹理、植被和世界对象数据移出主清单。
 - 地形高度使用 `terrain/height/manifest.json` + `.heightpack` region pack。
 - 纹理绘制使用 `paint/layers.json` + `.paintpack` region pack。
 - 植被实例使用 `vegetation/models.json` + `.vegpack` region pack。
+- 世界对象使用 `objects/manifest.json` + `.objectpack` partition cell pack，首批道路、水体、POI 和道具已由 `OPEN_WORLD_DESIGN_SPEC.md` 规则生成。
 - 已有 dirty region/page 保存、编辑器 undo/redo 和安全写入；terrain、paint、vegetation 的 region-pack sidecar 保存均向 manifest-last 提交协议收敛。
 - terrain、paint、vegetation manifest 已记录 region pack 的 byte length 与 SHA-256，并在加载、保存、生成和资产校验中统一验证。
 - 已有 `main` 地图资产验证脚本，可检查 manifest、region pack、孤儿文件、截断文件和内容 hash。
-- 已有 cooked map manifest v3：记录 source hash、build input signature、content-addressed package artifact index、terrain/paint/vegetation asset index，以及 8-page world partition cell dependency 表。
+- 已有 cooked map manifest v4：记录 source hash、build input signature、content-addressed package artifact index、terrain/paint/vegetation/object asset index，以及 8-page world partition cell dependency 表。
 - web game bundled runtime 已优先读取 cooked manifest，并从 cooked asset index 派生 terrain、paint、vegetation 运行时 manifest。
 - cooked 输出已复制运行时所需的 region pack、terrain texture 和 vegetation model 资产，game target 不再依赖 source sidecar 目录读取核心运行资产。
 - cooked 输出已写入 `cooked/cache/maps/<mapId>.json`，用于记录 build input signature、artifact 列表和 stale cook 诊断依据。
 - cooked package 已生成 `content-addressed-sha256-v1` artifact index，并把 runtime artifact 同步写入 `cooked/blobs/sha256/...`。
 - world partition cell 已收敛到 `dependencies` 结构，统一挂载 terrain、paint、vegetation、objects、collision、nav 六类运行时分区依赖。
-- objects、collision、nav 已有第一版 generated empty cell pack，先接入 cooked asset index、package、cache、validator 和 partition dependencies，后续填充真实内容。
-- 已有 runtime world partition planner，可按玩家/摄像机位置生成 load/keep/unload cell 与跨资产 dependency 列表。
+- objects cooked cell pack 现在来自 source object pack，不再是空生成物；collision cell pack 由 terrain heightfield、水体 volume 和对象 blocker 派生；nav cell pack 由 terrain slope、道路、水体和碰撞 blocker 派生。
+- runtime world partition planner 已接入 game streaming hot path，可按玩家/摄像机位置生成 load/keep/unload cell、预取 object/collision/nav cell pack，并缓存已加载 payload。
 - 已有 [`OPEN_WORLD_DESIGN_SPEC.md`](OPEN_WORLD_DESIGN_SPEC.md)，定义 `main` 10 平方公里地图的区域、道路、水系、兴趣点和生成约束。
 
-当前最重要的方向是把这些能力从“能用的资产格式”推进到“可验证、可恢复、可 cook、可流式加载的生产级世界管线”。
+当前最重要的方向是把这些能力从“真实但仍粗粒度的生产管线”推进到“可编辑、可局部重建、可视化调试且有性能预算的开放世界内容系统”。
 
 ## 路线图
 
@@ -60,7 +61,7 @@
 当前重点：
 
 - 所有 region pack 先完整写入，再提交 JSON manifest，最后清理旧 pack。
-- 保持 terrain、paint、vegetation 共享 sidecar commit 抽象，后续 world object 继续复用同一提交协议。
+- 保持 terrain、paint、vegetation 共享 sidecar commit 抽象，world object pack 后续继续向同一事务提交协议收敛。
 - 加载路径要能识别 manifest 指向的 pack 是否缺失、截断或格式不匹配。
 
 验收标准：
@@ -97,7 +98,7 @@
 
 验收标准：
 
-- web game target 能从 cooked 数据启动。
+- web game target 能从 cooked 数据启动，并拥有 cooked partition runtime/cell-pack loader。
 - cooked build 支持 build input signature、cache hit 判断、stale cache 诊断和 content-addressed artifact index。
 - source 与 cooked 的版本、hash 和生成来源可追踪。
 
@@ -109,12 +110,12 @@
 
 - 建立统一 cell 坐标体系，挂载 terrain、paint、vegetation、objects、collision、nav、audio 和事件数据。
 - 保持 cooked partition dependency schema 作为 object/collision/nav/audio/event 分区资产的统一入口。
-- 设计加载优先级、预取、卸载、IO budget 和帧预算。
+- 在现有 object/collision/nav 预取基础上，继续设计加载优先级、卸载策略、IO budget 和帧预算。
 - 编辑器提供分区可视化和加载状态调试。
 
 验收标准：
 
-- 玩家/摄像机移动时，世界内容按统一 cell 生命周期加载和卸载。
+- 玩家/摄像机移动时，terrain 与 object/collision/nav cell pack 已按统一 cell 生命周期规划，下一步要把 payload 实例化为可见对象、物理和 AI 数据。
 - 不同资产类型共享坐标、边界和调度策略。
 - 流式加载不会产生明显卡顿或内容突然消失。
 
@@ -206,13 +207,13 @@
 
 - 建立 spline road 和 river 工具。
 - 支持 mesh/decal/prop placement、岩石散布、围栏、路牌、小建筑和据点对象。
-- world object 也应接入分区、事务提交、校验和 cooked build。
+- world object 已接入分区、校验和 cooked build；下一步补齐编辑事务提交、spline 工具和可视化调试。
 
 验收标准：
 
-- 道路能切地形、影响材质、清理植被并生成导航成本。
-- 水体和河床有一致高度、边缘材质和碰撞/可视规则。
-- 世界对象能按 cell 流式加载并被编辑器可视化。
+- 道路当前已生成导航成本，后续需要切地形、影响材质并清理植被。
+- 水体当前已进入 object/collision/nav 派生，后续需要河床高度、边缘材质和可视水面。
+- 世界对象能按 cell 被 runtime 预取，后续要实例化渲染并进入编辑器可视化。
 
 ### 11. 渲染质量与性能预算
 
@@ -236,8 +237,8 @@
 
 当前重点：
 
-- 生成 terrain collision、object collision 和 vegetation collision 策略。
-- 建立 navmesh 或 navigation grid，支持道路成本、坡度成本和禁行区域。
+- 继续强化已生成的 terrain/object/water collision pack，补 vegetation collision 策略。
+- 继续强化已生成的 navigation grid，补跨 cell link、调试可视化和局部重建。
 - 编辑器显示可行走区域、碰撞边界和导航问题。
 
 验收标准：

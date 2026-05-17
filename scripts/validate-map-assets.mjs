@@ -16,6 +16,10 @@ const PAINT_REGION_EXTENSION = ".paintpack";
 const VEGETATION_PATH = "vegetation/models.json";
 const VEGETATION_REGION_DIRECTORY = "vegetation/regions";
 const VEGETATION_REGION_EXTENSION = ".vegpack";
+const WORLD_OBJECTS_PATH = "objects/manifest.json";
+const WORLD_OBJECT_CELLS_DIRECTORY = "objects/cells";
+const WORLD_OBJECT_MANIFEST_FORMAT = "world-object-manifest-v1";
+const WORLD_OBJECT_CELL_FORMAT = "world-object-cell-pack-v1";
 const HEIGHT_SAMPLE_BYTE_LENGTH = 4;
 const RGBA8_BYTE_LENGTH = 4;
 const VEGETATION_REGION_HEADER_BYTE_LENGTH = 8;
@@ -23,14 +27,14 @@ const VEGETATION_REGION_ENTRY_BYTE_LENGTH = 8;
 const VEGETATION_INSTANCE_BYTE_LENGTH = 24;
 const COOKED_MAP_DIRECTORY = "cooked/maps";
 const COOKED_MAP_MANIFEST_FILE = "manifest.json";
-const COOKED_MAP_FORMAT = "open-fps-cooked-map-v3";
-const COOKED_MAP_VERSION = 3;
+const COOKED_MAP_FORMAT = "open-fps-cooked-map-v4";
+const COOKED_MAP_VERSION = 4;
 const COOKED_CACHE_DIRECTORY = "cooked/cache/maps";
 const COOKED_PACKAGE_LAYOUT = "content-addressed-sha256-v1";
 const COOKED_BLOB_ROOT = "cooked/blobs/sha256";
 const COOKED_WORLD_PARTITION_CELL_SIZE_PAGES = 8;
 const COOKED_WORLD_PARTITION_DEPENDENCY_KINDS = ["terrain", "paint", "vegetation", "objects", "collision", "nav"];
-const COOKED_OBJECT_CELL_FORMAT = "world-object-cell-pack-v1";
+const COOKED_OBJECT_CELL_FORMAT = WORLD_OBJECT_CELL_FORMAT;
 const COOKED_COLLISION_CELL_FORMAT = "world-collision-cell-pack-v1";
 const COOKED_NAV_CELL_FORMAT = "world-nav-cell-pack-v1";
 
@@ -68,7 +72,8 @@ async function validateProject(projectPath, mapIdOverride) {
   await validateTerrain(mapDirectory, mapManifest);
   await validatePaint(mapDirectory, mapManifest);
   await validateVegetation(mapDirectory);
-  await validateCookedMap(projectPath, mapId, mapManifest);
+  const objectManifest = await validateWorldObjects(mapDirectory);
+  await validateCookedMap(projectPath, mapId, mapManifest, objectManifest);
 }
 
 function validateMapManifest(manifest, mapId) {
@@ -106,6 +111,10 @@ function validateMapManifest(manifest, mapId) {
 
   if (manifest.vegetationPath !== VEGETATION_PATH) {
     addError(MAP_FILE, `Map vegetationPath must be '${VEGETATION_PATH}'.`);
+  }
+
+  if (manifest.objectsPath !== WORLD_OBJECTS_PATH) {
+    addError(MAP_FILE, `Map objectsPath must be '${WORLD_OBJECTS_PATH}'.`);
   }
 }
 
@@ -246,7 +255,65 @@ async function validateVegetation(mapDirectory) {
   await validateNoOrphanRegionPacks(mapDirectory, VEGETATION_REGION_DIRECTORY, VEGETATION_REGION_EXTENSION, expectedPaths);
 }
 
-async function validateCookedMap(projectPath, mapId, mapManifest) {
+async function validateWorldObjects(mapDirectory) {
+  const manifestPath = path.join(mapDirectory, WORLD_OBJECTS_PATH);
+  const manifest = await readJsonFile(manifestPath, "world object manifest");
+  const label = relativePath(manifestPath);
+
+  if (manifest.version !== 1) {
+    addError(label, "World object manifest must use version 1.");
+  }
+  validateEqual(manifest.format, WORLD_OBJECT_MANIFEST_FORMAT, label, "world object manifest format");
+  validateEqual(manifest.cellFormat, WORLD_OBJECT_CELL_FORMAT, label, "world object cellFormat");
+  validateEqual(manifest.cellSizePages, COOKED_WORLD_PARTITION_CELL_SIZE_PAGES, label, "world object cellSizePages");
+  validateEqual(manifest.cellsDirectory, WORLD_OBJECT_CELLS_DIRECTORY, label, "world object cellsDirectory");
+  if (!isRecord(manifest.archetypes)) {
+    addError(label, "World object manifest must contain archetypes.");
+  }
+  if (!isRecord(manifest.cells)) {
+    addError(label, "World object manifest must contain cell metadata.");
+    return manifest;
+  }
+
+  let objectCount = 0;
+  const expectedPaths = new Set();
+  for (const key of Object.keys(manifest.cells).sort(compareRegionKeyStrings)) {
+    const cellRef = manifest.cells[key];
+    const expectedPath = cellPathFromKey("objects", "objectpack", key);
+    expectedPaths.add(expectedPath);
+    if (!isRecord(cellRef)) {
+      addError(label, `World object cell '${key}' metadata must be an object.`);
+      continue;
+    }
+
+    validateEqual(cellRef.path, expectedPath, label, `world object cell '${key}' path`);
+    const bytes = await readRequiredFileBytes(path.join(mapDirectory, expectedPath), `world object cell '${key}'`);
+    if (!bytes) {
+      continue;
+    }
+
+    validateArtifactBytes(bytes, cellRef, label, `world object cell '${key}'`);
+    const pack = parseJsonBytes(bytes, expectedPath);
+    if (!pack) {
+      continue;
+    }
+
+    const objects = validateWorldObjectCellPayload(pack, key, label, `world object cell '${key}'`);
+    if (objects) {
+      objectCount += objects.length;
+      validateEqual(cellRef.objectCount, objects.length, label, `world object cell '${key}' objectCount`);
+      validateWorldObjectEntries(objects, label, `world object cell '${key}'`);
+    }
+  }
+
+  if (objectCount <= 0) {
+    addError(label, "World object source must contain at least one authored object.");
+  }
+  await validateNoOrphanRegionPacks(mapDirectory, WORLD_OBJECT_CELLS_DIRECTORY, ".objectpack", expectedPaths);
+  return manifest;
+}
+
+async function validateCookedMap(projectPath, mapId, mapManifest, objectManifest) {
   const cookedPath = path.join(projectPath, COOKED_MAP_DIRECTORY, mapId, COOKED_MAP_MANIFEST_FILE);
   const cooked = await readJsonFile(cookedPath, "cooked map manifest");
   const label = relativePath(cookedPath);
@@ -268,6 +335,7 @@ async function validateCookedMap(projectPath, mapId, mapManifest) {
     terrain: `maps/${mapId}/${TERRAIN_HEIGHT_PATH}`,
     paint: `maps/${mapId}/${PAINT_PATH}`,
     vegetation: `maps/${mapId}/${VEGETATION_PATH}`,
+    objects: `maps/${mapId}/${WORLD_OBJECTS_PATH}`,
   };
   if (!isRecord(cooked.source)) {
     addError(label, "Cooked map manifest must contain source hash metadata.");
@@ -277,6 +345,7 @@ async function validateCookedMap(projectPath, mapId, mapManifest) {
     await validateCookedSourceReference(projectPath, cooked.source.terrain, sourcePaths.terrain, label, "terrain");
     await validateCookedSourceReference(projectPath, cooked.source.paint, sourcePaths.paint, label, "paint");
     await validateCookedSourceReference(projectPath, cooked.source.vegetation, sourcePaths.vegetation, label, "vegetation");
+    await validateCookedSourceReference(projectPath, cooked.source.objects, sourcePaths.objects, label, "objects");
   }
   const cookedBuild = validateCookedBuild(cooked.build, cooked.source, mapId, label);
 
@@ -291,6 +360,7 @@ async function validateCookedMap(projectPath, mapId, mapManifest) {
     terrainManifest,
     paintManifest,
     vegetationManifest,
+    objectManifest,
     label,
   );
 
@@ -398,7 +468,7 @@ function validateCookedWorld(world, mapManifest, label) {
   };
 }
 
-async function validateCookedAssets(projectPath, assets, mapId, terrainManifest, paintManifest, vegetationManifest, label) {
+async function validateCookedAssets(projectPath, assets, mapId, terrainManifest, paintManifest, vegetationManifest, objectManifest, label) {
   if (!isRecord(assets)) {
     addError(label, "Cooked map manifest must contain asset metadata.");
     return null;
@@ -407,7 +477,7 @@ async function validateCookedAssets(projectPath, assets, mapId, terrainManifest,
   const terrain = validateCookedTerrainAsset(assets.terrain, mapId, terrainManifest, label);
   const paint = validateCookedPaintAsset(assets.paint, mapId, paintManifest, label);
   const vegetation = validateCookedVegetationAsset(assets.vegetation, mapId, vegetationManifest, label);
-  const objects = validateCookedCellAsset(assets.objects, mapId, label, "objects", COOKED_OBJECT_CELL_FORMAT, "objectpack");
+  const objects = validateCookedObjectCellAsset(assets.objects, mapId, objectManifest, label);
   const collision = validateCookedCellAsset(assets.collision, mapId, label, "collision", COOKED_COLLISION_CELL_FORMAT, "collisionpack");
   const nav = validateCookedCellAsset(assets.nav, mapId, label, "nav", COOKED_NAV_CELL_FORMAT, "navpack");
   if (!terrain || !paint || !vegetation || !objects || !collision || !nav) {
@@ -417,9 +487,9 @@ async function validateCookedAssets(projectPath, assets, mapId, terrainManifest,
   await validateCookedRegionFiles(projectPath, terrain.regions, label, "terrain");
   await validateCookedRegionFiles(projectPath, paint.regions, label, "paint");
   await validateCookedRegionFiles(projectPath, vegetation.regions, label, "vegetation");
-  await validateCookedCellFiles(projectPath, objects.cells, label, "objects");
-  await validateCookedCellFiles(projectPath, collision.cells, label, "collision");
-  await validateCookedCellFiles(projectPath, nav.cells, label, "nav");
+  await validateCookedCellFiles(projectPath, objects.cells, label, "objects", COOKED_OBJECT_CELL_FORMAT);
+  await validateCookedCellFiles(projectPath, collision.cells, label, "collision", COOKED_COLLISION_CELL_FORMAT);
+  await validateCookedCellFiles(projectPath, nav.cells, label, "nav", COOKED_NAV_CELL_FORMAT);
   await validateCookedPaintTextureFiles(projectPath, paint.layers, label);
   await validateCookedVegetationModelFiles(projectPath, mapId, vegetation.models, label);
 
@@ -543,6 +613,50 @@ function validateCookedVegetationAsset(asset, mapId, manifest, label) {
   return regions ? { ...asset, regions } : null;
 }
 
+function validateCookedObjectCellAsset(asset, mapId, sourceManifest, label) {
+  if (!isRecord(asset)) {
+    addError(label, "Cooked objects asset metadata must be an object.");
+    return null;
+  }
+
+  validateEqual(asset.manifestPath, `maps/${mapId}/${WORLD_OBJECTS_PATH}`, label, "cooked objects manifestPath");
+  validateEqual(asset.format, COOKED_OBJECT_CELL_FORMAT, label, "cooked objects format");
+  validateEqual(asset.cellSizePages, COOKED_WORLD_PARTITION_CELL_SIZE_PAGES, label, "cooked objects cellSizePages");
+  if (!Number.isFinite(asset.cellSizeMeters) || asset.cellSizeMeters <= 0) {
+    addError(label, "Cooked objects cellSizeMeters must be positive.");
+  }
+
+  const cells = validateCookedCellTable(
+    asset.cells,
+    (key) => mapCookedPath(mapId, cellPathFromKey("objects", "objectpack", key)),
+    label,
+    "objects",
+  );
+  if (!cells || !isRecord(sourceManifest?.cells)) {
+    return cells ? { ...asset, cells } : null;
+  }
+
+  const sourceKeys = Object.keys(sourceManifest.cells).sort(compareRegionKeyStrings);
+  const cookedKeys = Object.keys(cells).sort(compareRegionKeyStrings);
+  if (!sameStringArray(sourceKeys, cookedKeys)) {
+    addError(label, "Cooked object cells must match source object cells.");
+  }
+
+  for (const key of sourceKeys) {
+    const sourceCell = sourceManifest.cells[key];
+    const cookedCell = cells[key];
+    if (!isRecord(sourceCell) || !isRecord(cookedCell)) {
+      continue;
+    }
+
+    validateEqual(cookedCell.objectCount, sourceCell.objectCount, label, `cooked object cell '${key}' objectCount`);
+    validateEqual(cookedCell.byteLength, sourceCell.byteLength, label, `cooked object cell '${key}' byteLength`);
+    validateEqual(cookedCell.sha256, sourceCell.sha256, label, `cooked object cell '${key}' sha256`);
+  }
+
+  return { ...asset, cells };
+}
+
 function validateCookedCellAsset(asset, mapId, label, assetName, expectedFormat, extension) {
   if (!isRecord(asset)) {
     addError(label, `Cooked ${assetName} asset metadata must be an object.`);
@@ -636,7 +750,7 @@ async function validateCookedRegionFiles(projectPath, regions, label, assetName)
   }));
 }
 
-async function validateCookedCellFiles(projectPath, cells, label, assetName) {
+async function validateCookedCellFiles(projectPath, cells, label, assetName, expectedFormat) {
   await Promise.all(Object.entries(cells).map(async ([key, cell]) => {
     if (!isRecord(cell)) {
       return;
@@ -645,8 +759,102 @@ async function validateCookedCellFiles(projectPath, cells, label, assetName) {
     const bytes = await readRequiredFileBytes(path.join(projectPath, cell.path), `cooked ${assetName} cell '${key}'`);
     if (bytes) {
       validateArtifactBytes(bytes, cell, label, `cooked ${assetName} cell '${key}'`);
+      const pack = parseJsonBytes(bytes, cell.path);
+      if (pack) {
+        validateCookedCellPayload(pack, key, label, `cooked ${assetName} cell '${key}'`, expectedFormat, assetName, cell);
+      }
     }
   }));
+}
+
+function validateCookedCellPayload(pack, key, label, fieldName, expectedFormat, assetName, cellMetadata) {
+  if (!isRecord(pack)) {
+    addError(label, `${fieldName} must contain a JSON object.`);
+    return;
+  }
+
+  validateEqual(pack.version, 1, label, `${fieldName} version`);
+  validateEqual(pack.format, expectedFormat, label, `${fieldName} format`);
+  if (pack.cell?.key !== key) {
+    addError(label, `${fieldName} cell key must be '${key}'.`);
+  }
+
+  if (assetName === "objects") {
+    const objects = validateWorldObjectCellPayload(pack, key, label, fieldName);
+    if (objects) {
+      validateEqual(cellMetadata.objectCount, objects.length, label, `${fieldName} objectCount`);
+      validateWorldObjectEntries(objects, label, fieldName);
+    }
+    return;
+  }
+
+  if (assetName === "collision") {
+    if (!Array.isArray(pack.shapes) || pack.shapes.length === 0) {
+      addError(label, `${fieldName} must contain derived collision shapes.`);
+      return;
+    }
+    if (!pack.shapes.some((shape) => isRecord(shape) && shape.type === "terrain-heightfield")) {
+      addError(label, `${fieldName} must include a terrain-heightfield shape.`);
+    }
+    return;
+  }
+
+  if (assetName === "nav") {
+    if (!Array.isArray(pack.nodes) || pack.nodes.length === 0) {
+      addError(label, `${fieldName} must contain nav nodes.`);
+    }
+    if (!Array.isArray(pack.links)) {
+      addError(label, `${fieldName} must contain nav links.`);
+    }
+    if (Array.isArray(pack.nodes) && !pack.nodes.some((node) => isRecord(node) && node.walkable === true)) {
+      addError(label, `${fieldName} must contain at least one walkable nav node.`);
+    }
+  }
+}
+
+function validateWorldObjectCellPayload(pack, key, label, fieldName) {
+  if (!isRecord(pack)) {
+    addError(label, `${fieldName} must contain a JSON object.`);
+    return null;
+  }
+
+  validateEqual(pack.version, 1, label, `${fieldName} version`);
+  validateEqual(pack.format, WORLD_OBJECT_CELL_FORMAT, label, `${fieldName} format`);
+  if (pack.cell?.key !== key) {
+    addError(label, `${fieldName} cell key must be '${key}'.`);
+  }
+  if (!Array.isArray(pack.objects)) {
+    addError(label, `${fieldName} objects must be an array.`);
+    return null;
+  }
+
+  return pack.objects;
+}
+
+function validateWorldObjectEntries(objects, label, fieldName) {
+  const ids = new Set();
+  for (const object of objects) {
+    if (!isRecord(object)) {
+      addError(label, `${fieldName} contains an invalid object entry.`);
+      continue;
+    }
+    if (typeof object.id !== "string" || object.id.length === 0) {
+      addError(label, `${fieldName} contains an object without an id.`);
+    } else if (ids.has(object.id)) {
+      addError(label, `${fieldName} contains duplicate object id '${object.id}'.`);
+    } else {
+      ids.add(object.id);
+    }
+    if (!isRecord(object.position) || !Number.isFinite(object.position.x) || !Number.isFinite(object.position.y) || !Number.isFinite(object.position.z)) {
+      addError(label, `${fieldName} object '${String(object.id)}' must contain a finite position.`);
+    }
+    if (!isRecord(object.boundsMeters)) {
+      addError(label, `${fieldName} object '${String(object.id)}' must contain boundsMeters.`);
+    }
+    if (typeof object.layer !== "string" || typeof object.archetype !== "string") {
+      addError(label, `${fieldName} object '${String(object.id)}' must contain layer and archetype.`);
+    }
+  }
 }
 
 async function validateCookedPaintTextureFiles(projectPath, layers, label) {
@@ -1095,6 +1303,15 @@ async function readRequiredFileBytes(filePath, label) {
     return await readFile(filePath);
   } catch (error) {
     addError(relativePath(filePath), `Failed to read ${label}: ${error.message}`);
+    return null;
+  }
+}
+
+function parseJsonBytes(bytes, label) {
+  try {
+    return JSON.parse(bytes.toString("utf8"));
+  } catch (error) {
+    addError(label, `Failed to parse JSON payload: ${error.message}`);
     return null;
   }
 }

@@ -98,6 +98,15 @@
 - collision：由 terrain/object/vegetation 的 cooked 结果派生。
 - nav：由 terrain slope、水体、道路、object blockers 和 collision 派生。
 
+## 当前落地状态
+
+- `scripts/map-generation/world-object-assets.mjs` 已按本文档生成首批 source world objects：主环路、山脊支路、林中小径、主河、支流、5 个 POI 和若干道路/据点道具。
+- `objects/manifest.json` 已按 512m partition cell 写入 `.objectpack`，并记录 byte length 与 SHA-256。
+- cooked manifest v4 已把 source objects 纳入 build input signature；object cooked cell pack 复制 source object pack。
+- collision cooked cell pack 已由 terrain heightfield、水体 volume、POI/prop blocker 派生。
+- nav cooked cell pack 已由 terrain slope、road cost、water blocker/cost 和 object blocker 派生粗粒度 grid。
+- game runtime 已接入 cooked world partition planner，并按玩家/摄像机位置预取 object/collision/nav cell pack。
+
 ## 验收标准
 
 进入下一阶段前，`main` 至少应满足：
@@ -108,6 +117,8 @@
 - terrain/paint/vegetation/object/collision/nav 都能按 partition cell 追踪依赖。
 - validator 能发现缺失 object/collision/nav pack、过期 cook、hash mismatch 和 package blob 缺失。
 - runtime world partition planner 能根据玩家位置给出 load/keep/unload cell 和跨资产 dependency 列表。
+
+已满足的基础项仍不代表最终开放世界质量完成；下一阶段重点是道路/水体可视化、地形/材质/植被联动、跨 cell nav link、编辑器调试和运行时对象实例化。
 
 ## 非目标
 

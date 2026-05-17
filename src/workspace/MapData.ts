@@ -53,6 +53,7 @@ export interface MapData {
   paintPath: typeof MAP_PAINT_PATH;
   paint: MapPaintData;
   vegetationPath: typeof MAP_VEGETATION_MODELS_PATH;
+  objectsPath: typeof MAP_WORLD_OBJECTS_PATH;
   metadata: MapMetadata;
   dirtyHeightPageKeys?: readonly string[];
 }
@@ -69,11 +70,13 @@ export interface MapManifest {
   terrainPath: typeof MAP_TERRAIN_HEIGHT_PATH;
   paintPath: typeof MAP_PAINT_PATH;
   vegetationPath: typeof MAP_VEGETATION_MODELS_PATH;
+  objectsPath: typeof MAP_WORLD_OBJECTS_PATH;
   metadata: MapMetadata;
 }
 
 export const MAP_DATA_VERSION = 8;
 export const MAP_VEGETATION_MODELS_PATH = "vegetation/models.json";
+export const MAP_WORLD_OBJECTS_PATH = "objects/manifest.json";
 export const DEFAULT_OPEN_WORLD_SIZE_METERS = 3200;
 export const DEFAULT_MAP_PAGE_SIZE_METERS = 64;
 export const DEFAULT_HEIGHT_PAGE_RESOLUTION = 129;
@@ -98,6 +101,7 @@ export function createEmptyMapData(
     paintPath: MAP_PAINT_PATH,
     paint: createEmptyPaintData(),
     vegetationPath: MAP_VEGETATION_MODELS_PATH,
+    objectsPath: MAP_WORLD_OBJECTS_PATH,
     metadata: {
       name,
       created: now,
@@ -152,6 +156,7 @@ export function createMapManifest(mapData: MapData): MapManifest {
     terrainPath: normalizeTerrainPath(mapData.terrainPath),
     paintPath: normalizePaintPath(mapData.paintPath),
     vegetationPath: normalizeVegetationPath(mapData.vegetationPath),
+    objectsPath: normalizeObjectsPath(mapData.objectsPath),
     metadata: { ...mapData.metadata },
   };
 }
@@ -194,6 +199,7 @@ export function deserializeMapManifest(json: string): MapManifest {
     terrainPath: normalizeTerrainPath(parsed.terrainPath),
     paintPath: normalizePaintPath(parsed.paintPath),
     vegetationPath: normalizeVegetationPath(parsed.vegetationPath),
+    objectsPath: normalizeObjectsPath(parsed.objectsPath),
     metadata: {
       name: parsed.metadata.name,
       created: parsed.metadata.created,
@@ -223,6 +229,7 @@ export function createMapDataFromManifest(
     paintPath: normalizePaintPath(manifest.paintPath),
     paint: createEmptyPaintData(),
     vegetationPath: normalizeVegetationPath(manifest.vegetationPath),
+    objectsPath: normalizeObjectsPath(manifest.objectsPath),
     metadata: { ...manifest.metadata },
   };
 }
@@ -249,6 +256,14 @@ function normalizeVegetationPath(value: unknown): typeof MAP_VEGETATION_MODELS_P
   }
 
   return MAP_VEGETATION_MODELS_PATH;
+}
+
+function normalizeObjectsPath(value: unknown): typeof MAP_WORLD_OBJECTS_PATH {
+  if (value !== MAP_WORLD_OBJECTS_PATH) {
+    throw new Error("Map manifest has invalid world objects path");
+  }
+
+  return MAP_WORLD_OBJECTS_PATH;
 }
 
 

@@ -17,6 +17,7 @@
     "gen:terrain": "node scripts/generate-terrain-map.mjs",
     "gen:paint": "node scripts/generate-paint-map.mjs",
     "gen:vegetation": "node scripts/generate-vegetation-map.mjs",
+    "gen:objects": "node scripts/generate-world-objects.mjs",
     "gen:all": "node scripts/generate-map-assets.mjs",
     "cook:map": "node scripts/cook-map-assets.mjs"
   },

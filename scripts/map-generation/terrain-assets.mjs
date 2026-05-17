@@ -20,6 +20,7 @@ import {
   terrainHeightManifestVersion,
   terrainHeightPath,
   vegetationModelsPath,
+  worldObjectsPath,
   writeJsonFile,
 } from "./shared.mjs";
 
@@ -101,6 +102,7 @@ export async function generateTerrainAssets(context, preset) {
     terrainPath: terrainHeightPath,
     paintPath: existingMap?.paintPath ?? paintManifestPath,
     vegetationPath: existingMap?.vegetationPath ?? vegetationModelsPath,
+    objectsPath: existingMap?.objectsPath ?? worldObjectsPath,
     metadata: {
       name: preset.name,
       created: existingMap?.metadata?.created ?? now,

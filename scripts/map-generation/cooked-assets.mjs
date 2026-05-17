@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { cp, mkdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
+import { buildHeightConfig, generateHeight } from "./height-field.mjs";
 import {
   compareRegionCoords,
   cookedBuildCacheDirectory,
@@ -19,6 +20,9 @@ import {
   paintManifestPath,
   terrainHeightPath,
   vegetationModelsPath,
+  worldObjectCellFormat,
+  worldObjectManifestFormat,
+  worldObjectsPath,
   writeJsonFile,
 } from "./shared.mjs";
 import { createCookedPackageBuilder } from "./cooked-package.mjs";
@@ -33,12 +37,14 @@ export async function generateCookedMapAssets(context, preset) {
   const terrainSource = await readSourceJson(path.join(mapDir, terrainHeightPath), context);
   const paintSource = await readSourceJson(path.join(mapDir, paintManifestPath), context);
   const vegetationSource = await readSourceJson(path.join(mapDir, vegetationModelsPath), context);
+  const objectsSource = await readSourceJson(path.join(mapDir, worldObjectsPath), context);
   const source = {
     project: createSourceRef(projectSource),
     map: createSourceRef(mapSource),
     terrain: createSourceRef(terrainSource),
     paint: createSourceRef(paintSource),
     vegetation: createSourceRef(vegetationSource),
+    objects: createSourceRef(objectsSource),
   };
   const inputSignature = createCookInputSignature(mapId, source);
   const cache = await readCookCache(context, mapId);
@@ -62,7 +68,15 @@ export async function generateCookedMapAssets(context, preset) {
     vegetationSource.json,
   );
   const basePartition = createWorldPartition(world, coreAssets);
-  const partitionAssets = await createCookedPartitionCellAssets(context, mapId, basePartition, packageBuilder);
+  const partitionAssets = await createCookedPartitionCellAssets(
+    context,
+    preset,
+    mapId,
+    mapDir,
+    basePartition,
+    packageBuilder,
+    objectsSource.json,
+  );
   const assets = { ...coreAssets, ...partitionAssets };
   const partition = attachPartitionCellAssetDependencies(basePartition, partitionAssets);
   const contentPackage = packageBuilder.createPackage();
@@ -411,49 +425,88 @@ function ensureInsideProject(context, filePath, label) {
   }
 }
 
-async function createCookedPartitionCellAssets(context, mapId, partition, packageBuilder) {
-  const [objects, collision, nav] = await Promise.all([
-    createCookedCellAsset(context, mapId, partition, packageBuilder, {
-      directory: "objects",
-      extension: "objectpack",
-      format: cookedObjectCellFormat,
-      kind: "world-object-cell",
-      payloadKey: "objects",
-    }),
-    createCookedCellAsset(context, mapId, partition, packageBuilder, {
-      directory: "collision",
-      extension: "collisionpack",
-      format: cookedCollisionCellFormat,
-      kind: "world-collision-cell",
-      payloadKey: "shapes",
-    }),
-    createCookedCellAsset(context, mapId, partition, packageBuilder, {
-      directory: "nav",
-      extension: "navpack",
-      format: cookedNavCellFormat,
-      kind: "world-nav-cell",
-      payloadKey: "nodes",
-    }),
-  ]);
+async function createCookedPartitionCellAssets(context, preset, mapId, mapDir, partition, packageBuilder, objectManifest) {
+  const objectPacks = await readWorldObjectCellPacks(mapDir, objectManifest);
+  const objects = await createCookedObjectCellAssets(context, mapId, mapDir, partition, packageBuilder, objectManifest, objectPacks);
+  const collision = await createCookedDerivedCellAssets(preset, mapId, partition, packageBuilder, objectPacks, {
+    directory: "collision",
+    extension: "collisionpack",
+    format: cookedCollisionCellFormat,
+    kind: "world-collision-cell",
+    createPack: createCollisionCellPack,
+  });
+  const nav = await createCookedDerivedCellAssets(preset, mapId, partition, packageBuilder, objectPacks, {
+    directory: "nav",
+    extension: "navpack",
+    format: cookedNavCellFormat,
+    kind: "world-nav-cell",
+    createPack: createNavCellPack,
+  });
 
   return { objects, collision, nav };
 }
 
-async function createCookedCellAsset(context, mapId, partition, packageBuilder, options) {
+async function readWorldObjectCellPacks(mapDir, objectManifest) {
+  if (objectManifest?.format !== worldObjectManifestFormat || objectManifest?.cellFormat !== worldObjectCellFormat) {
+    throw new Error(`World object manifest must use ${worldObjectManifestFormat}/${worldObjectCellFormat}`);
+  }
+
+  const entries = await Promise.all(Object.entries(objectManifest.cells ?? {}).map(async ([key, cellRef]) => {
+    if (!cellRef || typeof cellRef.path !== "string") {
+      throw new Error(`World object cell '${key}' is missing a source path`);
+    }
+
+    const bytes = await readFile(path.join(mapDir, cellRef.path));
+    const pack = JSON.parse(bytes.toString("utf8"));
+    if (pack.format !== worldObjectCellFormat || pack.cell?.key !== key || !Array.isArray(pack.objects)) {
+      throw new Error(`World object cell '${key}' has invalid ${worldObjectCellFormat} payload`);
+    }
+
+    return [key, { ref: cellRef, pack, bytes }];
+  }));
+
+  return new Map(entries);
+}
+
+async function createCookedObjectCellAssets(context, mapId, mapDir, partition, packageBuilder, objectManifest, objectPacks) {
   const cells = await Promise.all(partition.cells.map(async (cell) => {
+    const sourcePack = objectPacks.get(cell.key);
+    const cellRef = objectManifest.cells?.[cell.key];
+    if (!sourcePack || !cellRef) {
+      throw new Error(`World object source is missing partition cell '${cell.key}'`);
+    }
+
+    const runtimePath = mapCookedPath(mapId, cellPackPath("objects", "objectpack", cell.key));
+    const artifact = await packageBuilder.copyFile(
+      path.join(mapDir, cellRef.path),
+      runtimePath,
+      "world-object-cell",
+      mapSourcePath(mapId, cellRef.path),
+    );
+    return [cell.key, {
+      path: runtimePath,
+      objectCount: sourcePack.pack.objects.length,
+      byteLength: artifact.byteLength,
+      sha256: artifact.sha256,
+    }];
+  }));
+
+  return {
+    manifestPath: mapSourcePath(mapId, worldObjectsPath),
+    format: cookedObjectCellFormat,
+    cellSizePages: partition.cellSizePages,
+    cellSizeMeters: partition.cellSizeMeters,
+    cells: Object.fromEntries(cells.sort(([left], [right]) => compareRegionKeyStrings(left, right))),
+  };
+}
+
+async function createCookedDerivedCellAssets(preset, mapId, partition, packageBuilder, objectPacks, options) {
+  const heightConfig = buildHeightConfig(preset);
+  const cells = await Promise.all(partition.cells.map(async (cell) => {
+    const objectPack = objectPacks.get(cell.key)?.pack ?? null;
     const runtimePath = mapCookedPath(mapId, cellPackPath(options.directory, options.extension, cell.key));
-    const bytes = Buffer.from(JSON.stringify({
-      version: 1,
-      format: options.format,
-      cell: {
-        key: cell.key,
-        x: cell.x,
-        z: cell.z,
-        pageRect: cell.pageRect,
-        boundsMeters: cell.boundsMeters,
-      },
-      [options.payloadKey]: [],
-    }) + "\n", "utf8");
+    const pack = options.createPack(cell, objectPack, preset, heightConfig);
+    const bytes = Buffer.from(`${JSON.stringify(pack, null, 2)}\n`, "utf8");
     const artifact = await packageBuilder.writeGeneratedFile(runtimePath, bytes, options.kind);
     return [cell.key, {
       path: runtimePath,
@@ -468,6 +521,206 @@ async function createCookedCellAsset(context, mapId, partition, packageBuilder, 
     cellSizeMeters: partition.cellSizeMeters,
     cells: Object.fromEntries(cells.sort(([left], [right]) => compareRegionKeyStrings(left, right))),
   };
+}
+
+function createCollisionCellPack(cell, objectPack) {
+  const objects = objectPack?.objects ?? [];
+  const shapes = [{
+    id: `terrain-${cell.key}`,
+    type: "terrain-heightfield",
+    boundsMeters: cell.boundsMeters,
+    terrainRegions: cell.dependencies.terrain,
+  }];
+
+  for (const object of objects) {
+    if (object.layer === "water") {
+      shapes.push({
+        id: `water-${object.id}`,
+        type: "water-volume",
+        objectId: object.id,
+        boundsMeters: object.boundsMeters,
+        widthMeters: object.spline?.widthMeters ?? 0,
+      });
+      continue;
+    }
+
+    if (!object.collision) {
+      continue;
+    }
+
+    shapes.push({
+      id: `object-${object.id}`,
+      type: object.collision.type ?? "box",
+      objectId: object.id,
+      position: object.position,
+      boundsMeters: object.boundsMeters,
+      radiusMeters: object.collision.radiusMeters ?? object.radiusMeters ?? 1,
+      heightMeters: object.collision.heightMeters ?? 2,
+    });
+  }
+
+  return {
+    version: 1,
+    format: cookedCollisionCellFormat,
+    cell: createCookedCellInfo(cell),
+    sourceDependencies: {
+      terrain: cell.dependencies.terrain,
+      objects: [cell.key],
+    },
+    shapes,
+  };
+}
+
+function createNavCellPack(cell, objectPack, preset, heightConfig) {
+  const objects = objectPack?.objects ?? [];
+  const nodes = createNavNodes(cell, objects, preset, heightConfig);
+  return {
+    version: 1,
+    format: cookedNavCellFormat,
+    cell: createCookedCellInfo(cell),
+    sourceDependencies: {
+      terrain: cell.dependencies.terrain,
+      objects: [cell.key],
+      collision: [cell.key],
+    },
+    grid: {
+      resolution: 4,
+      nodeSpacingMeters: (cell.boundsMeters.maxX - cell.boundsMeters.minX) / 4,
+    },
+    nodes,
+    links: createNavLinks(nodes),
+    modifiers: objects
+      .filter((object) => object.layer === "road" || object.layer === "water")
+      .map((object) => ({
+        objectId: object.id,
+        layer: object.layer,
+        archetype: object.archetype,
+        widthMeters: object.spline?.widthMeters ?? object.radiusMeters ?? 0,
+      })),
+  };
+}
+
+function createNavNodes(cell, objects, preset, heightConfig) {
+  const resolution = 4;
+  const stepX = (cell.boundsMeters.maxX - cell.boundsMeters.minX) / resolution;
+  const stepZ = (cell.boundsMeters.maxZ - cell.boundsMeters.minZ) / resolution;
+  const nodes = [];
+
+  for (let z = 0; z < resolution; z += 1) {
+    for (let x = 0; x < resolution; x += 1) {
+      const worldX = cell.boundsMeters.minX + (x + 0.5) * stepX;
+      const worldZ = cell.boundsMeters.minZ + (z + 0.5) * stepZ;
+      const height = generateHeight(worldX, worldZ, preset, heightConfig);
+      const slopeDegrees = estimateSlopeDegrees(worldX, worldZ, preset, heightConfig);
+      const roadObject = findNearestSplineObject(worldX, worldZ, objects, "road");
+      const waterObject = findNearestSplineObject(worldX, worldZ, objects, "water");
+      const objectBlocker = objects.some((object) => object.collision && isPointInsideBounds(worldX, worldZ, object.boundsMeters));
+      const roadPreferred = Boolean(roadObject && roadObject.distanceMeters <= (roadObject.object.spline?.widthMeters ?? 0) * 2.5);
+      const waterBlocked = Boolean(waterObject && waterObject.distanceMeters <= (waterObject.object.spline?.widthMeters ?? 0) * 0.9);
+      const walkable = slopeDegrees <= 38 && !waterBlocked && !objectBlocker;
+      const cost = walkable
+        ? round((roadPreferred ? 0.55 : 1) + Math.max(0, slopeDegrees - 12) * 0.025 + (waterObject ? 0.55 : 0))
+        : 9999;
+
+      nodes.push({
+        id: `${cell.key}:${x},${z}`,
+        x,
+        z,
+        position: { x: round(worldX), y: round(height), z: round(worldZ) },
+        slopeDegrees: round(slopeDegrees),
+        walkable,
+        cost,
+        tags: [
+          ...(roadPreferred ? ["road"] : []),
+          ...(waterBlocked ? ["water"] : []),
+          ...(objectBlocker ? ["blocked"] : []),
+        ],
+      });
+    }
+  }
+
+  return nodes;
+}
+
+function createNavLinks(nodes) {
+  const nodeByGrid = new Map(nodes.map((node) => [`${node.x},${node.z}`, node]));
+  const links = [];
+  for (const node of nodes) {
+    for (const [dx, dz] of [[1, 0], [0, 1]]) {
+      const target = nodeByGrid.get(`${node.x + dx},${node.z + dz}`);
+      if (!target || !node.walkable || !target.walkable) {
+        continue;
+      }
+
+      links.push({
+        from: node.id,
+        to: target.id,
+        cost: round((node.cost + target.cost) * 0.5),
+      });
+    }
+  }
+
+  return links;
+}
+
+function estimateSlopeDegrees(x, z, preset, heightConfig) {
+  const sampleDistance = 8;
+  const heightLeft = generateHeight(x - sampleDistance, z, preset, heightConfig);
+  const heightRight = generateHeight(x + sampleDistance, z, preset, heightConfig);
+  const heightBack = generateHeight(x, z - sampleDistance, preset, heightConfig);
+  const heightForward = generateHeight(x, z + sampleDistance, preset, heightConfig);
+  const gradientX = (heightRight - heightLeft) / (sampleDistance * 2);
+  const gradientZ = (heightForward - heightBack) / (sampleDistance * 2);
+  return Math.atan(Math.hypot(gradientX, gradientZ)) * 180 / Math.PI;
+}
+
+function findNearestSplineObject(x, z, objects, layer) {
+  let nearest = null;
+  for (const object of objects) {
+    if (object.layer !== layer || !object.spline?.points?.length) {
+      continue;
+    }
+
+    const points = object.spline.points;
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const distanceMeters = distancePointToSegment(x, z, points[index], points[index + 1]);
+      if (!nearest || distanceMeters < nearest.distanceMeters) {
+        nearest = { object, distanceMeters };
+      }
+    }
+  }
+
+  return nearest;
+}
+
+function distancePointToSegment(x, z, start, end) {
+  const dx = end.x - start.x;
+  const dz = end.z - start.z;
+  const lengthSquared = dx * dx + dz * dz;
+  if (lengthSquared === 0) {
+    return Math.hypot(x - start.x, z - start.z);
+  }
+
+  const t = Math.max(0, Math.min(1, ((x - start.x) * dx + (z - start.z) * dz) / lengthSquared));
+  return Math.hypot(x - (start.x + dx * t), z - (start.z + dz * t));
+}
+
+function isPointInsideBounds(x, z, bounds) {
+  return bounds && x >= bounds.minX && x <= bounds.maxX && z >= bounds.minZ && z <= bounds.maxZ;
+}
+
+function createCookedCellInfo(cell) {
+  return {
+    key: cell.key,
+    x: cell.x,
+    z: cell.z,
+    pageRect: cell.pageRect,
+    boundsMeters: cell.boundsMeters,
+  };
+}
+
+function round(value) {
+  return Math.round(value * 1000) / 1000;
 }
 
 function attachPartitionCellAssetDependencies(partition, assets) {

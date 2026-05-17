@@ -96,6 +96,8 @@ export function useGameApp({
               app.applySettings(settingsToApply);
             }
 
+            app.setWorldPartitionRuntime(bundledProject?.worldPartition ?? null);
+
             // EN: The game runtime requires a map file and cannot synthesize replacement terrain.
             // 中文: 游戏运行时必须提供地图文件，不能合成替代地形。
             await app.loadMapData(mapDataToLoad);

@@ -54,6 +54,8 @@ import { getSplatMapCount, type TextureDefinition } from "../world/terrain/Textu
 import { VegetationScene, type VegetationMapData } from "../world/vegetation";
 import { assemblePaintSplatMapPixels, getPaintRegions, type MapData } from "@project/MapData";
 import { validateSidecarRegionIntegrity } from "@workspace/SidecarAssetIntegrity";
+import type { CookedWorldPartitionDependencies } from "../workspace/CookedMapManifest";
+import type { BundledWorldPartitionCellKind, BundledWorldPartitionRuntime } from "../workspace/loadBundledProject";
 
 export interface GameAppOptions {
   gameplayEnabled?: boolean;
@@ -101,6 +103,8 @@ export class GameApp implements RuntimeAppSession {
   private lastUpdateMs = 0;
   private lastRenderMs = 0;
   private lastVegetationTerrainRevision = -1;
+  private lastWorldPartitionDependencySignature = "";
+  private readonly pendingWorldPartitionLoads = new Set<string>();
   readonly ready: Promise<void>;
   protected disposed = false;
 
@@ -141,6 +145,11 @@ export class GameApp implements RuntimeAppSession {
       input: { raw: rawInputState },
       runtime: {
         terrain: world.terrain,
+        worldPartition: {
+          runtime: null,
+          loadCellAsset: null,
+          currentPlan: null,
+        },
         settings: this.settings,
       },
     };
@@ -364,6 +373,14 @@ export class GameApp implements RuntimeAppSession {
     vegetationData: VegetationMapData | null,
   ): Promise<void> {
     await this.vegetationScene.setData(mapDirectoryUrl, vegetationData);
+  }
+
+  setWorldPartitionRuntime(worldPartition: BundledWorldPartitionRuntime | null): void {
+    this.resources.runtime.worldPartition.runtime = worldPartition?.runtime ?? null;
+    this.resources.runtime.worldPartition.loadCellAsset = worldPartition?.loadCellAsset ?? null;
+    this.resources.runtime.worldPartition.currentPlan = null;
+    this.lastWorldPartitionDependencySignature = "";
+    this.pendingWorldPartitionLoads.clear();
   }
 
   private async loadPaintPageTextures(
@@ -590,6 +607,55 @@ export class GameApp implements RuntimeAppSession {
     const target = this.resolveTerrainUpdateTarget();
     if (target) {
       terrain.update(target.x, target.z, this.gameRenderer.camera);
+      this.updateWorldPartitionStreaming(target);
+    }
+  }
+
+  private updateWorldPartitionStreaming(target: { x: number; z: number }): void {
+    const worldPartition = this.resources.runtime.worldPartition;
+    if (!worldPartition.runtime) {
+      return;
+    }
+
+    const plan = worldPartition.runtime.createPlan(target.x, target.z, {
+      loadRadiusCells: 1,
+      unloadRadiusCells: 2,
+    });
+    worldPartition.runtime.applyPlan(plan);
+    worldPartition.currentPlan = plan;
+
+    const signature = createWorldPartitionDependencySignature(plan.dependencies);
+    if (signature === this.lastWorldPartitionDependencySignature) {
+      return;
+    }
+
+    this.lastWorldPartitionDependencySignature = signature;
+    this.preloadWorldPartitionCells(plan.dependencies);
+  }
+
+  private preloadWorldPartitionCells(dependencies: CookedWorldPartitionDependencies): void {
+    const loader = this.resources.runtime.worldPartition.loadCellAsset;
+    if (!loader) {
+      return;
+    }
+
+    const kinds: BundledWorldPartitionCellKind[] = ["objects", "collision", "nav"];
+    for (const kind of kinds) {
+      for (const key of dependencies[kind]) {
+        const loadKey = `${kind}:${key}`;
+        if (this.pendingWorldPartitionLoads.has(loadKey)) {
+          continue;
+        }
+
+        this.pendingWorldPartitionLoads.add(loadKey);
+        void loader(kind, key)
+          .catch((error: unknown) => {
+            console.warn(`[GameApp] Failed to load cooked ${kind} cell '${key}'`, error);
+          })
+          .finally(() => {
+            this.pendingWorldPartitionLoads.delete(loadKey);
+          });
+      }
     }
   }
 
@@ -618,4 +684,9 @@ export class GameApp implements RuntimeAppSession {
     }
     return null;
   }
+}
+
+function createWorldPartitionDependencySignature(dependencies: CookedWorldPartitionDependencies): string {
+  const kinds: BundledWorldPartitionCellKind[] = ["objects", "collision", "nav"];
+  return kinds.map((kind) => `${kind}:${dependencies[kind].join(",")}`).join("|");
 }

@@ -1,8 +1,8 @@
 // CookedMapManifest: runtime schema for cooked open-world map data.
 // CookedMapManifest：开放世界 cooked 地图数据的运行时 schema。
 
-export const COOKED_MAP_VERSION = 3;
-export const COOKED_MAP_FORMAT = "open-fps-cooked-map-v3";
+export const COOKED_MAP_VERSION = 4;
+export const COOKED_MAP_FORMAT = "open-fps-cooked-map-v4";
 export const COOKED_MAPS_DIRECTORY = "cooked/maps";
 export const COOKED_MAP_MANIFEST_FILE = "manifest.json";
 export const COOKED_PACKAGE_LAYOUT = "content-addressed-sha256-v1";
@@ -34,6 +34,7 @@ export type CookedRegionTable = Record<string, CookedRegionRef>;
 
 export interface CookedCellRef {
   path: string;
+  objectCount?: number;
   byteLength: number;
   sha256: string;
 }
@@ -98,6 +99,7 @@ export interface CookedVegetationAsset {
 }
 
 export interface CookedCellAsset {
+  manifestPath?: string;
   format: string;
   cellSizePages: number;
   cellSizeMeters: number;
@@ -139,6 +141,7 @@ export interface CookedMapManifest {
     terrain: CookedSourceRef;
     paint: CookedSourceRef;
     vegetation: CookedSourceRef;
+    objects: CookedSourceRef;
   };
   world: CookedMapWorld;
   assets: CookedMapAssets;
@@ -254,6 +257,7 @@ function normalizeCookedSource(value: unknown): CookedMapManifest["source"] {
     terrain: normalizeSourceRef(source.terrain, "terrain"),
     paint: normalizeSourceRef(source.paint, "paint"),
     vegetation: normalizeSourceRef(source.vegetation, "vegetation"),
+    objects: normalizeSourceRef(source.objects, "objects"),
   };
 }
 
@@ -482,6 +486,14 @@ function readNonNegativeInteger(value: unknown, label: string): number {
   return integer;
 }
 
+function readOptionalNonNegativeInteger(value: unknown, label: string): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return readNonNegativeInteger(value, label);
+}
+
 function readFiniteNumber(value: unknown, label: string): number {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`${label} must be a finite number`);
@@ -550,6 +562,7 @@ function isRecord(value: unknown): value is JsonRecord {
 function normalizeCellAsset(value: unknown, label: string): CookedCellAsset {
   const asset = readRecord(value, `cooked ${label} asset`);
   return {
+    manifestPath: readOptionalString(asset.manifestPath, `cooked ${label} manifestPath`),
     format: readString(asset.format, `cooked ${label} format`),
     cellSizePages: readPositiveInteger(asset.cellSizePages, `cooked ${label} cellSizePages`),
     cellSizeMeters: readPositiveNumber(asset.cellSizeMeters, `cooked ${label} cellSizeMeters`),
@@ -563,6 +576,7 @@ function normalizeCellTable(value: unknown, label: string): CookedCellTable {
     const cell = readRecord(entry, `${label} '${key}'`);
     return [key, {
       path: readString(cell.path, `${label} '${key}' path`),
+      objectCount: readOptionalNonNegativeInteger(cell.objectCount, `${label} '${key}' objectCount`),
       byteLength: readNonNegativeInteger(cell.byteLength, `${label} '${key}' byteLength`),
       sha256: readSha256(cell.sha256, `${label} '${key}' sha256`),
     }];
