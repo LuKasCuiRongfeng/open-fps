@@ -1,13 +1,11 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
-  clamp,
   createRegionIntegrity,
   ensureMapManifestPaths,
   formatGridCoordinate,
   getMapDir,
   getPageBounds,
-  hash2i,
   paintManifestPath,
   paintPageResolution,
   paintRegionFormat,
@@ -32,6 +30,7 @@ export async function generatePaintAssets(context, preset) {
 
   const layers = {
     beachSand: {
+      name: "Beach Sand",
       diffuse: "assets/texture/aerial_beach_01_diff_1k.jpg",
       normal: "assets/texture/aerial_beach_01_nor_gl_1k.png",
       arm: "assets/texture/aerial_beach_01_arm_1k.png",
@@ -40,10 +39,29 @@ export async function generatePaintAssets(context, preset) {
       splatMapIndex: 0,
     },
     mudLeaves: {
+      name: "Mud Leaves",
       diffuse: "assets/texture/brown_mud_leaves_01_diff_1k.jpg",
       normal: "assets/texture/brown_mud_leaves_01_nor_gl_1k.png",
       arm: "assets/texture/brown_mud_leaves_01_arm_1k.png",
       displacement: "assets/texture/brown_mud_leaves_01_disp_1k.png",
+      scale: 5,
+      splatMapIndex: 0,
+    },
+    gravelEmbeddedConcrete: {
+      name: "Embedded Gravel Concrete",
+      diffuse: "assets/texture/gravel_embedded_concrete_diff_1k.jpg",
+      normal: "assets/texture/gravel_embedded_concrete_nor_gl_1k.png",
+      arm: "assets/texture/gravel_embedded_concrete_arm_1k.png",
+      displacement: "assets/texture/gravel_embedded_concrete_disp_1k.png",
+      scale: 4,
+      splatMapIndex: 0,
+    },
+    snow: {
+      name: "Snow",
+      diffuse: "assets/texture/snow_03_diff_1k.jpg",
+      normal: "assets/texture/snow_03_nor_gl_1k.png",
+      arm: "assets/texture/snow_03_arm_1k.png",
+      displacement: "assets/texture/snow_03_disp_1k.png",
       scale: 5,
       splatMapIndex: 0,
     },
@@ -65,20 +83,8 @@ export async function generatePaintAssets(context, preset) {
   };
 
   const pixels = Buffer.alloc(splatResolution * splatResolution * 4);
-  for (let pixelZ = 0; pixelZ < splatResolution; pixelZ += 1) {
-    for (let pixelX = 0; pixelX < splatResolution; pixelX += 1) {
-      const normalizedX = pixelX / (splatResolution - 1);
-      const normalizedZ = pixelZ / (splatResolution - 1);
-      const grain = hash2i(Math.floor(normalizedX * 96), Math.floor(normalizedZ * 96), 8123, 918273);
-      const broad = 0.5 + 0.5 * Math.sin(normalizedX * 18 + Math.cos(normalizedZ * 9) * 1.6);
-      const mudWeight = clamp(0.18 + broad * 0.28 + grain * 0.22, 0, 1);
-      const mudByte = Math.round(mudWeight * 255);
-      const offset = (pixelZ * splatResolution + pixelX) * 4;
-      pixels[offset] = 255 - mudByte;
-      pixels[offset + 1] = mudByte;
-      pixels[offset + 2] = 0;
-      pixels[offset + 3] = 0;
-    }
+  for (let offset = 0; offset < pixels.length; offset += 4) {
+    pixels[offset] = 255;
   }
 
   const regionByteLength = await writePaintRegionPacks(paintDir, pageBounds, pixels, splatResolution, manifest);

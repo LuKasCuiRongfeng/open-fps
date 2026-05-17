@@ -75,6 +75,9 @@ export const MAX_SPLAT_MAPS = 4;
  * - splat map 内的通道由 (layerIndex % 4) 决定：0=R, 1=G, 2=B, 3=A
  */
 export interface TextureLayerDef {
+  // Display name for editor UI / 编辑器 UI 显示名称
+  name?: string;
+
   // Required: diffuse/albedo color map / 必需：漫反射/颜色贴图
   diffuse: string;
 
@@ -356,6 +359,7 @@ function normalizeTextureDefinition(value: Record<string, unknown>): TextureDefi
 
     const diffuse = readRequiredString(rawLayer.diffuse, `Paint layer '${layerName}' diffuse texture`);
     layers[layerName] = {
+      ...readOptionalStringField(rawLayer, "name"),
       diffuse,
       ...readOptionalStringField(rawLayer, "normal"),
       ...readOptionalStringField(rawLayer, "displacement"),

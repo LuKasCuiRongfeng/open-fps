@@ -38,6 +38,7 @@ export function TextureEditorTab({
   const editingEnabled = textureEditor?.editingEnabled ?? false;
   const isEditing = activeEditor === "texture";
   const layerNames = textureEditor?.layerNames ?? [];
+  const textureDefinition = textureEditor?.textureDefinition ?? null;
 
   const handleSelectTexture = () => {
     if (!canEdit || !editingEnabled) return;
@@ -102,7 +103,7 @@ export function TextureEditorTab({
                   className="w-full min-w-0 justify-start px-2"
                 >
                   <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  <span className="min-w-0 truncate">{index + 1}. {name}</span>
+                  <span className="min-w-0 truncate">{index + 1}. {textureDefinition?.[name]?.name ?? name}</span>
                 </Button>
               ))}
             </div>

@@ -5,11 +5,11 @@
   "build": {
     "tool": "open-fps-cook-map-assets",
     "toolVersion": 4,
-    "generatedAt": "2026-05-17T12:52:57.086Z",
-    "inputSignature": "f9571173b0d0306f3f7b4eb0bc526205f859329547e710a738cc1a77cc930a05",
-    "previousInputSignature": "ed70503733be9aff15c2d36e97d55f81d9a02b643981dddb1ac17ea79d6a3671",
+    "generatedAt": "2026-05-17T13:31:47.185Z",
+    "inputSignature": "2d7cbe662bcd6a215ff3c6e2f5edf58a51a7c4b4cbc148b3d0fb523d99563b2d",
+    "previousInputSignature": "f9571173b0d0306f3f7b4eb0bc526205f859329547e710a738cc1a77cc930a05",
     "packageLayout": "content-addressed-sha256-v1",
-    "artifactCount": 351
+    "artifactCount": 359
   },
   "map": {
     "seed": 918273,
@@ -34,7 +34,7 @@
     },
     "paint": {
       "path": "maps/main/paint/layers.json",
-      "sha256": "39e538c05582e0e2c9c0a33ba26c8142e97936a9f00f254663d6730f284f456c"
+      "sha256": "2b29c96db50b7baf1b9166c440e41c1d2d4b177786933848b61f50710110f484"
     },
     "vegetation": {
       "path": "maps/main/vegetation/models.json",
@@ -464,6 +464,7 @@
       ],
       "layers": {
         "beachSand": {
+          "name": "Beach Sand",
           "diffuse": "cooked/assets/texture/aerial_beach_01_diff_1k.jpg",
           "normal": "cooked/assets/texture/aerial_beach_01_nor_gl_1k.png",
           "arm": "cooked/assets/texture/aerial_beach_01_arm_1k.png",
@@ -472,10 +473,29 @@
           "splatMapIndex": 0
         },
         "mudLeaves": {
+          "name": "Mud Leaves",
           "diffuse": "cooked/assets/texture/brown_mud_leaves_01_diff_1k.jpg",
           "normal": "cooked/assets/texture/brown_mud_leaves_01_nor_gl_1k.png",
           "arm": "cooked/assets/texture/brown_mud_leaves_01_arm_1k.png",
           "displacement": "cooked/assets/texture/brown_mud_leaves_01_disp_1k.png",
+          "scale": 5,
+          "splatMapIndex": 0
+        },
+        "gravelEmbeddedConcrete": {
+          "name": "Embedded Gravel Concrete",
+          "diffuse": "cooked/assets/texture/gravel_embedded_concrete_diff_1k.jpg",
+          "normal": "cooked/assets/texture/gravel_embedded_concrete_nor_gl_1k.png",
+          "arm": "cooked/assets/texture/gravel_embedded_concrete_arm_1k.png",
+          "displacement": "cooked/assets/texture/gravel_embedded_concrete_disp_1k.png",
+          "scale": 4,
+          "splatMapIndex": 0
+        },
+        "snow": {
+          "name": "Snow",
+          "diffuse": "cooked/assets/texture/snow_03_diff_1k.jpg",
+          "normal": "cooked/assets/texture/snow_03_nor_gl_1k.png",
+          "arm": "cooked/assets/texture/snow_03_arm_1k.png",
+          "displacement": "cooked/assets/texture/snow_03_disp_1k.png",
           "scale": 5,
           "splatMapIndex": 0
         }
@@ -485,385 +505,385 @@
           "path": "cooked/maps/main/paint/regions/r_m4_m4.paintpack",
           "mask": "0x8000000000000000",
           "byteLength": 4096,
-          "sha256": "492c0a11293160273ecb6c861558dc13cb8d24d2acc5792a83e3b97b0e95aeeb"
+          "sha256": "c079e89d3e89a13f51a876af568c67f26cdeaf23ae55ab8c17259059a9b8f4e8"
         },
         "-3,-4": {
           "path": "cooked/maps/main/paint/regions/r_m3_m4.paintpack",
           "mask": "0xff00000000000000",
           "byteLength": 32768,
-          "sha256": "52b1a900ec53cc5408a65bc34219c6a3150c874f657862712407cc51d0ff99b5"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-2,-4": {
           "path": "cooked/maps/main/paint/regions/r_m2_m4.paintpack",
           "mask": "0xff00000000000000",
           "byteLength": 32768,
-          "sha256": "734932d1a1856b6736f76574254e25ba18153b5aebf61111ede503160dcf5454"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-1,-4": {
           "path": "cooked/maps/main/paint/regions/r_m1_m4.paintpack",
           "mask": "0xff00000000000000",
           "byteLength": 32768,
-          "sha256": "86d96a6c6935ccd912a4fce0f9a607b8e4bdcbf040dcc3ef4bb30314fbade330"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "0,-4": {
           "path": "cooked/maps/main/paint/regions/r_0_m4.paintpack",
           "mask": "0xff00000000000000",
           "byteLength": 32768,
-          "sha256": "05eecafb6f65de56fae211bfc6d76cbe017fadaea9c82c17062305eb9f1bdb01"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "1,-4": {
           "path": "cooked/maps/main/paint/regions/r_1_m4.paintpack",
           "mask": "0xff00000000000000",
           "byteLength": 32768,
-          "sha256": "99ade54e4c267a10d9edf1e894916109239f80af4585f3ead9fe54aea50d0a0e"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "2,-4": {
           "path": "cooked/maps/main/paint/regions/r_2_m4.paintpack",
           "mask": "0xff00000000000000",
           "byteLength": 32768,
-          "sha256": "8671c8c9f1a54b0e5a6ca4a022702670683a99b00a1a92be0dbaaca0e009b20c"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "3,-4": {
           "path": "cooked/maps/main/paint/regions/r_3_m4.paintpack",
           "mask": "0x0100000000000000",
           "byteLength": 4096,
-          "sha256": "21485e69bda5f3e5edab2407a327048f378f3fb0b8f512295575ae853b4f6832"
+          "sha256": "c079e89d3e89a13f51a876af568c67f26cdeaf23ae55ab8c17259059a9b8f4e8"
         },
         "-4,-3": {
           "path": "cooked/maps/main/paint/regions/r_m4_m3.paintpack",
           "mask": "0x8080808080808080",
           "byteLength": 32768,
-          "sha256": "12426b5f68a68809c40106f3ce862fac1980de45efe98d1707f07efc32f23a88"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-3,-3": {
           "path": "cooked/maps/main/paint/regions/r_m3_m3.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "1543fb9952eafbaf137287663f87cdfca4a2ff33df947802083047ffca53963d"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "-2,-3": {
           "path": "cooked/maps/main/paint/regions/r_m2_m3.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "7529c267c6bf60a34d792a13fb71c9942fb7311cf0d89d3bffd492b40c5da22d"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "-1,-3": {
           "path": "cooked/maps/main/paint/regions/r_m1_m3.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "ea2962eb375da10d37edc892f5b1307352a3ecf4768bfdd9aee0f29cfe545516"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "0,-3": {
           "path": "cooked/maps/main/paint/regions/r_0_m3.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "706e1652d276ffcebb537bf63e83249e5b986e2e023d0b52dd1fd585d984f490"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "1,-3": {
           "path": "cooked/maps/main/paint/regions/r_1_m3.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "ba3195979f74f687655868ecff1bf4bf71964b64b9f881af69d35a4ac2bba7df"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "2,-3": {
           "path": "cooked/maps/main/paint/regions/r_2_m3.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "19cafb5d517e948b375f15ae813639ea59c3f5f4ca4c88fb7f9e96d91e17c8b8"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "3,-3": {
           "path": "cooked/maps/main/paint/regions/r_3_m3.paintpack",
           "mask": "0x0101010101010101",
           "byteLength": 32768,
-          "sha256": "86597a23a168e272cf93cdea0577189e3679101052d489cca168e42b8e57852e"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-4,-2": {
           "path": "cooked/maps/main/paint/regions/r_m4_m2.paintpack",
           "mask": "0x8080808080808080",
           "byteLength": 32768,
-          "sha256": "25043f0917c6d568bd07d08f02143caa8fa6d75034f1cfc37591e0139778f9a9"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-3,-2": {
           "path": "cooked/maps/main/paint/regions/r_m3_m2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "86327b43ee1da03571243a466e2004fc865209094c53eea1c40fe9228282f1d4"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "-2,-2": {
           "path": "cooked/maps/main/paint/regions/r_m2_m2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "7121e44d6be7f12e1bcc675918bf43b8cfd948361a460d48467d46655c1035ac"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "-1,-2": {
           "path": "cooked/maps/main/paint/regions/r_m1_m2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "ae96d10b7b896a5d8a2dcd504448df9e8d3d4721d45d505b55a604c411cda76b"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "0,-2": {
           "path": "cooked/maps/main/paint/regions/r_0_m2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "1ba4294604f681847d3d7dc949048e5db1fa6d33ebaa408c3bce40f16c4bb5bc"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "1,-2": {
           "path": "cooked/maps/main/paint/regions/r_1_m2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "d7f8936949de346307f4acf3db9718fbe86e0dac0ca0018b4b8c0e0308164fd4"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "2,-2": {
           "path": "cooked/maps/main/paint/regions/r_2_m2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "a1566c076ef02d3b4cb8d31a76311b59cab0da7a7b9d58b3c9a6e0bbca1f8b35"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "3,-2": {
           "path": "cooked/maps/main/paint/regions/r_3_m2.paintpack",
           "mask": "0x0101010101010101",
           "byteLength": 32768,
-          "sha256": "5333c0474c9bab7a21dd11e79bf1c2f128a3e804090d86357563711a9437ae8c"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-4,-1": {
           "path": "cooked/maps/main/paint/regions/r_m4_m1.paintpack",
           "mask": "0x8080808080808080",
           "byteLength": 32768,
-          "sha256": "353c057251c3fd4f69add9e4c87f72523f5fd7bded1be00d80a77147b63a5f74"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-3,-1": {
           "path": "cooked/maps/main/paint/regions/r_m3_m1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "cc3ad2c310b29ba1ab6503a6fe755a39e94f34d51a39a37c73b1900685c02463"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "-2,-1": {
           "path": "cooked/maps/main/paint/regions/r_m2_m1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "2da13837aee2b1840ceeab34402e32d8d169f6b725d2e452983715b08e769466"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "-1,-1": {
           "path": "cooked/maps/main/paint/regions/r_m1_m1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "b495616414a675d13c62942a489b18a920b29ebb4272e49d96765ea433927739"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "0,-1": {
           "path": "cooked/maps/main/paint/regions/r_0_m1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "47e4f8c2b2218174be9c4a3aa5aa0c0bde20073154f1413a910fce3eeae7c4c3"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "1,-1": {
           "path": "cooked/maps/main/paint/regions/r_1_m1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "00c026690cb5719703692c05052afb14fefd05084c780eeee3da07c34c4ebfa3"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "2,-1": {
           "path": "cooked/maps/main/paint/regions/r_2_m1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "1c8f96284404ba6c45657efae43220c6a62c25b7470d7b3b413daf5c71473277"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "3,-1": {
           "path": "cooked/maps/main/paint/regions/r_3_m1.paintpack",
           "mask": "0x0101010101010101",
           "byteLength": 32768,
-          "sha256": "e010cae21e4b52632bbd04a2a3e644476c4b8bf9007197a07b28608babfe6b76"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-4,0": {
           "path": "cooked/maps/main/paint/regions/r_m4_0.paintpack",
           "mask": "0x8080808080808080",
           "byteLength": 32768,
-          "sha256": "08715c63cac0fc54c222eb0a7b4deb50af8541931fee3f52346627b564e5a014"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-3,0": {
           "path": "cooked/maps/main/paint/regions/r_m3_0.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "d9c58d8fd68ebee819e86ce891654a619576fa677d91923d45ff22dda7fa0c9b"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "-2,0": {
           "path": "cooked/maps/main/paint/regions/r_m2_0.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "df38b874a7fe7d58ab832a9eec36c1e83aaea498f9cde4b942806fbba8a9cceb"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "-1,0": {
           "path": "cooked/maps/main/paint/regions/r_m1_0.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "59e23393126d0632993a0688ce98b318f86709d3f55e97031184ec0edce2e9d0"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "0,0": {
           "path": "cooked/maps/main/paint/regions/r_0_0.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "7f3c9e6842a33e8c21959781d1142f542a22d4ce45e7cf44937d9ef028532332"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "1,0": {
           "path": "cooked/maps/main/paint/regions/r_1_0.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "43825e727c12e2fe9975674c91848d3dd8cb03aafe85e6eeb6c486ea377fc277"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "2,0": {
           "path": "cooked/maps/main/paint/regions/r_2_0.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "a23a56fd2437e38fc5b740110a6e58ca2e2861bcaffbaea8cf0839c25fdcd9c3"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "3,0": {
           "path": "cooked/maps/main/paint/regions/r_3_0.paintpack",
           "mask": "0x0101010101010101",
           "byteLength": 32768,
-          "sha256": "4a0938dd23ada4b5a277b363d036fe91389baa304184da7e6f5894d1765f1766"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-4,1": {
           "path": "cooked/maps/main/paint/regions/r_m4_1.paintpack",
           "mask": "0x8080808080808080",
           "byteLength": 32768,
-          "sha256": "ea0daef35b0e78ad188cf572d3ac15cbfce2ae28a4bd03b9890f66315208a58c"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-3,1": {
           "path": "cooked/maps/main/paint/regions/r_m3_1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "211075508721985bc5c00b2282d2bf5df37b777005055df88f77e1de09623922"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "-2,1": {
           "path": "cooked/maps/main/paint/regions/r_m2_1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "75222f0601c49d0150228d74d988226f5563a9cf3e7e9e2971c064431ef0497e"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "-1,1": {
           "path": "cooked/maps/main/paint/regions/r_m1_1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "51bc2099d0aa09d6155b3d2a9e968bbdba854282cca02b896435b2fc93d7073b"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "0,1": {
           "path": "cooked/maps/main/paint/regions/r_0_1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "664c9a4ba1c5ea12f218495ac26b2ce325dcde7796b9f95810e8571103025f16"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "1,1": {
           "path": "cooked/maps/main/paint/regions/r_1_1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "73760ea0dccae44c8c60eedda38681d816ef805f878eb73e28e51b0fa7d9bde3"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "2,1": {
           "path": "cooked/maps/main/paint/regions/r_2_1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "71505ed7aa9b12538009247268f3f8e9adb7b0b91f8545158509485eaec3d35e"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "3,1": {
           "path": "cooked/maps/main/paint/regions/r_3_1.paintpack",
           "mask": "0x0101010101010101",
           "byteLength": 32768,
-          "sha256": "2d99c20a5cd4357df445123ec1d5f56ec6742bb9c8931f3d9a7d35b1779968c0"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-4,2": {
           "path": "cooked/maps/main/paint/regions/r_m4_2.paintpack",
           "mask": "0x8080808080808080",
           "byteLength": 32768,
-          "sha256": "e7d1fcf073e6b06d3dee038fdf654f5c90e05b6ebcd69cfb88640b2941f06033"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-3,2": {
           "path": "cooked/maps/main/paint/regions/r_m3_2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "a663f4d713a2fb6a7f1f9283e80b9e15479331a64be1743debf67cfb496cdcf1"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "-2,2": {
           "path": "cooked/maps/main/paint/regions/r_m2_2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "c51888bb3b5544dab22bb855e9d4ec80c9623ed9f8b0c28d036196e09f086469"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "-1,2": {
           "path": "cooked/maps/main/paint/regions/r_m1_2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "45504420f418d22afddcd64ebec3e0e5491f39151dd92e018495e9613c8dff41"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "0,2": {
           "path": "cooked/maps/main/paint/regions/r_0_2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "2248190c0b36b3c732ac588b5accae2767462ddef7c4331481b242c58c767fa0"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "1,2": {
           "path": "cooked/maps/main/paint/regions/r_1_2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "9458febb880dd0d951a0f464c07e10309750707ae9a2f9d024d7d88ed27d2dc9"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "2,2": {
           "path": "cooked/maps/main/paint/regions/r_2_2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
-          "sha256": "50255b5f519aefaa69567edb5301c18cf20d71f085f57ac9967262268d4175f7"
+          "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117"
         },
         "3,2": {
           "path": "cooked/maps/main/paint/regions/r_3_2.paintpack",
           "mask": "0x0101010101010101",
           "byteLength": 32768,
-          "sha256": "8cf0df0d1c9b61e7a51b48903c38457ffbaf0b09ea6217496ae6e7de994ebac2"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-4,3": {
           "path": "cooked/maps/main/paint/regions/r_m4_3.paintpack",
           "mask": "0x0000000000000080",
           "byteLength": 4096,
-          "sha256": "14d9ca3dff486cc9afea4304b9cfd8044b66ef058405e1fd7a8ef642ddfb25f3"
+          "sha256": "c079e89d3e89a13f51a876af568c67f26cdeaf23ae55ab8c17259059a9b8f4e8"
         },
         "-3,3": {
           "path": "cooked/maps/main/paint/regions/r_m3_3.paintpack",
           "mask": "0x00000000000000ff",
           "byteLength": 32768,
-          "sha256": "463022cc466da300f2be890471417f96f13e5fcb8fe27375782e0a1d3c774a28"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-2,3": {
           "path": "cooked/maps/main/paint/regions/r_m2_3.paintpack",
           "mask": "0x00000000000000ff",
           "byteLength": 32768,
-          "sha256": "a7121d8f80b3f7171d21a2d4befb6bb778d53c3a9ca4942b12255491d3864d2b"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "-1,3": {
           "path": "cooked/maps/main/paint/regions/r_m1_3.paintpack",
           "mask": "0x00000000000000ff",
           "byteLength": 32768,
-          "sha256": "1721de479057d1e46877a63bd0a8db20432db92009517e78fcda3c315f359245"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "0,3": {
           "path": "cooked/maps/main/paint/regions/r_0_3.paintpack",
           "mask": "0x00000000000000ff",
           "byteLength": 32768,
-          "sha256": "645145099a5c82f9360e34b678159c065f5266be02586c159273e804a4c29061"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "1,3": {
           "path": "cooked/maps/main/paint/regions/r_1_3.paintpack",
           "mask": "0x00000000000000ff",
           "byteLength": 32768,
-          "sha256": "433f3d537f9f0d0ba6242546d71d3bede2d1b115f1a4400d1d41188a8530478d"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "2,3": {
           "path": "cooked/maps/main/paint/regions/r_2_3.paintpack",
           "mask": "0x00000000000000ff",
           "byteLength": 32768,
-          "sha256": "95b42f03f3c45007ad79b6f4195a540390e17b738918935fe5130604fd73d988"
+          "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9"
         },
         "3,3": {
           "path": "cooked/maps/main/paint/regions/r_3_3.paintpack",
           "mask": "0x0000000000000001",
           "byteLength": 4096,
-          "sha256": "8e208418d310074960ceb03f0d8808681d7d26ba6662a595b4115bcafc79465c"
+          "sha256": "c079e89d3e89a13f51a876af568c67f26cdeaf23ae55ab8c17259059a9b8f4e8"
         }
       }
     },
@@ -4255,7 +4275,7 @@
   "package": {
     "layout": "content-addressed-sha256-v1",
     "blobRoot": "cooked/blobs/sha256",
-    "artifactCount": 351,
+    "artifactCount": 359,
     "artifacts": {
       "cooked/assets/model/fern_02_1k.gltf/fern_02_1k.gltf": {
         "path": "cooked/assets/model/fern_02_1k.gltf/fern_02_1k.gltf",
@@ -4464,6 +4484,70 @@
         "byteLength": 6109028,
         "sha256": "0c5c37348830b6a36024a114359e26aaf2f48bf2b435a5ef2d6999bcd4b530b7",
         "sourcePath": "assets/texture/brown_mud_leaves_01_nor_gl_1k.png"
+      },
+      "cooked/assets/texture/gravel_embedded_concrete_arm_1k.png": {
+        "path": "cooked/assets/texture/gravel_embedded_concrete_arm_1k.png",
+        "blobPath": "cooked/blobs/sha256/f4/f4b524d1bc569277359022086dab657c9cb8fea28d1e3edf04fd120e92a7e5c7.png",
+        "kind": "terrain-texture",
+        "byteLength": 4516760,
+        "sha256": "f4b524d1bc569277359022086dab657c9cb8fea28d1e3edf04fd120e92a7e5c7",
+        "sourcePath": "assets/texture/gravel_embedded_concrete_arm_1k.png"
+      },
+      "cooked/assets/texture/gravel_embedded_concrete_diff_1k.jpg": {
+        "path": "cooked/assets/texture/gravel_embedded_concrete_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/3e/3ea5b493379c4d30c02c04b93361d3e34f91ed04058ffb4ea915702f1cd17049.jpg",
+        "kind": "terrain-texture",
+        "byteLength": 1137553,
+        "sha256": "3ea5b493379c4d30c02c04b93361d3e34f91ed04058ffb4ea915702f1cd17049",
+        "sourcePath": "assets/texture/gravel_embedded_concrete_diff_1k.jpg"
+      },
+      "cooked/assets/texture/gravel_embedded_concrete_disp_1k.png": {
+        "path": "cooked/assets/texture/gravel_embedded_concrete_disp_1k.png",
+        "blobPath": "cooked/blobs/sha256/4c/4c6a3069fe8aea527129eb826fa49f5388a68c6ede47097a35290d355b76b5b2.png",
+        "kind": "terrain-texture",
+        "byteLength": 1940655,
+        "sha256": "4c6a3069fe8aea527129eb826fa49f5388a68c6ede47097a35290d355b76b5b2",
+        "sourcePath": "assets/texture/gravel_embedded_concrete_disp_1k.png"
+      },
+      "cooked/assets/texture/gravel_embedded_concrete_nor_gl_1k.png": {
+        "path": "cooked/assets/texture/gravel_embedded_concrete_nor_gl_1k.png",
+        "blobPath": "cooked/blobs/sha256/47/472090f3bcc44b1d06122c86e2cc44e26bbbd63e92b11a60ef04d4428f1641e2.png",
+        "kind": "terrain-texture",
+        "byteLength": 6118939,
+        "sha256": "472090f3bcc44b1d06122c86e2cc44e26bbbd63e92b11a60ef04d4428f1641e2",
+        "sourcePath": "assets/texture/gravel_embedded_concrete_nor_gl_1k.png"
+      },
+      "cooked/assets/texture/snow_03_arm_1k.png": {
+        "path": "cooked/assets/texture/snow_03_arm_1k.png",
+        "blobPath": "cooked/blobs/sha256/13/13f64091173a06dd733c331528af4591ed31e9fe5421040a737df1078dae4c42.png",
+        "kind": "terrain-texture",
+        "byteLength": 1566722,
+        "sha256": "13f64091173a06dd733c331528af4591ed31e9fe5421040a737df1078dae4c42",
+        "sourcePath": "assets/texture/snow_03_arm_1k.png"
+      },
+      "cooked/assets/texture/snow_03_diff_1k.jpg": {
+        "path": "cooked/assets/texture/snow_03_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/12/1210d17f1395c030c33c1a2c6dc3f5e0e9edac4c4365d163fc9ebb52416cddc3.jpg",
+        "kind": "terrain-texture",
+        "byteLength": 574004,
+        "sha256": "1210d17f1395c030c33c1a2c6dc3f5e0e9edac4c4365d163fc9ebb52416cddc3",
+        "sourcePath": "assets/texture/snow_03_diff_1k.jpg"
+      },
+      "cooked/assets/texture/snow_03_disp_1k.png": {
+        "path": "cooked/assets/texture/snow_03_disp_1k.png",
+        "blobPath": "cooked/blobs/sha256/de/dec240115a78f80bf8caa4579c0f9de922d8141e693bb801a804c3fbdfc8f6c0.png",
+        "kind": "terrain-texture",
+        "byteLength": 2088713,
+        "sha256": "dec240115a78f80bf8caa4579c0f9de922d8141e693bb801a804c3fbdfc8f6c0",
+        "sourcePath": "assets/texture/snow_03_disp_1k.png"
+      },
+      "cooked/assets/texture/snow_03_nor_gl_1k.png": {
+        "path": "cooked/assets/texture/snow_03_nor_gl_1k.png",
+        "blobPath": "cooked/blobs/sha256/7a/7aadc41b01de4ee86a2010890952d110c15969d4ecbdafb5d63fa42375d80708.png",
+        "kind": "terrain-texture",
+        "byteLength": 2482890,
+        "sha256": "7aadc41b01de4ee86a2010890952d110c15969d4ecbdafb5d63fa42375d80708",
+        "sourcePath": "assets/texture/snow_03_nor_gl_1k.png"
       },
       "cooked/maps/main/collision/cells/c_0_0.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_0_0.collisionpack",
@@ -5875,514 +5959,514 @@
       },
       "cooked/maps/main/paint/regions/r_0_0.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_0_0.paintpack",
-        "blobPath": "cooked/blobs/sha256/7f/7f3c9e6842a33e8c21959781d1142f542a22d4ce45e7cf44937d9ef028532332.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "7f3c9e6842a33e8c21959781d1142f542a22d4ce45e7cf44937d9ef028532332",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_0_0.paintpack"
       },
       "cooked/maps/main/paint/regions/r_0_1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_0_1.paintpack",
-        "blobPath": "cooked/blobs/sha256/66/664c9a4ba1c5ea12f218495ac26b2ce325dcde7796b9f95810e8571103025f16.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "664c9a4ba1c5ea12f218495ac26b2ce325dcde7796b9f95810e8571103025f16",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_0_1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_0_2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_0_2.paintpack",
-        "blobPath": "cooked/blobs/sha256/22/2248190c0b36b3c732ac588b5accae2767462ddef7c4331481b242c58c767fa0.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "2248190c0b36b3c732ac588b5accae2767462ddef7c4331481b242c58c767fa0",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_0_2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_0_3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_0_3.paintpack",
-        "blobPath": "cooked/blobs/sha256/64/645145099a5c82f9360e34b678159c065f5266be02586c159273e804a4c29061.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "645145099a5c82f9360e34b678159c065f5266be02586c159273e804a4c29061",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_0_3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_0_m1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_0_m1.paintpack",
-        "blobPath": "cooked/blobs/sha256/47/47e4f8c2b2218174be9c4a3aa5aa0c0bde20073154f1413a910fce3eeae7c4c3.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "47e4f8c2b2218174be9c4a3aa5aa0c0bde20073154f1413a910fce3eeae7c4c3",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_0_m1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_0_m2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_0_m2.paintpack",
-        "blobPath": "cooked/blobs/sha256/1b/1ba4294604f681847d3d7dc949048e5db1fa6d33ebaa408c3bce40f16c4bb5bc.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "1ba4294604f681847d3d7dc949048e5db1fa6d33ebaa408c3bce40f16c4bb5bc",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_0_m2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_0_m3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_0_m3.paintpack",
-        "blobPath": "cooked/blobs/sha256/70/706e1652d276ffcebb537bf63e83249e5b986e2e023d0b52dd1fd585d984f490.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "706e1652d276ffcebb537bf63e83249e5b986e2e023d0b52dd1fd585d984f490",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_0_m3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_0_m4.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_0_m4.paintpack",
-        "blobPath": "cooked/blobs/sha256/05/05eecafb6f65de56fae211bfc6d76cbe017fadaea9c82c17062305eb9f1bdb01.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "05eecafb6f65de56fae211bfc6d76cbe017fadaea9c82c17062305eb9f1bdb01",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_0_m4.paintpack"
       },
       "cooked/maps/main/paint/regions/r_1_0.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_1_0.paintpack",
-        "blobPath": "cooked/blobs/sha256/43/43825e727c12e2fe9975674c91848d3dd8cb03aafe85e6eeb6c486ea377fc277.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "43825e727c12e2fe9975674c91848d3dd8cb03aafe85e6eeb6c486ea377fc277",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_1_0.paintpack"
       },
       "cooked/maps/main/paint/regions/r_1_1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_1_1.paintpack",
-        "blobPath": "cooked/blobs/sha256/73/73760ea0dccae44c8c60eedda38681d816ef805f878eb73e28e51b0fa7d9bde3.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "73760ea0dccae44c8c60eedda38681d816ef805f878eb73e28e51b0fa7d9bde3",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_1_1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_1_2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_1_2.paintpack",
-        "blobPath": "cooked/blobs/sha256/94/9458febb880dd0d951a0f464c07e10309750707ae9a2f9d024d7d88ed27d2dc9.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "9458febb880dd0d951a0f464c07e10309750707ae9a2f9d024d7d88ed27d2dc9",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_1_2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_1_3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_1_3.paintpack",
-        "blobPath": "cooked/blobs/sha256/43/433f3d537f9f0d0ba6242546d71d3bede2d1b115f1a4400d1d41188a8530478d.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "433f3d537f9f0d0ba6242546d71d3bede2d1b115f1a4400d1d41188a8530478d",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_1_3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_1_m1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_1_m1.paintpack",
-        "blobPath": "cooked/blobs/sha256/00/00c026690cb5719703692c05052afb14fefd05084c780eeee3da07c34c4ebfa3.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "00c026690cb5719703692c05052afb14fefd05084c780eeee3da07c34c4ebfa3",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_1_m1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_1_m2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_1_m2.paintpack",
-        "blobPath": "cooked/blobs/sha256/d7/d7f8936949de346307f4acf3db9718fbe86e0dac0ca0018b4b8c0e0308164fd4.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "d7f8936949de346307f4acf3db9718fbe86e0dac0ca0018b4b8c0e0308164fd4",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_1_m2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_1_m3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_1_m3.paintpack",
-        "blobPath": "cooked/blobs/sha256/ba/ba3195979f74f687655868ecff1bf4bf71964b64b9f881af69d35a4ac2bba7df.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "ba3195979f74f687655868ecff1bf4bf71964b64b9f881af69d35a4ac2bba7df",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_1_m3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_1_m4.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_1_m4.paintpack",
-        "blobPath": "cooked/blobs/sha256/99/99ade54e4c267a10d9edf1e894916109239f80af4585f3ead9fe54aea50d0a0e.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "99ade54e4c267a10d9edf1e894916109239f80af4585f3ead9fe54aea50d0a0e",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_1_m4.paintpack"
       },
       "cooked/maps/main/paint/regions/r_2_0.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_2_0.paintpack",
-        "blobPath": "cooked/blobs/sha256/a2/a23a56fd2437e38fc5b740110a6e58ca2e2861bcaffbaea8cf0839c25fdcd9c3.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "a23a56fd2437e38fc5b740110a6e58ca2e2861bcaffbaea8cf0839c25fdcd9c3",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_2_0.paintpack"
       },
       "cooked/maps/main/paint/regions/r_2_1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_2_1.paintpack",
-        "blobPath": "cooked/blobs/sha256/71/71505ed7aa9b12538009247268f3f8e9adb7b0b91f8545158509485eaec3d35e.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "71505ed7aa9b12538009247268f3f8e9adb7b0b91f8545158509485eaec3d35e",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_2_1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_2_2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_2_2.paintpack",
-        "blobPath": "cooked/blobs/sha256/50/50255b5f519aefaa69567edb5301c18cf20d71f085f57ac9967262268d4175f7.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "50255b5f519aefaa69567edb5301c18cf20d71f085f57ac9967262268d4175f7",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_2_2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_2_3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_2_3.paintpack",
-        "blobPath": "cooked/blobs/sha256/95/95b42f03f3c45007ad79b6f4195a540390e17b738918935fe5130604fd73d988.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "95b42f03f3c45007ad79b6f4195a540390e17b738918935fe5130604fd73d988",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_2_3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_2_m1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_2_m1.paintpack",
-        "blobPath": "cooked/blobs/sha256/1c/1c8f96284404ba6c45657efae43220c6a62c25b7470d7b3b413daf5c71473277.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "1c8f96284404ba6c45657efae43220c6a62c25b7470d7b3b413daf5c71473277",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_2_m1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_2_m2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_2_m2.paintpack",
-        "blobPath": "cooked/blobs/sha256/a1/a1566c076ef02d3b4cb8d31a76311b59cab0da7a7b9d58b3c9a6e0bbca1f8b35.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "a1566c076ef02d3b4cb8d31a76311b59cab0da7a7b9d58b3c9a6e0bbca1f8b35",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_2_m2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_2_m3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_2_m3.paintpack",
-        "blobPath": "cooked/blobs/sha256/19/19cafb5d517e948b375f15ae813639ea59c3f5f4ca4c88fb7f9e96d91e17c8b8.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "19cafb5d517e948b375f15ae813639ea59c3f5f4ca4c88fb7f9e96d91e17c8b8",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_2_m3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_2_m4.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_2_m4.paintpack",
-        "blobPath": "cooked/blobs/sha256/86/8671c8c9f1a54b0e5a6ca4a022702670683a99b00a1a92be0dbaaca0e009b20c.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "8671c8c9f1a54b0e5a6ca4a022702670683a99b00a1a92be0dbaaca0e009b20c",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_2_m4.paintpack"
       },
       "cooked/maps/main/paint/regions/r_3_0.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_3_0.paintpack",
-        "blobPath": "cooked/blobs/sha256/4a/4a0938dd23ada4b5a277b363d036fe91389baa304184da7e6f5894d1765f1766.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "4a0938dd23ada4b5a277b363d036fe91389baa304184da7e6f5894d1765f1766",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_3_0.paintpack"
       },
       "cooked/maps/main/paint/regions/r_3_1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_3_1.paintpack",
-        "blobPath": "cooked/blobs/sha256/2d/2d99c20a5cd4357df445123ec1d5f56ec6742bb9c8931f3d9a7d35b1779968c0.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "2d99c20a5cd4357df445123ec1d5f56ec6742bb9c8931f3d9a7d35b1779968c0",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_3_1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_3_2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_3_2.paintpack",
-        "blobPath": "cooked/blobs/sha256/8c/8cf0df0d1c9b61e7a51b48903c38457ffbaf0b09ea6217496ae6e7de994ebac2.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "8cf0df0d1c9b61e7a51b48903c38457ffbaf0b09ea6217496ae6e7de994ebac2",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_3_2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_3_3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_3_3.paintpack",
-        "blobPath": "cooked/blobs/sha256/8e/8e208418d310074960ceb03f0d8808681d7d26ba6662a595b4115bcafc79465c.paintpack",
+        "blobPath": "cooked/blobs/sha256/c0/c079e89d3e89a13f51a876af568c67f26cdeaf23ae55ab8c17259059a9b8f4e8.paintpack",
         "kind": "paint-region",
         "byteLength": 4096,
-        "sha256": "8e208418d310074960ceb03f0d8808681d7d26ba6662a595b4115bcafc79465c",
+        "sha256": "c079e89d3e89a13f51a876af568c67f26cdeaf23ae55ab8c17259059a9b8f4e8",
         "sourcePath": "maps/main/paint/regions/r_3_3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_3_m1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_3_m1.paintpack",
-        "blobPath": "cooked/blobs/sha256/e0/e010cae21e4b52632bbd04a2a3e644476c4b8bf9007197a07b28608babfe6b76.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "e010cae21e4b52632bbd04a2a3e644476c4b8bf9007197a07b28608babfe6b76",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_3_m1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_3_m2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_3_m2.paintpack",
-        "blobPath": "cooked/blobs/sha256/53/5333c0474c9bab7a21dd11e79bf1c2f128a3e804090d86357563711a9437ae8c.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "5333c0474c9bab7a21dd11e79bf1c2f128a3e804090d86357563711a9437ae8c",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_3_m2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_3_m3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_3_m3.paintpack",
-        "blobPath": "cooked/blobs/sha256/86/86597a23a168e272cf93cdea0577189e3679101052d489cca168e42b8e57852e.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "86597a23a168e272cf93cdea0577189e3679101052d489cca168e42b8e57852e",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_3_m3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_3_m4.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_3_m4.paintpack",
-        "blobPath": "cooked/blobs/sha256/21/21485e69bda5f3e5edab2407a327048f378f3fb0b8f512295575ae853b4f6832.paintpack",
+        "blobPath": "cooked/blobs/sha256/c0/c079e89d3e89a13f51a876af568c67f26cdeaf23ae55ab8c17259059a9b8f4e8.paintpack",
         "kind": "paint-region",
         "byteLength": 4096,
-        "sha256": "21485e69bda5f3e5edab2407a327048f378f3fb0b8f512295575ae853b4f6832",
+        "sha256": "c079e89d3e89a13f51a876af568c67f26cdeaf23ae55ab8c17259059a9b8f4e8",
         "sourcePath": "maps/main/paint/regions/r_3_m4.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m1_0.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m1_0.paintpack",
-        "blobPath": "cooked/blobs/sha256/59/59e23393126d0632993a0688ce98b318f86709d3f55e97031184ec0edce2e9d0.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "59e23393126d0632993a0688ce98b318f86709d3f55e97031184ec0edce2e9d0",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m1_0.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m1_1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m1_1.paintpack",
-        "blobPath": "cooked/blobs/sha256/51/51bc2099d0aa09d6155b3d2a9e968bbdba854282cca02b896435b2fc93d7073b.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "51bc2099d0aa09d6155b3d2a9e968bbdba854282cca02b896435b2fc93d7073b",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m1_1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m1_2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m1_2.paintpack",
-        "blobPath": "cooked/blobs/sha256/45/45504420f418d22afddcd64ebec3e0e5491f39151dd92e018495e9613c8dff41.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "45504420f418d22afddcd64ebec3e0e5491f39151dd92e018495e9613c8dff41",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m1_2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m1_3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m1_3.paintpack",
-        "blobPath": "cooked/blobs/sha256/17/1721de479057d1e46877a63bd0a8db20432db92009517e78fcda3c315f359245.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "1721de479057d1e46877a63bd0a8db20432db92009517e78fcda3c315f359245",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_m1_3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m1_m1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m1_m1.paintpack",
-        "blobPath": "cooked/blobs/sha256/b4/b495616414a675d13c62942a489b18a920b29ebb4272e49d96765ea433927739.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "b495616414a675d13c62942a489b18a920b29ebb4272e49d96765ea433927739",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m1_m1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m1_m2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m1_m2.paintpack",
-        "blobPath": "cooked/blobs/sha256/ae/ae96d10b7b896a5d8a2dcd504448df9e8d3d4721d45d505b55a604c411cda76b.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "ae96d10b7b896a5d8a2dcd504448df9e8d3d4721d45d505b55a604c411cda76b",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m1_m2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m1_m3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m1_m3.paintpack",
-        "blobPath": "cooked/blobs/sha256/ea/ea2962eb375da10d37edc892f5b1307352a3ecf4768bfdd9aee0f29cfe545516.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "ea2962eb375da10d37edc892f5b1307352a3ecf4768bfdd9aee0f29cfe545516",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m1_m3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m1_m4.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m1_m4.paintpack",
-        "blobPath": "cooked/blobs/sha256/86/86d96a6c6935ccd912a4fce0f9a607b8e4bdcbf040dcc3ef4bb30314fbade330.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "86d96a6c6935ccd912a4fce0f9a607b8e4bdcbf040dcc3ef4bb30314fbade330",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_m1_m4.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m2_0.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m2_0.paintpack",
-        "blobPath": "cooked/blobs/sha256/df/df38b874a7fe7d58ab832a9eec36c1e83aaea498f9cde4b942806fbba8a9cceb.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "df38b874a7fe7d58ab832a9eec36c1e83aaea498f9cde4b942806fbba8a9cceb",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m2_0.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m2_1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m2_1.paintpack",
-        "blobPath": "cooked/blobs/sha256/75/75222f0601c49d0150228d74d988226f5563a9cf3e7e9e2971c064431ef0497e.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "75222f0601c49d0150228d74d988226f5563a9cf3e7e9e2971c064431ef0497e",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m2_1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m2_2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m2_2.paintpack",
-        "blobPath": "cooked/blobs/sha256/c5/c51888bb3b5544dab22bb855e9d4ec80c9623ed9f8b0c28d036196e09f086469.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "c51888bb3b5544dab22bb855e9d4ec80c9623ed9f8b0c28d036196e09f086469",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m2_2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m2_3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m2_3.paintpack",
-        "blobPath": "cooked/blobs/sha256/a7/a7121d8f80b3f7171d21a2d4befb6bb778d53c3a9ca4942b12255491d3864d2b.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "a7121d8f80b3f7171d21a2d4befb6bb778d53c3a9ca4942b12255491d3864d2b",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_m2_3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m2_m1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m2_m1.paintpack",
-        "blobPath": "cooked/blobs/sha256/2d/2da13837aee2b1840ceeab34402e32d8d169f6b725d2e452983715b08e769466.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "2da13837aee2b1840ceeab34402e32d8d169f6b725d2e452983715b08e769466",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m2_m1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m2_m2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m2_m2.paintpack",
-        "blobPath": "cooked/blobs/sha256/71/7121e44d6be7f12e1bcc675918bf43b8cfd948361a460d48467d46655c1035ac.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "7121e44d6be7f12e1bcc675918bf43b8cfd948361a460d48467d46655c1035ac",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m2_m2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m2_m3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m2_m3.paintpack",
-        "blobPath": "cooked/blobs/sha256/75/7529c267c6bf60a34d792a13fb71c9942fb7311cf0d89d3bffd492b40c5da22d.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "7529c267c6bf60a34d792a13fb71c9942fb7311cf0d89d3bffd492b40c5da22d",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m2_m3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m2_m4.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m2_m4.paintpack",
-        "blobPath": "cooked/blobs/sha256/73/734932d1a1856b6736f76574254e25ba18153b5aebf61111ede503160dcf5454.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "734932d1a1856b6736f76574254e25ba18153b5aebf61111ede503160dcf5454",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_m2_m4.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m3_0.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m3_0.paintpack",
-        "blobPath": "cooked/blobs/sha256/d9/d9c58d8fd68ebee819e86ce891654a619576fa677d91923d45ff22dda7fa0c9b.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "d9c58d8fd68ebee819e86ce891654a619576fa677d91923d45ff22dda7fa0c9b",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m3_0.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m3_1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m3_1.paintpack",
-        "blobPath": "cooked/blobs/sha256/21/211075508721985bc5c00b2282d2bf5df37b777005055df88f77e1de09623922.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "211075508721985bc5c00b2282d2bf5df37b777005055df88f77e1de09623922",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m3_1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m3_2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m3_2.paintpack",
-        "blobPath": "cooked/blobs/sha256/a6/a663f4d713a2fb6a7f1f9283e80b9e15479331a64be1743debf67cfb496cdcf1.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "a663f4d713a2fb6a7f1f9283e80b9e15479331a64be1743debf67cfb496cdcf1",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m3_2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m3_3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m3_3.paintpack",
-        "blobPath": "cooked/blobs/sha256/46/463022cc466da300f2be890471417f96f13e5fcb8fe27375782e0a1d3c774a28.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "463022cc466da300f2be890471417f96f13e5fcb8fe27375782e0a1d3c774a28",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_m3_3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m3_m1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m3_m1.paintpack",
-        "blobPath": "cooked/blobs/sha256/cc/cc3ad2c310b29ba1ab6503a6fe755a39e94f34d51a39a37c73b1900685c02463.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "cc3ad2c310b29ba1ab6503a6fe755a39e94f34d51a39a37c73b1900685c02463",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m3_m1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m3_m2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m3_m2.paintpack",
-        "blobPath": "cooked/blobs/sha256/86/86327b43ee1da03571243a466e2004fc865209094c53eea1c40fe9228282f1d4.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "86327b43ee1da03571243a466e2004fc865209094c53eea1c40fe9228282f1d4",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m3_m2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m3_m3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m3_m3.paintpack",
-        "blobPath": "cooked/blobs/sha256/15/1543fb9952eafbaf137287663f87cdfca4a2ff33df947802083047ffca53963d.paintpack",
+        "blobPath": "cooked/blobs/sha256/3d/3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117.paintpack",
         "kind": "paint-region",
         "byteLength": 262144,
-        "sha256": "1543fb9952eafbaf137287663f87cdfca4a2ff33df947802083047ffca53963d",
+        "sha256": "3d70f10083404abd81dadcc5c2bd30b8d518647a805489989e1761861d2e8117",
         "sourcePath": "maps/main/paint/regions/r_m3_m3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m3_m4.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m3_m4.paintpack",
-        "blobPath": "cooked/blobs/sha256/52/52b1a900ec53cc5408a65bc34219c6a3150c874f657862712407cc51d0ff99b5.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "52b1a900ec53cc5408a65bc34219c6a3150c874f657862712407cc51d0ff99b5",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_m3_m4.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m4_0.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m4_0.paintpack",
-        "blobPath": "cooked/blobs/sha256/08/08715c63cac0fc54c222eb0a7b4deb50af8541931fee3f52346627b564e5a014.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "08715c63cac0fc54c222eb0a7b4deb50af8541931fee3f52346627b564e5a014",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_m4_0.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m4_1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m4_1.paintpack",
-        "blobPath": "cooked/blobs/sha256/ea/ea0daef35b0e78ad188cf572d3ac15cbfce2ae28a4bd03b9890f66315208a58c.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "ea0daef35b0e78ad188cf572d3ac15cbfce2ae28a4bd03b9890f66315208a58c",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_m4_1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m4_2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m4_2.paintpack",
-        "blobPath": "cooked/blobs/sha256/e7/e7d1fcf073e6b06d3dee038fdf654f5c90e05b6ebcd69cfb88640b2941f06033.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "e7d1fcf073e6b06d3dee038fdf654f5c90e05b6ebcd69cfb88640b2941f06033",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_m4_2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m4_3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m4_3.paintpack",
-        "blobPath": "cooked/blobs/sha256/14/14d9ca3dff486cc9afea4304b9cfd8044b66ef058405e1fd7a8ef642ddfb25f3.paintpack",
+        "blobPath": "cooked/blobs/sha256/c0/c079e89d3e89a13f51a876af568c67f26cdeaf23ae55ab8c17259059a9b8f4e8.paintpack",
         "kind": "paint-region",
         "byteLength": 4096,
-        "sha256": "14d9ca3dff486cc9afea4304b9cfd8044b66ef058405e1fd7a8ef642ddfb25f3",
+        "sha256": "c079e89d3e89a13f51a876af568c67f26cdeaf23ae55ab8c17259059a9b8f4e8",
         "sourcePath": "maps/main/paint/regions/r_m4_3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m4_m1.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m4_m1.paintpack",
-        "blobPath": "cooked/blobs/sha256/35/353c057251c3fd4f69add9e4c87f72523f5fd7bded1be00d80a77147b63a5f74.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "353c057251c3fd4f69add9e4c87f72523f5fd7bded1be00d80a77147b63a5f74",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_m4_m1.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m4_m2.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m4_m2.paintpack",
-        "blobPath": "cooked/blobs/sha256/25/25043f0917c6d568bd07d08f02143caa8fa6d75034f1cfc37591e0139778f9a9.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "25043f0917c6d568bd07d08f02143caa8fa6d75034f1cfc37591e0139778f9a9",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_m4_m2.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m4_m3.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m4_m3.paintpack",
-        "blobPath": "cooked/blobs/sha256/12/12426b5f68a68809c40106f3ce862fac1980de45efe98d1707f07efc32f23a88.paintpack",
+        "blobPath": "cooked/blobs/sha256/2a/2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9.paintpack",
         "kind": "paint-region",
         "byteLength": 32768,
-        "sha256": "12426b5f68a68809c40106f3ce862fac1980de45efe98d1707f07efc32f23a88",
+        "sha256": "2ab9bf5cbefc1b8eb03ac9706686f6855a2a5f494d38a86dd6e5c3170115a7f9",
         "sourcePath": "maps/main/paint/regions/r_m4_m3.paintpack"
       },
       "cooked/maps/main/paint/regions/r_m4_m4.paintpack": {
         "path": "cooked/maps/main/paint/regions/r_m4_m4.paintpack",
-        "blobPath": "cooked/blobs/sha256/49/492c0a11293160273ecb6c861558dc13cb8d24d2acc5792a83e3b97b0e95aeeb.paintpack",
+        "blobPath": "cooked/blobs/sha256/c0/c079e89d3e89a13f51a876af568c67f26cdeaf23ae55ab8c17259059a9b8f4e8.paintpack",
         "kind": "paint-region",
         "byteLength": 4096,
-        "sha256": "492c0a11293160273ecb6c861558dc13cb8d24d2acc5792a83e3b97b0e95aeeb",
+        "sha256": "c079e89d3e89a13f51a876af568c67f26cdeaf23ae55ab8c17259059a9b8f4e8",
         "sourcePath": "maps/main/paint/regions/r_m4_m4.paintpack"
       },
       "cooked/maps/main/terrain/height/regions/r_0_0.heightpack": {
