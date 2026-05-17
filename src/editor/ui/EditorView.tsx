@@ -22,6 +22,11 @@ const LOADING_STEPS: LoadingStep[] = [
 	{ id: "ready", label: "Ready" },
 ];
 
+function isTextEditingTarget(target: EventTarget | null): boolean {
+	if (!(target instanceof HTMLElement)) return false;
+	return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
+}
+
 export default function EditorView() {
 	const editorWorkspace = useEditorWorkspace();
 	const [settingsOpen, setSettingsOpen] = useState(false);
@@ -79,6 +84,26 @@ export default function EditorView() {
 
 	useEffect(() => {
 		const onKeyDown = (e: KeyboardEvent) => {
+			const commandKey = e.ctrlKey || e.metaKey;
+			if (commandKey && !e.altKey && !isTextEditingTarget(e.target)) {
+				const app = appRef.current;
+				if (app && e.code === "KeyZ") {
+					e.preventDefault();
+					if (e.shiftKey) {
+						void app.redoEditorCommand();
+					} else {
+						void app.undoEditorCommand();
+					}
+					return;
+				}
+
+				if (app && e.code === "KeyY") {
+					e.preventDefault();
+					void app.redoEditorCommand();
+					return;
+				}
+			}
+
 			if (e.code !== "Escape") return;
 			if (!settings || error) return;
 

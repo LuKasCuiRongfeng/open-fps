@@ -11,7 +11,32 @@ import {
 } from "@game/world/terrain/TextureData";
 import { TextureStorage, getPaintSplatMapIndices } from "./TextureStorage";
 import { TextureBrush, type TextureBrushSettings } from "./TextureBrush";
-import { createPaintDataForMap, getPaintRegionKeysForWorldBounds, type MapData } from "@project/MapData";
+import type { EditorCommand } from "@editor/runtime/history/EditorCommandHistory";
+import {
+  applyPaintRegionPacksToSplatMapPixels,
+  createPaintDataForMap,
+  createPaintRegionPackPayload,
+  getPaintRegionKeysForWorldBounds,
+  type MapData,
+  type MapPaintData,
+  type PaintRegionPackPayload,
+} from "@project/MapData";
+
+type EditorCommandRecorder = (command: EditorCommand) => void;
+
+interface TexturePaintStrokeSession {
+  beforeSplatMaps: SplatMapData[];
+  dirtyRegionKeys: Set<string>;
+  changed: boolean;
+}
+
+interface TextureRegionSnapshot {
+  paintData: MapPaintData;
+  splatMapCount: number;
+  resolution: number;
+  regionKeys: string[];
+  regions: PaintRegionPackPayload[];
+}
 
 /**
  * TextureEditor: coordinates texture painting on terrain splat maps.
@@ -64,6 +89,11 @@ export class TextureEditor {
   private mapWorldSizeMeters = 1024;
   private mapPageSizeMeters = 64;
   private mapPaintRegionSizePages = 8;
+  private activePaintStroke: TexturePaintStrokeSession | null = null;
+  private brushApplyPromise: Promise<void> | null = null;
+  private historyFlushPromise: Promise<void> | null = null;
+  private commandPlaybackInProgress = false;
+  private commandRecorder: EditorCommandRecorder | null = null;
 
   // Callbacks.
   // 回调
@@ -255,6 +285,10 @@ export class TextureEditor {
     this.onDirtyChange = callback;
   }
 
+  setCommandRecorder(callback: EditorCommandRecorder | null): void {
+    this.commandRecorder = callback;
+  }
+
   // --- Brush Settings (delegated) / 画刷设置（委托） ---
 
   setSelectedLayer(layerName: string): void {
@@ -297,6 +331,21 @@ export class TextureEditor {
 
   endBrush(): void {
     this.brush.stop();
+    if (!this.historyFlushPromise) {
+      const flushPromise = this.finishPaintStrokeAfterPendingWork();
+      this.historyFlushPromise = flushPromise;
+      void flushPromise.finally(() => {
+        if (this.historyFlushPromise === flushPromise) {
+          this.historyFlushPromise = null;
+        }
+      });
+    }
+  }
+
+  async flushPendingHistory(): Promise<void> {
+    if (this.historyFlushPromise) {
+      await this.historyFlushPromise;
+    }
   }
 
   /**
@@ -304,12 +353,32 @@ export class TextureEditor {
    * 将画刷笔画应用到 splat map
    */
   async applyBrush(dt: number): Promise<void> {
-    if (!this._editingEnabled || !this.splatMapSet || !this.renderer) {
+    if (!this._editingEnabled || !this.splatMapSet || !this.renderer || this.commandPlaybackInProgress) {
+      return;
+    }
+
+    if (this.brushApplyPromise) {
+      return;
+    }
+
+    this.brushApplyPromise = this.applyBrushInternal(dt);
+    try {
+      await this.brushApplyPromise;
+    } finally {
+      this.brushApplyPromise = null;
+    }
+  }
+
+  private async applyBrushInternal(dt: number): Promise<void> {
+    if (!this.splatMapSet || !this.renderer) {
       return;
     }
 
     const stroke = this.brush.generateStroke(dt);
     if (!stroke) return;
+
+    const paintStroke = await this.ensurePaintStrokeSession();
+    if (!paintStroke) return;
 
     await this.splatMapSet.applyBrush(this.renderer, stroke);
     const dirtyRegionKeys = getPaintRegionKeysForWorldBounds(
@@ -323,11 +392,136 @@ export class TextureEditor {
     );
     for (const key of dirtyRegionKeys) {
       this.dirtyPaintRegionKeys.add(key);
+      paintStroke.dirtyRegionKeys.add(key);
     }
 
     if (dirtyRegionKeys.length > 0) {
+      paintStroke.changed = true;
       this.setDirty(true);
     }
+  }
+
+  private async ensurePaintStrokeSession(): Promise<TexturePaintStrokeSession | null> {
+    if (this.activePaintStroke) {
+      return this.activePaintStroke;
+    }
+
+    if (!this.splatMapSet || !this.renderer) {
+      return null;
+    }
+
+    const beforeSplatMaps = await this.readAllSplatMaps();
+    this.activePaintStroke = {
+      beforeSplatMaps,
+      dirtyRegionKeys: new Set<string>(),
+      changed: false,
+    };
+    return this.activePaintStroke;
+  }
+
+  private async finishPaintStrokeAfterPendingWork(): Promise<void> {
+    if (this.brushApplyPromise) {
+      await this.brushApplyPromise;
+    }
+
+    await this.finishPaintStroke();
+  }
+
+  private async finishPaintStroke(): Promise<void> {
+    const session = this.activePaintStroke;
+    this.activePaintStroke = null;
+    if (!session?.changed || session.dirtyRegionKeys.size === 0 || !this.commandRecorder) {
+      return;
+    }
+
+    const afterSplatMaps = await this.readAllSplatMaps();
+    const regionKeys = Array.from(session.dirtyRegionKeys).sort();
+    const beforeSnapshot = this.createRegionSnapshot(session.beforeSplatMaps, regionKeys);
+    const afterSnapshot = this.createRegionSnapshot(afterSplatMaps, regionKeys);
+    this.commandRecorder({
+      label: "Texture paint stroke",
+      undo: () => this.applyRegionSnapshot(beforeSnapshot),
+      redo: () => this.applyRegionSnapshot(afterSnapshot),
+    });
+  }
+
+  private createRegionSnapshot(splatMaps: readonly SplatMapData[], regionKeys: readonly string[]): TextureRegionSnapshot {
+    const paintData = this.createCurrentPaintData();
+    return {
+      paintData,
+      splatMapCount: splatMaps.length,
+      resolution: splatMaps[0]?.resolution ?? this.resolution,
+      regionKeys: [...regionKeys],
+      regions: createPaintRegionPackPayload(
+        paintData,
+        this.mapWorldSizeMeters,
+        this.mapPageSizeMeters,
+        splatMaps,
+        regionKeys,
+      ),
+    };
+  }
+
+  private async applyRegionSnapshot(snapshot: TextureRegionSnapshot): Promise<void> {
+    if (!this.splatMapSet || !this.renderer) {
+      return;
+    }
+
+    this.commandPlaybackInProgress = true;
+    try {
+      await this.splatMapSet.resize(this.renderer, snapshot.splatMapCount);
+      const regionBytesByKey = Object.fromEntries(snapshot.regions.map((region) => [region.key, region.bytes]));
+      for (let index = 0; index < snapshot.splatMapCount; index += 1) {
+        const pixels = await this.splatMapSet.readToPixels(this.renderer, index);
+        applyPaintRegionPacksToSplatMapPixels(
+          snapshot.paintData,
+          this.mapWorldSizeMeters,
+          this.mapPageSizeMeters,
+          index,
+          regionBytesByKey,
+          pixels,
+        );
+        await this.splatMapSet.loadFromPixels(this.renderer, pixels, snapshot.resolution, index);
+      }
+
+      for (const key of snapshot.regionKeys) {
+        this.dirtyPaintRegionKeys.add(key);
+      }
+      this.setDirty(true);
+    } finally {
+      this.commandPlaybackInProgress = false;
+    }
+  }
+
+  private async readAllSplatMaps(): Promise<SplatMapData[]> {
+    if (!this.splatMapSet || !this.renderer) {
+      return [];
+    }
+
+    const splatMapCount = this.splatMapSet.getCount();
+    const splatMaps: SplatMapData[] = [];
+    for (let index = 0; index < splatMapCount; index += 1) {
+      splatMaps.push({
+        resolution: this.splatMapSet.getResolution(),
+        pixels: await this.splatMapSet.readToPixels(this.renderer, index),
+        splatMapIndex: index,
+      });
+    }
+
+    return splatMaps;
+  }
+
+  private createCurrentPaintData(): MapPaintData {
+    const splatMapCount = this.splatMapSet?.getCount() ?? 1;
+    const resolution = this.splatMapSet?.getResolution() ?? this.resolution;
+    return createPaintDataForMap(
+      this.mapWorldSizeMeters,
+      this.mapPageSizeMeters,
+      getPaintSplatMapIndices(splatMapCount),
+      resolution,
+      undefined,
+      this.mapPaintRegionSizePages,
+    );
   }
 
   reset(): void {

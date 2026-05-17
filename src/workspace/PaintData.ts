@@ -337,6 +337,64 @@ export function assemblePaintSplatMapPixels(
   return pixels;
 }
 
+export function applyPaintRegionPacksToSplatMapPixels(
+  paintData: MapPaintData,
+  worldSizeMeters: number,
+  pageSizeMeters: number,
+  splatMapIndex: number,
+  regionBytesByKey: Readonly<Record<string, Uint8Array>>,
+  targetPixels: Uint8Array,
+): void {
+  const normalized = normalizePaintData(paintData);
+  const orderIndex = normalized.splatMaps.indices.indexOf(splatMapIndex);
+  if (orderIndex < 0) {
+    throw new Error(`Paint splat map ${splatMapIndex} is not declared in the paint manifest`);
+  }
+
+  const expectedByteLength = getExpectedPaintSplatMapByteLength(normalized.splatMaps.resolution);
+  if (targetPixels.byteLength !== expectedByteLength) {
+    throw new Error(`Paint splat map requires ${expectedByteLength} RGBA8 bytes, got ${targetPixels.byteLength}`);
+  }
+
+  const pageResolution = normalized.splatMaps.pageResolution;
+  const tileByteLength = getExpectedPaintTileByteLength(pageResolution);
+  for (const region of getPaintRegions(normalized)) {
+    const regionBytes = regionBytesByKey[region.key];
+    if (!regionBytes) {
+      continue;
+    }
+
+    const pages = getPaintRegionPages(
+      region,
+      pageResolution,
+      normalized.splatMaps.indices.length,
+      normalized.splatMaps.regionSizePages,
+    );
+    const expectedRegionByteLength = pages.length * getExpectedPaintRegionPageByteLength(
+      pageResolution,
+      normalized.splatMaps.indices.length,
+    );
+    if (regionBytes.byteLength !== expectedRegionByteLength) {
+      throw new Error(
+        `Paint region pack '${region.key}' requires ${expectedRegionByteLength} bytes, got ${regionBytes.byteLength}`,
+      );
+    }
+
+    for (const page of pages) {
+      copyRegionPageToFullSplatMap(
+        regionBytes,
+        page.offset + orderIndex * tileByteLength,
+        targetPixels,
+        normalized.splatMaps.resolution,
+        worldSizeMeters,
+        pageSizeMeters,
+        page,
+        pageResolution,
+      );
+    }
+  }
+}
+
 export function getPaintRegionKeysForWorldBounds(
   worldSizeMeters: number,
   pageSizeMeters: number,

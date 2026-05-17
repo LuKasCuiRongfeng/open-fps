@@ -4,6 +4,7 @@
 // Common brush indicator system.
 // 通用笔刷指示器系统
 export * from "./common";
+export * from "./history/EditorCommandHistory";
 
 // Terrain editing.
 // 地形编辑

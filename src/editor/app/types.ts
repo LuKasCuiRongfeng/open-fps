@@ -3,6 +3,7 @@ import type { ActiveEditorType } from "@editor/runtime/common";
 import type { EditorCameraAction, TerrainEditor } from "@editor/runtime/terrain/TerrainEditor";
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import type { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
+import type { EditorHistoryState } from "@editor/runtime/history/EditorCommandHistory";
 import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings";
 import type { MapData } from "@project/MapData";
 
@@ -10,6 +11,9 @@ export interface EditorAppSession extends RuntimeAppSession<EditorAppSettings, E
   getTerrainEditor(): TerrainEditor;
   getTextureEditor(): TextureEditor;
   getVegetationEditor(): VegetationEditor;
+  getEditorHistoryState(): EditorHistoryState;
+  undoEditorCommand(): Promise<boolean>;
+  redoEditorCommand(): Promise<boolean>;
   setActiveEditorType(type: ActiveEditorType): void;
   startEditorCameraAction(
     action: EditorCameraAction,

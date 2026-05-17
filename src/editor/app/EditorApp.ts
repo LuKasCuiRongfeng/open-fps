@@ -4,6 +4,7 @@ import { getPlatform } from "@/platform";
 import { GameApp, type GameBootPhase } from "@game/app";
 import type { EditorAppSession } from "./types";
 import { BrushIndicatorSystem, type EditorBrushInfo, type ActiveEditorType } from "@editor/runtime/common";
+import { EditorCommandHistory, type EditorHistoryState } from "@editor/runtime/history/EditorCommandHistory";
 import { TerrainEditor } from "@editor/runtime/terrain/TerrainEditor";
 import type { EditorCameraAction } from "@editor/runtime/terrain/TerrainEditor";
 import { TextureEditor } from "@editor/runtime/texture/TextureEditor";
@@ -47,6 +48,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
   private readonly textureEditor = new TextureEditor();
   private readonly vegetationEditor = new VegetationEditor(this.vegetationScene);
   private readonly brushIndicator = new BrushIndicatorSystem();
+  private readonly history = new EditorCommandHistory();
   private activeEditorType: ActiveEditorType = null;
 
   private getProjectDirectoryFromMapDirectory(mapDirectory: string): string {
@@ -64,6 +66,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
     this.vegetationScene.setTerrainAvailability(null);
     this.vegetationScene.configureVisibility(vegetationRenderConfig.editor);
     this.brushIndicator.attach(this.scene);
+    this.textureEditor.setCommandRecorder((command) => this.history.record(command));
     this.terrainEditor.setMode("edit");
   }
 
@@ -81,6 +84,22 @@ export class EditorApp extends GameApp implements EditorAppSession {
 
   getVegetationEditor(): VegetationEditor {
     return this.vegetationEditor;
+  }
+
+  getEditorHistoryState(): EditorHistoryState {
+    return this.history.getState();
+  }
+
+  async undoEditorCommand(): Promise<boolean> {
+    this.endActiveBrushes();
+    await this.textureEditor.flushPendingHistory();
+    return this.history.undo();
+  }
+
+  async redoEditorCommand(): Promise<boolean> {
+    this.endActiveBrushes();
+    await this.textureEditor.flushPendingHistory();
+    return this.history.redo();
   }
 
   setActiveEditorType(type: ActiveEditorType): void {
@@ -281,6 +300,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
   }
 
   protected override async afterLoadMapData(mapData: MapData): Promise<void> {
+    this.history.clear();
     this.terrainEditor.loadMapData(mapData);
     this.frameEditorCameraForMap(mapData);
   }
@@ -311,10 +331,18 @@ export class EditorApp extends GameApp implements EditorAppSession {
   }
 
   protected override beforeDispose(): void {
+    this.textureEditor.setCommandRecorder(null);
+    this.history.clear();
     this.terrainEditor.dispose();
     this.textureEditor.dispose();
     this.vegetationEditor.dispose();
     this.brushIndicator.dispose();
+  }
+
+  private endActiveBrushes(): void {
+    this.terrainEditor.endBrush();
+    this.textureEditor.endBrush();
+    this.vegetationEditor.endBrush();
   }
 
   private frameEditorCameraForMap(mapData: MapData): void {
