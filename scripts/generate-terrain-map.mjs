@@ -28,6 +28,13 @@ const heightRegionsDirectory = "terrain/height/regions";
 const heightRegionFormat = "height-region-pack-v1";
 const heightSampleFormat = "float32le";
 const heightRegionSizePages = 8;
+const paintManifestPath = "paint/layers.json";
+const paintPagesDirectory = "paint/pages";
+const paintPageResolution = 1024;
+const vegetationModelsPath = "vegetation/models.json";
+const vegetationCellsDirectory = "vegetation/cells";
+const vegetationCellSizeMeters = 32;
+const vegetationInstanceRecordByteLength = 24;
 
 const baseHeightConfig = {
   baseHeightMeters: 6,
@@ -404,12 +411,237 @@ async function updateProjectMetadata(presets) {
 }
 
 async function clearMapAuthoringAssets(mapDir) {
-  // EN: Terrain redesigns start clean; texture paint and vegetation are rebuilt after the height field stabilizes.
-  // 中文: 地形重设计从干净状态开始；纹理绘制和植被会在高度场稳定后重刷。
+  // EN: Terrain regeneration starts clean; preview paint and vegetation are rebuilt against the new height field.
+  // 中文: 地形重生成从干净状态开始；预览纹理与植被会基于新高度场重建。
   await Promise.all([
     rm(path.join(mapDir, "paint"), { recursive: true, force: true }),
     rm(path.join(mapDir, "vegetation"), { recursive: true, force: true }),
   ]);
+}
+
+async function writePreviewAuthoringAssets(mapDir, preset, heightConfig) {
+  const [paint, vegetation] = await Promise.all([
+    writePreviewPaintAssets(mapDir),
+    writePreviewVegetationAssets(mapDir, preset, heightConfig),
+  ]);
+
+  return { paint, vegetation };
+}
+
+async function writePreviewPaintAssets(mapDir) {
+  const paintDir = path.join(mapDir, "paint");
+  await mkdir(path.join(paintDir, "pages"), { recursive: true });
+
+  const layers = {
+    beachSand: {
+      diffuse: "assets/texture/aerial_beach_01_diff_1k.jpg",
+      normal: "assets/texture/aerial_beach_01_nor_gl_1k.png",
+      arm: "assets/texture/aerial_beach_01_arm_1k.png",
+      displacement: "assets/texture/aerial_beach_01_disp_1k.png",
+      scale: 7,
+      splatMapIndex: 0,
+    },
+    mudLeaves: {
+      diffuse: "assets/texture/brown_mud_leaves_01_diff_1k.jpg",
+      normal: "assets/texture/brown_mud_leaves_01_nor_gl_1k.png",
+      arm: "assets/texture/brown_mud_leaves_01_arm_1k.png",
+      displacement: "assets/texture/brown_mud_leaves_01_disp_1k.png",
+      scale: 5,
+      splatMapIndex: 0,
+    },
+  };
+  const manifest = {
+    version: 1,
+    layers,
+    splatMaps: {
+      format: "rgba8-splat-v1",
+      resolution: paintPageResolution,
+      directory: paintPagesDirectory,
+      indices: [0],
+    },
+  };
+
+  await writeFile(path.join(paintDir, "layers.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+  const pixels = Buffer.alloc(paintPageResolution * paintPageResolution * 4);
+  for (let pixelZ = 0; pixelZ < paintPageResolution; pixelZ += 1) {
+    for (let pixelX = 0; pixelX < paintPageResolution; pixelX += 1) {
+      const normalizedX = pixelX / (paintPageResolution - 1);
+      const normalizedZ = pixelZ / (paintPageResolution - 1);
+      const grain = hash2i(Math.floor(normalizedX * 96), Math.floor(normalizedZ * 96), 8123, 918273);
+      const broad = 0.5 + 0.5 * Math.sin(normalizedX * 18 + Math.cos(normalizedZ * 9) * 1.6);
+      const mudWeight = clamp(0.18 + broad * 0.28 + grain * 0.22, 0, 1);
+      const mudByte = Math.round(mudWeight * 255);
+      const offset = (pixelZ * paintPageResolution + pixelX) * 4;
+      pixels[offset] = 255 - mudByte;
+      pixels[offset + 1] = mudByte;
+      pixels[offset + 2] = 0;
+      pixels[offset + 3] = 0;
+    }
+  }
+
+  await writeFile(path.join(paintDir, "pages", "splat_0.paint.rgba"), pixels);
+  return { layerCount: Object.keys(layers).length, splatByteLength: pixels.byteLength };
+}
+
+async function writePreviewVegetationAssets(mapDir, preset, heightConfig) {
+  const vegetationDir = path.join(mapDir, "vegetation");
+  await mkdir(path.join(vegetationDir, "cells"), { recursive: true });
+
+  const models = createPreviewVegetationModels();
+  const modelIds = ["fern", "quiverTree"];
+  const instances = createPreviewVegetationInstances(preset, heightConfig);
+  const groupedCells = new Map();
+
+  for (const instance of instances) {
+    const cellX = Math.floor(instance.x / vegetationCellSizeMeters);
+    const cellZ = Math.floor(instance.z / vegetationCellSizeMeters);
+    const key = vegetationCellKey(cellX, cellZ);
+    const group = groupedCells.get(key) ?? { cellX, cellZ, instances: [] };
+    group.instances.push(instance);
+    groupedCells.set(key, group);
+  }
+
+  const sortedCells = Array.from(groupedCells.values()).sort((left, right) => left.cellZ - right.cellZ || left.cellX - right.cellX);
+  for (const cell of sortedCells) {
+    await writeFile(
+      path.join(mapDir, vegetationCellPath(cell.cellX, cell.cellZ)),
+      encodeVegetationInstances(cell.instances, modelIds),
+    );
+  }
+
+  const manifest = {
+    version: 4,
+    models,
+    instances: {
+      format: "instanced-f32le-v1",
+      cellSizeMeters: vegetationCellSizeMeters,
+      cellsDirectory: vegetationCellsDirectory,
+      cellKeys: sortedCells.map((cell) => vegetationCellKey(cell.cellX, cell.cellZ)),
+      modelIds,
+    },
+  };
+  await writeFile(path.join(vegetationDir, "models.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+  return {
+    modelCount: Object.keys(models).length,
+    instanceCount: instances.length,
+    cellCount: sortedCells.length,
+  };
+}
+
+function createPreviewVegetationModels() {
+  return {
+    quiverTree: {
+      id: "quiverTree",
+      name: "Quiver Tree",
+      path: "../../assets/model/quiver_tree_02_1k.gltf/quiver_tree_02_1k.gltf",
+      lod1Path: "../../assets/model/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf",
+      lod1DistanceMeters: 70,
+      lod2Path: "../../assets/model/quiver_tree_02_1k.gltf/lod2/quiver_tree_02_lod2.gltf",
+      lod2DistanceMeters: 135,
+      targetHeightMeters: 7.5,
+      baseScale: 1.2,
+      castShadow: true,
+      receiveShadow: true,
+      maxVisibleDistanceMeters: 260,
+      shadowDistanceMeters: 70,
+    },
+    fern: {
+      id: "fern",
+      name: "Fern",
+      path: "../../assets/model/fern_02_1k.gltf/fern_02_1k.gltf",
+      lod1Path: "../../assets/model/fern_02_1k.gltf/lod1/fern_02_lod1.gltf",
+      lod1DistanceMeters: 35,
+      lod2Path: "../../assets/model/fern_02_1k.gltf/lod2/fern_02_lod2.gltf",
+      lod2DistanceMeters: 75,
+      targetHeightMeters: 0.9,
+      baseScale: 0.85,
+      castShadow: true,
+      receiveShadow: true,
+      maxVisibleDistanceMeters: 120,
+      shadowDistanceMeters: 35,
+    },
+  };
+}
+
+function createPreviewVegetationInstances(preset, heightConfig) {
+  const treePoints = [
+    [-220, -140], [-170, -70], [-120, 95], [-65, -180], [-30, 145], [38, -120],
+    [85, 58], [140, -35], [190, 125], [235, -160], [-255, 90], [265, 40],
+  ];
+  const instances = [];
+
+  for (let index = 0; index < treePoints.length; index += 1) {
+    const [worldX, worldZ] = treePoints[index];
+    instances.push({
+      id: `tree-${index}`,
+      modelId: "quiverTree",
+      x: worldX,
+      y: generateHeight(worldX, worldZ, preset, heightConfig),
+      z: worldZ,
+      rotationY: hash2i(index, 17, 9201, preset.seed) * Math.PI * 2,
+      scale: 0.85 + hash2i(index, 29, 9202, preset.seed) * 0.55,
+    });
+  }
+
+  let fernIndex = 0;
+  for (const [baseX, baseZ] of treePoints.slice(0, 9)) {
+    for (let ringIndex = 0; ringIndex < 5; ringIndex += 1) {
+      const angle = hash2i(fernIndex, 41, 9301, preset.seed) * Math.PI * 2;
+      const radius = 9 + hash2i(fernIndex, 53, 9302, preset.seed) * 24;
+      const worldX = baseX + Math.cos(angle) * radius;
+      const worldZ = baseZ + Math.sin(angle) * radius;
+      instances.push({
+        id: `fern-${fernIndex}`,
+        modelId: "fern",
+        x: worldX,
+        y: generateHeight(worldX, worldZ, preset, heightConfig),
+        z: worldZ,
+        rotationY: angle + Math.PI * 0.5,
+        scale: 0.55 + hash2i(fernIndex, 67, 9303, preset.seed) * 0.7,
+      });
+      fernIndex += 1;
+    }
+  }
+
+  return instances;
+}
+
+function vegetationCellKey(cellX, cellZ) {
+  return `${cellX},${cellZ}`;
+}
+
+function vegetationCellPath(cellX, cellZ) {
+  return `${vegetationCellsDirectory}/c_${formatCellCoordinate(cellX)}_${formatCellCoordinate(cellZ)}.instances.f32`;
+}
+
+function formatCellCoordinate(value) {
+  return value < 0 ? `m${Math.abs(value)}` : String(value);
+}
+
+function encodeVegetationInstances(instances, modelIds) {
+  const bytes = Buffer.alloc(instances.length * vegetationInstanceRecordByteLength);
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
+  for (let index = 0; index < instances.length; index += 1) {
+    const instance = instances[index];
+    const modelIndex = modelIds.indexOf(instance.modelId);
+    if (modelIndex < 0) {
+      throw new Error(`Vegetation instance '${instance.id}' references unknown model '${instance.modelId}'`);
+    }
+
+    const offset = index * vegetationInstanceRecordByteLength;
+    view.setUint16(offset, modelIndex, true);
+    view.setUint16(offset + 2, 0, true);
+    view.setFloat32(offset + 4, instance.x, true);
+    view.setFloat32(offset + 8, instance.y, true);
+    view.setFloat32(offset + 12, instance.z, true);
+    view.setFloat32(offset + 16, instance.rotationY, true);
+    view.setFloat32(offset + 20, instance.scale, true);
+  }
+
+  return bytes;
 }
 
 function getPageBounds(preset) {
@@ -500,8 +732,8 @@ async function generateMap(preset) {
       originZ: 0,
     },
     terrainPath: terrainHeightPath,
-    paintPath: "paint/layers.json",
-    vegetationPath: "vegetation/models.json",
+    paintPath: paintManifestPath,
+    vegetationPath: vegetationModelsPath,
     metadata: {
       name: preset.name,
       created: now,
@@ -513,6 +745,7 @@ async function generateMap(preset) {
   await mkdir(path.dirname(path.join(mapDir, terrainHeightPath)), { recursive: true });
   await writeFile(mapPath, `${JSON.stringify(mapData, null, 2)}\n`, "utf8");
   await writeFile(path.join(mapDir, terrainHeightPath), `${JSON.stringify(terrainHeightManifest, null, 2)}\n`, "utf8");
+  const preview = await writePreviewAuthoringAssets(mapDir, preset, heightConfig);
 
   return {
     id: preset.id,
@@ -522,6 +755,9 @@ async function generateMap(preset) {
     maxHeight,
     pageCount: pageKeys.length,
     regionCount: terrainHeightManifest.regions.length,
+    paintLayerCount: preview.paint.layerCount,
+    vegetationInstanceCount: preview.vegetation.instanceCount,
+    vegetationCellCount: preview.vegetation.cellCount,
     areaSquareKilometers: pageKeys.length * pageSizeMeters * pageSizeMeters / 1_000_000,
   };
 }
@@ -589,6 +825,8 @@ async function main() {
     console.log(`- ${result.id}: ${result.name}`);
     console.log(`  Height pages: ${result.pageCount}`);
     console.log(`  Height regions: ${result.regionCount}`);
+    console.log(`  Paint layers: ${result.paintLayerCount}`);
+    console.log(`  Vegetation instances: ${result.vegetationInstanceCount} in ${result.vegetationCellCount} cells`);
     console.log(`  Area: ${result.areaSquareKilometers.toFixed(2)} km^2`);
     console.log(`  Height range: ${result.minHeight.toFixed(2)}m .. ${result.maxHeight.toFixed(2)}m`);
     console.log(`  Map path: ${result.mapPath}`);
