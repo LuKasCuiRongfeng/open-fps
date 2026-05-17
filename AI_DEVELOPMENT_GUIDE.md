@@ -1,24 +1,25 @@
-# AI Development Guide
+# AI 开发指南
 
-Project-specific supplement to `.github/copilot-instructions.md`.
+这是 `.github/copilot-instructions.md` 的项目级补充说明。
 
-## Rules
+## 规则
 
-- Keep this document concise. Add only durable project rules, and prefer short bullets over explanations.
-- Add durable project rules here proactively when they emerge during development.
-- When legacy code or feature design is materially flawed, AI agents may redesign and refactor it when that yields better correctness, maintainability, or workflow boundaries; do not preserve the old design merely because it exists.
-- Keep AI-led redesigns focused: explain the design change, preserve intended user-facing behavior, and verify the affected workflows.
-- Keep all project UI in a compact, serious editor-style desktop application aesthetic; avoid web-page or card-grid presentation patterns.
-- Keep platform-specific behavior behind `src/platform/` capabilities; app code must not call native command names directly.
-- Store editable terrain as v5 sparse virtual height pages under `terrain/height/pages`; manifest paths are derived from page keys and no legacy map-format compatibility should be added unless explicitly requested.
-- Use English for all new or modified project text: UI copy, docs, test names, logs, errors, config descriptions, fixture text, file names, and asset metadata.
-- Keep existing non-English text unchanged unless localization work requires touching it.
-- Use clear English code identifiers.
-- Write new or modified code comments in both English and Chinese.
-- Comment important code when intent, constraints, risks, or invariants are not obvious. This includes algorithms, rendering or GPU decisions, persistence, migrations, platform bridges, scheduling, security-sensitive paths, and domain rules.
-- Do not add comments that merely restate obvious syntax.
+- 保持本文档简洁。只添加长期有效的项目规则，并优先使用短条目而不是长解释。
+- 开发过程中出现新的长期项目规则时，主动补充到这里。
+- 项目文档一律使用中文，包括 README、架构说明、迁移说明、工作流文档，以及纯文档用途的 Markdown 内容。
+- 当旧代码或功能设计存在实质性缺陷时，AI 代理可以重新设计并重构，只要这样能提升正确性、可维护性或工作流边界；不要仅因为旧设计已存在就保留它。
+- AI 主导的重新设计应保持聚焦：说明设计变更，保留预期的用户可见行为，并验证受影响的工作流。
+- 所有项目 UI 都应保持紧凑、严肃的编辑器式桌面应用审美；避免网页式或卡片网格式呈现模式。
+- 平台特定行为应封装在 `src/platform/` 能力层之后；应用代码不得直接调用原生命令名。
+- 可编辑地形存储为 `terrain/height/pages` 下的 v5 稀疏虚拟高度分页；manifest 路径由分页键派生，除非明确要求，否则不要添加旧地图格式兼容性。
+- 非文档类项目文本的新增或修改内容使用英文：UI 文案、测试名、日志、错误、配置描述、fixture 文本、文件名和资产元数据。
+- 除非本地化工作要求修改，否则保留现有非英文文本不变。
+- 使用清晰的英文代码标识符。
+- 新增或修改的代码注释应同时使用英文和中文。
+- 当意图、约束、风险或不变量不明显时，应为重要代码添加注释。这包括算法、渲染或 GPU 决策、持久化、迁移、平台桥接、调度、安全敏感路径和领域规则。
+- 不要添加只是复述明显语法的注释。
 
-## Comment Format
+## 注释格式
 
 ```ts
 // EN: Keep the terrain seed stable so saved maps reproduce the same height field.
@@ -26,7 +27,7 @@ Project-specific supplement to `.github/copilot-instructions.md`.
 const terrainSeed = project.map.seed;
 ```
 
-## Self-Check
+## 自检
 
-Before finishing, verify that new text is English, important changed code has useful bilingual comments, and this guide stays short.
+完成前自检：AI所做的修改是否符合项目要求。
 
