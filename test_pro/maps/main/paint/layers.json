@@ -4,23 +4,23 @@
     "beachSand": {
       "diffuse": "assets/texture/aerial_beach_01_diff_1k.jpg",
       "normal": "assets/texture/aerial_beach_01_nor_gl_1k.png",
-      "arm": "assets/texture/aerial_beach_01_arm_1k.png",
       "displacement": "assets/texture/aerial_beach_01_disp_1k.png",
+      "arm": "assets/texture/aerial_beach_01_arm_1k.png",
       "scale": 7,
       "splatMapIndex": 0
     },
     "mudLeaves": {
       "diffuse": "assets/texture/brown_mud_leaves_01_diff_1k.jpg",
       "normal": "assets/texture/brown_mud_leaves_01_nor_gl_1k.png",
-      "arm": "assets/texture/brown_mud_leaves_01_arm_1k.png",
       "displacement": "assets/texture/brown_mud_leaves_01_disp_1k.png",
+      "arm": "assets/texture/brown_mud_leaves_01_arm_1k.png",
       "scale": 5,
       "splatMapIndex": 0
     }
   },
   "splatMaps": {
     "format": "rgba8-splat-v1",
-    "resolution": 1024,
+    "resolution": 1600,
     "directory": "paint/pages",
     "indices": [
       0
