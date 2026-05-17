@@ -8,6 +8,8 @@ import {
   createVegetationModelDefinition,
   DEFAULT_VEGETATION_CELL_SIZE_METERS,
   VEGETATION_MODELS_PATH,
+  getVegetationCellKey,
+  getVegetationCellKeysForWorldBounds,
   getVegetationRegionKeys,
   isSupportedVegetationModelPath,
   type VegetationBrushMode,
@@ -19,10 +21,23 @@ import {
 } from "@game/world/vegetation";
 import { VegetationBrush, type VegetationBrushSettings } from "./VegetationBrush";
 import { VegetationStorage } from "./VegetationStorage";
-import type { MapData } from "@project/MapData";
+import { sortPageKeys, type MapData } from "@project/MapData";
+import type { EditorCommand } from "@editor/runtime/history/EditorCommandHistory";
 
 type TerrainHeightAt = (x: number, z: number) => number;
 type TerrainHeightAvailability = (x: number, z: number) => boolean;
+type EditorCommandRecorder = (command: EditorCommand) => void;
+
+interface VegetationBrushStrokeSession {
+  beforeCells: Map<string, VegetationInstance[]>;
+  cellKeys: Set<string>;
+  changed: boolean;
+}
+
+interface VegetationCellSnapshot {
+  cellSizeMeters: number;
+  cells: Array<{ key: string; instances: VegetationInstance[] }>;
+}
 
 const MAX_PLACEMENTS_PER_FRAME = 16;
 const ERASE_EPSILON_METERS = 0.0001;
@@ -37,6 +52,9 @@ export class VegetationEditor {
   private cellSizeMeters = DEFAULT_VEGETATION_CELL_SIZE_METERS;
   private loadedRegionKeys = new Set<string>();
   private _dirty = false;
+  private activeBrushStroke: VegetationBrushStrokeSession | null = null;
+  private commandPlaybackInProgress = false;
+  private commandRecorder: EditorCommandRecorder | null = null;
   private onDirtyChange?: (dirty: boolean) => void;
   private readonly changeSubscribers = new Set<() => void>();
   private readonly unsubscribeSceneChange: () => void;
@@ -265,13 +283,20 @@ export class VegetationEditor {
   endBrush(): void {
     this.brush.stop();
     this.placementAccumulator = 0;
+    this.finishBrushStroke();
   }
 
   applyBrush(dt: number, heightAt: TerrainHeightAt, hasHeightAt?: TerrainHeightAvailability): void {
-    if (!this.brush.active || !this.brush.targetValid) return;
+    if (this.commandPlaybackInProgress || !this.brush.active || !this.brush.targetValid) return;
+
+    const brushCellKeys = this.getCurrentBrushCellKeys();
+    const brushStroke = this.ensureBrushStrokeSession();
+    this.captureBeforeCells(brushStroke, brushCellKeys);
 
     if (this.brushSettings.mode === "erase") {
-      this.eraseInstancesInBrush();
+      if (this.eraseInstancesInBrush()) {
+        brushStroke.changed = true;
+      }
       return;
     }
 
@@ -292,6 +317,7 @@ export class VegetationEditor {
     }
 
     if (changed) {
+      brushStroke.changed = true;
       this.setDirty(true);
       this.scene.syncInstances(this.selectedModelId);
       this.notifyChanged();
@@ -323,13 +349,120 @@ export class VegetationEditor {
     this.onDirtyChange = callback;
   }
 
+  setCommandRecorder(callback: EditorCommandRecorder | null): void {
+    this.commandRecorder = callback;
+  }
+
+  flushPendingHistory(): void {
+    this.finishBrushStroke();
+  }
+
   reset(): void {
     this.brush.reset();
+    this.finishBrushStroke();
   }
 
   dispose(): void {
     this.reset();
+    this.commandRecorder = null;
     this.unsubscribeSceneChange();
+  }
+
+  private ensureBrushStrokeSession(): VegetationBrushStrokeSession {
+    if (!this.activeBrushStroke) {
+      this.activeBrushStroke = {
+        beforeCells: new Map<string, VegetationInstance[]>(),
+        cellKeys: new Set<string>(),
+        changed: false,
+      };
+    }
+
+    return this.activeBrushStroke;
+  }
+
+  private finishBrushStroke(): void {
+    const session = this.activeBrushStroke;
+    this.activeBrushStroke = null;
+    if (!session?.changed || session.cellKeys.size === 0 || !this.commandRecorder) {
+      return;
+    }
+
+    const cellKeys = sortPageKeys(session.cellKeys);
+    const beforeSnapshot = this.createCellSnapshotFromMap(session.beforeCells, cellKeys);
+    const afterSnapshot = this.captureCellSnapshot(cellKeys);
+    if (!hasVegetationSnapshotChanges(beforeSnapshot, afterSnapshot)) {
+      return;
+    }
+
+    this.commandRecorder({
+      label: "Vegetation brush stroke",
+      undo: () => this.applyCellSnapshot(beforeSnapshot),
+      redo: () => this.applyCellSnapshot(afterSnapshot),
+    });
+  }
+
+  private getCurrentBrushCellKeys(): string[] {
+    const radius = this.brushSettings.radius;
+    return getVegetationCellKeysForWorldBounds(
+      this.cellSizeMeters,
+      this.brush.targetX - radius,
+      this.brush.targetZ - radius,
+      this.brush.targetX + radius,
+      this.brush.targetZ + radius,
+    );
+  }
+
+  private captureBeforeCells(session: VegetationBrushStrokeSession, cellKeys: readonly string[]): void {
+    for (const key of cellKeys) {
+      session.cellKeys.add(key);
+      if (!session.beforeCells.has(key)) {
+        session.beforeCells.set(key, this.cloneInstancesInCell(key));
+      }
+    }
+  }
+
+  private captureCellSnapshot(cellKeys: readonly string[]): VegetationCellSnapshot {
+    return this.createCellSnapshotFromMap(
+      new Map(cellKeys.map((key) => [key, this.cloneInstancesInCell(key)])),
+      cellKeys,
+    );
+  }
+
+  private createCellSnapshotFromMap(
+    cells: ReadonlyMap<string, readonly VegetationInstance[]>,
+    cellKeys: readonly string[],
+  ): VegetationCellSnapshot {
+    return {
+      cellSizeMeters: this.cellSizeMeters,
+      cells: sortPageKeys(cellKeys).map((key) => ({
+        key,
+        instances: cloneVegetationInstances(cells.get(key) ?? []),
+      })),
+    };
+  }
+
+  private cloneInstancesInCell(cellKey: string): VegetationInstance[] {
+    return cloneVegetationInstances(this.data.instances.filter((instance) => (
+      getVegetationCellKey(instance.x, instance.z, this.cellSizeMeters) === cellKey
+    )));
+  }
+
+  private applyCellSnapshot(snapshot: VegetationCellSnapshot): void {
+    this.commandPlaybackInProgress = true;
+    try {
+      const cellKeys = new Set(snapshot.cells.map((cell) => cell.key));
+      this.data.instances = [
+        ...this.data.instances.filter((instance) => (
+          !cellKeys.has(getVegetationCellKey(instance.x, instance.z, snapshot.cellSizeMeters))
+        )),
+        ...snapshot.cells.flatMap((cell) => cloneVegetationInstances(cell.instances)),
+      ];
+      this.setDirty(true);
+      this.scene.syncInstances();
+      this.notifyChanged();
+    } finally {
+      this.commandPlaybackInProgress = false;
+    }
   }
 
   private createInstanceInBrush(heightAt: TerrainHeightAt, hasHeightAt?: TerrainHeightAvailability): VegetationInstance | null {
@@ -354,7 +487,7 @@ export class VegetationEditor {
     };
   }
 
-  private eraseInstancesInBrush(): void {
+  private eraseInstancesInBrush(): boolean {
     const radius = this.brushSettings.radius;
     const radiusSquared = radius * radius;
     const before = this.data.instances.length;
@@ -368,7 +501,10 @@ export class VegetationEditor {
       this.setDirty(true);
       this.scene.syncInstances();
       this.notifyChanged();
+      return true;
     }
+
+    return false;
   }
 
   private setSelectedModelPathField(field: "lod1Path" | "lod2Path", path: string): void {
@@ -408,4 +544,47 @@ export class VegetationEditor {
       subscriber();
     }
   }
+}
+
+function cloneVegetationInstances(instances: readonly VegetationInstance[]): VegetationInstance[] {
+  return instances.map((instance) => ({ ...instance }));
+}
+
+function hasVegetationSnapshotChanges(
+  beforeSnapshot: VegetationCellSnapshot,
+  afterSnapshot: VegetationCellSnapshot,
+): boolean {
+  if (beforeSnapshot.cellSizeMeters !== afterSnapshot.cellSizeMeters) {
+    return true;
+  }
+
+  if (beforeSnapshot.cells.length !== afterSnapshot.cells.length) {
+    return true;
+  }
+
+  for (let cellIndex = 0; cellIndex < beforeSnapshot.cells.length; cellIndex += 1) {
+    const beforeCell = beforeSnapshot.cells[cellIndex];
+    const afterCell = afterSnapshot.cells[cellIndex];
+    if (beforeCell.key !== afterCell.key || beforeCell.instances.length !== afterCell.instances.length) {
+      return true;
+    }
+
+    for (let instanceIndex = 0; instanceIndex < beforeCell.instances.length; instanceIndex += 1) {
+      if (!isSameVegetationInstance(beforeCell.instances[instanceIndex], afterCell.instances[instanceIndex])) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function isSameVegetationInstance(left: VegetationInstance, right: VegetationInstance): boolean {
+  return left.id === right.id
+    && left.modelId === right.modelId
+    && left.x === right.x
+    && left.y === right.y
+    && left.z === right.z
+    && left.rotationY === right.rotationY
+    && left.scale === right.scale;
 }

@@ -79,6 +79,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
     this.vegetationScene.configureVisibility(vegetationRenderConfig.editor);
     this.brushIndicator.attach(this.scene);
     this.textureEditor.setCommandRecorder((command) => this.history.record(command));
+    this.vegetationEditor.setCommandRecorder((command) => this.history.record(command));
     this.terrainEditor.setMode("edit");
   }
 
@@ -106,6 +107,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
     this.endActiveBrushes();
     await this.flushPendingTerrainHistory();
     await this.textureEditor.flushPendingHistory();
+    this.vegetationEditor.flushPendingHistory();
   }
 
   async undoEditorCommand(): Promise<boolean> {
@@ -353,6 +355,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
 
   protected override beforeDispose(): void {
     this.textureEditor.setCommandRecorder(null);
+    this.vegetationEditor.setCommandRecorder(null);
     this.terrainBrushQueue.length = 0;
     this.activeTerrainStroke = null;
     this.history.clear();

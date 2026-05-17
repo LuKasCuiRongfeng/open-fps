@@ -239,11 +239,37 @@ export function createVegetationStoragePayload(
 }
 
 export function getVegetationCellKeys(data: VegetationMapData, cellSizeMeters: number): string[] {
-  if (!Number.isFinite(cellSizeMeters) || cellSizeMeters <= 0) {
-    throw new Error("Vegetation cell size must be a positive finite number");
-  }
+  validateVegetationCellSize(cellSizeMeters);
 
   return sortPageKeys(new Set(data.instances.map((instance) => getVegetationCellKey(instance.x, instance.z, cellSizeMeters))));
+}
+
+export function getVegetationCellKeysForWorldBounds(
+  cellSizeMeters: number,
+  minX: number,
+  minZ: number,
+  maxX: number,
+  maxZ: number,
+): string[] {
+  validateVegetationCellSize(cellSizeMeters);
+
+  const minCellX = Math.floor(minX / cellSizeMeters);
+  const maxCellX = Math.floor(maxX / cellSizeMeters);
+  const minCellZ = Math.floor(minZ / cellSizeMeters);
+  const maxCellZ = Math.floor(maxZ / cellSizeMeters);
+  const keys: string[] = [];
+  for (let cx = minCellX; cx <= maxCellX; cx += 1) {
+    for (let cz = minCellZ; cz <= maxCellZ; cz += 1) {
+      keys.push(pageKey(cx, cz));
+    }
+  }
+
+  return sortPageKeys(keys);
+}
+
+export function getVegetationCellKey(x: number, z: number, cellSizeMeters: number): string {
+  validateVegetationCellSize(cellSizeMeters);
+  return pageKey(Math.floor(x / cellSizeMeters), Math.floor(z / cellSizeMeters));
 }
 
 export function getVegetationRegionKeys(
@@ -481,8 +507,10 @@ function cloneVegetationModels(
   );
 }
 
-function getVegetationCellKey(x: number, z: number, cellSizeMeters: number): string {
-  return pageKey(Math.floor(x / cellSizeMeters), Math.floor(z / cellSizeMeters));
+function validateVegetationCellSize(cellSizeMeters: number): void {
+  if (!Number.isFinite(cellSizeMeters) || cellSizeMeters <= 0) {
+    throw new Error("Vegetation cell size must be a positive finite number");
+  }
 }
 
 function encodeVegetationCellInstances(
