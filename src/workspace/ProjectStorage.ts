@@ -3,6 +3,7 @@
 
 import { getPlatform } from "@/platform";
 import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
+import { commitSidecarAsset, type SidecarRegionPayload } from "./SidecarAssetCommit";
 import type { HeightPageData, MapData } from "./MapData";
 import {
   createMapDataFromManifest,
@@ -13,7 +14,6 @@ import {
   decodeHeightRegionPackBase64,
   deserializeTerrainHeightManifest,
   encodeHeightPageBytes,
-  encodeHeightRegionPackBase64,
   deserializeMapManifest,
   getHeightPageKeys,
   getHeightRegionPages,
@@ -66,6 +66,11 @@ type SaveProjectMapOptions<TSettings extends GameSettings = GameSettings> = {
   createNewMap?: boolean;
   forceWriteAllPages?: boolean;
 };
+
+interface TerrainHeightSavePlan {
+  regionsToWrite: TerrainHeightRegionManifest[];
+  staleRegionPaths?: string[];
+}
 
 let currentProject: CurrentProjectState | null = null;
 const platform = getPlatform();
@@ -470,36 +475,38 @@ async function saveProjectMapData(
     mapData.pageSizeMeters,
   );
   const dirtyHeightPageKeys = new Set(mapData.dirtyHeightPageKeys ?? []);
-  const regionsToWrite = await getHeightRegionsToWrite(
+  const terrainSavePlan = await createTerrainHeightSavePlan(
     projectPath,
     mapId,
     nextTerrainManifest,
     dirtyHeightPageKeys,
     writeAllPages,
   );
+  const mapDirectory = getProjectMapDirectory(projectPath, mapId);
+  const regionPayloads: SidecarRegionPayload[] = [];
 
-  // EN: Region packs are written before their manifest so the manifest never points at missing binary data.
-  // 中文: region pack 先于清单写入，避免清单指向尚未写好的二进制数据。
-  for (const region of regionsToWrite) {
-    await saveHeightRegionPack(projectPath, mapId, mapData, nextTerrainManifest, region);
+  for (const region of terrainSavePlan.regionsToWrite) {
+    regionPayloads.push(await createHeightRegionPackPayload(mapData, nextTerrainManifest, region));
   }
 
-  const terrainManifestPath = `${getProjectMapDirectory(projectPath, mapId)}/${nextManifest.terrainPath}`;
-  await platform.files.writeText(terrainManifestPath, serializeTerrainHeightManifest(nextTerrainManifest));
+  await commitSidecarAsset({
+    mapDirectory,
+    manifestPath: nextManifest.terrainPath,
+    manifestText: serializeTerrainHeightManifest(nextTerrainManifest),
+    regions: regionPayloads,
+    staleRegionPaths: terrainSavePlan.staleRegionPaths,
+    staleDeleteLabel: "terrain height region",
+  });
   await platform.projects.saveMapManifest(projectPath, mapId, serializeManifest(nextManifest));
 }
 
-async function getHeightRegionsToWrite(
+async function createTerrainHeightSavePlan(
   projectPath: string,
   mapId: string,
   nextTerrainManifest: TerrainHeightManifest,
   dirtyHeightPageKeys: ReadonlySet<string>,
   writeAllPages: boolean,
-): Promise<TerrainHeightRegionManifest[]> {
-  if (writeAllPages) {
-    return getTerrainHeightRegions(nextTerrainManifest);
-  }
-
+): Promise<TerrainHeightSavePlan> {
   let existingTerrainManifest: TerrainHeightManifest | null = null;
   try {
     const manifestJson = await platform.projects.readMapManifest(projectPath, mapId);
@@ -511,8 +518,18 @@ async function getHeightRegionsToWrite(
     }
   }
 
-  if (!existingTerrainManifest || !hasSameTerrainPageKeys(existingTerrainManifest, nextTerrainManifest)) {
-    return getTerrainHeightRegions(nextTerrainManifest);
+  const nextRegions = getTerrainHeightRegions(nextTerrainManifest);
+  if (
+    writeAllPages
+    || !existingTerrainManifest
+    || !hasSameTerrainStorageLayout(existingTerrainManifest, nextTerrainManifest)
+  ) {
+    return {
+      regionsToWrite: nextRegions,
+      staleRegionPaths: existingTerrainManifest
+        ? getTerrainHeightRegions(existingTerrainManifest).map((region) => region.path)
+        : undefined,
+    };
   }
 
   const pageIndex = createTerrainHeightPageIndex(nextTerrainManifest);
@@ -526,16 +543,16 @@ async function getHeightRegionsToWrite(
     dirtyRegionKeys.add(location.region.key);
   }
 
-  return getTerrainHeightRegions(nextTerrainManifest).filter((region) => dirtyRegionKeys.has(region.key));
+  return {
+    regionsToWrite: nextRegions.filter((region) => dirtyRegionKeys.has(region.key)),
+  };
 }
 
-async function saveHeightRegionPack(
-  projectPath: string,
-  mapId: string,
+async function createHeightRegionPackPayload(
   mapData: MapData,
   terrainManifest: TerrainHeightManifest,
   region: TerrainHeightRegionManifest,
-): Promise<void> {
+): Promise<SidecarRegionPayload> {
   const packBytes = new Uint8Array(getHeightRegionPackByteLength(region, terrainManifest.pageResolution));
 
   for (const page of getHeightRegionPages(region, terrainManifest.pageResolution, terrainManifest.regionSizePages)) {
@@ -548,12 +565,10 @@ async function saveHeightRegionPack(
     packBytes.set(pageBytes, page.offset);
   }
 
-  await platform.projects.saveMapChunk(
-    projectPath,
-    mapId,
-    region.path,
-    encodeHeightRegionPackBase64(packBytes),
-  );
+  return {
+    path: region.path,
+    bytes: packBytes,
+  };
 }
 
 async function loadHeightPageForSave(mapData: MapData, key: string): Promise<HeightPageData> {
@@ -569,10 +584,21 @@ async function loadHeightPageForSave(mapData: MapData, key: string): Promise<Hei
   throw new Error(`Map height page '${key}' is missing during save`);
 }
 
-function hasSameTerrainPageKeys(
+function hasSameTerrainStorageLayout(
   left: TerrainHeightManifest,
   right: TerrainHeightManifest,
 ): boolean {
+  if (
+    left.format !== right.format
+    || left.sampleFormat !== right.sampleFormat
+    || left.pageResolution !== right.pageResolution
+    || left.pageSizeMeters !== right.pageSizeMeters
+    || left.regionSizePages !== right.regionSizePages
+    || left.regionsDirectory !== right.regionsDirectory
+  ) {
+    return false;
+  }
+
   const leftKeys = getTerrainHeightPageKeys(left);
   const rightKeys = getTerrainHeightPageKeys(right);
   if (leftKeys.length !== rightKeys.length) {

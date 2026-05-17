@@ -1,13 +1,22 @@
 # Open FPS 开放世界路线图
 
-本文档是项目向“10 平方公里小型开放世界地图，质量目标对标《荒野大镖客2》式业界最佳实践”前进的长期开发指引。它不是一次性计划，而是开发时持续对齐、验证和更新的路线基准。
+本文档是项目向“10 平方公里小型开放世界地图，质量目标对标《荒野大镖客2》式业界最佳实践”前进的长期开发指引。它代表当前基于项目状态、目标约束和业界最佳实践做出的最佳路线判断，不是一次性计划，也不是不可改变的教条。
 
 ## 使用方式
 
 - 开始地图、资产、编辑器、运行时或工具链相关开发前，先检查本路线图是否仍然匹配当前目标。
 - 每完成一个重要能力，更新对应状态、下一步或验收标准，避免路线遗忘和实现漂移。
+- 如果开发过程中发现更优的业界方案、技术路径或架构取舍，必须主动提出并更新本文档；不要因为旧路线已经写下就一条路走到底。
 - 当短期需求与路线冲突时，优先选择能提升长期正确性、可维护性、性能边界和内容质量的方案。
 - 不为保留临时测试数据牺牲架构质量；`main` 地图现有内容仍可按需要重建。
+
+## 动态路线原则
+
+- 路线图是当前最佳判断，不是冻结的规格书。
+- 当行业实践、项目约束、性能瓶颈或内容目标发生变化时，应重新评估路线。
+- 更优方案出现时，至少要说明：为什么更优、替换哪些旧假设、迁移成本和风险是什么。
+- 如果暂时不立即采用更优方案，也要把原因记录清楚，避免未来误以为旧方案仍然是最佳路线。
+- 严禁为了“保持计划一致”而继续推进已经明显落后的实现方式。
 
 ## 北极星目标
 
@@ -26,7 +35,7 @@
 - 地形高度使用 `terrain/height/manifest.json` + `.heightpack` region pack。
 - 纹理绘制使用 `paint/layers.json` + `.paintpack` region pack。
 - 植被实例使用 `vegetation/models.json` + `.vegpack` region pack。
-- 已有 dirty region/page 保存、编辑器 undo/redo、安全写入和 manifest-last sidecar 提交方向。
+- 已有 dirty region/page 保存、编辑器 undo/redo 和安全写入；terrain、paint、vegetation 的 region-pack sidecar 保存均向 manifest-last 提交协议收敛。
 
 当前最重要的方向是把这些能力从“能用的资产格式”推进到“可验证、可恢复、可 cook、可流式加载的生产级世界管线”。
 
@@ -39,7 +48,7 @@
 当前重点：
 
 - 所有 region pack 先完整写入，再提交 JSON manifest，最后清理旧 pack。
-- 地形高度保存也应接入统一 sidecar commit 抽象。
+- 保持 terrain、paint、vegetation 共享 sidecar commit 抽象，后续 world object 继续复用同一提交协议。
 - 加载路径要能识别 manifest 指向的 pack 是否缺失、截断或格式不匹配。
 
 验收标准：
@@ -306,12 +315,11 @@
 
 ## 近期优先级
 
-1. 让 terrain 高度保存接入统一 sidecar commit 协议。
-2. 为 height/paint/vegetation pack 增加 checksum 或 content hash 校验。
-3. 增加 `main` 地图资产验证脚本，检查 manifest、region pack、孤儿文件和截断文件。
-4. 设计 cooked map 输出结构，让游戏运行时逐步脱离编辑器 source 结构。
-5. 建立 world partition cell schema，先统一 terrain、paint、vegetation，再接 object/collision/nav。
-6. 起草 `main` 的 10 平方公里世界设计规格，包括道路、水体、区域主题和兴趣点密度。
+1. 为 height/paint/vegetation pack 增加 checksum 或 content hash 校验。
+2. 增加 `main` 地图资产验证脚本，检查 manifest、region pack、孤儿文件和截断文件。
+3. 设计 cooked map 输出结构，让游戏运行时逐步脱离编辑器 source 结构。
+4. 建立 world partition cell schema，先统一 terrain、paint、vegetation，再接 object/collision/nav。
+5. 起草 `main` 的 10 平方公里世界设计规格，包括道路、水体、区域主题和兴趣点密度。
 
 ## 路线对齐自检
 
