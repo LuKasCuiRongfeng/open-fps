@@ -20,6 +20,7 @@ const WATER_RIBBON_HEIGHT_METERS = 0.22;
 const SURFACE_OFFSET_METERS = 0.75;
 const MARKER_HEIGHT_METERS = 18;
 const MARKER_RADIUS_METERS = 7;
+const RIBBON_CHUNK_LENGTH_METERS = 96;
 
 const platform = getPlatform();
 
@@ -57,6 +58,14 @@ type WorldObjectEntry = {
   };
 };
 
+type WorldObjectTerrainAvailability = (xMeters: number, zMeters: number) => boolean;
+
+type WorldObjectOverlayEntry = {
+  mesh: Mesh;
+  sampleX: number;
+  sampleZ: number;
+};
+
 export class WorldObjectOverlay {
   private readonly root = new Group();
   private readonly ribbonGeometry = new BoxGeometry(1, 1, 1);
@@ -65,6 +74,8 @@ export class WorldObjectOverlay {
   private readonly waterMaterial = createMaterial(0.24, 0.68, 1.0, 0.72);
   private readonly poiMaterial = createMaterial(1.0, 0.82, 0.22, 0.92);
   private readonly propMaterial = createMaterial(0.9, 0.92, 0.96, 0.82);
+  private readonly entries: WorldObjectOverlayEntry[] = [];
+  private terrainAvailability: WorldObjectTerrainAvailability | null = null;
   private scene: Scene | null = null;
 
   constructor() {
@@ -115,6 +126,18 @@ export class WorldObjectOverlay {
     for (const object of packs.flatMap((pack) => pack.objects)) {
       this.addObject(object);
     }
+    this.updateTerrainVisibility();
+  }
+
+  setTerrainAvailability(predicate: WorldObjectTerrainAvailability | null): void {
+    this.terrainAvailability = predicate;
+    this.updateTerrainVisibility();
+  }
+
+  updateTerrainVisibility(): void {
+    for (const entry of this.entries) {
+      entry.mesh.visible = this.terrainAvailability?.(entry.sampleX, entry.sampleZ) ?? true;
+    }
   }
 
   dispose(): void {
@@ -142,6 +165,7 @@ export class WorldObjectOverlay {
     while (this.root.children.length > 0) {
       this.root.remove(this.root.children[0]);
     }
+    this.entries.length = 0;
   }
 
   private addObject(object: WorldObjectEntry): void {
@@ -154,18 +178,54 @@ export class WorldObjectOverlay {
   }
 
   private addRibbonObject(object: WorldObjectEntry): void {
-    const mesh = new Mesh(this.ribbonGeometry, object.layer === "water" ? this.waterMaterial : this.roadMaterial);
     const widthMeters = Math.max(3, object.spline?.widthMeters ?? objectRadiusFromBounds(object) * 0.5);
-    const lengthMeters = objectLengthFromSpline(object) ?? Math.max(widthMeters, objectRadiusFromBounds(object) * 2);
+    const points = object.spline?.points;
+    if (!points || points.length < 2) {
+      this.addRibbonChunk(object, object.position.x, object.position.y, object.position.z, object.rotationY ?? 0, Math.max(widthMeters, objectRadiusFromBounds(object) * 2), widthMeters, 0);
+      return;
+    }
+
+    let chunkIndex = 0;
+    for (let pointIndex = 0; pointIndex < points.length - 1; pointIndex += 1) {
+      const start = points[pointIndex];
+      const end = points[pointIndex + 1];
+      const segmentLength = Math.hypot(end.x - start.x, end.z - start.z);
+      const chunkCount = Math.max(1, Math.ceil(segmentLength / RIBBON_CHUNK_LENGTH_METERS));
+      for (let index = 0; index < chunkCount; index += 1) {
+        const t0 = index / chunkCount;
+        const t1 = (index + 1) / chunkCount;
+        const centerT = (t0 + t1) * 0.5;
+        const centerX = start.x + (end.x - start.x) * centerT;
+        const centerZ = start.z + (end.z - start.z) * centerT;
+        const centerY = object.position.y;
+        const rotationY = Math.atan2(end.x - start.x, end.z - start.z);
+        this.addRibbonChunk(object, centerX, centerY, centerZ, rotationY, segmentLength / chunkCount, widthMeters, chunkIndex);
+        chunkIndex += 1;
+      }
+    }
+  }
+
+  private addRibbonChunk(
+    object: WorldObjectEntry,
+    x: number,
+    y: number,
+    z: number,
+    rotationY: number,
+    lengthMeters: number,
+    widthMeters: number,
+    chunkIndex: number,
+  ): void {
+    const mesh = new Mesh(this.ribbonGeometry, object.layer === "water" ? this.waterMaterial : this.roadMaterial);
     const heightMeters = object.layer === "water" ? WATER_RIBBON_HEIGHT_METERS : ROAD_RIBBON_HEIGHT_METERS;
 
-    mesh.name = `world-object-${object.layer}-${object.id}`;
-    mesh.position.set(object.position.x, object.position.y + SURFACE_OFFSET_METERS, object.position.z);
-    mesh.rotation.y = object.rotationY ?? 0;
+    mesh.name = `world-object-${object.layer}-${object.id}-${chunkIndex}`;
+    mesh.position.set(x, y + SURFACE_OFFSET_METERS, z);
+    mesh.rotation.y = rotationY;
     mesh.scale.set(widthMeters, heightMeters, lengthMeters);
     mesh.frustumCulled = false;
     mesh.renderOrder = this.root.renderOrder;
     this.root.add(mesh);
+    this.entries.push({ mesh, sampleX: x, sampleZ: z });
   }
 
   private addMarkerObject(object: WorldObjectEntry): void {
@@ -179,6 +239,7 @@ export class WorldObjectOverlay {
     mesh.frustumCulled = false;
     mesh.renderOrder = this.root.renderOrder;
     this.root.add(mesh);
+    this.entries.push({ mesh, sampleX: object.position.x, sampleZ: object.position.z });
   }
 }
 
@@ -279,20 +340,6 @@ function readOptionalSpline(value: unknown, label: string): WorldObjectEntry["sp
     widthMeters: readOptionalFiniteNumber(spline.widthMeters, `${label}.widthMeters`),
     points,
   };
-}
-
-function objectLengthFromSpline(object: WorldObjectEntry): number | null {
-  const points = object.spline?.points;
-  if (!points || points.length < 2) {
-    return null;
-  }
-
-  let lengthMeters = 0;
-  for (let index = 0; index < points.length - 1; index += 1) {
-    lengthMeters += Math.hypot(points[index + 1].x - points[index].x, points[index + 1].z - points[index].z);
-  }
-
-  return lengthMeters;
 }
 
 function objectRadiusFromBounds(object: WorldObjectEntry): number {

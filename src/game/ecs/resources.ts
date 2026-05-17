@@ -80,6 +80,7 @@ export type RuntimeResources = {
 export type RuntimeWorldPartitionResource = {
   runtime: CookedWorldPartitionRuntime | null;
   loadCellAsset: ((kind: BundledWorldPartitionCellKind, key: string) => Promise<unknown>) | null;
+  retainCellAssets: ((activeKeys: ReadonlySet<string>) => void) | null;
   currentPlan: CookedWorldPartitionPlan | null;
 };
 

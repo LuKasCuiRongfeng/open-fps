@@ -64,6 +64,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
   private terrainBrushApplyPromise: Promise<void> | null = null;
   private terrainHistoryFlushPromise: Promise<void> | null = null;
   private terrainCommandPlaybackInProgress = false;
+  private lastWorldObjectTerrainRevision = -1;
 
   private getProjectDirectoryFromMapDirectory(mapDirectory: string): string {
     return mapDirectory.replace(/[\\/]maps[\\/][^\\/]+$/, "");
@@ -75,10 +76,11 @@ export class EditorApp extends GameApp implements EditorAppSession {
       terrainConfig: editorTerrainConfig,
     });
 
-    // EN: Keep editor vegetation independent from terrain streaming so every loaded page does not force a full vegetation visibility pass.
-    // 中文: 让编辑器植被不依赖地形流式状态，避免每加载一个 page 都触发完整植被可见性刷新。
-    this.vegetationScene.setTerrainAvailability(null);
+    // EN: Editor overlays must follow terrain page residency so streamed-out pages do not leave floating content behind.
+    // 中文: 编辑器叠加内容必须跟随地形 page 驻留状态，避免已卸载区域残留悬空内容。
+    this.vegetationScene.setTerrainAvailability((x, z) => this.resources.runtime.terrain.hasRenderablePageAt(x, z));
     this.vegetationScene.configureVisibility(vegetationRenderConfig.editor);
+    this.worldObjectOverlay.setTerrainAvailability((x, z) => this.resources.runtime.terrain.hasRenderablePageAt(x, z));
     this.worldObjectOverlay.attach(this.scene);
     this.brushIndicator.attach(this.scene);
     this.textureEditor.setCommandRecorder((command) => this.history.record(command));
@@ -352,7 +354,18 @@ export class EditorApp extends GameApp implements EditorAppSession {
       this.resources.runtime.terrain.heightAt,
       this.resources.runtime.terrain.hasHeightAt,
     );
+    this.syncWorldObjectTerrainVisibility();
     this.updateBrushIndicator();
+  }
+
+  private syncWorldObjectTerrainVisibility(): void {
+    const revision = this.resources.runtime.terrain.getStreamingRevision();
+    if (revision === this.lastWorldObjectTerrainRevision) {
+      return;
+    }
+
+    this.lastWorldObjectTerrainRevision = revision;
+    this.worldObjectOverlay.updateTerrainVisibility();
   }
 
   protected override resolveTerrainUpdateTarget(): { x: number; z: number } | null {

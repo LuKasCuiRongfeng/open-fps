@@ -76,6 +76,7 @@ export type BundledWorldPartitionCellKind = "objects" | "collision" | "nav";
 export interface BundledWorldPartitionRuntime {
   runtime: CookedWorldPartitionRuntime;
   loadCellAsset(kind: BundledWorldPartitionCellKind, key: string): Promise<unknown>;
+  retainCellAssets(activeKeys: ReadonlySet<string>): void;
 }
 
 function normalizeDirectoryUrl(path: string): string {
@@ -215,6 +216,13 @@ function createBundledWorldPartitionRuntime(
       const request = loadCookedCellAsset(projectBaseUrl, cookedMap.assets[kind], kind, key);
       cache.set(cacheKey, request);
       return request;
+    },
+    retainCellAssets(activeKeys) {
+      for (const key of cache.keys()) {
+        if (!activeKeys.has(key)) {
+          cache.delete(key);
+        }
+      }
     },
   };
 }

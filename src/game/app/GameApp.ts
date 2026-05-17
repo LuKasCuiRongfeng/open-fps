@@ -148,6 +148,7 @@ export class GameApp implements RuntimeAppSession {
         worldPartition: {
           runtime: null,
           loadCellAsset: null,
+          retainCellAssets: null,
           currentPlan: null,
         },
         settings: this.settings,
@@ -378,6 +379,7 @@ export class GameApp implements RuntimeAppSession {
   setWorldPartitionRuntime(worldPartition: BundledWorldPartitionRuntime | null): void {
     this.resources.runtime.worldPartition.runtime = worldPartition?.runtime ?? null;
     this.resources.runtime.worldPartition.loadCellAsset = worldPartition?.loadCellAsset ?? null;
+    this.resources.runtime.worldPartition.retainCellAssets = worldPartition?.retainCellAssets ?? null;
     this.resources.runtime.worldPartition.currentPlan = null;
     this.lastWorldPartitionDependencySignature = "";
     this.pendingWorldPartitionLoads.clear();
@@ -623,6 +625,7 @@ export class GameApp implements RuntimeAppSession {
     });
     worldPartition.runtime.applyPlan(plan);
     worldPartition.currentPlan = plan;
+    worldPartition.retainCellAssets?.(createActiveWorldPartitionAssetKeys(plan.dependencies));
 
     const signature = createWorldPartitionDependencySignature(plan.dependencies);
     if (signature === this.lastWorldPartitionDependencySignature) {
@@ -689,4 +692,16 @@ export class GameApp implements RuntimeAppSession {
 function createWorldPartitionDependencySignature(dependencies: CookedWorldPartitionDependencies): string {
   const kinds: BundledWorldPartitionCellKind[] = ["objects", "collision", "nav"];
   return kinds.map((kind) => `${kind}:${dependencies[kind].join(",")}`).join("|");
+}
+
+function createActiveWorldPartitionAssetKeys(dependencies: CookedWorldPartitionDependencies): ReadonlySet<string> {
+  const keys = new Set<string>();
+  const kinds: BundledWorldPartitionCellKind[] = ["objects", "collision", "nav"];
+  for (const kind of kinds) {
+    for (const key of dependencies[kind]) {
+      keys.add(`${kind}:${key}`);
+    }
+  }
+
+  return keys;
 }
