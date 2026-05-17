@@ -23,10 +23,16 @@ const VEGETATION_REGION_ENTRY_BYTE_LENGTH = 8;
 const VEGETATION_INSTANCE_BYTE_LENGTH = 24;
 const COOKED_MAP_DIRECTORY = "cooked/maps";
 const COOKED_MAP_MANIFEST_FILE = "manifest.json";
-const COOKED_MAP_FORMAT = "open-fps-cooked-map-v2";
-const COOKED_MAP_VERSION = 2;
+const COOKED_MAP_FORMAT = "open-fps-cooked-map-v3";
+const COOKED_MAP_VERSION = 3;
+const COOKED_CACHE_DIRECTORY = "cooked/cache/maps";
+const COOKED_PACKAGE_LAYOUT = "content-addressed-sha256-v1";
+const COOKED_BLOB_ROOT = "cooked/blobs/sha256";
 const COOKED_WORLD_PARTITION_CELL_SIZE_PAGES = 8;
 const COOKED_WORLD_PARTITION_DEPENDENCY_KINDS = ["terrain", "paint", "vegetation", "objects", "collision", "nav"];
+const COOKED_OBJECT_CELL_FORMAT = "world-object-cell-pack-v1";
+const COOKED_COLLISION_CELL_FORMAT = "world-collision-cell-pack-v1";
+const COOKED_NAV_CELL_FORMAT = "world-nav-cell-pack-v1";
 
 const options = parseArgs(process.argv.slice(2));
 const projectDirectory = path.resolve(options.projectDirectory ?? "test_pro");
@@ -272,6 +278,7 @@ async function validateCookedMap(projectPath, mapId, mapManifest) {
     await validateCookedSourceReference(projectPath, cooked.source.paint, sourcePaths.paint, label, "paint");
     await validateCookedSourceReference(projectPath, cooked.source.vegetation, sourcePaths.vegetation, label, "vegetation");
   }
+  const cookedBuild = validateCookedBuild(cooked.build, cooked.source, mapId, label);
 
   const terrainManifest = await readJsonFile(path.join(projectPath, sourcePaths.terrain), "terrain height manifest for cooked map");
   const paintManifest = await readJsonFile(path.join(projectPath, sourcePaths.paint), "paint manifest for cooked map");
@@ -290,6 +297,35 @@ async function validateCookedMap(projectPath, mapId, mapManifest) {
   if (cookedWorld && cookedAssets) {
     validateCookedPartition(cooked.partition, cookedWorld, cookedAssets, label);
   }
+  await validateCookedPackage(projectPath, cooked.package, cookedBuild, label);
+  await validateCookedCache(projectPath, mapId, cooked, label);
+}
+
+function validateCookedBuild(build, source, mapId, label) {
+  if (!isRecord(build)) {
+    addError(label, "Cooked map manifest must contain build metadata.");
+    return null;
+  }
+
+  validateEqual(build.tool, "open-fps-cook-map-assets", label, "cooked build tool");
+  validateEqual(build.toolVersion, COOKED_MAP_VERSION, label, "cooked build toolVersion");
+  validateEqual(build.packageLayout, COOKED_PACKAGE_LAYOUT, label, "cooked build packageLayout");
+  if (typeof build.generatedAt !== "string" || Number.isNaN(Date.parse(build.generatedAt))) {
+    addError(label, "Cooked build generatedAt must be an ISO date string.");
+  }
+  if (build.previousInputSignature !== null && !isSha256(build.previousInputSignature)) {
+    addError(label, "Cooked build previousInputSignature must be null or a lowercase SHA-256 digest.");
+  }
+  if (!Number.isInteger(build.artifactCount) || build.artifactCount < 0) {
+    addError(label, "Cooked build artifactCount must be a non-negative integer.");
+  }
+
+  const expectedInputSignature = createCookInputSignature(mapId, source);
+  validateEqual(build.inputSignature, expectedInputSignature, label, "cooked build inputSignature");
+  return {
+    inputSignature: expectedInputSignature,
+    artifactCount: Number.isInteger(build.artifactCount) ? build.artifactCount : -1,
+  };
 }
 
 function validateCookedMapInfo(mapInfo, mapManifest, label) {
@@ -371,17 +407,23 @@ async function validateCookedAssets(projectPath, assets, mapId, terrainManifest,
   const terrain = validateCookedTerrainAsset(assets.terrain, mapId, terrainManifest, label);
   const paint = validateCookedPaintAsset(assets.paint, mapId, paintManifest, label);
   const vegetation = validateCookedVegetationAsset(assets.vegetation, mapId, vegetationManifest, label);
-  if (!terrain || !paint || !vegetation) {
+  const objects = validateCookedCellAsset(assets.objects, mapId, label, "objects", COOKED_OBJECT_CELL_FORMAT, "objectpack");
+  const collision = validateCookedCellAsset(assets.collision, mapId, label, "collision", COOKED_COLLISION_CELL_FORMAT, "collisionpack");
+  const nav = validateCookedCellAsset(assets.nav, mapId, label, "nav", COOKED_NAV_CELL_FORMAT, "navpack");
+  if (!terrain || !paint || !vegetation || !objects || !collision || !nav) {
     return null;
   }
 
   await validateCookedRegionFiles(projectPath, terrain.regions, label, "terrain");
   await validateCookedRegionFiles(projectPath, paint.regions, label, "paint");
   await validateCookedRegionFiles(projectPath, vegetation.regions, label, "vegetation");
+  await validateCookedCellFiles(projectPath, objects.cells, label, "objects");
+  await validateCookedCellFiles(projectPath, collision.cells, label, "collision");
+  await validateCookedCellFiles(projectPath, nav.cells, label, "nav");
   await validateCookedPaintTextureFiles(projectPath, paint.layers, label);
   await validateCookedVegetationModelFiles(projectPath, mapId, vegetation.models, label);
 
-  return { terrain, paint, vegetation };
+  return { terrain, paint, vegetation, objects, collision, nav };
 }
 
 function validateCookedTerrainAsset(asset, mapId, manifest, label) {
@@ -501,6 +543,53 @@ function validateCookedVegetationAsset(asset, mapId, manifest, label) {
   return regions ? { ...asset, regions } : null;
 }
 
+function validateCookedCellAsset(asset, mapId, label, assetName, expectedFormat, extension) {
+  if (!isRecord(asset)) {
+    addError(label, `Cooked ${assetName} asset metadata must be an object.`);
+    return null;
+  }
+
+  validateEqual(asset.format, expectedFormat, label, `cooked ${assetName} format`);
+  validateEqual(asset.cellSizePages, COOKED_WORLD_PARTITION_CELL_SIZE_PAGES, label, `cooked ${assetName} cellSizePages`);
+  if (!Number.isFinite(asset.cellSizeMeters) || asset.cellSizeMeters <= 0) {
+    addError(label, `Cooked ${assetName} cellSizeMeters must be positive.`);
+  }
+
+  const cells = validateCookedCellTable(
+    asset.cells,
+    (key) => mapCookedPath(mapId, cellPathFromKey(assetName, extension, key)),
+    label,
+    assetName,
+  );
+
+  return cells ? { ...asset, cells } : null;
+}
+
+function validateCookedCellTable(cells, resolvePath, label, assetName) {
+  if (!isRecord(cells)) {
+    addError(label, `Cooked ${assetName} cells must be a JSON object.`);
+    return null;
+  }
+
+  for (const key of Object.keys(cells).sort(compareRegionKeyStrings)) {
+    const cell = cells[key];
+    if (!isRecord(cell)) {
+      addError(label, `Cooked ${assetName} cell '${key}' metadata is invalid.`);
+      continue;
+    }
+
+    validateEqual(cell.path, resolvePath(key), label, `cooked ${assetName} cell '${key}' path`);
+    if (!Number.isInteger(cell.byteLength) || cell.byteLength < 0) {
+      addError(label, `Cooked ${assetName} cell '${key}' byteLength must be a non-negative integer.`);
+    }
+    if (!isSha256(cell.sha256)) {
+      addError(label, `Cooked ${assetName} cell '${key}' sha256 must be a lowercase SHA-256 digest.`);
+    }
+  }
+
+  return cells;
+}
+
 function validateCookedRegionTable(regions, sourceRegions, sourceIntegrity, resolvePath, label, assetName) {
   if (!isRecord(regions)) {
     addError(label, `Cooked ${assetName} regions must be a JSON object.`);
@@ -543,6 +632,19 @@ async function validateCookedRegionFiles(projectPath, regions, label, assetName)
     const bytes = await validateRegionPackFile(path.join(projectPath, region.path), region.byteLength, region.path);
     if (bytes) {
       validateRegionPackIntegrity(bytes, region, key, `${label} ${assetName} region ${key}`);
+    }
+  }));
+}
+
+async function validateCookedCellFiles(projectPath, cells, label, assetName) {
+  await Promise.all(Object.entries(cells).map(async ([key, cell]) => {
+    if (!isRecord(cell)) {
+      return;
+    }
+
+    const bytes = await readRequiredFileBytes(path.join(projectPath, cell.path), `cooked ${assetName} cell '${key}'`);
+    if (bytes) {
+      validateArtifactBytes(bytes, cell, label, `cooked ${assetName} cell '${key}'`);
     }
   }));
 }
@@ -635,6 +737,17 @@ function validateCookedPartition(partition, world, assets, label) {
   if (coveredPages.size !== expectedPageCount) {
     addError(label, `Cooked partition covers ${coveredPages.size} pages, expected ${expectedPageCount}.`);
   }
+  validateCookedCellAssetCoverage(partition.cells, assets.objects.cells, label, "objects");
+  validateCookedCellAssetCoverage(partition.cells, assets.collision.cells, label, "collision");
+  validateCookedCellAssetCoverage(partition.cells, assets.nav.cells, label, "nav");
+}
+
+function validateCookedCellAssetCoverage(partitionCells, assetCells, label, assetName) {
+  const partitionKeys = partitionCells.map((cell) => cell.key).sort(compareRegionKeyStrings);
+  const assetKeys = Object.keys(assetCells).sort(compareRegionKeyStrings);
+  if (!sameStringArray(partitionKeys, assetKeys)) {
+    addError(label, `Cooked ${assetName} cells must match world partition cell keys.`);
+  }
 }
 
 function validateCookedPartitionCell(cell, world, assets, coveredPages, label) {
@@ -696,19 +809,19 @@ function validateCookedPartitionCell(cell, world, assets, coveredPages, label) {
   );
   validateExactStringArray(
     dependencies.objects,
-    [],
+    Object.hasOwn(assets.objects.cells, cell.key) ? [cell.key] : [],
     label,
     `cooked partition cell '${cell.key}' dependencies.objects`,
   );
   validateExactStringArray(
     dependencies.collision,
-    [],
+    Object.hasOwn(assets.collision.cells, cell.key) ? [cell.key] : [],
     label,
     `cooked partition cell '${cell.key}' dependencies.collision`,
   );
   validateExactStringArray(
     dependencies.nav,
-    [],
+    Object.hasOwn(assets.nav.cells, cell.key) ? [cell.key] : [],
     label,
     `cooked partition cell '${cell.key}' dependencies.nav`,
   );
@@ -738,6 +851,89 @@ function readCookedPartitionDependencies(value, label, fieldName) {
   }
 
   return dependencies;
+}
+
+async function validateCookedPackage(projectPath, contentPackage, cookedBuild, label) {
+  if (!isRecord(contentPackage)) {
+    addError(label, "Cooked map manifest must contain package metadata.");
+    return;
+  }
+
+  validateEqual(contentPackage.layout, COOKED_PACKAGE_LAYOUT, label, "cooked package layout");
+  validateEqual(contentPackage.blobRoot, COOKED_BLOB_ROOT, label, "cooked package blobRoot");
+  if (!Number.isInteger(contentPackage.artifactCount) || contentPackage.artifactCount < 0) {
+    addError(label, "Cooked package artifactCount must be a non-negative integer.");
+  }
+  if (cookedBuild && contentPackage.artifactCount !== cookedBuild.artifactCount) {
+    addError(label, "Cooked package artifactCount must match build metadata.");
+  }
+  if (!isRecord(contentPackage.artifacts)) {
+    addError(label, "Cooked package artifacts must be a JSON object.");
+    return;
+  }
+
+  const artifacts = Object.entries(contentPackage.artifacts);
+  if (artifacts.length !== contentPackage.artifactCount) {
+    addError(label, `Cooked package declares ${contentPackage.artifactCount} artifacts, got ${artifacts.length}.`);
+  }
+
+  await Promise.all(artifacts.map(async ([key, artifact]) => {
+    if (!isRecord(artifact)) {
+      addError(label, `Cooked package artifact '${key}' must be an object.`);
+      return;
+    }
+
+    validateEqual(artifact.path, key, label, `cooked package artifact '${key}' path`);
+    if (typeof artifact.kind !== "string" || artifact.kind.length === 0) {
+      addError(label, `Cooked package artifact '${key}' kind must be a non-empty string.`);
+    }
+    if (!Number.isInteger(artifact.byteLength) || artifact.byteLength < 0) {
+      addError(label, `Cooked package artifact '${key}' byteLength must be a non-negative integer.`);
+    }
+    if (!isSha256(artifact.sha256)) {
+      addError(label, `Cooked package artifact '${key}' sha256 must be a lowercase SHA-256 digest.`);
+    }
+    if (typeof artifact.blobPath !== "string" || !artifact.blobPath.startsWith(`${COOKED_BLOB_ROOT}/${artifact.sha256?.slice?.(0, 2) ?? ""}/`)) {
+      addError(label, `Cooked package artifact '${key}' blobPath must point inside the content-addressed blob root.`);
+    }
+
+    const runtimeBytes = await readRequiredFileBytes(path.join(projectPath, key), `cooked package runtime artifact '${key}'`);
+    if (runtimeBytes) {
+      validateArtifactBytes(runtimeBytes, artifact, label, `cooked package runtime artifact '${key}'`);
+    }
+    if (typeof artifact.blobPath === "string") {
+      const blobBytes = await readRequiredFileBytes(path.join(projectPath, artifact.blobPath), `cooked package blob artifact '${key}'`);
+      if (blobBytes) {
+        validateArtifactBytes(blobBytes, artifact, label, `cooked package blob artifact '${key}'`);
+      }
+    }
+  }));
+}
+
+async function validateCookedCache(projectPath, mapId, cooked, label) {
+  const cachePath = path.join(projectPath, COOKED_CACHE_DIRECTORY, `${mapId}.json`);
+  const cache = await readJsonFile(cachePath, "cooked cache metadata");
+  const cacheLabel = relativePath(cachePath);
+  if (!isRecord(cache)) {
+    addError(cacheLabel, "Cooked cache metadata must be a JSON object.");
+    return;
+  }
+
+  validateEqual(cache.version, 1, cacheLabel, "cooked cache version");
+  validateEqual(cache.format, "open-fps-cook-cache-v1", cacheLabel, "cooked cache format");
+  validateEqual(cache.mapId, mapId, cacheLabel, "cooked cache mapId");
+  validateEqual(cache.manifestPath, `${COOKED_MAP_DIRECTORY}/${mapId}/${COOKED_MAP_MANIFEST_FILE}`, cacheLabel, "cooked cache manifestPath");
+  validateEqual(cache.inputSignature, cooked.build?.inputSignature, cacheLabel, "cooked cache inputSignature");
+  validateEqual(cache.packageLayout, cooked.package?.layout, cacheLabel, "cooked cache packageLayout");
+  validateEqual(cache.artifactCount, cooked.package?.artifactCount, cacheLabel, "cooked cache artifactCount");
+
+  const expectedArtifacts = Object.values(cooked.package?.artifacts ?? {})
+    .flatMap((artifact) => isRecord(artifact) ? [artifact.path, artifact.blobPath] : [])
+    .sort();
+  validateExactStringArray(cache.artifacts, expectedArtifacts, cacheLabel, "cooked cache artifacts");
+  if (cache.inputSignature !== cooked.build?.inputSignature) {
+    addError(label, "Cooked cache is stale for the current cooked manifest.");
+  }
 }
 
 async function validateVegetationRegionPack(filePath, region, regionSizeCells, label) {
@@ -873,6 +1069,26 @@ function validateRegionPackIntegrity(bytes, integrity, regionKey, label) {
   }
 }
 
+function validateArtifactBytes(bytes, artifact, label, fieldName) {
+  if (!isRecord(artifact)) {
+    addError(label, `${fieldName} artifact metadata is invalid.`);
+    return;
+  }
+
+  if (artifact.byteLength !== bytes.byteLength) {
+    addError(label, `${fieldName} byteLength ${artifact.byteLength} does not match ${bytes.byteLength}.`);
+  }
+  if (!isSha256(artifact.sha256)) {
+    addError(label, `${fieldName} sha256 must be a lowercase SHA-256 digest.`);
+    return;
+  }
+
+  const actualSha256 = createHash("sha256").update(bytes).digest("hex");
+  if (artifact.sha256 !== actualSha256) {
+    addError(label, `${fieldName} sha256 mismatch.`);
+  }
+}
+
 async function readRequiredFileBytes(filePath, label) {
   try {
     checkedFiles += 1;
@@ -987,6 +1203,11 @@ function regionPathFromKey(directory, extension, key) {
   return `${directory}/r_${formatGridCoordinate(x)}_${formatGridCoordinate(z)}${extension}`;
 }
 
+function cellPathFromKey(directory, extension, key) {
+  const [x, z] = parseGridKey(key, directory);
+  return `${directory}/cells/c_${formatGridCoordinate(x)}_${formatGridCoordinate(z)}.${extension}`;
+}
+
 function getWorldPageBounds(world) {
   if (!isRecord(world) || !isPositiveFiniteNumber(world.sizeMeters) || !isPositiveFiniteNumber(world.pageSizeMeters)) {
     return null;
@@ -1005,6 +1226,24 @@ function getWorldPageBounds(world) {
     minZ: minPage,
     maxZ: maxPage,
   };
+}
+
+function createCookInputSignature(mapId, source) {
+  return createHash("sha256").update(JSON.stringify({
+    format: COOKED_MAP_FORMAT,
+    version: COOKED_MAP_VERSION,
+    mapId,
+    source,
+    partition: {
+      cellSizePages: COOKED_WORLD_PARTITION_CELL_SIZE_PAGES,
+      dependencyKinds: COOKED_WORLD_PARTITION_DEPENDENCY_KINDS,
+    },
+    generatedAssets: {
+      objects: COOKED_OBJECT_CELL_FORMAT,
+      collision: COOKED_COLLISION_CELL_FORMAT,
+      nav: COOKED_NAV_CELL_FORMAT,
+    },
+  })).digest("hex");
 }
 
 function validateRegionKeyArrayMatches(value, expected, label, fieldName) {
@@ -1043,6 +1282,10 @@ function validateJsonEqual(actual, expected, label, fieldName) {
 
 function sameStringArray(left, right) {
   return left.length === right.length && left.every((entry, index) => entry === right[index]);
+}
+
+function isSha256(value) {
+  return typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
 }
 
 function compareRegionKeyStrings(left, right) {

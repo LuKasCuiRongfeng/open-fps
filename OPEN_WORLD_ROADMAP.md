@@ -39,10 +39,15 @@
 - 已有 dirty region/page 保存、编辑器 undo/redo 和安全写入；terrain、paint、vegetation 的 region-pack sidecar 保存均向 manifest-last 提交协议收敛。
 - terrain、paint、vegetation manifest 已记录 region pack 的 byte length 与 SHA-256，并在加载、保存、生成和资产校验中统一验证。
 - 已有 `main` 地图资产验证脚本，可检查 manifest、region pack、孤儿文件、截断文件和内容 hash。
-- 已有 cooked map manifest v2：记录 source hash、terrain/paint/vegetation asset index，以及 8-page world partition cell dependency 表。
+- 已有 cooked map manifest v3：记录 source hash、build input signature、content-addressed package artifact index、terrain/paint/vegetation asset index，以及 8-page world partition cell dependency 表。
 - web game bundled runtime 已优先读取 cooked manifest，并从 cooked asset index 派生 terrain、paint、vegetation 运行时 manifest。
 - cooked 输出已复制运行时所需的 region pack、terrain texture 和 vegetation model 资产，game target 不再依赖 source sidecar 目录读取核心运行资产。
-- world partition cell 已收敛到 `dependencies` 结构，统一挂载 terrain、paint、vegetation，并预留 objects、collision、nav 三类运行时分区依赖槽位。
+- cooked 输出已写入 `cooked/cache/maps/<mapId>.json`，用于记录 build input signature、artifact 列表和 stale cook 诊断依据。
+- cooked package 已生成 `content-addressed-sha256-v1` artifact index，并把 runtime artifact 同步写入 `cooked/blobs/sha256/...`。
+- world partition cell 已收敛到 `dependencies` 结构，统一挂载 terrain、paint、vegetation、objects、collision、nav 六类运行时分区依赖。
+- objects、collision、nav 已有第一版 generated empty cell pack，先接入 cooked asset index、package、cache、validator 和 partition dependencies，后续填充真实内容。
+- 已有 runtime world partition planner，可按玩家/摄像机位置生成 load/keep/unload cell 与跨资产 dependency 列表。
+- 已有 [`OPEN_WORLD_DESIGN_SPEC.md`](OPEN_WORLD_DESIGN_SPEC.md)，定义 `main` 10 平方公里地图的区域、道路、水系、兴趣点和生成约束。
 
 当前最重要的方向是把这些能力从“能用的资产格式”推进到“可验证、可恢复、可 cook、可流式加载的生产级世界管线”。
 
@@ -93,7 +98,7 @@
 验收标准：
 
 - web game target 能从 cooked 数据启动。
-- cooked build 支持增量构建和缓存失效。
+- cooked build 支持 build input signature、cache hit 判断、stale cache 诊断和 content-addressed artifact index。
 - source 与 cooked 的版本、hash 和生成来源可追踪。
 
 ### 4. World Partition 世界分区
@@ -103,7 +108,7 @@
 当前重点：
 
 - 建立统一 cell 坐标体系，挂载 terrain、paint、vegetation、objects、collision、nav、audio 和事件数据。
-- 保持 cooked partition dependency schema 作为后续 object/collision/nav/audio/event 分区资产的统一入口。
+- 保持 cooked partition dependency schema 作为 object/collision/nav/audio/event 分区资产的统一入口。
 - 设计加载优先级、预取、卸载、IO budget 和帧预算。
 - 编辑器提供分区可视化和加载状态调试。
 
@@ -135,7 +140,7 @@
 
 当前重点：
 
-- 定义道路骨架、河流/水体、山谷、山脊、林地、开阔地、据点和地标位置。
+- 按 [`OPEN_WORLD_DESIGN_SPEC.md`](OPEN_WORLD_DESIGN_SPEC.md) 推进道路骨架、河流/水体、山谷、山脊、林地、开阔地、据点和地标位置。
 - 明确玩家出生路线、早期视线引导、兴趣点密度和区域主题。
 - 把地图设计约束转成可执行的生成参数和编辑器工作流。
 
@@ -323,11 +328,11 @@
 
 ## 近期优先级
 
-1. 增加 cooked 增量构建缓存、过期 cook 诊断和缓存失效策略。
-2. 将 copied cooked assets 进一步收敛为可发布资源包或内容寻址布局，减少重复文件并提升加载局部性。
-3. 为 world object source/cooked 数据设计 region pack，并接入 partition `dependencies.objects`。
-4. 起草 `main` 的 10 平方公里世界设计规格，包括道路、水体、区域主题和兴趣点密度，并保留向约 20 平方公里整页扩展的空间。
-5. 把 region pack integrity 作为后续 source/cooked 增量构建和缓存失效的基础约束。
+1. 将 generated empty object cell pack 升级为真实 world object source/cooked region pack，并接入道路、水体、兴趣点规则。
+2. 将 generated empty collision/nav cell pack 升级为由 terrain/object/vegetation 派生的 collision 和 navigation cooked build。
+3. 把 runtime world partition planner 接入 game streaming hot path，统一 terrain、paint、vegetation、objects、collision、nav 的加载、预取、取消和卸载预算。
+4. 为 content-addressed cooked package 增加发布包打包、重复 blob 清理、压缩策略和加载局部性排序。
+5. 将 `OPEN_WORLD_DESIGN_SPEC.md` 的道路、水体、区域主题和兴趣点约束转成可执行生成参数和编辑器调试视图。
 
 ## 路线对齐自检
 

@@ -1,10 +1,11 @@
 // CookedMapManifest: runtime schema for cooked open-world map data.
 // CookedMapManifest：开放世界 cooked 地图数据的运行时 schema。
 
-export const COOKED_MAP_VERSION = 2;
-export const COOKED_MAP_FORMAT = "open-fps-cooked-map-v2";
+export const COOKED_MAP_VERSION = 3;
+export const COOKED_MAP_FORMAT = "open-fps-cooked-map-v3";
 export const COOKED_MAPS_DIRECTORY = "cooked/maps";
 export const COOKED_MAP_MANIFEST_FILE = "manifest.json";
+export const COOKED_PACKAGE_LAYOUT = "content-addressed-sha256-v1";
 export const COOKED_WORLD_PARTITION_DEPENDENCY_KINDS = [
   "terrain",
   "paint",
@@ -31,6 +32,14 @@ export interface CookedRegionRef {
 
 export type CookedRegionTable = Record<string, CookedRegionRef>;
 
+export interface CookedCellRef {
+  path: string;
+  byteLength: number;
+  sha256: string;
+}
+
+export type CookedCellTable = Record<string, CookedCellRef>;
+
 export interface CookedMapWorld {
   sizeMeters: number;
   pageSizeMeters: number;
@@ -50,6 +59,9 @@ export interface CookedMapAssets {
   terrain: CookedTerrainAsset;
   paint: CookedPaintAsset;
   vegetation: CookedVegetationAsset;
+  objects: CookedCellAsset;
+  collision: CookedCellAsset;
+  nav: CookedCellAsset;
 }
 
 export interface CookedTerrainAsset {
@@ -85,6 +97,13 @@ export interface CookedVegetationAsset {
   regions: CookedRegionTable;
 }
 
+export interface CookedCellAsset {
+  format: string;
+  cellSizePages: number;
+  cellSizeMeters: number;
+  cells: CookedCellTable;
+}
+
 export interface CookedWorldPartition {
   cellSizePages: number;
   cellSizeMeters: number;
@@ -112,6 +131,7 @@ export interface CookedMapManifest {
   version: typeof COOKED_MAP_VERSION;
   format: typeof COOKED_MAP_FORMAT;
   mapId: string;
+  build: CookedBuildInfo;
   map: CookedMapInfo;
   source: {
     project: CookedSourceRef;
@@ -123,6 +143,33 @@ export interface CookedMapManifest {
   world: CookedMapWorld;
   assets: CookedMapAssets;
   partition: CookedWorldPartition;
+  package: CookedPackageInfo;
+}
+
+export interface CookedBuildInfo {
+  tool: string;
+  toolVersion: number;
+  generatedAt: string;
+  inputSignature: string;
+  previousInputSignature: string | null;
+  packageLayout: string;
+  artifactCount: number;
+}
+
+export interface CookedPackageInfo {
+  layout: typeof COOKED_PACKAGE_LAYOUT;
+  blobRoot: string;
+  artifactCount: number;
+  artifacts: Record<string, CookedPackageArtifact>;
+}
+
+export interface CookedPackageArtifact {
+  path: string;
+  blobPath: string;
+  kind: string;
+  byteLength: number;
+  sha256: string;
+  sourcePath?: string;
 }
 
 export interface CookedMapInfo {
@@ -159,11 +206,26 @@ export function deserializeCookedMapManifest(json: string): CookedMapManifest {
     version: COOKED_MAP_VERSION,
     format: COOKED_MAP_FORMAT,
     mapId: readString(parsed.mapId, "cooked map id"),
+    build: normalizeCookedBuild(parsed.build),
     map: normalizeCookedMapInfo(parsed.map),
     source: normalizeCookedSource(parsed.source),
     world: normalizeCookedWorld(parsed.world),
     assets: normalizeCookedAssets(parsed.assets),
     partition: normalizeCookedPartition(parsed.partition),
+    package: normalizeCookedPackage(parsed.package),
+  };
+}
+
+function normalizeCookedBuild(value: unknown): CookedBuildInfo {
+  const build = readRecord(value, "cooked build metadata");
+  return {
+    tool: readString(build.tool, "cooked build tool"),
+    toolVersion: readPositiveInteger(build.toolVersion, "cooked build toolVersion"),
+    generatedAt: readString(build.generatedAt, "cooked build generatedAt"),
+    inputSignature: readSha256(build.inputSignature, "cooked build inputSignature"),
+    previousInputSignature: readNullableSha256(build.previousInputSignature, "cooked build previousInputSignature"),
+    packageLayout: readString(build.packageLayout, "cooked build packageLayout"),
+    artifactCount: readNonNegativeInteger(build.artifactCount, "cooked build artifactCount"),
   };
 }
 
@@ -221,6 +283,9 @@ function normalizeCookedAssets(value: unknown): CookedMapAssets {
     terrain: normalizeTerrainAsset(assets.terrain),
     paint: normalizePaintAsset(assets.paint),
     vegetation: normalizeVegetationAsset(assets.vegetation),
+    objects: normalizeCellAsset(assets.objects, "objects"),
+    collision: normalizeCellAsset(assets.collision, "collision"),
+    nav: normalizeCellAsset(assets.nav, "nav"),
   };
 }
 
@@ -367,6 +432,14 @@ function readString(value: unknown, label: string): string {
   return value;
 }
 
+function readOptionalString(value: unknown, label: string): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return readString(value, label);
+}
+
 function readStringArray(value: unknown, label: string): string[] {
   if (!Array.isArray(value) || !value.every((entry) => typeof entry === "string")) {
     throw new Error(`${label} must be a string array`);
@@ -442,6 +515,22 @@ function readSha256(value: unknown, label: string): string {
   return value;
 }
 
+function readNullableSha256(value: unknown, label: string): string | null {
+  if (value === null) {
+    return null;
+  }
+
+  return readSha256(value, label);
+}
+
+function readPackageLayout(value: unknown, label: string): typeof COOKED_PACKAGE_LAYOUT {
+  if (value !== COOKED_PACKAGE_LAYOUT) {
+    throw new Error(`${label} must be ${COOKED_PACKAGE_LAYOUT}`);
+  }
+
+  return COOKED_PACKAGE_LAYOUT;
+}
+
 function readRegionMask(value: unknown, label: string): string {
   if (typeof value !== "string" || !/^0x[0-9a-f]+$/i.test(value)) {
     throw new Error(`${label} must be a hex mask string`);
@@ -456,4 +545,49 @@ function sameStringArray(left: readonly string[], right: readonly string[]): boo
 
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeCellAsset(value: unknown, label: string): CookedCellAsset {
+  const asset = readRecord(value, `cooked ${label} asset`);
+  return {
+    format: readString(asset.format, `cooked ${label} format`),
+    cellSizePages: readPositiveInteger(asset.cellSizePages, `cooked ${label} cellSizePages`),
+    cellSizeMeters: readPositiveNumber(asset.cellSizeMeters, `cooked ${label} cellSizeMeters`),
+    cells: normalizeCellTable(asset.cells, `cooked ${label} cells`),
+  };
+}
+
+function normalizeCellTable(value: unknown, label: string): CookedCellTable {
+  const cells = readRecord(value, label);
+  return Object.fromEntries(Object.entries(cells).map(([key, entry]) => {
+    const cell = readRecord(entry, `${label} '${key}'`);
+    return [key, {
+      path: readString(cell.path, `${label} '${key}' path`),
+      byteLength: readNonNegativeInteger(cell.byteLength, `${label} '${key}' byteLength`),
+      sha256: readSha256(cell.sha256, `${label} '${key}' sha256`),
+    }];
+  }));
+}
+
+function normalizeCookedPackage(value: unknown): CookedPackageInfo {
+  const contentPackage = readRecord(value, "cooked package metadata");
+  const artifacts = readRecord(contentPackage.artifacts, "cooked package artifacts");
+  const artifactEntries = Object.entries(artifacts).map(([key, artifact]) => {
+    const record = readRecord(artifact, `cooked package artifact '${key}'`);
+    return [key, {
+      path: readString(record.path, `cooked package artifact '${key}' path`),
+      blobPath: readString(record.blobPath, `cooked package artifact '${key}' blobPath`),
+      kind: readString(record.kind, `cooked package artifact '${key}' kind`),
+      byteLength: readNonNegativeInteger(record.byteLength, `cooked package artifact '${key}' byteLength`),
+      sha256: readSha256(record.sha256, `cooked package artifact '${key}' sha256`),
+      sourcePath: readOptionalString(record.sourcePath, `cooked package artifact '${key}' sourcePath`),
+    }];
+  });
+
+  return {
+    layout: readPackageLayout(contentPackage.layout, "cooked package layout"),
+    blobRoot: readString(contentPackage.blobRoot, "cooked package blobRoot"),
+    artifactCount: readNonNegativeInteger(contentPackage.artifactCount, "cooked package artifactCount"),
+    artifacts: Object.fromEntries(artifactEntries),
+  };
 }

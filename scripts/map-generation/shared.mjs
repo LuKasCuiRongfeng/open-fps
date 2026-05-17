@@ -34,10 +34,16 @@ export const vegetationRegionPackHeaderByteLength = 8;
 export const vegetationRegionPackEntryByteLength = 8;
 export const cookedMapsDirectory = "cooked/maps";
 export const cookedMapManifestFile = "manifest.json";
-export const cookedMapFormat = "open-fps-cooked-map-v2";
-export const cookedMapVersion = 2;
+export const cookedMapFormat = "open-fps-cooked-map-v3";
+export const cookedMapVersion = 3;
+export const cookedBuildCacheDirectory = "cooked/cache/maps";
+export const cookedBlobDirectory = "cooked/blobs/sha256";
+export const cookedPackageLayout = "content-addressed-sha256-v1";
 export const cookedWorldPartitionCellSizePages = 8;
 export const cookedWorldPartitionDependencyKinds = ["terrain", "paint", "vegetation", "objects", "collision", "nav"];
+export const cookedObjectCellFormat = "world-object-cell-pack-v1";
+export const cookedCollisionCellFormat = "world-collision-cell-pack-v1";
+export const cookedNavCellFormat = "world-nav-cell-pack-v1";
 
 export const defaultPageBounds = {
   minPageX: -8,

@@ -11,7 +11,10 @@ async function main() {
 
   console.log(`Generated cooked map data for ${results.length} map(s) in ${context.projectArg}`);
   for (const result of results) {
-    console.log(`- ${result.mapId}: ${result.cellCount} world partition cells`);
+    const cacheLabel = result.cacheHit ? "cache hit" : "rebuilt";
+    console.log(`- ${result.mapId}: ${result.cellCount} world partition cells (${cacheLabel})`);
+    console.log(`  Generated cell assets: objects=${result.objectCellCount}, collision=${result.collisionCellCount}, nav=${result.navCellCount}`);
+    console.log(`  Cooked package artifacts: ${result.artifactCount}`);
     console.log(`  Cooked manifest: ${result.path}`);
   }
 }

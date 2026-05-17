@@ -3,4 +3,5 @@
 
 export * from "./loadBundledProject";
 export * from "./CookedMapManifest";
+export * from "./CookedWorldPartitionRuntime";
 export * from "../../workspace";
