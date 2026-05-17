@@ -23,9 +23,10 @@ const VEGETATION_REGION_ENTRY_BYTE_LENGTH = 8;
 const VEGETATION_INSTANCE_BYTE_LENGTH = 24;
 const COOKED_MAP_DIRECTORY = "cooked/maps";
 const COOKED_MAP_MANIFEST_FILE = "manifest.json";
-const COOKED_MAP_FORMAT = "open-fps-cooked-map-v1";
-const COOKED_MAP_VERSION = 1;
+const COOKED_MAP_FORMAT = "open-fps-cooked-map-v2";
+const COOKED_MAP_VERSION = 2;
 const COOKED_WORLD_PARTITION_CELL_SIZE_PAGES = 8;
+const COOKED_WORLD_PARTITION_DEPENDENCY_KINDS = ["terrain", "paint", "vegetation", "objects", "collision", "nav"];
 
 const options = parseArgs(process.argv.slice(2));
 const projectDirectory = path.resolve(options.projectDirectory ?? "test_pro");
@@ -612,6 +613,12 @@ function validateCookedPartition(partition, world, assets, label) {
     label,
     "cooked partition cellSizeMeters",
   );
+  validateExactStringArray(
+    partition.dependencyKinds,
+    COOKED_WORLD_PARTITION_DEPENDENCY_KINDS,
+    label,
+    "cooked partition dependencyKinds",
+  );
 
   if (!Array.isArray(partition.cells)) {
     addError(label, "Cooked partition cells must be an array.");
@@ -658,20 +665,25 @@ function validateCookedPartitionCell(cell, world, assets, coveredPages, label) {
     }
   }
 
-  validateStringArrayMatches(
-    cell.terrainRegions,
+  const dependencies = readCookedPartitionDependencies(cell.dependencies, label, `cooked partition cell '${cell.key}' dependencies`);
+  if (!dependencies) {
+    return;
+  }
+
+  validateRegionKeyArrayMatches(
+    dependencies.terrain,
     collectPageRegionKeys(pageRect, assets.terrain.regionSizePages, assets.terrain.regions),
     label,
-    `cooked partition cell '${cell.key}' terrainRegions`,
+    `cooked partition cell '${cell.key}' dependencies.terrain`,
   );
-  validateStringArrayMatches(
-    cell.paintRegions,
+  validateRegionKeyArrayMatches(
+    dependencies.paint,
     collectPageRegionKeys(pageRect, assets.paint.regionSizePages, assets.paint.regions),
     label,
-    `cooked partition cell '${cell.key}' paintRegions`,
+    `cooked partition cell '${cell.key}' dependencies.paint`,
   );
-  validateStringArrayMatches(
-    cell.vegetationRegions,
+  validateRegionKeyArrayMatches(
+    dependencies.vegetation,
     collectVegetationRegionKeys(
       pageRect,
       world.pageSizeMeters,
@@ -680,8 +692,52 @@ function validateCookedPartitionCell(cell, world, assets, coveredPages, label) {
       assets.vegetation.regions,
     ),
     label,
-    `cooked partition cell '${cell.key}' vegetationRegions`,
+    `cooked partition cell '${cell.key}' dependencies.vegetation`,
   );
+  validateExactStringArray(
+    dependencies.objects,
+    [],
+    label,
+    `cooked partition cell '${cell.key}' dependencies.objects`,
+  );
+  validateExactStringArray(
+    dependencies.collision,
+    [],
+    label,
+    `cooked partition cell '${cell.key}' dependencies.collision`,
+  );
+  validateExactStringArray(
+    dependencies.nav,
+    [],
+    label,
+    `cooked partition cell '${cell.key}' dependencies.nav`,
+  );
+}
+
+function readCookedPartitionDependencies(value, label, fieldName) {
+  if (!isRecord(value)) {
+    addError(label, `${fieldName} must be an object.`);
+    return null;
+  }
+
+  const expectedKeys = [...COOKED_WORLD_PARTITION_DEPENDENCY_KINDS].sort();
+  const actualKeys = Object.keys(value).sort();
+  if (!sameStringArray(actualKeys, expectedKeys)) {
+    addError(label, `${fieldName} keys must match the cooked partition dependency schema.`);
+  }
+
+  const dependencies = {};
+  for (const kind of COOKED_WORLD_PARTITION_DEPENDENCY_KINDS) {
+    const entries = value[kind];
+    if (!Array.isArray(entries) || !entries.every((entry) => typeof entry === "string")) {
+      addError(label, `${fieldName}.${kind} must be a string array.`);
+      dependencies[kind] = [];
+    } else {
+      dependencies[kind] = entries;
+    }
+  }
+
+  return dependencies;
 }
 
 async function validateVegetationRegionPack(filePath, region, regionSizeCells, label) {
@@ -951,15 +1007,25 @@ function getWorldPageBounds(world) {
   };
 }
 
-function validateStringArrayMatches(value, expected, label, fieldName) {
+function validateRegionKeyArrayMatches(value, expected, label, fieldName) {
   if (!Array.isArray(value) || !value.every((entry) => typeof entry === "string")) {
     addError(label, `${fieldName} must be a string array.`);
     return;
   }
 
-  const actual = [...value].sort(compareRegionKeyStrings);
-  if (!sameStringArray(actual, expected)) {
+  if (!sameStringArray(value, expected)) {
     addError(label, `${fieldName} must match intersecting asset regions.`);
+  }
+}
+
+function validateExactStringArray(value, expected, label, fieldName) {
+  if (!Array.isArray(value) || !value.every((entry) => typeof entry === "string")) {
+    addError(label, `${fieldName} must be a string array.`);
+    return;
+  }
+
+  if (!sameStringArray(value, expected)) {
+    addError(label, `${fieldName} must be ${JSON.stringify(expected)}, got ${JSON.stringify(value)}.`);
   }
 }
 

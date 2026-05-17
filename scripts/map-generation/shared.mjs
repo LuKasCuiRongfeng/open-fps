@@ -34,9 +34,10 @@ export const vegetationRegionPackHeaderByteLength = 8;
 export const vegetationRegionPackEntryByteLength = 8;
 export const cookedMapsDirectory = "cooked/maps";
 export const cookedMapManifestFile = "manifest.json";
-export const cookedMapFormat = "open-fps-cooked-map-v1";
-export const cookedMapVersion = 1;
+export const cookedMapFormat = "open-fps-cooked-map-v2";
+export const cookedMapVersion = 2;
 export const cookedWorldPartitionCellSizePages = 8;
+export const cookedWorldPartitionDependencyKinds = ["terrain", "paint", "vegetation", "objects", "collision", "nav"];
 
 export const defaultPageBounds = {
   minPageX: -8,

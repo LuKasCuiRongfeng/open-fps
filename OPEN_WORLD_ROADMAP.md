@@ -39,9 +39,10 @@
 - 已有 dirty region/page 保存、编辑器 undo/redo 和安全写入；terrain、paint、vegetation 的 region-pack sidecar 保存均向 manifest-last 提交协议收敛。
 - terrain、paint、vegetation manifest 已记录 region pack 的 byte length 与 SHA-256，并在加载、保存、生成和资产校验中统一验证。
 - 已有 `main` 地图资产验证脚本，可检查 manifest、region pack、孤儿文件、截断文件和内容 hash。
-- 已有第一版 cooked map manifest：记录 source hash、terrain/paint/vegetation asset index，以及 8-page world partition cell 表。
+- 已有 cooked map manifest v2：记录 source hash、terrain/paint/vegetation asset index，以及 8-page world partition cell dependency 表。
 - web game bundled runtime 已优先读取 cooked manifest，并从 cooked asset index 派生 terrain、paint、vegetation 运行时 manifest。
 - cooked 输出已复制运行时所需的 region pack、terrain texture 和 vegetation model 资产，game target 不再依赖 source sidecar 目录读取核心运行资产。
+- world partition cell 已收敛到 `dependencies` 结构，统一挂载 terrain、paint、vegetation，并预留 objects、collision、nav 三类运行时分区依赖槽位。
 
 当前最重要的方向是把这些能力从“能用的资产格式”推进到“可验证、可恢复、可 cook、可流式加载的生产级世界管线”。
 
@@ -102,6 +103,7 @@
 当前重点：
 
 - 建立统一 cell 坐标体系，挂载 terrain、paint、vegetation、objects、collision、nav、audio 和事件数据。
+- 保持 cooked partition dependency schema 作为后续 object/collision/nav/audio/event 分区资产的统一入口。
 - 设计加载优先级、预取、卸载、IO budget 和帧预算。
 - 编辑器提供分区可视化和加载状态调试。
 
@@ -321,9 +323,9 @@
 
 ## 近期优先级
 
-1. 将 world partition cell schema 扩展到 object/collision/nav，并建立跨资产 cell 依赖关系。
-2. 增加 cooked 增量构建缓存、过期 cook 诊断和缓存失效策略。
-3. 将 copied cooked assets 进一步收敛为可发布资源包或内容寻址布局，减少重复文件并提升加载局部性。
+1. 增加 cooked 增量构建缓存、过期 cook 诊断和缓存失效策略。
+2. 将 copied cooked assets 进一步收敛为可发布资源包或内容寻址布局，减少重复文件并提升加载局部性。
+3. 为 world object source/cooked 数据设计 region pack，并接入 partition `dependencies.objects`。
 4. 起草 `main` 的 10 平方公里世界设计规格，包括道路、水体、区域主题和兴趣点密度，并保留向约 20 平方公里整页扩展的空间。
 5. 把 region pack integrity 作为后续 source/cooked 增量构建和缓存失效的基础约束。
 

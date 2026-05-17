@@ -1,10 +1,21 @@
 // CookedMapManifest: runtime schema for cooked open-world map data.
 // CookedMapManifest：开放世界 cooked 地图数据的运行时 schema。
 
-export const COOKED_MAP_VERSION = 1;
-export const COOKED_MAP_FORMAT = "open-fps-cooked-map-v1";
+export const COOKED_MAP_VERSION = 2;
+export const COOKED_MAP_FORMAT = "open-fps-cooked-map-v2";
 export const COOKED_MAPS_DIRECTORY = "cooked/maps";
 export const COOKED_MAP_MANIFEST_FILE = "manifest.json";
+export const COOKED_WORLD_PARTITION_DEPENDENCY_KINDS = [
+  "terrain",
+  "paint",
+  "vegetation",
+  "objects",
+  "collision",
+  "nav",
+] as const;
+
+export type CookedWorldPartitionDependencyKind = typeof COOKED_WORLD_PARTITION_DEPENDENCY_KINDS[number];
+export type CookedWorldPartitionDependencies = Record<CookedWorldPartitionDependencyKind, string[]>;
 
 export interface CookedSourceRef {
   path: string;
@@ -77,6 +88,7 @@ export interface CookedVegetationAsset {
 export interface CookedWorldPartition {
   cellSizePages: number;
   cellSizeMeters: number;
+  dependencyKinds: CookedWorldPartitionDependencyKind[];
   cells: CookedWorldPartitionCell[];
 }
 
@@ -86,9 +98,7 @@ export interface CookedWorldPartitionCell {
   z: number;
   pageRect: CookedPageRect;
   boundsMeters: CookedBoundsMeters;
-  terrainRegions: string[];
-  paintRegions: string[];
-  vegetationRegions: string[];
+  dependencies: CookedWorldPartitionDependencies;
 }
 
 export interface CookedBoundsMeters {
@@ -279,6 +289,7 @@ function normalizeCookedPartition(value: unknown): CookedWorldPartition {
   return {
     cellSizePages: readPositiveInteger(partition.cellSizePages, "cooked partition cellSizePages"),
     cellSizeMeters: readPositiveNumber(partition.cellSizeMeters, "cooked partition cellSizeMeters"),
+    dependencyKinds: readPartitionDependencyKinds(partition.dependencyKinds, "cooked partition dependencyKinds"),
     cells: cellsValue.map((cell, index) => normalizePartitionCell(cell, index)),
   };
 }
@@ -291,10 +302,33 @@ function normalizePartitionCell(value: unknown, index: number): CookedWorldParti
     z: readInteger(cell.z, `cooked partition cell ${index} z`),
     pageRect: normalizePageRect(cell.pageRect, `cooked partition cell ${index} pageRect`),
     boundsMeters: normalizeBoundsMeters(cell.boundsMeters, `cooked partition cell ${index} boundsMeters`),
-    terrainRegions: readStringArray(cell.terrainRegions, `cooked partition cell ${index} terrainRegions`),
-    paintRegions: readStringArray(cell.paintRegions, `cooked partition cell ${index} paintRegions`),
-    vegetationRegions: readStringArray(cell.vegetationRegions, `cooked partition cell ${index} vegetationRegions`),
+    dependencies: normalizePartitionDependencies(cell.dependencies, index),
   };
+}
+
+function readPartitionDependencyKinds(value: unknown, label: string): CookedWorldPartitionDependencyKind[] {
+  const kinds = readStringArray(value, label);
+  if (!sameStringArray(kinds, [...COOKED_WORLD_PARTITION_DEPENDENCY_KINDS])) {
+    throw new Error(`${label} must match the cooked partition dependency schema`);
+  }
+
+  return kinds as CookedWorldPartitionDependencyKind[];
+}
+
+function normalizePartitionDependencies(value: unknown, index: number): CookedWorldPartitionDependencies {
+  const dependencies = readRecord(value, `cooked partition cell ${index} dependencies`);
+  const expectedKeys = [...COOKED_WORLD_PARTITION_DEPENDENCY_KINDS].sort();
+  const actualKeys = Object.keys(dependencies).sort();
+  if (!sameStringArray(actualKeys, expectedKeys)) {
+    throw new Error(`cooked partition cell ${index} dependencies must match the cooked partition dependency schema`);
+  }
+
+  const normalized: Partial<CookedWorldPartitionDependencies> = {};
+  for (const kind of COOKED_WORLD_PARTITION_DEPENDENCY_KINDS) {
+    normalized[kind] = readStringArray(dependencies[kind], `cooked partition cell ${index} dependencies.${kind}`);
+  }
+
+  return normalized as CookedWorldPartitionDependencies;
 }
 
 function normalizePageRect(value: unknown, label: string): CookedPageRect {
@@ -414,6 +448,10 @@ function readRegionMask(value: unknown, label: string): string {
   }
 
   return value;
+}
+
+function sameStringArray(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((entry, index) => entry === right[index]);
 }
 
 function isRecord(value: unknown): value is JsonRecord {

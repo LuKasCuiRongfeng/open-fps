@@ -7,6 +7,7 @@ import {
   cookedMapsDirectory,
   cookedMapVersion,
   cookedWorldPartitionCellSizePages,
+  cookedWorldPartitionDependencyKinds,
   createSha256Hex,
   getMapDir,
   getMapPath,
@@ -321,15 +322,7 @@ function createWorldPartition(world, assets) {
         z,
         pageRect,
         boundsMeters: pageRectToBoundsMeters(pageRect, world.pageSizeMeters),
-        terrainRegions: collectPageRegionKeys(pageRect, assets.terrain.regionSizePages, assets.terrain.regions),
-        paintRegions: collectPageRegionKeys(pageRect, assets.paint.regionSizePages, assets.paint.regions),
-        vegetationRegions: collectVegetationRegionKeys(
-          pageRect,
-          world.pageSizeMeters,
-          assets.vegetation.cellSizeMeters,
-          assets.vegetation.regionSizeCells,
-          assets.vegetation.regions,
-        ),
+        dependencies: createPartitionDependencies(pageRect, world, assets),
       });
     }
   }
@@ -337,7 +330,25 @@ function createWorldPartition(world, assets) {
   return {
     cellSizePages,
     cellSizeMeters,
+    dependencyKinds: cookedWorldPartitionDependencyKinds,
     cells,
+  };
+}
+
+function createPartitionDependencies(pageRect, world, assets) {
+  return {
+    terrain: collectPageRegionKeys(pageRect, assets.terrain.regionSizePages, assets.terrain.regions),
+    paint: collectPageRegionKeys(pageRect, assets.paint.regionSizePages, assets.paint.regions),
+    vegetation: collectVegetationRegionKeys(
+      pageRect,
+      world.pageSizeMeters,
+      assets.vegetation.cellSizeMeters,
+      assets.vegetation.regionSizeCells,
+      assets.vegetation.regions,
+    ),
+    objects: [],
+    collision: [],
+    nav: [],
   };
 }
 
