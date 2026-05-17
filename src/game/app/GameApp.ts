@@ -52,7 +52,7 @@ import { timeToSunPosition, type SkySystem } from "../world/sky/SkySystem";
 import { TerrainTextureArrays } from "../world/terrain/TerrainTextureArrays";
 import { getSplatMapCount, type TextureDefinition } from "../world/terrain/TextureData";
 import { VegetationScene, type VegetationMapData } from "../world/vegetation";
-import { decodePaintPageBytes, getPaintPagePath, type MapData } from "@project/MapData";
+import { assemblePaintSplatMapPixels, getPaintRegions, type MapData } from "@project/MapData";
 
 export interface GameAppOptions {
   gameplayEnabled?: boolean;
@@ -365,45 +365,58 @@ export class GameApp implements RuntimeAppSession {
     await this.vegetationScene.setData(mapDirectoryUrl, vegetationData);
   }
 
-  private loadPaintPageTextures(
+  private async loadPaintPageTextures(
     mapDirectoryUrl: string,
     mapData: MapData,
     splatMapCount: number,
   ): Promise<(Texture | null)[]> {
-    return Promise.all(
-      Array.from({ length: splatMapCount }, (_, index) => {
+    const regions = getPaintRegions(mapData.paint);
+    const regionEntries = await Promise.all(regions.map(async (region) => {
+      const url = new URL(region.path, mapDirectoryUrl).href;
+      return [region.key, await this.loadPaintRegionPack(url)] as const;
+    }));
+    const regionBytesByKey = Object.fromEntries(regionEntries);
+
+    return Array.from({ length: splatMapCount }, (_, index) => {
+      try {
         if (!mapData.paint.splatMaps.indices.includes(index)) {
-          return Promise.resolve(null);
+          return null;
         }
 
-        const url = new URL(getPaintPagePath(index), mapDirectoryUrl).href;
-        return this.loadPaintPageTexture(url, mapData.paint.splatMaps.resolution);
-      }),
-    );
-  }
-
-  private async loadPaintPageTexture(url: string, pageResolution: number): Promise<Texture | null> {
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        console.warn(`[GameApp] Failed to load paint page: ${url} (${response.status})`);
+        const pixels = assemblePaintSplatMapPixels(
+          mapData.paint,
+          mapData.worldSizeMeters,
+          mapData.pageSizeMeters,
+          index,
+          regionBytesByKey,
+        );
+        return this.createPaintPageTexture(pixels, mapData.paint.splatMaps.resolution);
+      } catch (error) {
+        console.warn(`[GameApp] Failed to assemble paint splat map ${index}`, error);
         return null;
       }
+    });
+  }
 
-      const pixels = decodePaintPageBytes(new Uint8Array(await response.arrayBuffer()), pageResolution);
-      const texture = new DataTexture(pixels, pageResolution, pageResolution, RGBAFormat, UnsignedByteType);
-      texture.colorSpace = NoColorSpace;
-      texture.magFilter = LinearFilter;
-      texture.minFilter = LinearFilter;
-      texture.wrapS = ClampToEdgeWrapping;
-      texture.wrapT = ClampToEdgeWrapping;
-      texture.generateMipmaps = false;
-      texture.needsUpdate = true;
-      return texture;
-    } catch (error) {
-      console.warn(`[GameApp] Failed to load paint page: ${url}`, error);
-      return null;
+  private async loadPaintRegionPack(url: string): Promise<Uint8Array> {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to load paint region: ${url} (${response.status})`);
     }
+
+    return new Uint8Array(await response.arrayBuffer());
+  }
+
+  private createPaintPageTexture(pixels: Uint8Array, resolution: number): Texture {
+    const texture = new DataTexture(pixels, resolution, resolution, RGBAFormat, UnsignedByteType);
+    texture.colorSpace = NoColorSpace;
+    texture.magFilter = LinearFilter;
+    texture.minFilter = LinearFilter;
+    texture.wrapS = ClampToEdgeWrapping;
+    texture.wrapT = ClampToEdgeWrapping;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
   }
 
   markMapDataSaved(): void {

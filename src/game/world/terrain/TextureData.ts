@@ -6,7 +6,7 @@ import {
   type MapPaintData,
 } from "@project/MapData";
 
-export const PAINT_MANIFEST_VERSION = 1;
+export const PAINT_MANIFEST_VERSION = 2;
 
 /**
  * Maximum texture layers per splat map (RGBA = 4 channels).
@@ -31,9 +31,9 @@ export const MAX_SPLAT_MAPS = 4;
  * PBR 纹理层定义
  * 每层可包含多张贴图用于物理渲染
  *
- * Example paint/layers.json paint manifest with multi-splat support:
+ * Example paint/layers.json paint manifest with multi-splat region packs:
  * {
- *   "version": 1,
+ *   "version": 2,
  *   "layers": {
  *     "rocky": {
  *       "diffuse": "assets/textures/rocky_diffuse.jpg",
@@ -49,10 +49,14 @@ export const MAX_SPLAT_MAPS = 4;
  *     }
  *   },
  *   "splatMaps": {
- *     "format": "rgba8-splat-v1",
- *     "resolution": 1024,
- *     "directory": "paint/pages",
- *     "indices": [0, 1]
+ *     "format": "rgba8-splat-region-pack-v1",
+ *     "resolution": 1600,
+ *     "pageResolution": 32,
+ *     "pageSizeMeters": 64,
+ *     "regionSizePages": 8,
+ *     "regionsDirectory": "paint/regions",
+ *     "indices": [0, 1],
+ *     "regions": { "0,0": "0xffffffffffffffff" }
  *   }
  * }
  *

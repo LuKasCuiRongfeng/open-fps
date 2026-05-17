@@ -5,9 +5,13 @@ import { getPlatform } from "@/platform";
 import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
 import {
   MAP_PAINT_PATH,
-  decodePaintPageBase64,
-  encodePaintPageBase64,
-  getPaintPagePath,
+  assemblePaintSplatMapPixels,
+  createPaintDataForMap,
+  createPaintRegionPackPayload,
+  decodePaintRegionPackBase64,
+  encodePaintRegionPackBase64,
+  getPaintRegionPathForKey,
+  getPaintRegions,
   type MapData,
 } from "@project/MapData";
 import {
@@ -71,40 +75,73 @@ export class TextureStorage {
     mapData: MapData,
     splatMapIndex: number,
   ): Promise<SplatMapData | null> {
-    if (!mapData.paint.splatMaps.indices.includes(splatMapIndex)) {
-      return null;
-    }
+    const pages = await this.loadPaintPages(mapDirectory, mapData, splatMapIndex + 1);
+    return pages[splatMapIndex] ?? null;
+  }
 
-    const path = `${mapDirectory}/${getPaintPagePath(splatMapIndex)}`;
-
+  static async loadPaintPages(
+    mapDirectory: string,
+    mapData: MapData,
+    splatMapCount: number,
+  ): Promise<(SplatMapData | null)[]> {
+    const regions = getPaintRegions(mapData.paint);
     try {
-      const base64 = await platform.files.readBinaryBase64(path);
-      return {
-        resolution: mapData.paint.splatMaps.resolution,
-        pixels: decodePaintPageBase64(base64, mapData.paint.splatMaps.resolution),
-        splatMapIndex,
-      };
+      const regionEntries = await Promise.all(regions.map(async (region) => {
+        const base64 = await platform.files.readBinaryBase64(`${mapDirectory}/${region.path}`);
+        return [region.key, decodePaintRegionPackBase64(base64)] as const;
+      }));
+      const regionBytesByKey = Object.fromEntries(regionEntries);
+      return Array.from({ length: splatMapCount }, (_, index) => {
+        if (!mapData.paint.splatMaps.indices.includes(index)) {
+          return null;
+        }
+
+        return {
+          resolution: mapData.paint.splatMaps.resolution,
+          pixels: assemblePaintSplatMapPixels(
+            mapData.paint,
+            mapData.worldSizeMeters,
+            mapData.pageSizeMeters,
+            index,
+            regionBytesByKey,
+          ),
+          splatMapIndex: index,
+        };
+      });
     } catch (error) {
       if (isMissingFileSystemResourceError(error)) {
-        return null;
+        return Array.from({ length: splatMapCount }, () => null);
       }
 
-      console.error(`[TextureStorage] Failed to load paint page: ${path}: ${formatUnknownError(error)}`, error);
+      console.error(`[TextureStorage] Failed to load paint regions: ${formatUnknownError(error)}`, error);
       throw error;
     }
   }
 
-  static async savePaintPage(
+  static async savePaintPages(
     mapDirectory: string,
     mapData: MapData,
-    splatMap: SplatMapData,
-    splatMapIndex: number,
+    splatMaps: readonly SplatMapData[],
   ): Promise<void> {
-    const path = `${mapDirectory}/${getPaintPagePath(splatMapIndex)}`;
-    await platform.files.writeBinaryBase64(
-      path,
-      encodePaintPageBase64(splatMap.pixels, mapData.paint.splatMaps.resolution),
+    const previousRegionPaths = new Set(Object.keys(mapData.paint.splatMaps.regions).map(getPaintRegionPathForKey));
+    const resolution = splatMaps[0]?.resolution ?? mapData.paint.splatMaps.resolution;
+    const indices = getPaintSplatMapIndices(splatMaps.length);
+    mapData.paint = createPaintDataForMap(mapData.worldSizeMeters, mapData.pageSizeMeters, indices, resolution);
+    const regions = createPaintRegionPackPayload(
+      mapData.paint,
+      mapData.worldSizeMeters,
+      mapData.pageSizeMeters,
+      splatMaps,
     );
+
+    // EN: Region packs are written before the manifest so the manifest never points at missing binary data.
+    // 中文: 先写入 region pack，再写清单，避免清单指向尚未写好的二进制数据。
+    await Promise.all(regions.map(async (region) => {
+      await platform.files.writeBinaryBase64(`${mapDirectory}/${region.path}`, encodePaintRegionPackBase64(region.bytes));
+    }));
+
+    const nextRegionPaths = new Set(regions.map((region) => region.path));
+    await removeStalePaintRegions(mapDirectory, previousRegionPaths, nextRegionPaths);
   }
 
   static async ensurePaintPage(
@@ -112,19 +149,29 @@ export class TextureStorage {
     mapData: MapData,
     splatMapIndex: number,
   ): Promise<void> {
-    const path = `${mapDirectory}/${getPaintPagePath(splatMapIndex)}`;
+    const existing = await this.loadPaintPage(mapDirectory, mapData, splatMapIndex);
+    if (existing) return;
+
+    const splatMaps = getPaintSplatMapIndices(Math.max(splatMapIndex + 1, mapData.paint.splatMaps.indices.length))
+      .map((index) => createDefaultSplatMap(mapData.paint.splatMaps.resolution, index));
+    await this.savePaintPages(mapDirectory, mapData, splatMaps);
+  }
+}
+
+async function removeStalePaintRegions(
+  mapDirectory: string,
+  previousRegionPaths: ReadonlySet<string>,
+  nextRegionPaths: ReadonlySet<string>,
+): Promise<void> {
+  await Promise.all(Array.from(previousRegionPaths).map(async (path) => {
+    if (nextRegionPaths.has(path)) {
+      return;
+    }
 
     try {
-      const base64 = await platform.files.readBinaryBase64(path);
-      decodePaintPageBase64(base64, mapData.paint.splatMaps.resolution);
+      await platform.files.deleteFile(`${mapDirectory}/${path}`);
     } catch (error) {
-      if (!isMissingFileSystemResourceError(error)) {
-        console.error(`[TextureStorage] Failed to verify paint page: ${path}: ${formatUnknownError(error)}`, error);
-        throw error;
-      }
-
-      const defaultSplatMap = createDefaultSplatMap(mapData.paint.splatMaps.resolution, splatMapIndex);
-      await this.savePaintPage(mapDirectory, mapData, defaultSplatMap, splatMapIndex);
+      console.warn(`[TextureStorage] Failed to delete stale paint region: ${path}`, error);
     }
-  }
+  }));
 }
