@@ -200,6 +200,16 @@ export class GameApp implements RuntimeAppSession {
 
     this.gameRenderer.updateSize();
 
+    await this.warmUpRuntimeShaders();
+
+    this.gameRenderer.startLoop(this.onFrame);
+
+    onBootPhase?.("ready");
+  }
+
+  protected async initRuntimeExtensions(): Promise<void> {}
+
+  async warmUpRuntimeShaders(): Promise<void> {
     const originalWarn = console.warn;
     try {
       console.warn = (...args: unknown[]) => {
@@ -212,13 +222,7 @@ export class GameApp implements RuntimeAppSession {
     } finally {
       console.warn = originalWarn;
     }
-
-    this.gameRenderer.startLoop(this.onFrame);
-
-    onBootPhase?.("ready");
   }
-
-  protected async initRuntimeExtensions(): Promise<void> {}
 
   private async warmUpShaders(): Promise<void> {
     const { Euler } = await import("three/webgpu");

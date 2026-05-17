@@ -17,6 +17,10 @@ export const terrainConfig = {
     // 每帧最多加载/卸载的 page 数量（防止卡顿）。
     maxPageOpsPerFrame: 1,
 
+    // Visible pages to preload per GPU batch during map loading.
+    // 地图加载阶段每个 GPU 批次预驻留的可见 page 数量。
+    initialLoadBatchPages: 8,
+
     // Hysteresis distance to prevent page-boundary thrashing.
     // 边界滞后距离，防止 page 边界处频繁加载/卸载。
     hysteresisPages: 2,

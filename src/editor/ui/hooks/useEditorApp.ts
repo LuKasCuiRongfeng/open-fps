@@ -88,6 +88,8 @@ export function useEditorApp({
               await app.loadVegetationFromMapDirectory(bootInputs.currentMapDirectory, bootInputs.pendingMapData);
             }
 
+            await app.warmUpRuntimeShaders();
+
             setBootPhase("ready");
             setSettings(app.getSettingsSnapshot());
             setTerrainEditor(app.getTerrainEditor());

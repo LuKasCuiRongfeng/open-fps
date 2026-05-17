@@ -117,6 +117,9 @@ export function useGameApp({
               if (disposed) return;
             }
 
+            await app.warmUpRuntimeShaders();
+            if (disposed) return;
+
             // All loading complete, show ready and enter game.
             // 所有加载完成，显示 ready 并进入游戏
             setBootPhase("ready");

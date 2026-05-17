@@ -39,7 +39,7 @@ export class TerrainPageManager {
   private renderer: WebGPURenderer | null = null;
   private clipmapRenderer: TerrainClipmapRenderer | null = null;
   private gpuReady = false;
-  private queueProcessing = false;
+  private queueProcessingPromise: Promise<void> | null = null;
   private streamingRevision = 0;
 
   private lastPlayerCx = 0;
@@ -129,7 +129,7 @@ export class TerrainPageManager {
     this.lastPlayerCx = cx;
     this.lastPlayerCz = cz;
     this.rebuildQueues(cx, cz);
-    await this.processQueuesIfIdle();
+    await this.processInitialLoadQueues();
     this.refreshClipmap();
   }
 
@@ -286,20 +286,49 @@ export class TerrainPageManager {
   }
 
   private async processQueuesIfIdle(): Promise<void> {
-    if (this.queueProcessing) return;
+    if (this.queueProcessingPromise) return;
 
-    this.queueProcessing = true;
-    try {
+    this.queueProcessingPromise = this.runQueueProcessor(async () => {
       await this.processQueues();
+    });
+    await this.queueProcessingPromise;
+  }
+
+  private async processInitialLoadQueues(): Promise<void> {
+    while (this.queueProcessingPromise) {
+      await this.queueProcessingPromise;
+    }
+
+    const maxOps = Math.max(1, Math.floor(this.config.streaming.initialLoadBatchPages));
+    this.queueProcessingPromise = this.runQueueProcessor(async () => {
+      while (this.loadQueue.length > 0 || this.normalPending.size > 0) {
+        await this.processQueues({
+          maxOps,
+          loadBudget: maxOps,
+          normalBudget: maxOps,
+        });
+        this.refreshClipmap();
+      }
+    });
+    await this.queueProcessingPromise;
+  }
+
+  private async runQueueProcessor(task: () => Promise<void>): Promise<void> {
+    try {
+      await task();
     } finally {
-      this.queueProcessing = false;
+      this.queueProcessingPromise = null;
     }
   }
 
-  private async processQueues(): Promise<void> {
-    const maxOps = this.config.streaming.maxPageOpsPerFrame;
+  private async processQueues(options: {
+    maxOps?: number;
+    loadBudget?: number;
+    normalBudget?: number;
+  } = {}): Promise<void> {
+    const maxOps = options.maxOps ?? this.config.streaming.maxPageOpsPerFrame;
     const loadBatch: PageCoord[] = [];
-    const loadBudget = this.loadQueue.length > 0 ? Math.max(1, Math.ceil(maxOps * 0.75)) : 0;
+    const loadBudget = options.loadBudget ?? (this.loadQueue.length > 0 ? Math.max(1, Math.ceil(maxOps * 0.75)) : 0);
 
     while (this.loadQueue.length > 0 && loadBatch.length < loadBudget) {
       loadBatch.push(this.loadQueue.shift()!);
@@ -314,7 +343,7 @@ export class TerrainPageManager {
     }
 
     if (this.normalPending.size > 0 && this.renderer) {
-      const normalBudget = loadBatch.length > 0 ? 1 : Math.max(1, maxOps);
+      const normalBudget = options.normalBudget ?? (loadBatch.length > 0 ? 1 : Math.max(1, maxOps));
       const normalBatch = Array.from(this.normalPending.values()).slice(0, normalBudget);
       await this.normalCompute.regeneratePages(normalBatch, this.heightCompute.allocator, this.renderer);
       for (const { cx, cz } of normalBatch) {

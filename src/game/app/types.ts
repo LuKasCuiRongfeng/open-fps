@@ -40,6 +40,7 @@ export interface RuntimeAppSession<
   getMousePosition(): { x: number; y: number; z: number; valid: boolean } | null;
   exportCurrentMapData(): MapData;
   loadMapData(mapData: MapData): Promise<void>;
+  warmUpRuntimeShaders(): Promise<void>;
   markMapDataSaved(): void;
   updateSettings(patch: TPatch): void;
   applySettings(newSettings: TSettings): void;
