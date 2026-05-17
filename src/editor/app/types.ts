@@ -12,6 +12,7 @@ export interface EditorAppSession extends RuntimeAppSession<EditorAppSettings, E
   getTextureEditor(): TextureEditor;
   getVegetationEditor(): VegetationEditor;
   getEditorHistoryState(): EditorHistoryState;
+  flushPendingEditorCommands(): Promise<void>;
   undoEditorCommand(): Promise<boolean>;
   redoEditorCommand(): Promise<boolean>;
   setActiveEditorType(type: ActiveEditorType): void;

@@ -413,6 +413,10 @@ export class TerrainEditor {
     this.setDirty(false);
   }
 
+  markDirty(): void {
+    this.setDirty(true);
+  }
+
   newMap(name = "Untitled Map"): void {
     this.mapData = createEmptyMapData(
       this.config.height.seed,

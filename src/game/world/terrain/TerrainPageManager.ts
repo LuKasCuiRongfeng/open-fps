@@ -11,9 +11,10 @@ import { TerrainHeightSampler } from "./TerrainHeightSampler";
 import type { BrushStroke } from "./brushTypes";
 import { buildPageLoadQueue, buildPageUnloadQueue, getAffectedPageBounds } from "./pageStreaming";
 import { TerrainClipmapRenderer, disposeClipmapGeometries } from "./TerrainClipmapRenderer";
-import type { HeightPageLoader } from "@project/MapData";
+import { sortPageKeys, type HeightPageLoader } from "@project/MapData";
 
 export type PageCoord = { cx: number; cz: number };
+type BrushAffectedPageCoord = PageCoord & { tileX: number; tileZ: number };
 
 /**
  * Virtual page manager for terrain height data.
@@ -156,32 +157,14 @@ export class TerrainPageManager {
   async applyBrushStrokes(strokes: BrushStroke[]): Promise<void> {
     if (!this.gpuReady || !this.renderer || strokes.length === 0) return;
 
-    const pageSize = this.config.streaming.pageSizeMeters;
-    const affectedPages = new Set<string>();
-    const affectedCoords: Array<{ cx: number; cz: number; tileX: number; tileZ: number }> = [];
-    const bounds = getAffectedPageBounds(strokes, pageSize);
-    if (!bounds) return;
-
     let flattenTargetHeight = 0;
     if (strokes[0].brush.type === "flatten") {
       flattenTargetHeight = TerrainHeightSampler.heightAt(strokes[0].worldX, strokes[0].worldZ, this.config);
     }
 
-    for (let cx = bounds.minCx; cx <= bounds.maxCx; cx += 1) {
-      for (let cz = bounds.minCz; cz <= bounds.maxCz; cz += 1) {
-        const key = this.pageKey(cx, cz);
-        if (!this.residentPages.has(key)) continue;
-
-        const tileIndex = this.heightCompute.allocator.getTileIndex(cx, cz);
-        if (tileIndex === undefined) continue;
-
-        const { tileX, tileZ } = this.heightCompute.allocator.tileIndexToCoords(tileIndex);
-        affectedPages.add(key);
-        affectedCoords.push({ cx, cz, tileX, tileZ });
-      }
-    }
-
+    const affectedCoords = this.getBrushAffectedResidentPages(strokes);
     if (affectedCoords.length === 0) return;
+    const affectedPages = new Set(affectedCoords.map(({ cx, cz }) => this.pageKey(cx, cz)));
 
     this.brushCompute.ensureSynced(this.renderer);
     for (const stroke of strokes) {
@@ -200,6 +183,10 @@ export class TerrainPageManager {
     }
 
     await this.normalCompute.regeneratePages(affectedCoords, this.heightCompute.allocator, this.renderer);
+  }
+
+  getBrushAffectedPageKeys(strokes: readonly BrushStroke[]): string[] {
+    return sortPageKeys(this.getBrushAffectedResidentPages(strokes).map(({ cx, cz }) => this.pageKey(cx, cz)));
   }
 
   async reuploadAllPages(): Promise<void> {
@@ -449,6 +436,29 @@ export class TerrainPageManager {
         await this.brushCompute.stitchEdge(cx, cz, ncx, ncz, this.renderer);
       }
     }
+  }
+
+  private getBrushAffectedResidentPages(strokes: readonly BrushStroke[]): BrushAffectedPageCoord[] {
+    if (!this.gpuReady || strokes.length === 0) return [];
+
+    const bounds = getAffectedPageBounds(strokes, this.config.streaming.pageSizeMeters);
+    if (!bounds) return [];
+
+    const affectedCoords: BrushAffectedPageCoord[] = [];
+    for (let cx = bounds.minCx; cx <= bounds.maxCx; cx += 1) {
+      for (let cz = bounds.minCz; cz <= bounds.maxCz; cz += 1) {
+        const key = this.pageKey(cx, cz);
+        if (!this.residentPages.has(key)) continue;
+
+        const tileIndex = this.heightCompute.allocator.getTileIndex(cx, cz);
+        if (tileIndex === undefined) continue;
+
+        const { tileX, tileZ } = this.heightCompute.allocator.tileIndexToCoords(tileIndex);
+        affectedCoords.push({ cx, cz, tileX, tileZ });
+      }
+    }
+
+    return affectedCoords;
   }
 
   private canUsePage(cx: number, cz: number): boolean {

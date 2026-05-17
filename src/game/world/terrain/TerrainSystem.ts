@@ -16,8 +16,18 @@ import {
   getHeightPageData,
   getHeightPageKeys,
   hasHeightPages,
+  sortPageKeys,
 } from "@project/MapData";
 import type { TerrainTextureArrayResult } from "./TerrainTextureArrays";
+
+export interface TerrainHeightPageSnapshotPage {
+  key: string;
+  heights: Float32Array;
+}
+
+export interface TerrainHeightPageSnapshot {
+  pages: TerrainHeightPageSnapshotPage[];
+}
 
 export type TerrainSystemResource = {
   root: Group;
@@ -31,6 +41,11 @@ export type TerrainSystemResource = {
   // GPU-first brush editing: all brush operations run on GPU compute shaders.
   // GPU-first 画刷编辑：所有画刷操作在 GPU 计算着色器上运行
   applyBrushStrokes: (strokes: BrushStroke[]) => Promise<void>;
+  // Height page snapshots for editor command playback.
+  // 编辑器命令回放使用的高度 page 快照。
+  captureBrushHeightPageSnapshot: (strokes: readonly BrushStroke[]) => TerrainHeightPageSnapshot;
+  captureHeightPageSnapshot: (pageKeys: readonly string[]) => TerrainHeightPageSnapshot;
+  applyHeightPageSnapshot: (snapshot: TerrainHeightPageSnapshot) => Promise<void>;
   // Map save/load API.
   // 地图保存/加载 API
   exportCurrentMapData: () => MapData;
@@ -183,6 +198,48 @@ export function createTerrainSystem(
     await pageManager.applyBrushStrokes(editableStrokes);
   };
 
+  const captureHeightPageSnapshot = (pageKeys: readonly string[]): TerrainHeightPageSnapshot => ({
+    pages: sortPageKeys(pageKeys).flatMap((key) => {
+      if (!mapHeightPageKeys.has(key)) {
+        return [];
+      }
+
+      const { px, pz } = parsePageKey(key);
+      const heights = TerrainHeightSampler.getPageHeightData(px, pz);
+      return heights ? [{ key, heights: new Float32Array(heights) }] : [];
+    }),
+  });
+
+  const captureBrushHeightPageSnapshot = (strokes: readonly BrushStroke[]): TerrainHeightPageSnapshot => {
+    if (!pageManager) {
+      return { pages: [] };
+    }
+
+    return captureHeightPageSnapshot(pageManager.getBrushAffectedPageKeys(strokes));
+  };
+
+  const applyHeightPageSnapshot = async (snapshot: TerrainHeightPageSnapshot): Promise<void> => {
+    if (!pageManager || snapshot.pages.length === 0) return;
+
+    const expectedHeightCount = config.gpuCompute.tileResolution * config.gpuCompute.tileResolution;
+    const pagesToUpload: Array<{ cx: number; cz: number }> = [];
+    for (const page of snapshot.pages) {
+      if (!mapHeightPageKeys.has(page.key)) {
+        continue;
+      }
+
+      if (page.heights.length !== expectedHeightCount) {
+        throw new Error(`Terrain height snapshot page '${page.key}' has invalid sample count`);
+      }
+
+      const { px, pz } = parsePageKey(page.key);
+      TerrainHeightSampler.setPageHeightData(px, pz, page.heights, true);
+      pagesToUpload.push({ cx: px, cz: pz });
+    }
+
+    await pageManager.reuploadPages(pagesToUpload);
+  };
+
   /**
    * Export current terrain as MapData (for saving).
    * 导出当前地形为 MapData（用于保存）
@@ -325,6 +382,9 @@ export function createTerrainSystem(
     initGpu,
     update,
     applyBrushStrokes,
+    captureBrushHeightPageSnapshot,
+    captureHeightPageSnapshot,
+    applyHeightPageSnapshot,
     exportCurrentMapData,
     loadMapData,
     markMapDataSaved,

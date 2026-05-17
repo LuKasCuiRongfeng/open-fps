@@ -6,10 +6,11 @@ import type { EditorAppSession } from "./types";
 import { BrushIndicatorSystem, type EditorBrushInfo, type ActiveEditorType } from "@editor/runtime/common";
 import { EditorCommandHistory, type EditorHistoryState } from "@editor/runtime/history/EditorCommandHistory";
 import { TerrainEditor } from "@editor/runtime/terrain/TerrainEditor";
-import type { EditorCameraAction } from "@editor/runtime/terrain/TerrainEditor";
+import type { BrushStroke, EditorCameraAction } from "@editor/runtime/terrain/TerrainEditor";
 import { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
 import { TerrainTextureArrays } from "@game/world/terrain/TerrainTextureArrays";
+import type { TerrainHeightPageSnapshot } from "@game/world/terrain/terrain";
 import { getHeightPageKeys, parsePageKey, type MapData } from "@project/MapData";
 import type { VegetationMapData } from "@game/world/vegetation";
 import {
@@ -42,6 +43,12 @@ const editorTerrainConfig: TerrainConfig = {
   },
 };
 
+interface TerrainBrushStrokeSession {
+  beforePages: Map<string, Float32Array>;
+  pageKeys: Set<string>;
+  changed: boolean;
+}
+
 export class EditorApp extends GameApp implements EditorAppSession {
   private readonly editorSettings = createDefaultEditorSettings();
   private readonly terrainEditor = new TerrainEditor(editorTerrainConfig);
@@ -49,7 +56,12 @@ export class EditorApp extends GameApp implements EditorAppSession {
   private readonly vegetationEditor = new VegetationEditor(this.vegetationScene);
   private readonly brushIndicator = new BrushIndicatorSystem();
   private readonly history = new EditorCommandHistory();
+  private readonly terrainBrushQueue: BrushStroke[][] = [];
   private activeEditorType: ActiveEditorType = null;
+  private activeTerrainStroke: TerrainBrushStrokeSession | null = null;
+  private terrainBrushApplyPromise: Promise<void> | null = null;
+  private terrainHistoryFlushPromise: Promise<void> | null = null;
+  private terrainCommandPlaybackInProgress = false;
 
   private getProjectDirectoryFromMapDirectory(mapDirectory: string): string {
     return mapDirectory.replace(/[\\/]maps[\\/][^\\/]+$/, "");
@@ -90,15 +102,19 @@ export class EditorApp extends GameApp implements EditorAppSession {
     return this.history.getState();
   }
 
-  async undoEditorCommand(): Promise<boolean> {
+  async flushPendingEditorCommands(): Promise<void> {
     this.endActiveBrushes();
+    await this.flushPendingTerrainHistory();
     await this.textureEditor.flushPendingHistory();
+  }
+
+  async undoEditorCommand(): Promise<boolean> {
+    await this.flushPendingEditorCommands();
     return this.history.undo();
   }
 
   async redoEditorCommand(): Promise<boolean> {
-    this.endActiveBrushes();
-    await this.textureEditor.flushPendingHistory();
+    await this.flushPendingEditorCommands();
     return this.history.redo();
   }
 
@@ -310,10 +326,15 @@ export class EditorApp extends GameApp implements EditorAppSession {
   }
 
   protected override afterFrame(dt: number): void {
-    this.terrainEditor.applyBrush(dt);
-    const strokes = this.terrainEditor.consumePendingStrokes();
-    if (strokes.length > 0) {
-      void this.resources.runtime.terrain.applyBrushStrokes(strokes);
+    if (!this.terrainCommandPlaybackInProgress) {
+      this.terrainEditor.applyBrush(dt);
+      const strokes = this.terrainEditor.consumePendingStrokes();
+      if (strokes.length > 0) {
+        this.enqueueTerrainBrushStrokes(strokes);
+      }
+      if (!this.terrainEditor.brushActive) {
+        this.scheduleTerrainHistoryFlush();
+      }
     }
 
     void this.textureEditor.applyBrush(dt);
@@ -332,11 +353,185 @@ export class EditorApp extends GameApp implements EditorAppSession {
 
   protected override beforeDispose(): void {
     this.textureEditor.setCommandRecorder(null);
+    this.terrainBrushQueue.length = 0;
+    this.activeTerrainStroke = null;
     this.history.clear();
     this.terrainEditor.dispose();
     this.textureEditor.dispose();
     this.vegetationEditor.dispose();
     this.brushIndicator.dispose();
+  }
+
+  private enqueueTerrainBrushStrokes(strokes: readonly BrushStroke[]): void {
+    this.terrainBrushQueue.push(strokes.map(cloneTerrainBrushStroke));
+    this.ensureTerrainBrushQueueProcessing();
+  }
+
+  private ensureTerrainBrushQueueProcessing(): void {
+    if (this.terrainBrushApplyPromise) {
+      return;
+    }
+
+    const applyPromise = this.processTerrainBrushQueue();
+    this.terrainBrushApplyPromise = applyPromise;
+    void applyPromise.finally(() => {
+      if (this.terrainBrushApplyPromise === applyPromise) {
+        this.terrainBrushApplyPromise = null;
+      }
+    });
+  }
+
+  private async processTerrainBrushQueue(): Promise<void> {
+    while (this.terrainBrushQueue.length > 0) {
+      const strokes = this.terrainBrushQueue.shift();
+      if (strokes) {
+        await this.applyTerrainBrushStrokeBatch(strokes);
+      }
+    }
+  }
+
+  private async applyTerrainBrushStrokeBatch(strokes: readonly BrushStroke[]): Promise<void> {
+    const beforeSnapshot = this.resources.runtime.terrain.captureBrushHeightPageSnapshot(strokes);
+    if (beforeSnapshot.pages.length === 0) {
+      return;
+    }
+
+    const session = this.ensureTerrainStrokeSession();
+    for (const page of beforeSnapshot.pages) {
+      if (!session.beforePages.has(page.key)) {
+        session.beforePages.set(page.key, new Float32Array(page.heights));
+      }
+      session.pageKeys.add(page.key);
+    }
+
+    await this.resources.runtime.terrain.applyBrushStrokes(strokes.map(cloneTerrainBrushStroke));
+    session.changed = true;
+  }
+
+  private ensureTerrainStrokeSession(): TerrainBrushStrokeSession {
+    if (!this.activeTerrainStroke) {
+      this.activeTerrainStroke = {
+        beforePages: new Map<string, Float32Array>(),
+        pageKeys: new Set<string>(),
+        changed: false,
+      };
+    }
+
+    return this.activeTerrainStroke;
+  }
+
+  private scheduleTerrainHistoryFlush(): void {
+    if (!this.hasPendingTerrainHistory()) {
+      return;
+    }
+
+    void this.startTerrainHistoryFlush();
+  }
+
+  private async flushPendingTerrainHistory(): Promise<void> {
+    if (this.terrainHistoryFlushPromise) {
+      await this.terrainHistoryFlushPromise;
+      return;
+    }
+
+    if (!this.hasPendingTerrainHistory()) {
+      return;
+    }
+
+    await this.startTerrainHistoryFlush();
+  }
+
+  private hasPendingTerrainHistory(): boolean {
+    return this.activeTerrainStroke !== null
+      || this.terrainBrushQueue.length > 0
+      || this.terrainBrushApplyPromise !== null;
+  }
+
+  private startTerrainHistoryFlush(): Promise<void> {
+    if (this.terrainHistoryFlushPromise) {
+      return this.terrainHistoryFlushPromise;
+    }
+
+    const flushPromise = this.finishTerrainStrokeAfterPendingWork();
+    this.terrainHistoryFlushPromise = flushPromise;
+    void flushPromise.finally(() => {
+      if (this.terrainHistoryFlushPromise === flushPromise) {
+        this.terrainHistoryFlushPromise = null;
+      }
+    });
+    return flushPromise;
+  }
+
+  private async finishTerrainStrokeAfterPendingWork(): Promise<void> {
+    while (this.terrainBrushQueue.length > 0 || this.terrainBrushApplyPromise) {
+      this.ensureTerrainBrushQueueProcessing();
+      if (this.terrainBrushApplyPromise) {
+        await this.terrainBrushApplyPromise;
+      }
+    }
+
+    this.finishTerrainStroke();
+  }
+
+  private finishTerrainStroke(): void {
+    const session = this.activeTerrainStroke;
+    this.activeTerrainStroke = null;
+    if (!session?.changed || session.pageKeys.size === 0) {
+      return;
+    }
+
+    const afterSnapshot = this.resources.runtime.terrain.captureHeightPageSnapshot(Array.from(session.pageKeys));
+    const beforeSnapshot: TerrainHeightPageSnapshot = {
+      pages: afterSnapshot.pages.flatMap((page) => {
+        const heights = session.beforePages.get(page.key);
+        return heights ? [{ key: page.key, heights: new Float32Array(heights) }] : [];
+      }),
+    };
+
+    if (!this.hasTerrainSnapshotChanges(beforeSnapshot, afterSnapshot)) {
+      return;
+    }
+
+    this.history.record({
+      label: "Terrain height stroke",
+      undo: () => this.applyTerrainHeightSnapshot(beforeSnapshot),
+      redo: () => this.applyTerrainHeightSnapshot(afterSnapshot),
+    });
+  }
+
+  private async applyTerrainHeightSnapshot(snapshot: TerrainHeightPageSnapshot): Promise<void> {
+    this.terrainCommandPlaybackInProgress = true;
+    try {
+      await this.resources.runtime.terrain.applyHeightPageSnapshot(snapshot);
+      this.terrainEditor.markDirty();
+    } finally {
+      this.terrainCommandPlaybackInProgress = false;
+    }
+  }
+
+  private hasTerrainSnapshotChanges(
+    beforeSnapshot: TerrainHeightPageSnapshot,
+    afterSnapshot: TerrainHeightPageSnapshot,
+  ): boolean {
+    if (beforeSnapshot.pages.length !== afterSnapshot.pages.length) {
+      return true;
+    }
+
+    for (let pageIndex = 0; pageIndex < beforeSnapshot.pages.length; pageIndex += 1) {
+      const beforePage = beforeSnapshot.pages[pageIndex];
+      const afterPage = afterSnapshot.pages[pageIndex];
+      if (beforePage.key !== afterPage.key || beforePage.heights.length !== afterPage.heights.length) {
+        return true;
+      }
+
+      for (let heightIndex = 0; heightIndex < beforePage.heights.length; heightIndex += 1) {
+        if (beforePage.heights[heightIndex] !== afterPage.heights[heightIndex]) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   private endActiveBrushes(): void {
@@ -450,4 +645,13 @@ export class EditorApp extends GameApp implements EditorAppSession {
 
     this.brushIndicator.update(brushInfo, heightAt);
   }
+}
+
+function cloneTerrainBrushStroke(stroke: BrushStroke): BrushStroke {
+  return {
+    worldX: stroke.worldX,
+    worldZ: stroke.worldZ,
+    brush: { ...stroke.brush },
+    dt: stroke.dt,
+  };
 }

@@ -225,6 +225,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
       return { ok: false, path: null, message: "✗ Save failed: no active editor session" };
     }
 
+    await editorApp.flushPendingEditorCommands();
     const mapData = editorApp.exportCurrentMapData();
     const settings = editorApp.getSettingsSnapshot();
     mapData.metadata.name = mapName;
@@ -292,6 +293,7 @@ export function useEditorWorkspace(): EditorWorkspaceController {
   };
 
   const saveCurrentProjectForClose = async (app: EditorAppSession): Promise<string> => {
+    await app.flushPendingEditorCommands();
     const mapData = app.exportCurrentMapData();
     const settings = app.getSettingsSnapshot();
     if (app.getTextureEditor().editingEnabled) {
