@@ -41,6 +41,7 @@
 - 已有 `main` 地图资产验证脚本，可检查 manifest、region pack、孤儿文件、截断文件和内容 hash。
 - 已有第一版 cooked map manifest：记录 source hash、terrain/paint/vegetation asset index，以及 8-page world partition cell 表。
 - web game bundled runtime 已优先读取 cooked manifest，并从 cooked asset index 派生 terrain、paint、vegetation 运行时 manifest。
+- cooked 输出已复制运行时所需的 region pack、terrain texture 和 vegetation model 资产，game target 不再依赖 source sidecar 目录读取核心运行资产。
 
 当前最重要的方向是把这些能力从“能用的资产格式”推进到“可验证、可恢复、可 cook、可流式加载的生产级世界管线”。
 
@@ -320,9 +321,9 @@
 
 ## 近期优先级
 
-1. 在 cooked 输出中加入资源复制/打包策略，让 game target 不再依赖 source sidecar 目录布局。
-2. 将 world partition cell schema 扩展到 object/collision/nav，并建立跨资产 cell 依赖关系。
-3. 增加 cooked 增量构建缓存、过期 cook 诊断和缓存失效策略。
+1. 将 world partition cell schema 扩展到 object/collision/nav，并建立跨资产 cell 依赖关系。
+2. 增加 cooked 增量构建缓存、过期 cook 诊断和缓存失效策略。
+3. 将 copied cooked assets 进一步收敛为可发布资源包或内容寻址布局，减少重复文件并提升加载局部性。
 4. 起草 `main` 的 10 平方公里世界设计规格，包括道路、水体、区域主题和兴趣点密度，并保留向约 20 平方公里整页扩展的空间。
 5. 把 region pack integrity 作为后续 source/cooked 增量构建和缓存失效的基础约束。
 

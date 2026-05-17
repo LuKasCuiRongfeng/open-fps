@@ -2,6 +2,14 @@
   "version": 1,
   "format": "open-fps-cooked-map-v1",
   "mapId": "main",
+  "map": {
+    "seed": 918273,
+    "metadata": {
+      "name": "Frontier Basin",
+      "created": 1778997569115,
+      "modified": 1779006894860
+    }
+  },
   "source": {
     "project": {
       "path": "project.json",
@@ -46,385 +54,385 @@
       "regionSizePages": 8,
       "regions": {
         "-4,-4": {
-          "path": "maps/main/terrain/height/regions/r_m4_m4.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m4_m4.heightpack",
           "mask": "0x8000000000000000",
           "byteLength": 66564,
           "sha256": "5d65775130e7f246d653445dd7e19c4f1c7e0393649b931c4ec07f6b0057e92c"
         },
         "-3,-4": {
-          "path": "maps/main/terrain/height/regions/r_m3_m4.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m3_m4.heightpack",
           "mask": "0xff00000000000000",
           "byteLength": 532512,
           "sha256": "26306f3b8088cdf6929a1a9ca3fff9f0877698e61d49eb98043c6e912ccbccf7"
         },
         "-2,-4": {
-          "path": "maps/main/terrain/height/regions/r_m2_m4.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m2_m4.heightpack",
           "mask": "0xff00000000000000",
           "byteLength": 532512,
           "sha256": "1b5dfdae64fdac35972fd401f19ddd0ee962d7803e0549da016190095b202f9b"
         },
         "-1,-4": {
-          "path": "maps/main/terrain/height/regions/r_m1_m4.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m1_m4.heightpack",
           "mask": "0xff00000000000000",
           "byteLength": 532512,
           "sha256": "1099f652cbecd204a6cc996c048c0a3b81123f7b9c1ad69fc35632568253a4f3"
         },
         "0,-4": {
-          "path": "maps/main/terrain/height/regions/r_0_m4.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_0_m4.heightpack",
           "mask": "0xff00000000000000",
           "byteLength": 532512,
           "sha256": "09289c19a61ab96085968ee66631eb79b306f6c434c78852e981c5f9ffd995c9"
         },
         "1,-4": {
-          "path": "maps/main/terrain/height/regions/r_1_m4.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_1_m4.heightpack",
           "mask": "0xff00000000000000",
           "byteLength": 532512,
           "sha256": "6d300046a837e2527ef1f5bf9021f1d23bf4092e3e1602c84fa0a060800cd420"
         },
         "2,-4": {
-          "path": "maps/main/terrain/height/regions/r_2_m4.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_2_m4.heightpack",
           "mask": "0xff00000000000000",
           "byteLength": 532512,
           "sha256": "1f328875d253ab5d905d9cc9116d517c67a10eab28e8b61d3998b9ae57590972"
         },
         "3,-4": {
-          "path": "maps/main/terrain/height/regions/r_3_m4.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_3_m4.heightpack",
           "mask": "0x0100000000000000",
           "byteLength": 66564,
           "sha256": "e6a03462d713ca3034ae21a59264ebed0e78e449a6bb21db443bd88c7375aac3"
         },
         "-4,-3": {
-          "path": "maps/main/terrain/height/regions/r_m4_m3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m4_m3.heightpack",
           "mask": "0x8080808080808080",
           "byteLength": 532512,
           "sha256": "86f5b128dee01314d7d0eab7633b7015cb80b9903c1b0c871893442da03d4604"
         },
         "-3,-3": {
-          "path": "maps/main/terrain/height/regions/r_m3_m3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m3_m3.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "4cc9ab943cf9a70bbfde6e0a96209f8345db0afffedd2b78e785abd179597ba0"
         },
         "-2,-3": {
-          "path": "maps/main/terrain/height/regions/r_m2_m3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m2_m3.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "b94db80157796158363009350f7e2fe27e92ae09a8177b48fd80a65d843e3583"
         },
         "-1,-3": {
-          "path": "maps/main/terrain/height/regions/r_m1_m3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m1_m3.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "82489b212eddb358da753dc41c0af6b92b4ca49756626f4c6f8388c26e215e03"
         },
         "0,-3": {
-          "path": "maps/main/terrain/height/regions/r_0_m3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_0_m3.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "a41f5360016f2e6476144f86f1a4e3ee9858e86b18c70524df5761338fb6cd55"
         },
         "1,-3": {
-          "path": "maps/main/terrain/height/regions/r_1_m3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_1_m3.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "f562a3963ce88bfdab9b07887a767bd4792f3469b181f224b8e2d33a1e4078f6"
         },
         "2,-3": {
-          "path": "maps/main/terrain/height/regions/r_2_m3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_2_m3.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "986432d41978807d09ae433041043148b7744d1c188f5b3ce3f6792a443ac832"
         },
         "3,-3": {
-          "path": "maps/main/terrain/height/regions/r_3_m3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_3_m3.heightpack",
           "mask": "0x0101010101010101",
           "byteLength": 532512,
           "sha256": "3efd21ee156757595ae54e7345aba25dbc1787ef65fce1438609cd57b7c9f54d"
         },
         "-4,-2": {
-          "path": "maps/main/terrain/height/regions/r_m4_m2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m4_m2.heightpack",
           "mask": "0x8080808080808080",
           "byteLength": 532512,
           "sha256": "6e4a73da495ebece2ec3dc3190c23170b6c863affbfac760c21447093aa92dfb"
         },
         "-3,-2": {
-          "path": "maps/main/terrain/height/regions/r_m3_m2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m3_m2.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "4db6c2a91b04537d6138be0dfb0a76925f74c8a866fbbfc765369eb4cd216d62"
         },
         "-2,-2": {
-          "path": "maps/main/terrain/height/regions/r_m2_m2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m2_m2.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "aaa037eaa2aea66fa606a957e58e82d8d5f050812ba419a6c4fd940801a7fefa"
         },
         "-1,-2": {
-          "path": "maps/main/terrain/height/regions/r_m1_m2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m1_m2.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "07e5722553eef1333262b8fb2efb20e1e8bb82f64066001c3aa95f0785decf79"
         },
         "0,-2": {
-          "path": "maps/main/terrain/height/regions/r_0_m2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_0_m2.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "2c3074085394094f68afe055df4f2f9c05997141a535777ebaa274f4bb5a689b"
         },
         "1,-2": {
-          "path": "maps/main/terrain/height/regions/r_1_m2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_1_m2.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "66ea68279273e9be54ee5cf176ba807d2d9cf4110a12f5852768f718f66a859e"
         },
         "2,-2": {
-          "path": "maps/main/terrain/height/regions/r_2_m2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_2_m2.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "376a477cf5339948a745315f9ba1298ca5bbe390e5873a43b24f0ebea5bba975"
         },
         "3,-2": {
-          "path": "maps/main/terrain/height/regions/r_3_m2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_3_m2.heightpack",
           "mask": "0x0101010101010101",
           "byteLength": 532512,
           "sha256": "b56f8d13246a4f481edb742ac378a964c9a95aa86ada66e904902b6bf0824617"
         },
         "-4,-1": {
-          "path": "maps/main/terrain/height/regions/r_m4_m1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m4_m1.heightpack",
           "mask": "0x8080808080808080",
           "byteLength": 532512,
           "sha256": "ab236bfc9902f0be99a00538f0c2411d7898f4c8543d069d840cff743d264ce9"
         },
         "-3,-1": {
-          "path": "maps/main/terrain/height/regions/r_m3_m1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m3_m1.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "689c45e904ffd84cd5a78879a0718099cd9c9003db3e664e49aac1b32625d7c8"
         },
         "-2,-1": {
-          "path": "maps/main/terrain/height/regions/r_m2_m1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m2_m1.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "5a23b84c1f362241d40b76b8c509de1e18bd011fe516f5b15a6642066473748d"
         },
         "-1,-1": {
-          "path": "maps/main/terrain/height/regions/r_m1_m1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m1_m1.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "13394e38dba97394c7433e96ebfce71c4b14d45567531f9b1409866c38ea7a1e"
         },
         "0,-1": {
-          "path": "maps/main/terrain/height/regions/r_0_m1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_0_m1.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "8608ef6a4d101876b32d0f737d002a53148cc9114e77f79b455a8f021770962d"
         },
         "1,-1": {
-          "path": "maps/main/terrain/height/regions/r_1_m1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_1_m1.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "31624493a95ee1c0c06c3bb6d7a8000008e10f642b3623dc2ff1868f0e3d806f"
         },
         "2,-1": {
-          "path": "maps/main/terrain/height/regions/r_2_m1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_2_m1.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "895c393b0c28f81dbfa5f796dc3ee2a063fd8b5e3dd9b604facc9a2613d87f72"
         },
         "3,-1": {
-          "path": "maps/main/terrain/height/regions/r_3_m1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_3_m1.heightpack",
           "mask": "0x0101010101010101",
           "byteLength": 532512,
           "sha256": "deeea879c237550d3b2c5e252559fbb8dd659ff30ac80209830edc920781b804"
         },
         "-4,0": {
-          "path": "maps/main/terrain/height/regions/r_m4_0.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m4_0.heightpack",
           "mask": "0x8080808080808080",
           "byteLength": 532512,
           "sha256": "b4ded0944bcf91187e5f0f37ed2be473f92191318e07eca92c1e8e93a8b4d471"
         },
         "-3,0": {
-          "path": "maps/main/terrain/height/regions/r_m3_0.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m3_0.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "0a8376c5db45b107ac74c4562033c8098135e976ad2f4e0c90e53da16ebe9bfc"
         },
         "-2,0": {
-          "path": "maps/main/terrain/height/regions/r_m2_0.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m2_0.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "8ffb0fa63a1acbf76d063902be35a588e82f9d4ce6553e055afe3094a4299d22"
         },
         "-1,0": {
-          "path": "maps/main/terrain/height/regions/r_m1_0.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m1_0.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "6a99a48476e1b7fa5891a1b5d4bcbe5f22242fd69e2d0b4a305a492be0917862"
         },
         "0,0": {
-          "path": "maps/main/terrain/height/regions/r_0_0.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_0_0.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "8096dc34f557b8244f6024823287a25806ca8dace7a77a47e2eb1201957af7d3"
         },
         "1,0": {
-          "path": "maps/main/terrain/height/regions/r_1_0.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_1_0.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "71752d52c691208d4c9c9db9c72f7805202b165e948879e44dce1b92eb67e57f"
         },
         "2,0": {
-          "path": "maps/main/terrain/height/regions/r_2_0.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_2_0.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "acd8859b5b1fab71281cdb740b70ec4422dc8481acfd620f23336987b290a1ec"
         },
         "3,0": {
-          "path": "maps/main/terrain/height/regions/r_3_0.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_3_0.heightpack",
           "mask": "0x0101010101010101",
           "byteLength": 532512,
           "sha256": "dd4fc453c7ba1f5aa5c1868d90f5f924fb3c8a0d2fc711a9d2cabc8622b55d56"
         },
         "-4,1": {
-          "path": "maps/main/terrain/height/regions/r_m4_1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m4_1.heightpack",
           "mask": "0x8080808080808080",
           "byteLength": 532512,
           "sha256": "78b01cbc50bc28960219957106fd6ee1dda22386917916e34a6ba12d72232390"
         },
         "-3,1": {
-          "path": "maps/main/terrain/height/regions/r_m3_1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m3_1.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "bb88211d7eebef4e12138ad5c9081a5de1a23b1b94905b108c3f228117a22e40"
         },
         "-2,1": {
-          "path": "maps/main/terrain/height/regions/r_m2_1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m2_1.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "b3e08a5de2af3bc48c5279d99a8d3f4ad9b9f3372819f998940e12c65698d541"
         },
         "-1,1": {
-          "path": "maps/main/terrain/height/regions/r_m1_1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m1_1.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "abb41056893c4620adde99ef746179873e209716c27f80d1c30b783c6c22a824"
         },
         "0,1": {
-          "path": "maps/main/terrain/height/regions/r_0_1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_0_1.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "122cec75152391e57666d48c5fcf4f4bfe29d4e5c34886db1eb4d75a92785478"
         },
         "1,1": {
-          "path": "maps/main/terrain/height/regions/r_1_1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_1_1.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "619bcd4b21259b5bf2ccc3b5e5b31ebefe5b62027730ef0d6dbbc70472b4cd63"
         },
         "2,1": {
-          "path": "maps/main/terrain/height/regions/r_2_1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_2_1.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "e56d19e84edb1b3533f389a174588b44a24fb274dbce1fa8f9b4abacc21c2e87"
         },
         "3,1": {
-          "path": "maps/main/terrain/height/regions/r_3_1.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_3_1.heightpack",
           "mask": "0x0101010101010101",
           "byteLength": 532512,
           "sha256": "763101c7838e93d5efe9356f734bb566f64f9ca80df454639f6f05cf4681c244"
         },
         "-4,2": {
-          "path": "maps/main/terrain/height/regions/r_m4_2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m4_2.heightpack",
           "mask": "0x8080808080808080",
           "byteLength": 532512,
           "sha256": "d1975b6519e7edfaa28617ed878c3e03bd80ed0935efca2a5c5e1e2d5f2c8bf2"
         },
         "-3,2": {
-          "path": "maps/main/terrain/height/regions/r_m3_2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m3_2.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "8d41f952736f1a3090ddfe7e3f486519952c4c1f04f5da6cf92d138cd96ab0d6"
         },
         "-2,2": {
-          "path": "maps/main/terrain/height/regions/r_m2_2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m2_2.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "dd56b5b28586b38f3f98ee11e2899f3531266648314af484acf6309c113ec428"
         },
         "-1,2": {
-          "path": "maps/main/terrain/height/regions/r_m1_2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m1_2.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "607cffb65ae348d914cd5d62b6aab1834f2925d60b60d68e81d712b74aeae714"
         },
         "0,2": {
-          "path": "maps/main/terrain/height/regions/r_0_2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_0_2.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "60fd2fd8d97d9e9e60c1689266ed3a08c06d3d53ee78b22d2abdf9ef83d4a277"
         },
         "1,2": {
-          "path": "maps/main/terrain/height/regions/r_1_2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_1_2.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "b4c31f3b75590538d74ad9271031d5c78ee7d6b672658e21c96c2c3fa9565540"
         },
         "2,2": {
-          "path": "maps/main/terrain/height/regions/r_2_2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_2_2.heightpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 4260096,
           "sha256": "d82a400e561792b5358fd0e769a8906f7efe7dc6b6044fedd1229b1fcff4b09a"
         },
         "3,2": {
-          "path": "maps/main/terrain/height/regions/r_3_2.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_3_2.heightpack",
           "mask": "0x0101010101010101",
           "byteLength": 532512,
           "sha256": "e5f4fd487e40df9e38d69e50065e4c6444e6c5724d96c762005710d6b37eec27"
         },
         "-4,3": {
-          "path": "maps/main/terrain/height/regions/r_m4_3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m4_3.heightpack",
           "mask": "0x0000000000000080",
           "byteLength": 66564,
           "sha256": "75511ceb04dc33ef43700d6c9773f7ffb877adaaba10783df94e59f2084bd3c1"
         },
         "-3,3": {
-          "path": "maps/main/terrain/height/regions/r_m3_3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m3_3.heightpack",
           "mask": "0x00000000000000ff",
           "byteLength": 532512,
           "sha256": "4bc3c41db02d43772c4f8deef663e3e54631451ce7d0865e6e678d98bd59eb70"
         },
         "-2,3": {
-          "path": "maps/main/terrain/height/regions/r_m2_3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m2_3.heightpack",
           "mask": "0x00000000000000ff",
           "byteLength": 532512,
           "sha256": "3c22cca5e0e713f0af0595f93769607036db3cd02d7f71eb64f5b81fb023d17b"
         },
         "-1,3": {
-          "path": "maps/main/terrain/height/regions/r_m1_3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_m1_3.heightpack",
           "mask": "0x00000000000000ff",
           "byteLength": 532512,
           "sha256": "1fc2d60995a30fd4eb12e05d6eacf14c40da36baa2d5764cdf7ee5407c78b244"
         },
         "0,3": {
-          "path": "maps/main/terrain/height/regions/r_0_3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_0_3.heightpack",
           "mask": "0x00000000000000ff",
           "byteLength": 532512,
           "sha256": "6f311c11ceedece472f4617952d2e8d219e452c103607c4f66221e031c0c0292"
         },
         "1,3": {
-          "path": "maps/main/terrain/height/regions/r_1_3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_1_3.heightpack",
           "mask": "0x00000000000000ff",
           "byteLength": 532512,
           "sha256": "871669ca68779344762c247f23a67c9b5062bff3d15f50fded71de1ad5183b3d"
         },
         "2,3": {
-          "path": "maps/main/terrain/height/regions/r_2_3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_2_3.heightpack",
           "mask": "0x00000000000000ff",
           "byteLength": 532512,
           "sha256": "0480c5ee68eca6e85a1ad73628e4fd54a1c760a6160439e7c0ce8c8b9057b8c1"
         },
         "3,3": {
-          "path": "maps/main/terrain/height/regions/r_3_3.heightpack",
+          "path": "cooked/maps/main/terrain/height/regions/r_3_3.heightpack",
           "mask": "0x0000000000000001",
           "byteLength": 66564,
           "sha256": "bfb8eaab61af1827504b11d0dc8372bbc733212273e7ade6a8cb7880debe836b"
@@ -443,403 +451,403 @@
       ],
       "layers": {
         "beachSand": {
-          "diffuse": "assets/texture/aerial_beach_01_diff_1k.jpg",
-          "normal": "assets/texture/aerial_beach_01_nor_gl_1k.png",
-          "arm": "assets/texture/aerial_beach_01_arm_1k.png",
-          "displacement": "assets/texture/aerial_beach_01_disp_1k.png",
+          "diffuse": "cooked/assets/texture/aerial_beach_01_diff_1k.jpg",
+          "normal": "cooked/assets/texture/aerial_beach_01_nor_gl_1k.png",
+          "arm": "cooked/assets/texture/aerial_beach_01_arm_1k.png",
+          "displacement": "cooked/assets/texture/aerial_beach_01_disp_1k.png",
           "scale": 7,
           "splatMapIndex": 0
         },
         "mudLeaves": {
-          "diffuse": "assets/texture/brown_mud_leaves_01_diff_1k.jpg",
-          "normal": "assets/texture/brown_mud_leaves_01_nor_gl_1k.png",
-          "arm": "assets/texture/brown_mud_leaves_01_arm_1k.png",
-          "displacement": "assets/texture/brown_mud_leaves_01_disp_1k.png",
+          "diffuse": "cooked/assets/texture/brown_mud_leaves_01_diff_1k.jpg",
+          "normal": "cooked/assets/texture/brown_mud_leaves_01_nor_gl_1k.png",
+          "arm": "cooked/assets/texture/brown_mud_leaves_01_arm_1k.png",
+          "displacement": "cooked/assets/texture/brown_mud_leaves_01_disp_1k.png",
           "scale": 5,
           "splatMapIndex": 0
         }
       },
       "regions": {
         "-4,-4": {
-          "path": "maps/main/paint/regions/r_m4_m4.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m4_m4.paintpack",
           "mask": "0x8000000000000000",
           "byteLength": 4096,
           "sha256": "492c0a11293160273ecb6c861558dc13cb8d24d2acc5792a83e3b97b0e95aeeb"
         },
         "-3,-4": {
-          "path": "maps/main/paint/regions/r_m3_m4.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m3_m4.paintpack",
           "mask": "0xff00000000000000",
           "byteLength": 32768,
           "sha256": "52b1a900ec53cc5408a65bc34219c6a3150c874f657862712407cc51d0ff99b5"
         },
         "-2,-4": {
-          "path": "maps/main/paint/regions/r_m2_m4.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m2_m4.paintpack",
           "mask": "0xff00000000000000",
           "byteLength": 32768,
           "sha256": "734932d1a1856b6736f76574254e25ba18153b5aebf61111ede503160dcf5454"
         },
         "-1,-4": {
-          "path": "maps/main/paint/regions/r_m1_m4.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m1_m4.paintpack",
           "mask": "0xff00000000000000",
           "byteLength": 32768,
           "sha256": "86d96a6c6935ccd912a4fce0f9a607b8e4bdcbf040dcc3ef4bb30314fbade330"
         },
         "0,-4": {
-          "path": "maps/main/paint/regions/r_0_m4.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_0_m4.paintpack",
           "mask": "0xff00000000000000",
           "byteLength": 32768,
           "sha256": "05eecafb6f65de56fae211bfc6d76cbe017fadaea9c82c17062305eb9f1bdb01"
         },
         "1,-4": {
-          "path": "maps/main/paint/regions/r_1_m4.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_1_m4.paintpack",
           "mask": "0xff00000000000000",
           "byteLength": 32768,
           "sha256": "99ade54e4c267a10d9edf1e894916109239f80af4585f3ead9fe54aea50d0a0e"
         },
         "2,-4": {
-          "path": "maps/main/paint/regions/r_2_m4.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_2_m4.paintpack",
           "mask": "0xff00000000000000",
           "byteLength": 32768,
           "sha256": "8671c8c9f1a54b0e5a6ca4a022702670683a99b00a1a92be0dbaaca0e009b20c"
         },
         "3,-4": {
-          "path": "maps/main/paint/regions/r_3_m4.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_3_m4.paintpack",
           "mask": "0x0100000000000000",
           "byteLength": 4096,
           "sha256": "21485e69bda5f3e5edab2407a327048f378f3fb0b8f512295575ae853b4f6832"
         },
         "-4,-3": {
-          "path": "maps/main/paint/regions/r_m4_m3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m4_m3.paintpack",
           "mask": "0x8080808080808080",
           "byteLength": 32768,
           "sha256": "12426b5f68a68809c40106f3ce862fac1980de45efe98d1707f07efc32f23a88"
         },
         "-3,-3": {
-          "path": "maps/main/paint/regions/r_m3_m3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m3_m3.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "1543fb9952eafbaf137287663f87cdfca4a2ff33df947802083047ffca53963d"
         },
         "-2,-3": {
-          "path": "maps/main/paint/regions/r_m2_m3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m2_m3.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "7529c267c6bf60a34d792a13fb71c9942fb7311cf0d89d3bffd492b40c5da22d"
         },
         "-1,-3": {
-          "path": "maps/main/paint/regions/r_m1_m3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m1_m3.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "ea2962eb375da10d37edc892f5b1307352a3ecf4768bfdd9aee0f29cfe545516"
         },
         "0,-3": {
-          "path": "maps/main/paint/regions/r_0_m3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_0_m3.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "706e1652d276ffcebb537bf63e83249e5b986e2e023d0b52dd1fd585d984f490"
         },
         "1,-3": {
-          "path": "maps/main/paint/regions/r_1_m3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_1_m3.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "ba3195979f74f687655868ecff1bf4bf71964b64b9f881af69d35a4ac2bba7df"
         },
         "2,-3": {
-          "path": "maps/main/paint/regions/r_2_m3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_2_m3.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "19cafb5d517e948b375f15ae813639ea59c3f5f4ca4c88fb7f9e96d91e17c8b8"
         },
         "3,-3": {
-          "path": "maps/main/paint/regions/r_3_m3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_3_m3.paintpack",
           "mask": "0x0101010101010101",
           "byteLength": 32768,
           "sha256": "86597a23a168e272cf93cdea0577189e3679101052d489cca168e42b8e57852e"
         },
         "-4,-2": {
-          "path": "maps/main/paint/regions/r_m4_m2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m4_m2.paintpack",
           "mask": "0x8080808080808080",
           "byteLength": 32768,
           "sha256": "25043f0917c6d568bd07d08f02143caa8fa6d75034f1cfc37591e0139778f9a9"
         },
         "-3,-2": {
-          "path": "maps/main/paint/regions/r_m3_m2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m3_m2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "86327b43ee1da03571243a466e2004fc865209094c53eea1c40fe9228282f1d4"
         },
         "-2,-2": {
-          "path": "maps/main/paint/regions/r_m2_m2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m2_m2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "7121e44d6be7f12e1bcc675918bf43b8cfd948361a460d48467d46655c1035ac"
         },
         "-1,-2": {
-          "path": "maps/main/paint/regions/r_m1_m2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m1_m2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "ae96d10b7b896a5d8a2dcd504448df9e8d3d4721d45d505b55a604c411cda76b"
         },
         "0,-2": {
-          "path": "maps/main/paint/regions/r_0_m2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_0_m2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "1ba4294604f681847d3d7dc949048e5db1fa6d33ebaa408c3bce40f16c4bb5bc"
         },
         "1,-2": {
-          "path": "maps/main/paint/regions/r_1_m2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_1_m2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "d7f8936949de346307f4acf3db9718fbe86e0dac0ca0018b4b8c0e0308164fd4"
         },
         "2,-2": {
-          "path": "maps/main/paint/regions/r_2_m2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_2_m2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "a1566c076ef02d3b4cb8d31a76311b59cab0da7a7b9d58b3c9a6e0bbca1f8b35"
         },
         "3,-2": {
-          "path": "maps/main/paint/regions/r_3_m2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_3_m2.paintpack",
           "mask": "0x0101010101010101",
           "byteLength": 32768,
           "sha256": "5333c0474c9bab7a21dd11e79bf1c2f128a3e804090d86357563711a9437ae8c"
         },
         "-4,-1": {
-          "path": "maps/main/paint/regions/r_m4_m1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m4_m1.paintpack",
           "mask": "0x8080808080808080",
           "byteLength": 32768,
           "sha256": "353c057251c3fd4f69add9e4c87f72523f5fd7bded1be00d80a77147b63a5f74"
         },
         "-3,-1": {
-          "path": "maps/main/paint/regions/r_m3_m1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m3_m1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "cc3ad2c310b29ba1ab6503a6fe755a39e94f34d51a39a37c73b1900685c02463"
         },
         "-2,-1": {
-          "path": "maps/main/paint/regions/r_m2_m1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m2_m1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "2da13837aee2b1840ceeab34402e32d8d169f6b725d2e452983715b08e769466"
         },
         "-1,-1": {
-          "path": "maps/main/paint/regions/r_m1_m1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m1_m1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "b495616414a675d13c62942a489b18a920b29ebb4272e49d96765ea433927739"
         },
         "0,-1": {
-          "path": "maps/main/paint/regions/r_0_m1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_0_m1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "47e4f8c2b2218174be9c4a3aa5aa0c0bde20073154f1413a910fce3eeae7c4c3"
         },
         "1,-1": {
-          "path": "maps/main/paint/regions/r_1_m1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_1_m1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "00c026690cb5719703692c05052afb14fefd05084c780eeee3da07c34c4ebfa3"
         },
         "2,-1": {
-          "path": "maps/main/paint/regions/r_2_m1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_2_m1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "1c8f96284404ba6c45657efae43220c6a62c25b7470d7b3b413daf5c71473277"
         },
         "3,-1": {
-          "path": "maps/main/paint/regions/r_3_m1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_3_m1.paintpack",
           "mask": "0x0101010101010101",
           "byteLength": 32768,
           "sha256": "e010cae21e4b52632bbd04a2a3e644476c4b8bf9007197a07b28608babfe6b76"
         },
         "-4,0": {
-          "path": "maps/main/paint/regions/r_m4_0.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m4_0.paintpack",
           "mask": "0x8080808080808080",
           "byteLength": 32768,
           "sha256": "08715c63cac0fc54c222eb0a7b4deb50af8541931fee3f52346627b564e5a014"
         },
         "-3,0": {
-          "path": "maps/main/paint/regions/r_m3_0.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m3_0.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "d9c58d8fd68ebee819e86ce891654a619576fa677d91923d45ff22dda7fa0c9b"
         },
         "-2,0": {
-          "path": "maps/main/paint/regions/r_m2_0.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m2_0.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "df38b874a7fe7d58ab832a9eec36c1e83aaea498f9cde4b942806fbba8a9cceb"
         },
         "-1,0": {
-          "path": "maps/main/paint/regions/r_m1_0.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m1_0.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "59e23393126d0632993a0688ce98b318f86709d3f55e97031184ec0edce2e9d0"
         },
         "0,0": {
-          "path": "maps/main/paint/regions/r_0_0.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_0_0.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "7f3c9e6842a33e8c21959781d1142f542a22d4ce45e7cf44937d9ef028532332"
         },
         "1,0": {
-          "path": "maps/main/paint/regions/r_1_0.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_1_0.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "43825e727c12e2fe9975674c91848d3dd8cb03aafe85e6eeb6c486ea377fc277"
         },
         "2,0": {
-          "path": "maps/main/paint/regions/r_2_0.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_2_0.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "a23a56fd2437e38fc5b740110a6e58ca2e2861bcaffbaea8cf0839c25fdcd9c3"
         },
         "3,0": {
-          "path": "maps/main/paint/regions/r_3_0.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_3_0.paintpack",
           "mask": "0x0101010101010101",
           "byteLength": 32768,
           "sha256": "4a0938dd23ada4b5a277b363d036fe91389baa304184da7e6f5894d1765f1766"
         },
         "-4,1": {
-          "path": "maps/main/paint/regions/r_m4_1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m4_1.paintpack",
           "mask": "0x8080808080808080",
           "byteLength": 32768,
           "sha256": "ea0daef35b0e78ad188cf572d3ac15cbfce2ae28a4bd03b9890f66315208a58c"
         },
         "-3,1": {
-          "path": "maps/main/paint/regions/r_m3_1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m3_1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "211075508721985bc5c00b2282d2bf5df37b777005055df88f77e1de09623922"
         },
         "-2,1": {
-          "path": "maps/main/paint/regions/r_m2_1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m2_1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "75222f0601c49d0150228d74d988226f5563a9cf3e7e9e2971c064431ef0497e"
         },
         "-1,1": {
-          "path": "maps/main/paint/regions/r_m1_1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m1_1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "51bc2099d0aa09d6155b3d2a9e968bbdba854282cca02b896435b2fc93d7073b"
         },
         "0,1": {
-          "path": "maps/main/paint/regions/r_0_1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_0_1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "664c9a4ba1c5ea12f218495ac26b2ce325dcde7796b9f95810e8571103025f16"
         },
         "1,1": {
-          "path": "maps/main/paint/regions/r_1_1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_1_1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "73760ea0dccae44c8c60eedda38681d816ef805f878eb73e28e51b0fa7d9bde3"
         },
         "2,1": {
-          "path": "maps/main/paint/regions/r_2_1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_2_1.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "71505ed7aa9b12538009247268f3f8e9adb7b0b91f8545158509485eaec3d35e"
         },
         "3,1": {
-          "path": "maps/main/paint/regions/r_3_1.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_3_1.paintpack",
           "mask": "0x0101010101010101",
           "byteLength": 32768,
           "sha256": "2d99c20a5cd4357df445123ec1d5f56ec6742bb9c8931f3d9a7d35b1779968c0"
         },
         "-4,2": {
-          "path": "maps/main/paint/regions/r_m4_2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m4_2.paintpack",
           "mask": "0x8080808080808080",
           "byteLength": 32768,
           "sha256": "e7d1fcf073e6b06d3dee038fdf654f5c90e05b6ebcd69cfb88640b2941f06033"
         },
         "-3,2": {
-          "path": "maps/main/paint/regions/r_m3_2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m3_2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "a663f4d713a2fb6a7f1f9283e80b9e15479331a64be1743debf67cfb496cdcf1"
         },
         "-2,2": {
-          "path": "maps/main/paint/regions/r_m2_2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m2_2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "c51888bb3b5544dab22bb855e9d4ec80c9623ed9f8b0c28d036196e09f086469"
         },
         "-1,2": {
-          "path": "maps/main/paint/regions/r_m1_2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m1_2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "45504420f418d22afddcd64ebec3e0e5491f39151dd92e018495e9613c8dff41"
         },
         "0,2": {
-          "path": "maps/main/paint/regions/r_0_2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_0_2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "2248190c0b36b3c732ac588b5accae2767462ddef7c4331481b242c58c767fa0"
         },
         "1,2": {
-          "path": "maps/main/paint/regions/r_1_2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_1_2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "9458febb880dd0d951a0f464c07e10309750707ae9a2f9d024d7d88ed27d2dc9"
         },
         "2,2": {
-          "path": "maps/main/paint/regions/r_2_2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_2_2.paintpack",
           "mask": "0xffffffffffffffff",
           "byteLength": 262144,
           "sha256": "50255b5f519aefaa69567edb5301c18cf20d71f085f57ac9967262268d4175f7"
         },
         "3,2": {
-          "path": "maps/main/paint/regions/r_3_2.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_3_2.paintpack",
           "mask": "0x0101010101010101",
           "byteLength": 32768,
           "sha256": "8cf0df0d1c9b61e7a51b48903c38457ffbaf0b09ea6217496ae6e7de994ebac2"
         },
         "-4,3": {
-          "path": "maps/main/paint/regions/r_m4_3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m4_3.paintpack",
           "mask": "0x0000000000000080",
           "byteLength": 4096,
           "sha256": "14d9ca3dff486cc9afea4304b9cfd8044b66ef058405e1fd7a8ef642ddfb25f3"
         },
         "-3,3": {
-          "path": "maps/main/paint/regions/r_m3_3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m3_3.paintpack",
           "mask": "0x00000000000000ff",
           "byteLength": 32768,
           "sha256": "463022cc466da300f2be890471417f96f13e5fcb8fe27375782e0a1d3c774a28"
         },
         "-2,3": {
-          "path": "maps/main/paint/regions/r_m2_3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m2_3.paintpack",
           "mask": "0x00000000000000ff",
           "byteLength": 32768,
           "sha256": "a7121d8f80b3f7171d21a2d4befb6bb778d53c3a9ca4942b12255491d3864d2b"
         },
         "-1,3": {
-          "path": "maps/main/paint/regions/r_m1_3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_m1_3.paintpack",
           "mask": "0x00000000000000ff",
           "byteLength": 32768,
           "sha256": "1721de479057d1e46877a63bd0a8db20432db92009517e78fcda3c315f359245"
         },
         "0,3": {
-          "path": "maps/main/paint/regions/r_0_3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_0_3.paintpack",
           "mask": "0x00000000000000ff",
           "byteLength": 32768,
           "sha256": "645145099a5c82f9360e34b678159c065f5266be02586c159273e804a4c29061"
         },
         "1,3": {
-          "path": "maps/main/paint/regions/r_1_3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_1_3.paintpack",
           "mask": "0x00000000000000ff",
           "byteLength": 32768,
           "sha256": "433f3d537f9f0d0ba6242546d71d3bede2d1b115f1a4400d1d41188a8530478d"
         },
         "2,3": {
-          "path": "maps/main/paint/regions/r_2_3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_2_3.paintpack",
           "mask": "0x00000000000000ff",
           "byteLength": 32768,
           "sha256": "95b42f03f3c45007ad79b6f4195a540390e17b738918935fe5130604fd73d988"
         },
         "3,3": {
-          "path": "maps/main/paint/regions/r_3_3.paintpack",
+          "path": "cooked/maps/main/paint/regions/r_3_3.paintpack",
           "mask": "0x0000000000000001",
           "byteLength": 4096,
           "sha256": "8e208418d310074960ceb03f0d8808681d7d26ba6662a595b4115bcafc79465c"
@@ -890,31 +898,31 @@
       ],
       "regions": {
         "-1,-1": {
-          "path": "maps/main/vegetation/regions/r_m1_m1.vegpack",
+          "path": "cooked/maps/main/vegetation/regions/r_m1_m1.vegpack",
           "mask": "0x00040c0003620000",
           "byteLength": 504,
           "sha256": "67c10c1de489ca0e17ea4cc0e683698da2acc29237ee5eca9fce5189cc16ba28"
         },
         "0,-1": {
-          "path": "maps/main/vegetation/regions/r_0_m1.vegpack",
+          "path": "cooked/maps/main/vegetation/regions/r_0_m1.vegpack",
           "mask": "0x3018020381000000",
           "byteLength": 392,
           "sha256": "784a04beeb1bf36fbbc32995e3c8c938b04d5d36b42924b593b680907608e180"
         },
         "-1,0": {
-          "path": "maps/main/vegetation/regions/r_m1_0.vegpack",
+          "path": "cooked/maps/main/vegetation/regions/r_m1_0.vegpack",
           "mask": "0x000040c018190000",
           "byteLength": 384,
           "sha256": "13137541ea3e8ceed0a8db551d132233060ee62ae51c15865452c4a1ef5d620c"
         },
         "0,0": {
-          "path": "maps/main/vegetation/regions/r_0_0.vegpack",
+          "path": "cooked/maps/main/vegetation/regions/r_0_0.vegpack",
           "mask": "0x0000006020040c00",
           "byteLength": 344,
           "sha256": "f254f56cbb8cdf6b83c091ea4324d842fbd7ad8cfead3d4274e7cf8ed03b29a4"
         },
         "1,0": {
-          "path": "maps/main/vegetation/regions/r_1_0.vegpack",
+          "path": "cooked/maps/main/vegetation/regions/r_1_0.vegpack",
           "mask": "0x0000000000000100",
           "byteLength": 40,
           "sha256": "931dd9cae97aef47df186ff83f2fcc1d6e18b497fac1c251ef1d4ffb7c679ff2"

@@ -253,6 +253,7 @@ async function validateCookedMap(projectPath, mapId, mapManifest) {
   if (cooked.mapId !== mapId) {
     addError(label, `Cooked map manifest must target map '${mapId}'.`);
   }
+  validateCookedMapInfo(cooked.map, mapManifest, label);
 
   const sourcePaths = {
     project: PROJECT_FILE,
@@ -275,11 +276,29 @@ async function validateCookedMap(projectPath, mapId, mapManifest) {
   const paintManifest = await readJsonFile(path.join(projectPath, sourcePaths.paint), "paint manifest for cooked map");
   const vegetationManifest = await readJsonFile(path.join(projectPath, sourcePaths.vegetation), "vegetation manifest for cooked map");
   const cookedWorld = validateCookedWorld(cooked.world, mapManifest, label);
-  const cookedAssets = validateCookedAssets(cooked.assets, mapId, terrainManifest, paintManifest, vegetationManifest, label);
+  const cookedAssets = await validateCookedAssets(
+    projectPath,
+    cooked.assets,
+    mapId,
+    terrainManifest,
+    paintManifest,
+    vegetationManifest,
+    label,
+  );
 
   if (cookedWorld && cookedAssets) {
     validateCookedPartition(cooked.partition, cookedWorld, cookedAssets, label);
   }
+}
+
+function validateCookedMapInfo(mapInfo, mapManifest, label) {
+  if (!isRecord(mapInfo)) {
+    addError(label, "Cooked map manifest must contain map metadata.");
+    return;
+  }
+
+  validateEqual(mapInfo.seed, mapManifest.seed, label, "cooked map seed");
+  validateJsonEqual(mapInfo.metadata, mapManifest.metadata, label, "cooked map metadata");
 }
 
 async function validateCookedSourceReference(projectPath, reference, expectedPath, label, sourceName) {
@@ -342,7 +361,7 @@ function validateCookedWorld(world, mapManifest, label) {
   };
 }
 
-function validateCookedAssets(assets, mapId, terrainManifest, paintManifest, vegetationManifest, label) {
+async function validateCookedAssets(projectPath, assets, mapId, terrainManifest, paintManifest, vegetationManifest, label) {
   if (!isRecord(assets)) {
     addError(label, "Cooked map manifest must contain asset metadata.");
     return null;
@@ -354,6 +373,12 @@ function validateCookedAssets(assets, mapId, terrainManifest, paintManifest, veg
   if (!terrain || !paint || !vegetation) {
     return null;
   }
+
+  await validateCookedRegionFiles(projectPath, terrain.regions, label, "terrain");
+  await validateCookedRegionFiles(projectPath, paint.regions, label, "paint");
+  await validateCookedRegionFiles(projectPath, vegetation.regions, label, "vegetation");
+  await validateCookedPaintTextureFiles(projectPath, paint.layers, label);
+  await validateCookedVegetationModelFiles(projectPath, mapId, vegetation.models, label);
 
   return { terrain, paint, vegetation };
 }
@@ -374,7 +399,7 @@ function validateCookedTerrainAsset(asset, mapId, manifest, label) {
     asset.regions,
     manifest.regions,
     manifest.regionIntegrity,
-    (key) => `maps/${mapId}/${regionPathFromKey(TERRAIN_REGION_DIRECTORY, TERRAIN_REGION_EXTENSION, key)}`,
+    (key) => mapCookedPath(mapId, regionPathFromKey(TERRAIN_REGION_DIRECTORY, TERRAIN_REGION_EXTENSION, key)),
     label,
     "terrain",
   );
@@ -395,17 +420,59 @@ function validateCookedPaintAsset(asset, mapId, manifest, label) {
   validateEqual(asset.pageSizeMeters, manifest.splatMaps.pageSizeMeters, label, "cooked paint pageSizeMeters");
   validateEqual(asset.regionSizePages, manifest.splatMaps.regionSizePages, label, "cooked paint regionSizePages");
   validateJsonEqual(asset.indices, manifest.splatMaps.indices, label, "cooked paint indices");
-  validateJsonEqual(asset.layers, manifest.layers, label, "cooked paint layers");
+  validateCookedPaintLayers(asset.layers, manifest.layers, label);
   const regions = validateCookedRegionTable(
     asset.regions,
     manifest.splatMaps.regions,
     manifest.splatMaps.regionIntegrity,
-    (key) => `maps/${mapId}/${regionPathFromKey(PAINT_REGION_DIRECTORY, PAINT_REGION_EXTENSION, key)}`,
+    (key) => mapCookedPath(mapId, regionPathFromKey(PAINT_REGION_DIRECTORY, PAINT_REGION_EXTENSION, key)),
     label,
     "paint",
   );
 
   return regions ? { ...asset, regions } : null;
+}
+
+function validateCookedPaintLayers(cookedLayers, sourceLayers, label) {
+  if (!isRecord(cookedLayers) || !isRecord(sourceLayers)) {
+    addError(label, "Cooked paint layers must be JSON objects.");
+    return;
+  }
+
+  const sourceLayerNames = Object.keys(sourceLayers).sort();
+  const cookedLayerNames = Object.keys(cookedLayers).sort();
+  if (!sameStringArray(sourceLayerNames, cookedLayerNames)) {
+    addError(label, "Cooked paint layer keys must match source layer keys.");
+    return;
+  }
+
+  for (const layerName of sourceLayerNames) {
+    validateCookedPaintLayer(cookedLayers[layerName], sourceLayers[layerName], label, layerName);
+  }
+}
+
+function validateCookedPaintLayer(cookedLayer, sourceLayer, label, layerName) {
+  if (!isRecord(cookedLayer) || !isRecord(sourceLayer)) {
+    addError(label, `Cooked paint layer '${layerName}' must match source shape.`);
+    return;
+  }
+
+  const textureFields = new Set(["diffuse", "normal", "displacement", "arm", "ao", "roughness", "metallic"]);
+  const sourceKeys = Object.keys(sourceLayer).sort();
+  const cookedKeys = Object.keys(cookedLayer).sort();
+  if (!sameStringArray(sourceKeys, cookedKeys)) {
+    addError(label, `Cooked paint layer '${layerName}' keys must match source layer keys.`);
+    return;
+  }
+
+  for (const key of sourceKeys) {
+    if (textureFields.has(key) && typeof sourceLayer[key] === "string" && !isExternalAssetPath(sourceLayer[key])) {
+      validateEqual(cookedLayer[key], `cooked/${sourceLayer[key]}`, label, `cooked paint layer '${layerName}' ${key}`);
+      continue;
+    }
+
+    validateJsonEqual(cookedLayer[key], sourceLayer[key], label, `cooked paint layer '${layerName}' ${key}`);
+  }
 }
 
 function validateCookedVegetationAsset(asset, mapId, manifest, label) {
@@ -425,7 +492,7 @@ function validateCookedVegetationAsset(asset, mapId, manifest, label) {
     asset.regions,
     manifest.instances.regions,
     manifest.instances.regionIntegrity,
-    (key) => `maps/${mapId}/${regionPathFromKey(VEGETATION_REGION_DIRECTORY, VEGETATION_REGION_EXTENSION, key)}`,
+    (key) => mapCookedPath(mapId, regionPathFromKey(VEGETATION_REGION_DIRECTORY, VEGETATION_REGION_EXTENSION, key)),
     label,
     "vegetation",
   );
@@ -464,6 +531,72 @@ function validateCookedRegionTable(regions, sourceRegions, sourceIntegrity, reso
   }
 
   return regions;
+}
+
+async function validateCookedRegionFiles(projectPath, regions, label, assetName) {
+  await Promise.all(Object.entries(regions).map(async ([key, region]) => {
+    if (!isRecord(region)) {
+      return;
+    }
+
+    const bytes = await validateRegionPackFile(path.join(projectPath, region.path), region.byteLength, region.path);
+    if (bytes) {
+      validateRegionPackIntegrity(bytes, region, key, `${label} ${assetName} region ${key}`);
+    }
+  }));
+}
+
+async function validateCookedPaintTextureFiles(projectPath, layers, label) {
+  if (!isRecord(layers)) {
+    return;
+  }
+
+  const textureFields = ["diffuse", "normal", "displacement", "arm", "ao", "roughness", "metallic"];
+  await Promise.all(Object.entries(layers).flatMap(([layerName, layer]) => {
+    if (!isRecord(layer)) {
+      return [];
+    }
+
+    return textureFields.map(async (field) => {
+      const value = layer[field];
+      if (typeof value !== "string" || isExternalAssetPath(value)) {
+        return;
+      }
+
+      if (!value.startsWith("cooked/assets/")) {
+        addError(label, `Cooked paint layer '${layerName}' ${field} must point to cooked/assets.`);
+      }
+      await readRequiredFileBytes(path.join(projectPath, value), `cooked paint layer '${layerName}' ${field}`);
+    });
+  }));
+}
+
+async function validateCookedVegetationModelFiles(projectPath, mapId, models, label) {
+  if (!isRecord(models)) {
+    return;
+  }
+
+  const cookedMapDirectory = path.join(projectPath, COOKED_MAP_DIRECTORY, mapId);
+  const modelFields = ["path", "lod1Path", "lod2Path"];
+  await Promise.all(Object.entries(models).flatMap(([modelId, model]) => {
+    if (!isRecord(model)) {
+      return [];
+    }
+
+    return modelFields.map(async (field) => {
+      const value = model[field];
+      if (typeof value !== "string" || isExternalAssetPath(value)) {
+        return;
+      }
+
+      const filePath = path.resolve(cookedMapDirectory, value);
+      if (!isInsideDirectory(filePath, path.join(projectPath, "cooked"))) {
+        addError(label, `Cooked vegetation model '${modelId}' ${field} must resolve inside cooked assets.`);
+        return;
+      }
+      await readRequiredFileBytes(filePath, `cooked vegetation model '${modelId}' ${field}`);
+    });
+  }));
 }
 
 function validateCookedPartition(partition, world, assets, label) {
@@ -1015,6 +1148,19 @@ function countSetBits(mask) {
 
 function formatGridCoordinate(value) {
   return value < 0 ? `m${Math.abs(value)}` : String(value);
+}
+
+function mapCookedPath(mapId, relativePath) {
+  return `${COOKED_MAP_DIRECTORY}/${mapId}/${relativePath}`;
+}
+
+function isExternalAssetPath(assetPath) {
+  return /^[a-z]+:\/\//i.test(assetPath) || assetPath.startsWith("data:");
+}
+
+function isInsideDirectory(filePath, directory) {
+  const relative = path.relative(directory, filePath);
+  return Boolean(relative) && !relative.startsWith("..") && !path.isAbsolute(relative);
 }
 
 function isRecord(value) {

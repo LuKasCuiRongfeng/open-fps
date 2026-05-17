@@ -102,6 +102,7 @@ export interface CookedMapManifest {
   version: typeof COOKED_MAP_VERSION;
   format: typeof COOKED_MAP_FORMAT;
   mapId: string;
+  map: CookedMapInfo;
   source: {
     project: CookedSourceRef;
     map: CookedSourceRef;
@@ -112,6 +113,17 @@ export interface CookedMapManifest {
   world: CookedMapWorld;
   assets: CookedMapAssets;
   partition: CookedWorldPartition;
+}
+
+export interface CookedMapInfo {
+  seed: number;
+  metadata: CookedMapMetadata;
+}
+
+export interface CookedMapMetadata {
+  name: string;
+  created: number;
+  modified: number;
 }
 
 type JsonRecord = Record<string, unknown>;
@@ -137,10 +149,28 @@ export function deserializeCookedMapManifest(json: string): CookedMapManifest {
     version: COOKED_MAP_VERSION,
     format: COOKED_MAP_FORMAT,
     mapId: readString(parsed.mapId, "cooked map id"),
+    map: normalizeCookedMapInfo(parsed.map),
     source: normalizeCookedSource(parsed.source),
     world: normalizeCookedWorld(parsed.world),
     assets: normalizeCookedAssets(parsed.assets),
     partition: normalizeCookedPartition(parsed.partition),
+  };
+}
+
+function normalizeCookedMapInfo(value: unknown): CookedMapInfo {
+  const map = readRecord(value, "cooked map metadata");
+  return {
+    seed: readFiniteNumber(map.seed, "cooked map seed"),
+    metadata: normalizeCookedMapMetadata(map.metadata),
+  };
+}
+
+function normalizeCookedMapMetadata(value: unknown): CookedMapMetadata {
+  const metadata = readRecord(value, "cooked map metadata entry");
+  return {
+    name: readString(metadata.name, "cooked map metadata name"),
+    created: readFiniteNumber(metadata.created, "cooked map metadata created"),
+    modified: readFiniteNumber(metadata.modified, "cooked map metadata modified"),
   };
 }
 

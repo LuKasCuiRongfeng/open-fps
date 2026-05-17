@@ -5,14 +5,18 @@ import {
   createMapDataFromManifest,
   decodeHeightPageBytes,
   deserializeTerrainHeightManifest,
-  deserializeMapManifest,
   createTerrainHeightPageIndex,
   getHeightRegionPackByteLength,
   getHeightRegionPageBytes,
+  MAP_DATA_VERSION,
   MAP_HEIGHT_REGIONS_DIRECTORY,
+  MAP_PAINT_PATH,
   MAP_PAINT_REGIONS_DIRECTORY,
+  MAP_TERRAIN_HEIGHT_PATH,
+  MAP_VEGETATION_MODELS_PATH,
   TERRAIN_HEIGHT_MANIFEST_VERSION,
   type MapData,
+  type MapManifest,
   type TerrainHeightManifest,
   type TerrainHeightRegionManifest,
 } from "@project/MapData";
@@ -120,14 +124,9 @@ export async function loadBundledGameProject(
   ]);
   const cookedMap = deserializeCookedMapManifest(cookedJson);
   validateCookedMapSelection(cookedMap, activeMapId);
-  const mapDirectoryUrl = resolveProjectFileDirectoryUrl(projectBaseUrl, cookedMap.source.map.path);
+  const mapDirectoryUrl = resolveProjectFileDirectoryUrl(projectBaseUrl, getCookedMapManifestPath(activeMapId));
 
-  const manifestJson = await fetchRequiredText(
-    resolveProjectUrl(projectBaseUrl, cookedMap.source.map.path),
-    "map manifest",
-  );
-
-  const manifest = deserializeMapManifest(manifestJson);
+  const manifest = createMapManifestFromCooked(cookedMap);
   const activeMap = createProjectMapRecord(activeMapId, manifest.metadata);
   const terrainManifest = createTerrainManifestFromCooked(cookedMap);
   const heightPageIndex = createTerrainHeightPageIndex(terrainManifest);
@@ -244,6 +243,27 @@ function validateCookedMapSelection(cookedMap: CookedMapManifest, activeMapId: s
   if (cookedMap.mapId !== activeMapId) {
     throw new Error(`Cooked map '${cookedMap.mapId}' does not match active project map '${activeMapId}'`);
   }
+}
+
+function createMapManifestFromCooked(cookedMap: CookedMapManifest): MapManifest {
+  return {
+    version: MAP_DATA_VERSION,
+    seed: cookedMap.map.seed,
+    world: {
+      sizeMeters: cookedMap.world.sizeMeters,
+      pageSizeMeters: cookedMap.world.pageSizeMeters,
+      originX: 0,
+      originZ: 0,
+    },
+    terrainPath: MAP_TERRAIN_HEIGHT_PATH,
+    paintPath: MAP_PAINT_PATH,
+    vegetationPath: MAP_VEGETATION_MODELS_PATH,
+    metadata: {
+      name: cookedMap.map.metadata.name,
+      created: cookedMap.map.metadata.created,
+      modified: cookedMap.map.metadata.modified,
+    },
+  };
 }
 
 function createTerrainManifestFromCooked(cookedMap: CookedMapManifest): TerrainHeightManifest {

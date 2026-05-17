@@ -1,4 +1,4 @@
-import { mkdir, readFile } from "node:fs/promises";
+import { copyFile, cp, mkdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import {
   compareRegionCoords,
@@ -20,6 +20,7 @@ export async function generateCookedMapAssets(context, preset) {
   const mapId = preset.id;
   const mapDir = getMapDir(context, preset);
   const cookedDir = path.join(context.projectDir, cookedMapsDirectory, mapId);
+  await rm(cookedDir, { recursive: true, force: true });
   await mkdir(cookedDir, { recursive: true });
 
   const projectSource = await readSourceJson(context.projectPath, context);
@@ -28,13 +29,25 @@ export async function generateCookedMapAssets(context, preset) {
   const paintSource = await readSourceJson(path.join(mapDir, paintManifestPath), context);
   const vegetationSource = await readSourceJson(path.join(mapDir, vegetationModelsPath), context);
   const world = createCookedWorld(mapSource.json.world);
-  const assets = createCookedAssets(mapId, terrainSource.json, paintSource.json, vegetationSource.json);
+  const assets = await createCookedAssets(
+    context,
+    mapId,
+    mapDir,
+    cookedDir,
+    terrainSource.json,
+    paintSource.json,
+    vegetationSource.json,
+  );
   const partition = createWorldPartition(world, assets);
 
   const manifest = {
     version: cookedMapVersion,
     format: cookedMapFormat,
     mapId,
+    map: {
+      seed: mapSource.json.seed,
+      metadata: mapSource.json.metadata,
+    },
     source: {
       project: createSourceRef(projectSource),
       map: createSourceRef(mapSource),
@@ -102,7 +115,9 @@ function createCookedWorld(world) {
   };
 }
 
-function createCookedAssets(mapId, terrain, paint, vegetation) {
+async function createCookedAssets(context, mapId, mapDir, cookedDir, terrain, paint, vegetation) {
+  const layers = await createCookedPaintLayers(context, paint.layers);
+  const models = await createCookedVegetationModels(context, mapDir, cookedDir, vegetation.models);
   return {
     terrain: {
       manifestPath: mapSourcePath(mapId, terrainHeightPath),
@@ -111,10 +126,13 @@ function createCookedAssets(mapId, terrain, paint, vegetation) {
       pageResolution: terrain.pageResolution,
       pageSizeMeters: terrain.pageSizeMeters,
       regionSizePages: terrain.regionSizePages,
-      regions: createCookedRegions(
+      regions: await createCookedRegions(
+        context,
+        mapDir,
+        mapId,
         terrain.regions,
         terrain.regionIntegrity,
-        (key) => mapSourcePath(mapId, terrainRegionPath(key)),
+        terrainRegionPath,
         "terrain",
       ),
     },
@@ -126,11 +144,14 @@ function createCookedAssets(mapId, terrain, paint, vegetation) {
       pageSizeMeters: paint.splatMaps.pageSizeMeters,
       regionSizePages: paint.splatMaps.regionSizePages,
       indices: paint.splatMaps.indices,
-      layers: paint.layers,
-      regions: createCookedRegions(
+      layers,
+      regions: await createCookedRegions(
+        context,
+        mapDir,
+        mapId,
         paint.splatMaps.regions,
         paint.splatMaps.regionIntegrity,
-        (key) => mapSourcePath(mapId, paintRegionPath(key)),
+        paintRegionPath,
         "paint",
       ),
     },
@@ -140,40 +161,140 @@ function createCookedAssets(mapId, terrain, paint, vegetation) {
       instanceFormat: vegetation.instances.instanceFormat,
       cellSizeMeters: vegetation.instances.cellSizeMeters,
       regionSizeCells: vegetation.instances.regionSizeCells,
-      models: vegetation.models,
+      models,
       modelIds: vegetation.instances.modelIds,
-      regions: createCookedRegions(
+      regions: await createCookedRegions(
+        context,
+        mapDir,
+        mapId,
         vegetation.instances.regions,
         vegetation.instances.regionIntegrity,
-        (key) => mapSourcePath(mapId, vegetationRegionPath(key)),
+        vegetationRegionPath,
         "vegetation",
       ),
     },
   };
 }
 
-function createCookedRegions(regions, integrityMap, resolvePath, label) {
+async function createCookedRegions(context, mapDir, mapId, regions, integrityMap, resolveSourcePath, label) {
   if (!regions || typeof regions !== "object" || !integrityMap || typeof integrityMap !== "object") {
     throw new Error(`Cannot cook ${label} regions without masks and integrity metadata`);
   }
 
-  return Object.fromEntries(
+  const entries = await Promise.all(
     Object.entries(regions)
       .sort(([left], [right]) => compareRegionKeyStrings(left, right))
-      .map(([key, mask]) => {
+      .map(async ([key, mask]) => {
         const integrity = integrityMap[key];
         if (!integrity) {
           throw new Error(`Cannot cook ${label} region '${key}' without integrity metadata`);
         }
 
+        const sourcePath = resolveSourcePath(key);
+        const cookedPath = mapCookedPath(mapId, sourcePath);
+        await copyCookedFile(path.join(mapDir, sourcePath), path.join(context.projectDir, cookedPath));
+
         return [key, {
-          path: resolvePath(key),
+          path: cookedPath,
           mask,
           byteLength: integrity.byteLength,
           sha256: integrity.sha256,
         }];
       }),
   );
+  return Object.fromEntries(entries);
+}
+
+async function createCookedPaintLayers(context, layers) {
+  const cookedLayers = {};
+  for (const [name, layer] of Object.entries(layers ?? {})) {
+    cookedLayers[name] = await copyCookedPaintLayerAssets(context, layer);
+  }
+
+  return cookedLayers;
+}
+
+async function copyCookedPaintLayerAssets(context, layer) {
+  const nextLayer = { ...layer };
+  const textureFields = ["diffuse", "normal", "displacement", "arm", "ao", "roughness", "metallic"];
+  await Promise.all(textureFields.map(async (field) => {
+    const value = nextLayer[field];
+    if (typeof value !== "string" || isExternalAssetPath(value)) {
+      return;
+    }
+
+    nextLayer[field] = await copyProjectAssetToCooked(context, value);
+  }));
+
+  return nextLayer;
+}
+
+async function createCookedVegetationModels(context, mapDir, cookedDir, models) {
+  const cookedModels = {};
+  for (const [id, model] of Object.entries(models ?? {})) {
+    cookedModels[id] = await copyCookedVegetationModelAssets(context, mapDir, cookedDir, model);
+  }
+
+  return cookedModels;
+}
+
+async function copyCookedVegetationModelAssets(context, mapDir, cookedDir, model) {
+  const nextModel = { ...model };
+  const modelFields = ["path", "lod1Path", "lod2Path"];
+  for (const field of modelFields) {
+    const value = nextModel[field];
+    if (typeof value !== "string" || isExternalAssetPath(value)) {
+      continue;
+    }
+
+    nextModel[field] = await copyMapRelativeAssetToCooked(context, mapDir, cookedDir, value);
+  }
+
+  return nextModel;
+}
+
+async function copyProjectAssetToCooked(context, projectRelativeAssetPath) {
+  const sourcePath = path.resolve(context.projectDir, projectRelativeAssetPath);
+  ensureInsideProject(context, sourcePath, projectRelativeAssetPath);
+  const cookedPath = `cooked/${projectRelativePath(sourcePath, context)}`;
+  await copyCookedFile(sourcePath, path.join(context.projectDir, cookedPath));
+  return cookedPath;
+}
+
+async function copyMapRelativeAssetToCooked(context, mapDir, cookedDir, mapRelativeAssetPath) {
+  const sourcePath = path.resolve(mapDir, mapRelativeAssetPath);
+  ensureInsideProject(context, sourcePath, mapRelativeAssetPath);
+  const sourceRoot = getCookedAssetCopyRoot(context, sourcePath);
+  const cookedRoot = path.join(context.projectDir, "cooked", projectRelativePath(sourceRoot, context));
+  await cp(sourceRoot, cookedRoot, { recursive: true, force: true });
+  const cookedAssetPath = path.join(context.projectDir, "cooked", projectRelativePath(sourcePath, context));
+  return path.relative(cookedDir, cookedAssetPath).replaceAll(path.sep, "/");
+}
+
+function getCookedAssetCopyRoot(context, sourcePath) {
+  const relativePath = projectRelativePath(sourcePath, context);
+  const parts = relativePath.split("/");
+  if (parts[0] === "assets" && parts[1] === "model" && parts[2]) {
+    return path.join(context.projectDir, parts[0], parts[1], parts[2]);
+  }
+
+  return sourcePath;
+}
+
+async function copyCookedFile(sourcePath, targetPath) {
+  await mkdir(path.dirname(targetPath), { recursive: true });
+  await copyFile(sourcePath, targetPath);
+}
+
+function ensureInsideProject(context, filePath, label) {
+  const relativePath = path.relative(context.projectDir, filePath);
+  if (!relativePath || relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+    throw new Error(`Cooked asset '${label}' must stay inside the project directory`);
+  }
+}
+
+function isExternalAssetPath(assetPath) {
+  return /^[a-z]+:\/\//i.test(assetPath) || assetPath.startsWith("data:");
 }
 
 function createWorldPartition(world, assets) {
@@ -274,6 +395,10 @@ function collectVegetationRegionKeys(pageRect, pageSizeMeters, cellSizeMeters, r
 
 function mapSourcePath(mapId, relativePath) {
   return `maps/${mapId}/${relativePath}`;
+}
+
+function mapCookedPath(mapId, relativePath) {
+  return `${cookedMapsDirectory}/${mapId}/${relativePath}`;
 }
 
 function terrainRegionPath(key) {
