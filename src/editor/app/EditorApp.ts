@@ -9,6 +9,7 @@ import { TerrainEditor } from "@editor/runtime/terrain/TerrainEditor";
 import type { BrushStroke, EditorCameraAction } from "@editor/runtime/terrain/TerrainEditor";
 import { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
+import { WorldObjectOverlay } from "@editor/runtime/world-objects";
 import { TerrainTextureArrays } from "@game/world/terrain/TerrainTextureArrays";
 import type { TerrainHeightPageSnapshot } from "@game/world/terrain/terrain";
 import { getHeightPageKeys, parsePageKey, type MapData } from "@project/MapData";
@@ -54,6 +55,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
   private readonly terrainEditor = new TerrainEditor(editorTerrainConfig);
   private readonly textureEditor = new TextureEditor();
   private readonly vegetationEditor = new VegetationEditor(this.vegetationScene);
+  private readonly worldObjectOverlay = new WorldObjectOverlay();
   private readonly brushIndicator = new BrushIndicatorSystem();
   private readonly history = new EditorCommandHistory();
   private readonly terrainBrushQueue: BrushStroke[][] = [];
@@ -77,6 +79,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
     // 中文: 让编辑器植被不依赖地形流式状态，避免每加载一个 page 都触发完整植被可见性刷新。
     this.vegetationScene.setTerrainAvailability(null);
     this.vegetationScene.configureVisibility(vegetationRenderConfig.editor);
+    this.worldObjectOverlay.attach(this.scene);
     this.brushIndicator.attach(this.scene);
     this.textureEditor.setCommandRecorder((command) => this.history.record(command));
     this.vegetationEditor.setCommandRecorder((command) => this.history.record(command));
@@ -237,6 +240,10 @@ export class EditorApp extends GameApp implements EditorAppSession {
     await this.vegetationEditor.saveToMapDirectory(mapDirectory);
   }
 
+  async loadWorldObjectsFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void> {
+    await this.worldObjectOverlay.loadFromMapDirectory(mapDirectory, mapData);
+  }
+
   protected override async initRuntimeExtensions(): Promise<void> {
     const splatWorldSize = terrainConfig.worldBounds.halfSizeMeters * 2;
     await this.textureEditor.init(this.renderer, splatWorldSize);
@@ -362,6 +369,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
     this.terrainEditor.dispose();
     this.textureEditor.dispose();
     this.vegetationEditor.dispose();
+    this.worldObjectOverlay.dispose();
     this.brushIndicator.dispose();
   }
 

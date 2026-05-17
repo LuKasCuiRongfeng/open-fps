@@ -20,3 +20,7 @@ export * from "./texture/TextureEditor";
 // Vegetation editing.
 // 植被编辑
 export * from "./vegetation";
+
+// World object visualization.
+// 世界对象可视化
+export * from "./world-objects";

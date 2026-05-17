@@ -32,4 +32,5 @@ export interface EditorAppSession extends RuntimeAppSession<EditorAppSettings, E
   saveTexturesToMapDirectory(mapDirectory: string, mapData: MapData): Promise<void>;
   loadVegetationFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void>;
   saveVegetationToMapDirectory(mapDirectory: string): Promise<void>;
+  loadWorldObjectsFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void>;
 }

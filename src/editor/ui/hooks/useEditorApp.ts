@@ -88,6 +88,10 @@ export function useEditorApp({
               await app.loadVegetationFromMapDirectory(bootInputs.currentMapDirectory, bootInputs.pendingMapData);
             }
 
+            if (bootInputs.currentMapDirectory) {
+              await app.loadWorldObjectsFromMapDirectory(bootInputs.currentMapDirectory, bootInputs.pendingMapData);
+            }
+
             await app.warmUpRuntimeShaders();
 
             setBootPhase("ready");

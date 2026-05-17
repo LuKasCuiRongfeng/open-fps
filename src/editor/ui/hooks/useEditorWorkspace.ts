@@ -158,6 +158,8 @@ export function useEditorWorkspace(): EditorWorkspaceController {
 
     await editorApp.loadVegetationFromMapDirectory(project.activeMapDirectory, project.map);
 
+    await editorApp.loadWorldObjectsFromMapDirectory(project.activeMapDirectory, project.map);
+
     setPendingMapData(project.map);
     setPendingSettings(project.settings);
     terrainEditor?.markClean();
