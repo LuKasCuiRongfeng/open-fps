@@ -16,8 +16,10 @@ import {
   encodeHeightRegionPackBase64,
   deserializeMapManifest,
   getHeightPageKeys,
+  getHeightRegionPages,
   getHeightRegionPackByteLength,
   getHeightRegionPageBytes,
+  getTerrainHeightRegions,
   getTerrainHeightPageKeys,
   serializeTerrainHeightManifest,
   type MapManifest,
@@ -384,6 +386,7 @@ function createProjectHeightPageLoader(
       projectPath,
       mapId,
       location.region,
+      terrainManifest.pageResolution,
       regionPackCache,
     );
     const pageBytes = getHeightRegionPageBytes(regionBytes, location.page);
@@ -395,6 +398,7 @@ function loadProjectHeightRegionPack(
   projectPath: string,
   mapId: string,
   region: TerrainHeightRegionManifest,
+  pageResolution: number,
   cache: Map<string, Promise<Uint8Array>>,
 ): Promise<Uint8Array> {
   const cached = cache.get(region.key);
@@ -405,7 +409,7 @@ function loadProjectHeightRegionPack(
   const request = (async () => {
     const base64 = await platform.projects.readMapChunk(projectPath, mapId, region.path);
     const bytes = decodeHeightRegionPackBase64(base64);
-    const expectedByteLength = getHeightRegionPackByteLength(region);
+    const expectedByteLength = getHeightRegionPackByteLength(region, pageResolution);
     if (bytes.byteLength !== expectedByteLength) {
       throw new Error(`Invalid height region '${region.key}' byte length`);
     }
@@ -477,7 +481,7 @@ async function saveProjectMapData(
   // EN: Region packs are written before their manifest so the manifest never points at missing binary data.
   // 中文: region pack 先于清单写入，避免清单指向尚未写好的二进制数据。
   for (const region of regionsToWrite) {
-    await saveHeightRegionPack(projectPath, mapId, mapData, region);
+    await saveHeightRegionPack(projectPath, mapId, mapData, nextTerrainManifest, region);
   }
 
   const terrainManifestPath = `${getProjectMapDirectory(projectPath, mapId)}/${nextManifest.terrainPath}`;
@@ -493,7 +497,7 @@ async function getHeightRegionsToWrite(
   writeAllPages: boolean,
 ): Promise<TerrainHeightRegionManifest[]> {
   if (writeAllPages) {
-    return nextTerrainManifest.regions;
+    return getTerrainHeightRegions(nextTerrainManifest);
   }
 
   let existingTerrainManifest: TerrainHeightManifest | null = null;
@@ -508,7 +512,7 @@ async function getHeightRegionsToWrite(
   }
 
   if (!existingTerrainManifest || !hasSameTerrainPageKeys(existingTerrainManifest, nextTerrainManifest)) {
-    return nextTerrainManifest.regions;
+    return getTerrainHeightRegions(nextTerrainManifest);
   }
 
   const pageIndex = createTerrainHeightPageIndex(nextTerrainManifest);
@@ -522,18 +526,19 @@ async function getHeightRegionsToWrite(
     dirtyRegionKeys.add(location.region.key);
   }
 
-  return nextTerrainManifest.regions.filter((region) => dirtyRegionKeys.has(region.key));
+  return getTerrainHeightRegions(nextTerrainManifest).filter((region) => dirtyRegionKeys.has(region.key));
 }
 
 async function saveHeightRegionPack(
   projectPath: string,
   mapId: string,
   mapData: MapData,
+  terrainManifest: TerrainHeightManifest,
   region: TerrainHeightRegionManifest,
 ): Promise<void> {
-  const packBytes = new Uint8Array(getHeightRegionPackByteLength(region));
+  const packBytes = new Uint8Array(getHeightRegionPackByteLength(region, terrainManifest.pageResolution));
 
-  for (const page of region.pages) {
+  for (const page of getHeightRegionPages(region, terrainManifest.pageResolution, terrainManifest.regionSizePages)) {
     const heightPage = await loadHeightPageForSave(mapData, page.key);
     const pageBytes = encodeHeightPageBytes(heightPage.heights, mapData.heightPageResolution);
     if (pageBytes.byteLength !== page.byteLength) {

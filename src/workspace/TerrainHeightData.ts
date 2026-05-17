@@ -20,7 +20,7 @@ export interface TerrainHeightRegionManifest {
   x: number;
   z: number;
   path: string;
-  pages: TerrainHeightRegionPage[];
+  mask: bigint;
 }
 
 export interface TerrainHeightManifest {
@@ -31,7 +31,7 @@ export interface TerrainHeightManifest {
   pageSizeMeters: number;
   regionSizePages: number;
   regionsDirectory: typeof MAP_HEIGHT_REGIONS_DIRECTORY;
-  regions: TerrainHeightRegionManifest[];
+  regions: Record<string, string>;
 }
 
 export interface TerrainHeightPageLocation {
@@ -53,38 +53,23 @@ export function createTerrainHeightManifest(
   regionSizePages = DEFAULT_HEIGHT_REGION_SIZE_PAGES,
 ): TerrainHeightManifest {
   const settings = normalizeHeightManifestSettings(pageResolution, pageSizeMeters, regionSizePages);
-
   const normalizedPageKeys = normalizePageKeys(Array.from(pageKeys), "height page");
-  const pageByteLength = getExpectedHeightPageByteLength(settings.pageResolution);
-  const regionGroups = new Map<string, { x: number; z: number; pageKeys: string[] }>();
+  const regionMasks = new Map<string, bigint>();
 
   for (const key of normalizedPageKeys) {
     const { px, pz } = parsePageKey(key);
     const region = getHeightRegionCoordsForPage(px, pz, settings.regionSizePages);
     const regionKey = heightRegionKey(region.x, region.z);
-    const group = regionGroups.get(regionKey) ?? { x: region.x, z: region.z, pageKeys: [] };
-    group.pageKeys.push(key);
-    regionGroups.set(regionKey, group);
+    const localIndex = getHeightRegionLocalPageIndex(px, pz, settings.regionSizePages);
+    const bit = 1n << BigInt(localIndex);
+    regionMasks.set(regionKey, (regionMasks.get(regionKey) ?? 0n) | bit);
   }
 
-  const regions = Array.from(regionGroups.values())
-    .sort((left, right) => compareRegionCoords(left.x, left.z, right.x, right.z))
-    .map((region): TerrainHeightRegionManifest => {
-      let offset = 0;
-      const pages = sortPageKeys(region.pageKeys).map((key) => {
-        const page = { key, offset, byteLength: pageByteLength };
-        offset += pageByteLength;
-        return page;
-      });
-
-      return {
-        key: heightRegionKey(region.x, region.z),
-        x: region.x,
-        z: region.z,
-        path: getHeightRegionPath(region.x, region.z),
-        pages,
-      };
-    });
+  const regions = Object.fromEntries(
+    Array.from(regionMasks.entries())
+      .sort(([left], [right]) => compareRegionKeys(left, right))
+      .map(([key, mask]) => [key, formatRegionMask(mask)]),
+  );
 
   return {
     version: TERRAIN_HEIGHT_MANIFEST_VERSION,
@@ -103,10 +88,13 @@ export function serializeTerrainHeightManifest(manifest: TerrainHeightManifest):
 }
 
 export function deserializeTerrainHeightManifest(json: string): TerrainHeightManifest {
-  const parsed = JSON.parse(json) as Partial<TerrainHeightManifest>;
+  const parsed = JSON.parse(json) as unknown;
+  if (!isRecord(parsed)) {
+    throw new Error("Terrain height manifest must be a JSON object");
+  }
 
   if (parsed.version !== TERRAIN_HEIGHT_MANIFEST_VERSION) {
-    throw new Error(`Terrain height manifest version ${parsed.version ?? "unknown"} is not supported`);
+    throw new Error(`Terrain height manifest version ${String(parsed.version ?? "unknown")} is not supported`);
   }
 
   if (parsed.format !== MAP_HEIGHT_REGION_FORMAT) {
@@ -135,20 +123,37 @@ export function deserializeTerrainHeightManifest(json: string): TerrainHeightMan
     pageSizeMeters: settings.pageSizeMeters,
     regionSizePages: settings.regionSizePages,
     regionsDirectory: MAP_HEIGHT_REGIONS_DIRECTORY,
-    regions: normalizeTerrainHeightRegions(parsed.regions, settings.pageResolution, settings.regionSizePages),
+    regions: normalizeTerrainHeightRegions(parsed.regions, settings.regionSizePages),
   };
 }
 
+export function getTerrainHeightRegions(manifest: TerrainHeightManifest): TerrainHeightRegionManifest[] {
+  return Object.entries(manifest.regions)
+    .map(([key, maskHex]) => {
+      const { x, z } = parseRegionKey(key);
+      return {
+        key,
+        x,
+        z,
+        path: getHeightRegionPath(x, z),
+        mask: parseRegionMask(maskHex, key, manifest.regionSizePages),
+      };
+    })
+    .sort((left, right) => compareRegionCoords(left.x, left.z, right.x, right.z));
+}
+
 export function getTerrainHeightPageKeys(manifest: TerrainHeightManifest): string[] {
-  return sortPageKeys(manifest.regions.flatMap((region) => region.pages.map((page) => page.key)));
+  return sortPageKeys(getTerrainHeightRegions(manifest).flatMap((region) => (
+    getHeightRegionPages(region, manifest.pageResolution, manifest.regionSizePages).map((page) => page.key)
+  )));
 }
 
 export function createTerrainHeightPageIndex(
   manifest: TerrainHeightManifest,
 ): Map<string, TerrainHeightPageLocation> {
   const index = new Map<string, TerrainHeightPageLocation>();
-  for (const region of manifest.regions) {
-    for (const page of region.pages) {
+  for (const region of getTerrainHeightRegions(manifest)) {
+    for (const page of getHeightRegionPages(region, manifest.pageResolution, manifest.regionSizePages)) {
       index.set(page.key, { region, page });
     }
   }
@@ -156,14 +161,38 @@ export function createTerrainHeightPageIndex(
   return index;
 }
 
+export function getHeightRegionPages(
+  region: TerrainHeightRegionManifest,
+  pageResolution: number,
+  regionSizePages = DEFAULT_HEIGHT_REGION_SIZE_PAGES,
+): TerrainHeightRegionPage[] {
+  const pageByteLength = getExpectedHeightPageByteLength(pageResolution);
+  const slotCount = getHeightRegionSlotCount(regionSizePages);
+  const pages: TerrainHeightRegionPage[] = [];
+  let offset = 0;
+
+  for (let localIndex = 0; localIndex < slotCount; localIndex += 1) {
+    if (!hasRegionPage(region.mask, localIndex)) {
+      continue;
+    }
+
+    pages.push({
+      key: getHeightRegionPageKey(region.x, region.z, localIndex, regionSizePages),
+      offset,
+      byteLength: pageByteLength,
+    });
+    offset += pageByteLength;
+  }
+
+  return pages;
+}
+
 export function getHeightRegionCoordsForPage(
   px: number,
   pz: number,
   regionSizePages = DEFAULT_HEIGHT_REGION_SIZE_PAGES,
 ): { x: number; z: number } {
-  if (!Number.isInteger(regionSizePages) || regionSizePages <= 0) {
-    throw new Error(`Height region size must be a positive integer: ${regionSizePages}`);
-  }
+  validateHeightRegionSize(regionSizePages);
 
   return {
     x: Math.floor(px / regionSizePages),
@@ -179,6 +208,23 @@ export function getHeightRegionCoordsForPageKey(
   return getHeightRegionCoordsForPage(px, pz, regionSizePages);
 }
 
+export function getHeightRegionLocalPageIndex(
+  px: number,
+  pz: number,
+  regionSizePages = DEFAULT_HEIGHT_REGION_SIZE_PAGES,
+): number {
+  validateHeightRegionSize(regionSizePages);
+
+  const region = getHeightRegionCoordsForPage(px, pz, regionSizePages);
+  const localX = px - region.x * regionSizePages;
+  const localZ = pz - region.z * regionSizePages;
+  if (localX < 0 || localX >= regionSizePages || localZ < 0 || localZ >= regionSizePages) {
+    throw new Error(`Height page '${px},${pz}' is outside computed region '${heightRegionKey(region.x, region.z)}'`);
+  }
+
+  return localZ * regionSizePages + localX;
+}
+
 export function heightRegionKey(x: number, z: number): string {
   if (!Number.isInteger(x) || !Number.isInteger(z)) {
     throw new Error(`Height region coordinates must be integers: ${x},${z}`);
@@ -191,8 +237,11 @@ export function getHeightRegionPath(x: number, z: number): string {
   return `${MAP_HEIGHT_REGIONS_DIRECTORY}/r_${formatGridCoordinate(x)}_${formatGridCoordinate(z)}.heightpack`;
 }
 
-export function getHeightRegionPackByteLength(region: TerrainHeightRegionManifest): number {
-  return region.pages.reduce((maxByteLength, page) => Math.max(maxByteLength, page.offset + page.byteLength), 0);
+export function getHeightRegionPackByteLength(
+  region: TerrainHeightRegionManifest,
+  pageResolution: number,
+): number {
+  return countSetBits(region.mask) * getExpectedHeightPageByteLength(pageResolution);
 }
 
 export function getHeightRegionPageBytes(
@@ -246,125 +295,89 @@ export function getExpectedHeightPageByteLength(pageResolution: number): number 
   return pageResolution * pageResolution * Float32Array.BYTES_PER_ELEMENT;
 }
 
-function normalizeTerrainHeightRegions(
-  value: unknown,
-  pageResolution: number,
-  regionSizePages: number,
-): TerrainHeightRegionManifest[] {
-  if (!Array.isArray(value)) {
-    throw new Error("Terrain height manifest regions must be an array");
+function normalizeTerrainHeightRegions(value: unknown, regionSizePages: number): Record<string, string> {
+  if (!isRecord(value)) {
+    throw new Error("Terrain height manifest regions must be an object");
   }
 
-  const regionKeys = new Set<string>();
-  const pageKeys = new Set<string>();
-  const regions = value.map((entry) => {
-    if (!isRecord(entry)) {
-      throw new Error("Terrain height manifest region must be an object");
-    }
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([key, maskValue]) => {
+        const region = parseRegionKey(key);
+        const normalizedKey = heightRegionKey(region.x, region.z);
+        if (key !== normalizedKey) {
+          throw new Error(`Terrain height manifest has invalid region key '${key}'`);
+        }
 
-    const x = readInteger(entry.x, "height region x");
-    const z = readInteger(entry.z, "height region z");
-    const key = heightRegionKey(x, z);
-    if (entry.key !== key) {
-      throw new Error(`Terrain height manifest has invalid region key '${String(entry.key)}'`);
-    }
-    if (regionKeys.has(key)) {
-      throw new Error(`Terrain height manifest has duplicate region key '${key}'`);
-    }
-    regionKeys.add(key);
-
-    const expectedPath = getHeightRegionPath(x, z);
-    if (entry.path !== expectedPath) {
-      throw new Error(`Terrain height manifest has invalid region path '${String(entry.path)}'`);
-    }
-
-    return {
-      key,
-      x,
-      z,
-      path: expectedPath,
-      pages: normalizeTerrainHeightRegionPages(
-        entry.pages,
-        pageResolution,
-        regionSizePages,
-        key,
-        pageKeys,
-      ),
-    };
-  });
-
-  return regions.sort((left, right) => compareRegionCoords(left.x, left.z, right.x, right.z));
+        const mask = parseRegionMask(maskValue, key, regionSizePages);
+        return [key, formatRegionMask(mask)] as const;
+      })
+      .sort(([left], [right]) => compareRegionKeys(left, right)),
+  );
 }
 
-function normalizeTerrainHeightRegionPages(
-  value: unknown,
-  pageResolution: number,
+function parseRegionKey(key: string): { x: number; z: number } {
+  const { px, pz } = parsePageKey(key);
+  return { x: px, z: pz };
+}
+
+function getHeightRegionPageKey(
+  regionX: number,
+  regionZ: number,
+  localIndex: number,
   regionSizePages: number,
-  regionKey: string,
-  seenPageKeys: Set<string>,
-): TerrainHeightRegionPage[] {
-  if (!Array.isArray(value)) {
-    throw new Error(`Terrain height manifest region '${regionKey}' pages must be an array`);
+): string {
+  const localX = localIndex % regionSizePages;
+  const localZ = Math.floor(localIndex / regionSizePages);
+  return `${regionX * regionSizePages + localX},${regionZ * regionSizePages + localZ}`;
+}
+
+function parseRegionMask(value: unknown, regionKeyValue: string, regionSizePages: number): bigint {
+  if (typeof value !== "string" || !/^0x[0-9a-f]+$/i.test(value)) {
+    throw new Error(`Terrain height manifest region '${regionKeyValue}' mask must be a hex string`);
   }
 
-  const expectedByteLength = getExpectedHeightPageByteLength(pageResolution);
-  const pages = value.map((entry) => {
-    if (!isRecord(entry)) {
-      throw new Error(`Terrain height manifest region '${regionKey}' page must be an object`);
-    }
-
-    if (typeof entry.key !== "string") {
-      throw new Error(`Terrain height manifest region '${regionKey}' page key must be a string`);
-    }
-
-    parsePageKey(entry.key);
-    if (seenPageKeys.has(entry.key)) {
-      throw new Error(`Terrain height manifest has duplicate page key '${entry.key}'`);
-    }
-    seenPageKeys.add(entry.key);
-
-    const pageRegion = getHeightRegionCoordsForPageKey(entry.key, regionSizePages);
-    if (heightRegionKey(pageRegion.x, pageRegion.z) !== regionKey) {
-      throw new Error(`Terrain height manifest page '${entry.key}' is assigned to the wrong region`);
-    }
-
-    const offset = readNonNegativeInteger(entry.offset, `height page '${entry.key}' offset`);
-    const byteLength = readNonNegativeInteger(entry.byteLength, `height page '${entry.key}' byte length`);
-    if (byteLength !== expectedByteLength) {
-      throw new Error(`Terrain height manifest page '${entry.key}' has invalid byte length`);
-    }
-
-    return { key: entry.key, offset, byteLength };
-  }).sort((left, right) => left.offset - right.offset);
-
-  for (let index = 0; index < pages.length; index += 1) {
-    const expectedOffset = index * expectedByteLength;
-    if (pages[index]!.offset !== expectedOffset) {
-      throw new Error(`Terrain height manifest region '${regionKey}' pages must be tightly packed`);
-    }
+  const mask = BigInt(value);
+  const maxMask = getHeightRegionMaxMask(regionSizePages);
+  if (mask <= 0n || mask > maxMask) {
+    throw new Error(`Terrain height manifest region '${regionKeyValue}' has invalid sparse page mask`);
   }
 
-  return pages;
+  return mask;
+}
+
+function formatRegionMask(mask: bigint): string {
+  return `0x${mask.toString(16).padStart(16, "0")}`;
+}
+
+function hasRegionPage(mask: bigint, localIndex: number): boolean {
+  return (mask & (1n << BigInt(localIndex))) !== 0n;
+}
+
+function getHeightRegionSlotCount(regionSizePages: number): number {
+  validateHeightRegionSize(regionSizePages);
+  return regionSizePages * regionSizePages;
+}
+
+function getHeightRegionMaxMask(regionSizePages: number): bigint {
+  return (1n << BigInt(getHeightRegionSlotCount(regionSizePages))) - 1n;
+}
+
+function countSetBits(mask: bigint): number {
+  let bits = mask;
+  let count = 0;
+  while (bits > 0n) {
+    if ((bits & 1n) !== 0n) {
+      count += 1;
+    }
+    bits >>= 1n;
+  }
+
+  return count;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function readInteger(value: unknown, label: string): number {
-  if (typeof value !== "number" || !Number.isInteger(value)) {
-    throw new Error(`Map manifest has invalid ${label}`);
-  }
-
-  return value;
-}
-
-function readNonNegativeInteger(value: unknown, label: string): number {
-  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
-    throw new Error(`Map manifest has invalid ${label}`);
-  }
-
-  return value;
 }
 
 function normalizeHeightManifestSettings(
@@ -372,7 +385,11 @@ function normalizeHeightManifestSettings(
   pageSizeMeters: unknown,
   regionSizePages: unknown,
 ): { pageResolution: number; pageSizeMeters: number; regionSizePages: number } {
-  if (typeof pageResolution !== "number" || !Number.isFinite(pageResolution) || pageResolution <= 1) {
+  if (
+    typeof pageResolution !== "number"
+    || !Number.isInteger(pageResolution)
+    || pageResolution <= 1
+  ) {
     throw new Error("Terrain height manifest has invalid page resolution");
   }
 
@@ -380,11 +397,18 @@ function normalizeHeightManifestSettings(
     throw new Error("Terrain height manifest has invalid page size");
   }
 
-  if (typeof regionSizePages !== "number" || !Number.isInteger(regionSizePages) || regionSizePages <= 0) {
+  if (typeof regionSizePages !== "number") {
     throw new Error("Terrain height manifest has invalid region size");
   }
+  validateHeightRegionSize(regionSizePages);
 
   return { pageResolution, pageSizeMeters, regionSizePages };
+}
+
+function validateHeightRegionSize(regionSizePages: number): void {
+  if (!Number.isInteger(regionSizePages) || regionSizePages <= 0 || regionSizePages * regionSizePages > 64) {
+    throw new Error("Terrain height manifest region size must fit in a 64-bit sparse page mask");
+  }
 }
 
 function validateHeightPageLength(heights: Float32Array, pageResolution: number): void {
@@ -392,6 +416,12 @@ function validateHeightPageLength(heights: Float32Array, pageResolution: number)
   if (heights.length !== expectedLength) {
     throw new Error(`Invalid height page length: expected ${expectedLength}, got ${heights.length}`);
   }
+}
+
+function compareRegionKeys(left: string, right: string): number {
+  const a = parseRegionKey(left);
+  const b = parseRegionKey(right);
+  return compareRegionCoords(a.x, a.z, b.x, b.z);
 }
 
 function compareRegionCoords(leftX: number, leftZ: number, rightX: number, rightZ: number): number {

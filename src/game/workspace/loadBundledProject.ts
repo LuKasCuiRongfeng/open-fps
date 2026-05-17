@@ -132,6 +132,7 @@ export async function loadBundledGameProject(
       const regionBytes = await loadBundledHeightRegionPack(
         mapDirectoryUrl,
         location.region,
+        terrainManifest.pageResolution,
         heightRegionCache,
       );
       const pageBytes = getHeightRegionPageBytes(regionBytes, location.page);
@@ -167,6 +168,7 @@ export async function loadBundledGameProject(
 async function loadBundledHeightRegionPack(
   mapDirectoryUrl: string,
   region: TerrainHeightRegionManifest,
+  pageResolution: number,
   cache: Map<string, Promise<Uint8Array>>,
 ): Promise<Uint8Array> {
   const cached = cache.get(region.key);
@@ -179,7 +181,7 @@ async function loadBundledHeightRegionPack(
       resolveProjectUrl(mapDirectoryUrl, region.path),
       `height region ${region.key}`,
     );
-    const expectedByteLength = getHeightRegionPackByteLength(region);
+    const expectedByteLength = getHeightRegionPackByteLength(region, pageResolution);
     if (bytes.byteLength !== expectedByteLength) {
       throw new Error(`Invalid height region '${region.key}' byte length`);
     }

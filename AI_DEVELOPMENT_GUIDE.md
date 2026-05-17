@@ -13,7 +13,7 @@
 - AI 主导的重新设计应保持聚焦：说明设计变更，保留预期的用户可见行为，并验证受影响的工作流。
 - 所有项目 UI 都应保持紧凑、严肃的编辑器式桌面应用审美；避免网页式或卡片网格式呈现模式。
 - 平台特定行为应封装在 `src/platform/` 能力层之后；应用代码不得直接调用原生命令名。
-- 可编辑地形高度存储为 `terrain/height/manifest.json` + `terrain/height/regions/*.heightpack` 的 v1 region pack；`map.json` 只保留 `terrainPath`，不要添加旧高度页格式兼容性。
+- 可编辑地形高度存储为 `terrain/height/manifest.json` + `terrain/height/regions/*.heightpack` 的 v1 region pack；manifest 使用 region key 到 64 位十六进制稀疏 mask 的紧凑索引，`map.json` 只保留 `terrainPath`，不要添加旧高度页格式或冗长 page 表兼容性。
 - 非文档类项目文本的新增或修改内容使用英文：UI 文案、测试名、日志、错误、配置描述、fixture 文本、文件名和资产元数据。
 - 除非本地化工作要求修改，否则保留现有非英文文本不变。
 - 使用清晰的英文代码标识符。

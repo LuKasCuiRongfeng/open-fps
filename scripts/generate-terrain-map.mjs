@@ -358,11 +358,22 @@ function heightRegionCoordsForPage(px, pz) {
 }
 
 function comparePageKeys(left, right) {
-  return left.pz - right.pz || left.px - right.px;
+  return heightRegionLocalPageIndex(left.px, left.pz) - heightRegionLocalPageIndex(right.px, right.pz);
 }
 
 function compareRegionCoords(left, right) {
   return left.z - right.z || left.x - right.x;
+}
+
+function heightRegionLocalPageIndex(px, pz) {
+  const region = heightRegionCoordsForPage(px, pz);
+  const localX = px - region.x * heightRegionSizePages;
+  const localZ = pz - region.z * heightRegionSizePages;
+  return localZ * heightRegionSizePages + localX;
+}
+
+function formatHeightRegionMask(mask) {
+  return `0x${mask.toString(16).padStart(16, "0")}`;
 }
 
 function formatGridCoordinate(value) {
@@ -692,30 +703,21 @@ async function generateMap(preset) {
     pageSizeMeters,
     regionSizePages: heightRegionSizePages,
     regionsDirectory: heightRegionsDirectory,
-    regions: [],
+    regions: {},
   };
 
   for (const region of Array.from(regionGroups.values()).sort(compareRegionCoords)) {
     const pages = region.pages.sort(comparePageKeys);
     const packBytes = Buffer.concat(pages.map((page) => page.bytes));
-    const regionManifest = {
-      key: heightRegionKey(region.x, region.z),
-      x: region.x,
-      z: region.z,
-      path: heightRegionPathFor(region.x, region.z),
-      pages: [],
-    };
-
-    let offset = 0;
+    let regionMask = 0n;
     for (const page of pages) {
-      regionManifest.pages.push({ key: page.key, offset, byteLength: page.bytes.byteLength });
-      offset += page.bytes.byteLength;
+      regionMask |= 1n << BigInt(heightRegionLocalPageIndex(page.px, page.pz));
     }
 
-    const regionFilePath = path.join(mapDir, regionManifest.path);
+    const regionFilePath = path.join(mapDir, heightRegionPathFor(region.x, region.z));
     await mkdir(path.dirname(regionFilePath), { recursive: true });
     await writeFile(regionFilePath, packBytes);
-    terrainHeightManifest.regions.push(regionManifest);
+    terrainHeightManifest.regions[heightRegionKey(region.x, region.z)] = formatHeightRegionMask(regionMask);
   }
 
   const pageCountX = bounds.maxPageX - bounds.minPageX + 1;
@@ -754,7 +756,7 @@ async function generateMap(preset) {
     minHeight,
     maxHeight,
     pageCount: pageKeys.length,
-    regionCount: terrainHeightManifest.regions.length,
+    regionCount: Object.keys(terrainHeightManifest.regions).length,
     paintLayerCount: preview.paint.layerCount,
     vegetationInstanceCount: preview.vegetation.instanceCount,
     vegetationCellCount: preview.vegetation.cellCount,
