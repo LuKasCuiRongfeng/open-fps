@@ -1,6 +1,13 @@
 // TextureData: Data structures for terrain texture painting system.
 // TextureData：地形纹理绘制系统的数据结构
 
+import {
+  normalizePaintData,
+  type MapPaintData,
+} from "@project/MapData";
+
+export const PAINT_MANIFEST_VERSION = 1;
+
 /**
  * Maximum texture layers per splat map (RGBA = 4 channels).
  * 每张 splat map 的最大纹理层数（RGBA = 4 通道）
@@ -24,19 +31,28 @@ export const MAX_SPLAT_MAPS = 4;
  * PBR 纹理层定义
  * 每层可包含多张贴图用于物理渲染
  *
- * Example paint/layers.json with multi-splat support:
+ * Example paint/layers.json paint manifest with multi-splat support:
  * {
- *   "rocky": {
- *     "diffuse": "assets/textures/rocky_diffuse.jpg",
- *     "normal": "assets/textures/rocky_normal.jpg"
+ *   "version": 1,
+ *   "layers": {
+ *     "rocky": {
+ *       "diffuse": "assets/textures/rocky_diffuse.jpg",
+ *       "normal": "assets/textures/rocky_normal.jpg"
+ *     },
+ *     "grass": {
+ *       "diffuse": "assets/textures/grass_diffuse.jpg",
+ *       "splatMapIndex": 0
+ *     },
+ *     "sand": {
+ *       "diffuse": "assets/textures/sand_diffuse.jpg",
+ *       "splatMapIndex": 1
+ *     }
  *   },
- *   "grass": {
- *     "diffuse": "assets/textures/grass_diffuse.jpg",
- *     "splatMapIndex": 0
- *   },
- *   "sand": {
- *     "diffuse": "assets/textures/sand_diffuse.jpg",
- *     "splatMapIndex": 1
+ *   "splatMaps": {
+ *     "format": "rgba8-splat-v1",
+ *     "resolution": 1024,
+ *     "directory": "paint/pages",
+ *     "indices": [0, 1]
  *   }
  * }
  *
@@ -81,14 +97,58 @@ export interface TextureLayerDef {
 }
 
 /**
- * paint/layers.json structure.
+ * paint/layers.json layers structure.
  * Keys = texture layer names, values = PBR map definitions.
- * If file doesn't exist → render unpainted green terrain, editing disabled.
- * paint/layers.json 结构
+ * If file doesn't exist -> render unpainted green terrain, editing disabled.
+ * paint/layers.json 的 layers 结构
  * 键 = 纹理层名称，值 = PBR 贴图定义
  * 如果文件不存在 → 渲染未刷绿色地形，禁用编辑
  */
 export type TextureDefinition = Record<string, TextureLayerDef>;
+
+/** Versioned paint sidecar manifest. / 版本化 paint sidecar 清单。 */
+export interface PaintManifest {
+  version: typeof PAINT_MANIFEST_VERSION;
+  layers: TextureDefinition;
+  splatMaps: MapPaintData["splatMaps"];
+}
+
+export function createPaintManifest(layers: TextureDefinition, paintData: MapPaintData): PaintManifest {
+  return {
+    version: PAINT_MANIFEST_VERSION,
+    layers: normalizeTextureDefinition(layers),
+    splatMaps: normalizePaintData(paintData).splatMaps,
+  };
+}
+
+export function serializePaintManifest(manifest: PaintManifest): string {
+  return `${JSON.stringify(createPaintManifest(manifest.layers, { splatMaps: manifest.splatMaps }), null, 2)}\n`;
+}
+
+export function deserializePaintManifest(json: string): PaintManifest {
+  const parsed = JSON.parse(json) as unknown;
+  if (!isRecord(parsed)) {
+    throw new Error("Paint manifest must be a JSON object");
+  }
+
+  if (parsed.version !== PAINT_MANIFEST_VERSION) {
+    throw new Error(`Paint manifest version ${String(parsed.version ?? "unknown")} is not supported`);
+  }
+
+  if (!isRecord(parsed.layers)) {
+    throw new Error("Paint manifest must contain texture layers");
+  }
+
+  if (!isRecord(parsed.splatMaps)) {
+    throw new Error("Paint manifest must contain splat map metadata");
+  }
+
+  return createPaintManifest(normalizeTextureDefinition(parsed.layers), normalizePaintData({ splatMaps: parsed.splatMaps }));
+}
+
+export function createPaintDataFromManifest(manifest: PaintManifest): MapPaintData {
+  return normalizePaintData({ splatMaps: manifest.splatMaps });
+}
 
 /**
  * Splat map data for terrain texture blending.
@@ -277,4 +337,86 @@ export function getLayerForChannel(
 ): string | null {
   const names = Object.keys(def);
   return names[channel] ?? null;
+}
+
+function normalizeTextureDefinition(value: Record<string, unknown>): TextureDefinition {
+  const layers: TextureDefinition = {};
+  for (const [layerName, rawLayer] of Object.entries(value)) {
+    if (!isRecord(rawLayer)) {
+      throw new Error(`Paint layer '${layerName}' must be a JSON object`);
+    }
+
+    const diffuse = readRequiredString(rawLayer.diffuse, `Paint layer '${layerName}' diffuse texture`);
+    layers[layerName] = {
+      diffuse,
+      ...readOptionalStringField(rawLayer, "normal"),
+      ...readOptionalStringField(rawLayer, "displacement"),
+      ...readOptionalStringField(rawLayer, "arm"),
+      ...readOptionalStringField(rawLayer, "ao"),
+      ...readOptionalStringField(rawLayer, "roughness"),
+      ...readOptionalStringField(rawLayer, "metallic"),
+      ...readOptionalPositiveNumberField(rawLayer, "scale", `Paint layer '${layerName}' scale`),
+      ...readOptionalSplatMapIndexField(rawLayer, layerName),
+    };
+  }
+
+  return layers;
+}
+
+function readRequiredString(value: unknown, label: string): string {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`${label} must be a non-empty string`);
+  }
+
+  return value;
+}
+
+function readOptionalStringField(record: Record<string, unknown>, field: keyof TextureLayerDef): Partial<TextureLayerDef> {
+  const value = record[field];
+  if (value === undefined) {
+    return {};
+  }
+
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`Paint layer field '${field}' must be a non-empty string`);
+  }
+
+  return { [field]: value } as Partial<TextureLayerDef>;
+}
+
+function readOptionalPositiveNumberField(
+  record: Record<string, unknown>,
+  field: keyof TextureLayerDef,
+  label: string,
+): Partial<TextureLayerDef> {
+  const value = record[field];
+  if (value === undefined) {
+    return {};
+  }
+
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    throw new Error(`${label} must be a positive finite number`);
+  }
+
+  return { [field]: value } as Partial<TextureLayerDef>;
+}
+
+function readOptionalSplatMapIndexField(
+  record: Record<string, unknown>,
+  layerName: string,
+): Partial<TextureLayerDef> {
+  const value = record.splatMapIndex;
+  if (value === undefined) {
+    return {};
+  }
+
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value >= MAX_SPLAT_MAPS) {
+    throw new Error(`Paint layer '${layerName}' has invalid splat map index`);
+  }
+
+  return { splatMapIndex: value };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

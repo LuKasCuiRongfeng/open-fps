@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "seed": 918273,
   "world": {
     "sizeMeters": 3200,
@@ -2516,15 +2516,7 @@
       ]
     }
   },
-  "paint": {
-    "materialSetPath": "paint/layers.json",
-    "pageResolution": 1024,
-    "pageFormat": "rgba8-splat-v1",
-    "pagesDirectory": "paint/pages",
-    "pageKeys": [
-      "0,0"
-    ]
-  },
+  "paintPath": "paint/layers.json",
   "vegetationPath": "vegetation/models.json",
   "metadata": {
     "name": "Frontier Basin",

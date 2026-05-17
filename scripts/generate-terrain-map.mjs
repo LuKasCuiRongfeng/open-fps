@@ -13,7 +13,6 @@ const mapFilter = readFlagValue("--map");
 
 const pageSizeMeters = 64;
 const heightPageResolution = 129;
-const paintPageResolution = 1024;
 const defaultPageBounds = {
   minPageX: -8,
   maxPageX: 7,
@@ -21,7 +20,7 @@ const defaultPageBounds = {
   maxPageZ: 7,
 };
 const projectVersion = 3;
-const mapVersion = 6;
+const mapVersion = 7;
 const heightPagesDirectory = "terrain/height/pages";
 const heightFormat = "float32le";
 
@@ -448,13 +447,7 @@ async function generateMap(preset) {
         pageKeys,
       },
     },
-    paint: {
-      materialSetPath: "paint/layers.json",
-      pageResolution: paintPageResolution,
-      pageFormat: "rgba8-splat-v1",
-      pagesDirectory: "paint/pages",
-      pageKeys: [],
-    },
+    paintPath: "paint/layers.json",
     vegetationPath: "vegetation/models.json",
     metadata: {
       name: preset.name,

@@ -5,6 +5,7 @@ import type { PerspectiveCamera } from "three/webgpu";
 import type { TerrainConfig } from "@game/world/terrain/terrain";
 import type { EditorMouseAction, EditorMouseButtonAction } from "@editor/settings";
 import {
+  clonePaintData,
   createEmptyMapData,
   type MapData,
 } from "@project/MapData";
@@ -428,7 +429,8 @@ export class TerrainEditor {
       heightPageKeys: [...mapData.heightPageKeys],
       heightPages: {},
       loadHeightPage: mapData.loadHeightPage,
-      paint: { ...mapData.paint, pageKeys: [...mapData.paint.pageKeys] },
+      paintPath: mapData.paintPath,
+      paint: clonePaintData(mapData.paint),
       vegetationPath: mapData.vegetationPath,
       metadata: { ...mapData.metadata },
     };

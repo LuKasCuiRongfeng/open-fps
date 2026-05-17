@@ -52,7 +52,7 @@ import { timeToSunPosition, type SkySystem } from "../world/sky/SkySystem";
 import { TerrainTextureArrays } from "../world/terrain/TerrainTextureArrays";
 import { getSplatMapCount, type TextureDefinition } from "../world/terrain/TextureData";
 import { VegetationScene, type VegetationMapData } from "../world/vegetation";
-import { decodePaintPageBytes, getPaintPagePathForKey, pageKey, type MapData } from "@project/MapData";
+import { decodePaintPageBytes, getPaintPagePath, type MapData } from "@project/MapData";
 
 export interface GameAppOptions {
   gameplayEnabled?: boolean;
@@ -368,13 +368,12 @@ export class GameApp implements RuntimeAppSession {
   ): Promise<(Texture | null)[]> {
     return Promise.all(
       Array.from({ length: splatMapCount }, (_, index) => {
-        const key = pageKey(index, 0);
-        if (!mapData.paint.pageKeys.includes(key)) {
+        if (!mapData.paint.splatMaps.indices.includes(index)) {
           return Promise.resolve(null);
         }
 
-        const url = new URL(getPaintPagePathForKey(key), mapDirectoryUrl).href;
-        return this.loadPaintPageTexture(url, mapData.paint.pageResolution);
+        const url = new URL(getPaintPagePath(index), mapDirectoryUrl).href;
+        return this.loadPaintPageTexture(url, mapData.paint.splatMaps.resolution);
       }),
     );
   }

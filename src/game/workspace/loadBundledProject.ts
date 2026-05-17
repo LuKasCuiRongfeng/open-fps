@@ -16,7 +16,11 @@ import {
   type ProjectMetadata,
 } from "@project/ProjectData";
 import { mergeSettingsWithDefaults, type GameSettings } from "@game/settings";
-import type { TextureDefinition } from "@game/world/terrain/TextureData";
+import {
+  createPaintDataFromManifest,
+  deserializePaintManifest,
+  type TextureDefinition,
+} from "@game/world/terrain/TextureData";
 import {
   createVegetationDataFromManifest,
   deserializeVegetationManifest,
@@ -98,10 +102,8 @@ export async function loadBundledGameProject(
 
   const manifest = deserializeMapManifest(manifestJson);
   const activeMap = createProjectMapRecord(activeMapId, manifest.metadata);
-  const [textureJson, vegetationJson] = await Promise.all([
-    manifest.paint.pageKeys.length > 0
-      ? fetchRequiredText(resolveProjectUrl(mapDirectoryUrl, manifest.paint.materialSetPath), "paint material set")
-      : Promise.resolve(null),
+  const [paintJson, vegetationJson] = await Promise.all([
+    fetchOptionalText(resolveProjectUrl(mapDirectoryUrl, manifest.paintPath)),
     fetchOptionalText(resolveProjectUrl(mapDirectoryUrl, manifest.vegetationPath)),
   ]);
 
@@ -129,7 +131,12 @@ export async function loadBundledGameProject(
   };
 
   const settings = mergeSettingsWithDefaults(settingsJson);
-  const textureDefinition = textureJson ? JSON.parse(textureJson) as TextureDefinition : null;
+  const paintManifest = paintJson ? deserializePaintManifest(paintJson) : null;
+  if (paintManifest) {
+    map.paint = createPaintDataFromManifest(paintManifest);
+  }
+
+  const textureDefinition = paintManifest?.layers ?? null;
   const vegetationData = vegetationJson
     ? await loadBundledVegetationData(mapDirectoryUrl, vegetationJson)
     : null;

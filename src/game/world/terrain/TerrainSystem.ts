@@ -8,7 +8,15 @@ import { TerrainPageManager } from "./TerrainPageManager";
 import { FloatingOrigin } from "../common/FloatingOrigin";
 import { TerrainHeightSampler } from "./TerrainHeightSampler";
 import type { BrushStroke } from "./brushTypes";
-import { type MapData, setHeightPageData, parsePageKey, getHeightPageData, getHeightPageKeys, hasHeightPages } from "@project/MapData";
+import {
+  clonePaintData,
+  type MapData,
+  setHeightPageData,
+  parsePageKey,
+  getHeightPageData,
+  getHeightPageKeys,
+  hasHeightPages,
+} from "@project/MapData";
 import type { TerrainTextureArrayResult } from "./TerrainTextureArrays";
 
 export type TerrainSystemResource = {
@@ -85,7 +93,8 @@ export function createTerrainSystem(
     heightPageKeys: [...source.heightPageKeys],
     heightPages: {},
     loadHeightPage: source.loadHeightPage,
-    paint: { ...source.paint, pageKeys: [...source.paint.pageKeys] },
+    paintPath: source.paintPath,
+    paint: clonePaintData(source.paint),
     vegetationPath: source.vegetationPath,
     metadata: { ...source.metadata },
   });

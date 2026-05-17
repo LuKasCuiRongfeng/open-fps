@@ -9,7 +9,7 @@ import {
   createDefaultSplatMap,
   getSplatMapCount,
 } from "@game/world/terrain/TextureData";
-import { TextureStorage, getGlobalPaintPageKeys } from "./TextureStorage";
+import { TextureStorage, getPaintSplatMapIndices } from "./TextureStorage";
 import { TextureBrush, type TextureBrushSettings } from "./TextureBrush";
 import { type MapData } from "@project/MapData";
 
@@ -87,7 +87,7 @@ export class TextureEditor {
    * 从项目加载纹理定义和 splat map
    */
   async loadFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void> {
-    this._textureDefinition = await TextureStorage.loadTextureDefinition(mapDirectory);
+    this._textureDefinition = await TextureStorage.loadTextureDefinition(mapDirectory, mapData);
 
     if (this._textureDefinition && this.splatMapSet && this.renderer && mapData) {
       this._editingEnabled = true;
@@ -126,21 +126,22 @@ export class TextureEditor {
       return;
     }
 
-    await TextureStorage.saveTextureDefinition(mapDirectory, this._textureDefinition);
-
     if (this.splatMapSet && this.renderer) {
       const splatMapCount = this.splatMapSet.getCount();
-      mapData.paint.pageResolution = this.splatMapSet.getResolution();
-      mapData.paint.pageKeys = getGlobalPaintPageKeys(splatMapCount);
+      mapData.paint.splatMaps.resolution = this.splatMapSet.getResolution();
+      mapData.paint.splatMaps.indices = getPaintSplatMapIndices(splatMapCount);
+      await TextureStorage.saveTextureDefinition(mapDirectory, this._textureDefinition, mapData);
       for (let i = 0; i < splatMapCount; i++) {
         const pixels = await this.splatMapSet.readToPixels(this.renderer, i);
         const splatMapData: SplatMapData = {
-          resolution: mapData.paint.pageResolution,
+          resolution: mapData.paint.splatMaps.resolution,
           pixels,
           splatMapIndex: i,
         };
         await TextureStorage.savePaintPage(mapDirectory, mapData, splatMapData, i);
       }
+    } else {
+      await TextureStorage.saveTextureDefinition(mapDirectory, this._textureDefinition, mapData);
     }
 
     this.setDirty(false);
@@ -210,12 +211,12 @@ export class TextureEditor {
 
   applyToMapData(mapData: MapData): void {
     if (!this._editingEnabled || !this._textureDefinition || !this.splatMapSet) {
-      mapData.paint.pageKeys = [];
+      mapData.paint.splatMaps.indices = [];
       return;
     }
 
-    mapData.paint.pageResolution = this.splatMapSet.getResolution();
-    mapData.paint.pageKeys = getGlobalPaintPageKeys(this.splatMapSet.getCount());
+    mapData.paint.splatMaps.resolution = this.splatMapSet.getResolution();
+    mapData.paint.splatMaps.indices = getPaintSplatMapIndices(this.splatMapSet.getCount());
   }
 
   // --- Dirty State / 脏状态 ---

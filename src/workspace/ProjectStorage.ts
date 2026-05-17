@@ -28,6 +28,7 @@ import {
 } from "./ProjectData";
 import type { GameSettings } from "@game/settings";
 import { mergeSettingsWithDefaults } from "@game/settings";
+import { createPaintDataFromManifest, deserializePaintManifest } from "@game/world/terrain/TextureData";
 
 type SettingsParser<TSettings extends GameSettings> = (json: string | null) => TSettings;
 
@@ -348,7 +349,30 @@ async function loadProjectMapData(projectPath: string, mapId: string): Promise<M
   );
 
   const heightPages: Record<string, HeightPageData> = Object.fromEntries(heightPageEntries);
-  return createMapDataFromManifest(manifest, heightPages);
+  const mapData = createMapDataFromManifest(manifest, heightPages);
+  const paintManifest = await loadProjectPaintManifest(projectPath, mapId, mapData.paintPath);
+  if (paintManifest) {
+    mapData.paint = createPaintDataFromManifest(paintManifest);
+  }
+
+  return mapData;
+}
+
+async function loadProjectPaintManifest(
+  projectPath: string,
+  mapId: string,
+  paintPath: MapManifest["paintPath"],
+): Promise<ReturnType<typeof deserializePaintManifest> | null> {
+  const jsonPath = `${getProjectMapDirectory(projectPath, mapId)}/${paintPath}`;
+  try {
+    return deserializePaintManifest(await platform.files.readText(jsonPath));
+  } catch (error) {
+    if (isMissingFileSystemResourceError(error)) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 async function loadProjectMapRecord(projectPath: string, mapId: string): Promise<ProjectMapRecord> {

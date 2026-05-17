@@ -23,11 +23,12 @@ export interface MapMetadata {
 }
 
 export interface MapPaintData {
-  materialSetPath: typeof MAP_PAINT_MATERIAL_SET_PATH;
-  pageResolution: number;
-  pageFormat: typeof MAP_PAINT_PAGE_FORMAT;
-  pagesDirectory: typeof MAP_PAINT_PAGES_DIRECTORY;
-  pageKeys: string[];
+  splatMaps: {
+    format: typeof MAP_PAINT_PAGE_FORMAT;
+    resolution: number;
+    directory: typeof MAP_PAINT_PAGES_DIRECTORY;
+    indices: number[];
+  };
 }
 
 /** Complete map data for save/load. / 用于保存/加载的完整地图数据。 */
@@ -40,6 +41,7 @@ export interface MapData {
   heightPageKeys: string[];
   heightPages: Record<string, HeightPageData>;
   loadHeightPage?: HeightPageLoader;
+  paintPath: typeof MAP_PAINT_PATH;
   paint: MapPaintData;
   vegetationPath: typeof MAP_VEGETATION_MODELS_PATH;
   metadata: MapMetadata;
@@ -65,15 +67,15 @@ export interface MapManifest {
       pageKeys: string[];
     };
   };
-  paint: MapPaintData;
+  paintPath: typeof MAP_PAINT_PATH;
   vegetationPath: typeof MAP_VEGETATION_MODELS_PATH;
   metadata: MapMetadata;
 }
 
-export const MAP_DATA_VERSION = 6;
+export const MAP_DATA_VERSION = 7;
 export const MAP_HEIGHT_FORMAT = "float32le";
 export const MAP_HEIGHT_PAGES_DIRECTORY = "terrain/height/pages";
-export const MAP_PAINT_MATERIAL_SET_PATH = "paint/layers.json";
+export const MAP_PAINT_PATH = "paint/layers.json";
 export const MAP_PAINT_PAGES_DIRECTORY = "paint/pages";
 export const MAP_PAINT_PAGE_FORMAT = "rgba8-splat-v1";
 export const MAP_VEGETATION_MODELS_PATH = "vegetation/models.json";
@@ -98,6 +100,7 @@ export function createEmptyMapData(
     heightPageResolution,
     heightPageKeys: [],
     heightPages: {},
+    paintPath: MAP_PAINT_PATH,
     paint: createEmptyPaintData(),
     vegetationPath: MAP_VEGETATION_MODELS_PATH,
     metadata: {
@@ -110,11 +113,22 @@ export function createEmptyMapData(
 
 export function createEmptyPaintData(): MapPaintData {
   return {
-    materialSetPath: MAP_PAINT_MATERIAL_SET_PATH,
-    pageResolution: DEFAULT_PAINT_PAGE_RESOLUTION,
-    pageFormat: MAP_PAINT_PAGE_FORMAT,
-    pagesDirectory: MAP_PAINT_PAGES_DIRECTORY,
-    pageKeys: [],
+    splatMaps: {
+      format: MAP_PAINT_PAGE_FORMAT,
+      resolution: DEFAULT_PAINT_PAGE_RESOLUTION,
+      directory: MAP_PAINT_PAGES_DIRECTORY,
+      indices: [],
+    },
+  };
+}
+
+export function clonePaintData(paintData: MapPaintData): MapPaintData {
+  const normalized = normalizePaintData(paintData);
+  return {
+    splatMaps: {
+      ...normalized.splatMaps,
+      indices: [...normalized.splatMaps.indices],
+    },
   };
 }
 
@@ -184,7 +198,7 @@ export function createMapManifest(mapData: MapData): MapManifest {
         pageKeys: getHeightPageKeys(mapData),
       },
     },
-    paint: normalizePaintData(mapData.paint),
+    paintPath: normalizePaintPath(mapData.paintPath),
     vegetationPath: normalizeVegetationPath(mapData.vegetationPath),
     metadata: { ...mapData.metadata },
   };
@@ -244,7 +258,7 @@ export function deserializeMapManifest(json: string): MapManifest {
         pageKeys: heightPageKeys,
       },
     },
-    paint: normalizePaintData(parsed.paint),
+    paintPath: normalizePaintPath(parsed.paintPath),
     vegetationPath: normalizeVegetationPath(parsed.vegetationPath),
     metadata: {
       name: parsed.metadata.name,
@@ -266,7 +280,8 @@ export function createMapDataFromManifest(
     heightPageResolution: manifest.terrain.height.pageResolution,
     heightPageKeys: sortPageKeys(manifest.terrain.height.pageKeys),
     heightPages,
-    paint: normalizePaintData(manifest.paint),
+    paintPath: normalizePaintPath(manifest.paintPath),
+    paint: createEmptyPaintData(),
     vegetationPath: normalizeVegetationPath(manifest.vegetationPath),
     metadata: { ...manifest.metadata },
   };
@@ -281,13 +296,8 @@ export function getHeightPagePathForKey(key: string): string {
   return getHeightPagePath(px, pz);
 }
 
-export function getPaintPagePath(px: number, pz: number): string {
-  return `${MAP_PAINT_PAGES_DIRECTORY}/p_${formatGridCoordinate(px)}_${formatGridCoordinate(pz)}.paint.rgba`;
-}
-
-export function getPaintPagePathForKey(key: string): string {
-  const { px, pz } = parsePageKey(key);
-  return getPaintPagePath(px, pz);
+export function getPaintPagePath(splatMapIndex: number): string {
+  return `${MAP_PAINT_PAGES_DIRECTORY}/splat_${formatSplatMapIndex(splatMapIndex)}.paint.rgba`;
 }
 
 export function sortPageKeys(keys: Iterable<string>): string[] {
@@ -357,15 +367,41 @@ export function getExpectedPaintPageByteLength(pageResolution: number): number {
   return pageResolution * pageResolution * 4;
 }
 
-function normalizePaintData(value: Partial<MapPaintData> | null | undefined): MapPaintData {
-  const pageKeys = normalizePageKeys(value?.pageKeys ?? [], "paint page");
+export function normalizePaintData(value: unknown): MapPaintData {
+  const record = isRecord(value) ? value : {};
+  const splatMaps = isRecord(record.splatMaps) ? record.splatMaps : {};
   return {
-    materialSetPath: MAP_PAINT_MATERIAL_SET_PATH,
-    pageResolution: readPositiveNumber(value?.pageResolution, DEFAULT_PAINT_PAGE_RESOLUTION, "paint page resolution"),
-    pageFormat: MAP_PAINT_PAGE_FORMAT,
-    pagesDirectory: MAP_PAINT_PAGES_DIRECTORY,
-    pageKeys,
+    splatMaps: {
+      format: normalizePaintPageFormat(splatMaps.format),
+      resolution: readPositiveNumber(splatMaps.resolution, DEFAULT_PAINT_PAGE_RESOLUTION, "paint splat map resolution"),
+      directory: normalizePaintPagesDirectory(splatMaps.directory),
+      indices: normalizeSplatMapIndices(splatMaps.indices ?? []),
+    },
   };
+}
+
+function normalizePaintPath(value: unknown): typeof MAP_PAINT_PATH {
+  if (value !== MAP_PAINT_PATH) {
+    throw new Error("Map manifest has invalid paint path");
+  }
+
+  return MAP_PAINT_PATH;
+}
+
+function normalizePaintPageFormat(value: unknown): typeof MAP_PAINT_PAGE_FORMAT {
+  if (value === undefined || value === MAP_PAINT_PAGE_FORMAT) {
+    return MAP_PAINT_PAGE_FORMAT;
+  }
+
+  throw new Error("Paint manifest has invalid splat map format");
+}
+
+function normalizePaintPagesDirectory(value: unknown): typeof MAP_PAINT_PAGES_DIRECTORY {
+  if (value === undefined || value === MAP_PAINT_PAGES_DIRECTORY) {
+    return MAP_PAINT_PAGES_DIRECTORY;
+  }
+
+  throw new Error("Paint manifest has invalid splat map directory");
 }
 
 function normalizeVegetationPath(value: unknown): typeof MAP_VEGETATION_MODELS_PATH {
@@ -374,6 +410,27 @@ function normalizeVegetationPath(value: unknown): typeof MAP_VEGETATION_MODELS_P
   }
 
   return MAP_VEGETATION_MODELS_PATH;
+}
+
+function normalizeSplatMapIndices(value: unknown): number[] {
+  if (!Array.isArray(value)) {
+    throw new Error("Paint manifest splat map indices must be an array");
+  }
+
+  const indices = new Set<number>();
+  for (const index of value) {
+    if (!Number.isInteger(index) || index < 0) {
+      throw new Error(`Paint manifest has invalid splat map index '${String(index)}'`);
+    }
+
+    if (indices.has(index)) {
+      throw new Error(`Paint manifest has duplicate splat map index '${index}'`);
+    }
+
+    indices.add(index);
+  }
+
+  return Array.from(indices).sort((left, right) => left - right);
 }
 
 function normalizePageKeys(value: unknown, label: string): string[] {
@@ -396,6 +453,18 @@ function normalizePageKeys(value: unknown, label: string): string[] {
   }
 
   return sortPageKeys(keys);
+}
+
+function formatSplatMapIndex(value: number): string {
+  if (!Number.isInteger(value) || value < 0) {
+    throw new Error(`Splat map index must be a non-negative integer: ${value}`);
+  }
+
+  return `${value}`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function readPositiveNumber(value: unknown, fallback: number, label: string): number {
