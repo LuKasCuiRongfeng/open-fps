@@ -17,6 +17,7 @@
 - 可编辑纹理绘制存储为 `paint/layers.json` + `paint/regions/*.paintpack` 的 v2 region pack；manifest 使用 region key 到 64 位十六进制稀疏 mask 的紧凑索引，不要恢复整张 `paint/pages/splat_*.paint.rgba` 存储。
 - 可编辑植被实例存储为 `vegetation/models.json` + `vegetation/regions/*.vegpack` 的 v5 region pack；manifest 使用 region key 到 64 位十六进制稀疏 mask 的紧凑索引，变长 cell 实例计数保存在 pack 头中，不要恢复逐 cell 文件存储。
 - 地形、纹理和植被生成脚本应保持独立：`gen:terrain` 只重建地形高度和地图清单，`gen:paint` 只重建纹理绘制资源，`gen:vegetation` 只重建植被资源；只有显式使用 `gen:all` 时才重建全部地图生成资源。
+- 项目持久化写入必须使用具备临时文件与备份恢复能力的安全写入路径；不要直接向最终的 `project.json`、`settings.json`、`map.json`、`.heightpack`、`.paintpack`、`.vegpack` 或 PNG 资产目标路径写入会截断文件的裸 I/O。
 - 非文档类项目文本的新增或修改内容使用英文：UI 文案、测试名、日志、错误、配置描述、fixture 文本、文件名和资产元数据。
 - 除非本地化工作要求修改，否则保留现有非英文文本不变。
 - 使用清晰的英文代码标识符。

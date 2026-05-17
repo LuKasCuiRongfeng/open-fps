@@ -1,8 +1,10 @@
 // Tauri commands for project management.
 // Tauri 项目管理命令
 
-use std::fs;
+use std::fs::{self, File};
+use std::io::Write;
 use std::path::{Component, Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::Manager;
 
 /// Project file names.
@@ -17,8 +19,7 @@ const RECENT_PROJECTS_FILE: &str = "recent_projects.json";
 /// 确保项目文件夹存在，不存在则创建
 fn ensure_project_folder(path: &PathBuf) -> Result<(), String> {
     if !path.exists() {
-        fs::create_dir_all(path)
-            .map_err(|e| format!("Failed to create project folder: {}", e))?;
+        fs::create_dir_all(path).map_err(|e| format!("Failed to create project folder: {}", e))?;
     }
     Ok(())
 }
@@ -26,35 +27,104 @@ fn ensure_project_folder(path: &PathBuf) -> Result<(), String> {
 fn ensure_parent_directory(path: &PathBuf) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         if !parent.exists() {
-            fs::create_dir_all(parent)
-                .map_err(|e| format!("Failed to create directory: {}", e))?;
+            fs::create_dir_all(parent).map_err(|e| format!("Failed to create directory: {}", e))?;
         }
     }
 
     Ok(())
 }
 
-fn safe_write(path: &PathBuf, bytes: &[u8]) -> Result<(), String> {
-    // EN: Project data is staged through a sibling temp file so failed writes do not leave truncated files.
-    // 中文: 项目数据先写入同级临时文件，避免失败写入留下被截断的文件。
-    ensure_parent_directory(path)?;
-
+fn safe_write_temp_path(path: &PathBuf) -> Result<PathBuf, String> {
     let file_name = path
         .file_name()
         .ok_or_else(|| "Path must include a file name".to_string())?
         .to_string_lossy();
-    let temp_path = path.with_file_name(format!(".{}.{}.tmp", file_name, std::process::id()));
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| format!("Failed to create temp file timestamp: {}", e))?
+        .as_nanos();
 
-    fs::write(&temp_path, bytes).map_err(|e| format!("Failed to write temp file: {}", e))?;
+    Ok(path.with_file_name(format!(
+        ".{}.{}.{}.tmp",
+        file_name,
+        std::process::id(),
+        timestamp
+    )))
+}
 
+fn safe_write_backup_path(path: &PathBuf) -> Result<PathBuf, String> {
+    let file_name = path
+        .file_name()
+        .ok_or_else(|| "Path must include a file name".to_string())?
+        .to_string_lossy();
+
+    Ok(path.with_file_name(format!(".{}.bak", file_name)))
+}
+
+fn recover_safe_write(path: &PathBuf) -> Result<(), String> {
+    let backup_path = safe_write_backup_path(path)?;
     if path.exists() {
-        fs::remove_file(path).map_err(|e| format!("Failed to replace existing file: {}", e))?;
+        if backup_path.exists() {
+            fs::remove_file(&backup_path)
+                .map_err(|e| format!("Failed to remove stale backup file: {}", e))?;
+        }
+        return Ok(());
     }
 
-    fs::rename(&temp_path, path).map_err(|e| {
+    if backup_path.exists() {
+        // EN: A previous save may have crashed after moving the old file aside; restore it before any read/write.
+        // 中文: 上次保存可能在移走旧文件后崩溃；任何读写前先恢复旧文件。
+        fs::rename(&backup_path, path)
+            .map_err(|e| format!("Failed to recover backup file: {}", e))?;
+    }
+
+    Ok(())
+}
+
+fn write_temp_file(path: &PathBuf, bytes: &[u8]) -> Result<(), String> {
+    let mut file = File::create(path).map_err(|e| format!("Failed to create temp file: {}", e))?;
+    file.write_all(bytes)
+        .map_err(|e| format!("Failed to write temp file: {}", e))?;
+    file.sync_all()
+        .map_err(|e| format!("Failed to sync temp file: {}", e))
+}
+
+fn safe_write(path: &PathBuf, bytes: &[u8]) -> Result<(), String> {
+    // EN: Stage through temp + backup so interrupted saves recover the previous complete file on next access.
+    // 中文: 通过临时文件与备份文件分阶段写入，使中断保存能在下次访问时恢复旧完整文件。
+    ensure_parent_directory(path)?;
+    recover_safe_write(path)?;
+
+    let temp_path = safe_write_temp_path(path)?;
+    let backup_path = safe_write_backup_path(path)?;
+    write_temp_file(&temp_path, bytes)?;
+
+    let had_existing_file = path.exists();
+    if had_existing_file {
+        if backup_path.exists() {
+            fs::remove_file(&backup_path)
+                .map_err(|e| format!("Failed to remove stale backup file: {}", e))?;
+        }
+
+        if let Err(error) = fs::rename(path, &backup_path) {
+            let _ = fs::remove_file(&temp_path);
+            return Err(format!("Failed to stage existing file backup: {}", error));
+        }
+    }
+
+    if let Err(error) = fs::rename(&temp_path, path) {
+        if had_existing_file && backup_path.exists() && !path.exists() {
+            let _ = fs::rename(&backup_path, path);
+        }
         let _ = fs::remove_file(&temp_path);
-        format!("Failed to replace file: {}", e)
-    })
+        return Err(format!("Failed to replace file: {}", error));
+    }
+
+    if backup_path.exists() {
+        let _ = fs::remove_file(&backup_path);
+    }
+
+    Ok(())
 }
 
 fn validate_single_path_segment(value: &str, field_name: &str) -> Result<(), String> {
@@ -93,7 +163,11 @@ fn validate_relative_file_path(value: &str, field_name: &str) -> Result<(), Stri
     Ok(())
 }
 
-fn project_map_chunk_path(project_path: &str, map_id: &str, chunk_path: &str) -> Result<PathBuf, String> {
+fn project_map_chunk_path(
+    project_path: &str,
+    map_id: &str,
+    chunk_path: &str,
+) -> Result<PathBuf, String> {
     validate_single_path_segment(map_id, "map_id")?;
     validate_relative_file_path(chunk_path, "chunk_path")?;
 
@@ -118,20 +192,21 @@ fn recent_projects_file(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 }
 
 fn load_recent_project_paths(path: &PathBuf) -> Result<Vec<String>, String> {
+    recover_safe_write(path)?;
+
     if !path.exists() {
         return Ok(Vec::new());
     }
 
-    let content = fs::read_to_string(path)
-        .map_err(|e| format!("Failed to read recent projects: {}", e))?;
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse recent projects: {}", e))
+    let content =
+        fs::read_to_string(path).map_err(|e| format!("Failed to read recent projects: {}", e))?;
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse recent projects: {}", e))
 }
 
 fn save_recent_project_paths(path: &PathBuf, paths: &[String]) -> Result<(), String> {
     let content = serde_json::to_string_pretty(paths)
         .map_err(|e| format!("Failed to serialize recent projects: {}", e))?;
-    fs::write(path, content)
+    safe_write(path, content.as_bytes())
         .map_err(|e| format!("Failed to save recent projects: {}", e))
 }
 
@@ -152,14 +227,19 @@ pub async fn is_valid_project(project_path: String) -> Result<bool, String> {
 #[tauri::command]
 pub async fn read_project_metadata(project_path: String) -> Result<String, String> {
     let path = PathBuf::from(&project_path).join(PROJECT_FILE);
+    recover_safe_write(&path)?;
     fs::read_to_string(&path).map_err(|e| format!("Failed to read project metadata: {}", e))
 }
 
 /// Read project map manifest (map.json).
 /// 读取项目地图清单 (map.json)
 #[tauri::command]
-pub async fn read_project_map_manifest(project_path: String, map_id: String) -> Result<String, String> {
+pub async fn read_project_map_manifest(
+    project_path: String,
+    map_id: String,
+) -> Result<String, String> {
     let path = project_map_manifest_path(&project_path, &map_id)?;
+    recover_safe_write(&path)?;
     if !path.exists() {
         return Err("Map manifest not found".to_string());
     }
@@ -174,9 +254,10 @@ pub async fn read_project_map_chunk_base64(
     map_id: String,
     chunk_path: String,
 ) -> Result<String, String> {
-    use base64::{engine::general_purpose::STANDARD, Engine as _};
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
 
     let path = project_map_chunk_path(&project_path, &map_id, &chunk_path)?;
+    recover_safe_write(&path)?;
     if !path.exists() {
         return Err("Map chunk not found".to_string());
     }
@@ -192,6 +273,7 @@ pub async fn read_project_map_chunk_base64(
 #[tauri::command]
 pub async fn read_project_settings(project_path: String) -> Result<String, String> {
     let path = PathBuf::from(&project_path).join(SETTINGS_FILE);
+    recover_safe_write(&path)?;
     if !path.exists() {
         return Ok("".to_string());
     }
@@ -213,14 +295,17 @@ pub async fn save_project_metadata(project_path: String, data: String) -> Result
 /// Save project map manifest to map.json.
 /// 保存项目地图清单到 map.json
 #[tauri::command]
-pub async fn save_project_map_manifest(project_path: String, map_id: String, data: String) -> Result<(), String> {
+pub async fn save_project_map_manifest(
+    project_path: String,
+    map_id: String,
+    data: String,
+) -> Result<(), String> {
     let project_root = PathBuf::from(&project_path);
     ensure_project_folder(&project_root)?;
 
     let path = project_map_manifest_path(&project_path, &map_id)?;
 
-    safe_write(&path, data.as_bytes())
-        .map_err(|e| format!("Failed to save map manifest: {}", e))
+    safe_write(&path, data.as_bytes()).map_err(|e| format!("Failed to save map manifest: {}", e))
 }
 
 /// Save a project map height chunk from base64.
@@ -232,13 +317,15 @@ pub async fn save_project_map_chunk_base64(
     chunk_path: String,
     base64: String,
 ) -> Result<(), String> {
-    use base64::{engine::general_purpose::STANDARD, Engine as _};
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
 
     let project_root = PathBuf::from(&project_path);
     ensure_project_folder(&project_root)?;
 
     let path = project_map_chunk_path(&project_path, &map_id, &chunk_path)?;
-    let bytes = STANDARD.decode(&base64).map_err(|e| format!("Failed to decode map chunk: {}", e))?;
+    let bytes = STANDARD
+        .decode(&base64)
+        .map_err(|e| format!("Failed to decode map chunk: {}", e))?;
     safe_write(&path, &bytes).map_err(|e| format!("Failed to save map chunk: {}", e))
 }
 
@@ -306,7 +393,7 @@ pub async fn rename_project(old_path: String, new_name: String) -> Result<String
 pub async fn list_recent_projects(app: tauri::AppHandle) -> Result<Vec<String>, String> {
     let recent_file = recent_projects_file(&app)?;
     let paths = load_recent_project_paths(&recent_file)?;
-    
+
     // Filter out invalid/deleted projects.
     // 过滤掉无效/已删除的项目
     let valid_paths: Vec<String> = paths
@@ -327,15 +414,15 @@ pub async fn add_recent_project(app: tauri::AppHandle, project_path: String) -> 
     // Remove if already exists (to move to front).
     // 如果已存在则移除（以移动到最前面）
     paths.retain(|p| p != &project_path);
-    
+
     // Add to front.
     // 添加到最前面
     paths.insert(0, project_path);
-    
+
     // Keep only last 10.
     // 只保留最近的 10 个
     paths.truncate(10);
-    
+
     // Write back.
     // 写回
     save_recent_project_paths(&recent_file, &paths)
@@ -344,10 +431,13 @@ pub async fn add_recent_project(app: tauri::AppHandle, project_path: String) -> 
 /// Remove a project from the recent projects list.
 /// 从最近项目列表中移除项目
 #[tauri::command]
-pub async fn remove_recent_project(app: tauri::AppHandle, project_path: String) -> Result<(), String> {
+pub async fn remove_recent_project(
+    app: tauri::AppHandle,
+    project_path: String,
+) -> Result<(), String> {
     let recent_file = recent_projects_file(&app)?;
     let mut paths = load_recent_project_paths(&recent_file)?;
-    
+
     paths.retain(|p| p != &project_path);
 
     save_recent_project_paths(&recent_file, &paths)
@@ -360,6 +450,7 @@ pub async fn remove_recent_project(app: tauri::AppHandle, project_path: String) 
 #[tauri::command]
 pub async fn read_text_file(path: String) -> Result<String, String> {
     let path = PathBuf::from(&path);
+    recover_safe_write(&path)?;
     fs::read_to_string(&path).map_err(|e| format!("Failed to read file: {}", e))
 }
 
@@ -396,6 +487,7 @@ pub async fn delete_file(path: String) -> Result<(), String> {
 pub async fn read_binary_file_base64(path: String) -> Result<String, String> {
     use base64::{Engine as _, engine::general_purpose::STANDARD};
     let path = PathBuf::from(&path);
+    recover_safe_write(&path)?;
     let bytes = fs::read(&path).map_err(|e| format!("Failed to read file: {}", e))?;
     Ok(STANDARD.encode(&bytes))
 }
@@ -409,7 +501,9 @@ pub async fn write_binary_file_base64(path: String, base64: String) -> Result<()
     // Ensure parent directory exists.
     // 确保父目录存在
     ensure_parent_directory(&path)?;
-    let bytes = STANDARD.decode(&base64).map_err(|e| format!("Failed to decode base64: {}", e))?;
+    let bytes = STANDARD
+        .decode(&base64)
+        .map_err(|e| format!("Failed to decode base64: {}", e))?;
     safe_write(&path, &bytes).map_err(|e| format!("Failed to write file: {}", e))
 }
 
@@ -422,24 +516,26 @@ pub async fn read_png_rgba(path: String) -> Result<(String, u32, u32), String> {
     use base64::{Engine as _, engine::general_purpose::STANDARD};
     use png::Decoder;
     use std::io::BufReader;
-    
+
     let path = PathBuf::from(&path);
-    let file = std::fs::File::open(&path)
-        .map_err(|e| format!("Failed to open PNG: {}", e))?;
+    recover_safe_write(&path)?;
+    let file = std::fs::File::open(&path).map_err(|e| format!("Failed to open PNG: {}", e))?;
     let decoder = Decoder::new(BufReader::new(file));
-    let mut reader = decoder.read_info()
+    let mut reader = decoder
+        .read_info()
         .map_err(|e| format!("Failed to read PNG info: {}", e))?;
-    
+
     let output_size = reader
         .output_buffer_size()
         .ok_or_else(|| "Failed to determine PNG output buffer size".to_string())?;
     let mut buf = vec![0; output_size];
-    let info = reader.next_frame(&mut buf)
+    let info = reader
+        .next_frame(&mut buf)
         .map_err(|e| format!("Failed to decode PNG frame: {}", e))?;
-    
+
     let width = info.width;
     let height = info.height;
-    
+
     // Convert to RGBA if needed.
     // 如有需要，转换为 RGBA
     let rgba_pixels = match info.color_type {
@@ -487,7 +583,7 @@ pub async fn read_png_rgba(path: String) -> Result<(String, u32, u32), String> {
         }
         _ => return Err(format!("Unsupported PNG color type: {:?}", info.color_type)),
     };
-    
+
     Ok((STANDARD.encode(&rgba_pixels), width, height))
 }
 
@@ -505,16 +601,17 @@ pub async fn write_png_rgba(
     use base64::{Engine as _, engine::general_purpose::STANDARD};
     use png::{BitDepth, ColorType, Encoder};
     use std::io::BufWriter;
-    
+
     let path = PathBuf::from(&path);
-    
+
     // Ensure parent directory exists.
     // 确保父目录存在
     ensure_parent_directory(&path)?;
-    
-    let pixels = STANDARD.decode(&base64_pixels)
+
+    let pixels = STANDARD
+        .decode(&base64_pixels)
         .map_err(|e| format!("Failed to decode base64: {}", e))?;
-    
+
     let expected_len = (width * height * 4) as usize;
     if pixels.len() != expected_len {
         return Err(format!(
@@ -523,23 +620,25 @@ pub async fn write_png_rgba(
             pixels.len()
         ));
     }
-    
-    let file = std::fs::File::create(&path)
-        .map_err(|e| format!("Failed to create PNG file: {}", e))?;
-    let w = BufWriter::new(file);
-    
-    let mut encoder = Encoder::new(w, width, height);
-    encoder.set_color(ColorType::Rgba);
-    encoder.set_depth(BitDepth::Eight);
-    // Use fast compression for better save speed.
-    // 使用快速压缩以提高保存速度
-    encoder.set_compression(png::Compression::Fast);
-    
-    let mut writer = encoder.write_header()
-        .map_err(|e| format!("Failed to write PNG header: {}", e))?;
-    
-    writer.write_image_data(&pixels)
-        .map_err(|e| format!("Failed to write PNG data: {}", e))?;
-    
-    Ok(())
+
+    let mut encoded = Vec::new();
+    {
+        let w = BufWriter::new(&mut encoded);
+        let mut encoder = Encoder::new(w, width, height);
+        encoder.set_color(ColorType::Rgba);
+        encoder.set_depth(BitDepth::Eight);
+        // Use fast compression for better save speed.
+        // 使用快速压缩以提高保存速度
+        encoder.set_compression(png::Compression::Fast);
+
+        let mut writer = encoder
+            .write_header()
+            .map_err(|e| format!("Failed to write PNG header: {}", e))?;
+
+        writer
+            .write_image_data(&pixels)
+            .map_err(|e| format!("Failed to write PNG data: {}", e))?;
+    }
+
+    safe_write(&path, &encoded).map_err(|e| format!("Failed to write PNG file: {}", e))
 }
