@@ -1,5 +1,5 @@
-// VegetationStorage: load and save vegetation model manifests plus binary instance cells.
-// VegetationStorage：加载与保存植被模型清单及二进制实例 cell。
+// VegetationStorage: load and save vegetation model manifests plus binary region packs.
+// VegetationStorage：加载与保存植被模型清单及二进制 region pack。
 
 import { getPlatform } from "@/platform";
 import { base64ToUint8Array, uint8ArrayToBase64 } from "@/lib/base64";
@@ -11,7 +11,8 @@ import {
   createVegetationStoragePayload,
   createEmptyVegetationData,
   deserializeVegetationManifest,
-  getVegetationCellPathForKey,
+  getVegetationRegionPathForKey,
+  getVegetationRegions,
   serializeVegetationManifest,
   type VegetationMapData,
 } from "@game/world/vegetation";
@@ -22,7 +23,7 @@ const platform = getPlatform();
 export interface VegetationStorageLoadResult {
   data: VegetationMapData;
   cellSizeMeters: number;
-  cellKeys: string[];
+  regionKeys: string[];
 }
 
 export class VegetationStorage {
@@ -38,7 +39,7 @@ export class VegetationStorage {
         return {
           data: createEmptyVegetationData(),
           cellSizeMeters: DEFAULT_VEGETATION_CELL_SIZE_METERS,
-          cellKeys: [],
+          regionKeys: [],
         };
       }
 
@@ -51,17 +52,17 @@ export class VegetationStorage {
 
     try {
       const manifest = deserializeVegetationManifest(manifestText);
-      const cellKeys = manifest.instances.cellKeys;
-      const cellEntries = await Promise.all(
-        sortPageKeys(cellKeys).map(async (key) => {
-          const base64 = await platform.files.readBinaryBase64(`${mapDirectory}/${getVegetationCellPathForKey(key)}`);
-          return [key, base64ToUint8Array(base64)] as const;
+      const regions = getVegetationRegions(manifest);
+      const regionEntries = await Promise.all(
+        regions.map(async (region) => {
+          const base64 = await platform.files.readBinaryBase64(`${mapDirectory}/${region.path}`);
+          return [region.key, base64ToUint8Array(base64)] as const;
         }),
       );
       return {
-        data: createVegetationDataFromManifest(manifest, Object.fromEntries(cellEntries)),
+        data: createVegetationDataFromManifest(manifest, Object.fromEntries(regionEntries)),
         cellSizeMeters: manifest.instances.cellSizeMeters,
-        cellKeys,
+        regionKeys: regions.map((region) => region.key),
       };
     } catch (error) {
       console.error(
@@ -76,39 +77,39 @@ export class VegetationStorage {
     mapDirectory: string,
     data: VegetationMapData,
     cellSizeMeters: number,
-    previousCellKeys: Iterable<string> = [],
+    previousRegionKeys: Iterable<string> = [],
   ): Promise<void> {
     const jsonPath = `${mapDirectory}/${VEGETATION_MODELS_PATH}`;
-    const previousCellPaths = new Set(sortPageKeys(previousCellKeys).map(getVegetationCellPathForKey));
-    const { manifest, cells } = createVegetationStoragePayload(data, cellSizeMeters);
+    const previousRegionPaths = new Set(sortPageKeys(previousRegionKeys).map(getVegetationRegionPathForKey));
+    const { manifest, regions } = createVegetationStoragePayload(data, cellSizeMeters);
 
-    // EN: Instance cell files are written before the manifest so the manifest never points at missing binary data.
-    // 中文: 先写入实例 cell 文件，再写清单，避免清单指向尚未写好的二进制数据。
-    await Promise.all(cells.map(async (cell) => {
-      await platform.files.writeBinaryBase64(`${mapDirectory}/${cell.path}`, uint8ArrayToBase64(cell.bytes));
+    // EN: Region packs are written before the manifest so the manifest never points at missing binary data.
+    // 中文: 先写入 region pack，再写清单，避免清单指向尚未写好的二进制数据。
+    await Promise.all(regions.map(async (region) => {
+      await platform.files.writeBinaryBase64(`${mapDirectory}/${region.path}`, uint8ArrayToBase64(region.bytes));
     }));
 
     await platform.files.writeText(jsonPath, serializeVegetationManifest(manifest));
 
-    const nextCellPaths = new Set(cells.map((cell) => cell.path));
-    await removeStaleCells(mapDirectory, previousCellPaths, nextCellPaths);
+    const nextRegionPaths = new Set(regions.map((region) => region.path));
+    await removeStaleRegions(mapDirectory, previousRegionPaths, nextRegionPaths);
   }
 }
 
-async function removeStaleCells(
+async function removeStaleRegions(
   mapDirectory: string,
-  previousCellPaths: ReadonlySet<string>,
-  nextCellPaths: ReadonlySet<string>,
+  previousRegionPaths: ReadonlySet<string>,
+  nextRegionPaths: ReadonlySet<string>,
 ): Promise<void> {
-  await Promise.all(Array.from(previousCellPaths).map(async (path) => {
-    if (nextCellPaths.has(path)) {
+  await Promise.all(Array.from(previousRegionPaths).map(async (path) => {
+    if (nextRegionPaths.has(path)) {
       return;
     }
 
     try {
       await platform.files.deleteFile(`${mapDirectory}/${path}`);
     } catch (error) {
-      console.warn(`[VegetationStorage] Failed to delete stale vegetation cell: ${path}`, error);
+      console.warn(`[VegetationStorage] Failed to delete stale vegetation region: ${path}`, error);
     }
   }));
 }

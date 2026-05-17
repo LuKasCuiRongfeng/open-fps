@@ -32,9 +32,16 @@ const paintManifestPath = "paint/layers.json";
 const paintPagesDirectory = "paint/pages";
 const paintPageResolution = 1024;
 const vegetationModelsPath = "vegetation/models.json";
-const vegetationCellsDirectory = "vegetation/cells";
+const vegetationRegionsDirectory = "vegetation/regions";
+const vegetationRegionFormat = "vegetation-region-pack-v1";
+const vegetationInstanceFormat = "instanced-f32le-v1";
 const vegetationCellSizeMeters = 32;
+const vegetationRegionSizeCells = 8;
 const vegetationInstanceRecordByteLength = 24;
+const vegetationRegionPackMagic = 0x31475256;
+const vegetationRegionPackVersion = 1;
+const vegetationRegionPackHeaderByteLength = 8;
+const vegetationRegionPackEntryByteLength = 8;
 
 const baseHeightConfig = {
   baseHeightMeters: 6,
@@ -497,7 +504,7 @@ async function writePreviewPaintAssets(mapDir) {
 
 async function writePreviewVegetationAssets(mapDir, preset, heightConfig) {
   const vegetationDir = path.join(mapDir, "vegetation");
-  await mkdir(path.join(vegetationDir, "cells"), { recursive: true });
+  await mkdir(path.join(vegetationDir, "regions"), { recursive: true });
 
   const models = createPreviewVegetationModels();
   const modelIds = ["fern", "quiverTree"];
@@ -514,21 +521,45 @@ async function writePreviewVegetationAssets(mapDir, preset, heightConfig) {
   }
 
   const sortedCells = Array.from(groupedCells.values()).sort((left, right) => left.cellZ - right.cellZ || left.cellX - right.cellX);
+  const groupedRegions = new Map();
   for (const cell of sortedCells) {
+    const region = vegetationRegionCoordsForCell(cell.cellX, cell.cellZ);
+    const key = vegetationRegionKey(region.x, region.z);
+    const group = groupedRegions.get(key) ?? { x: region.x, z: region.z, cells: [] };
+    group.cells.push({
+      key: vegetationCellKey(cell.cellX, cell.cellZ),
+      localIndex: vegetationRegionLocalCellIndex(cell.cellX, cell.cellZ),
+      bytes: encodeVegetationInstances(cell.instances, modelIds),
+    });
+    groupedRegions.set(key, group);
+  }
+
+  const regionMasks = {};
+  const sortedRegions = Array.from(groupedRegions.values()).sort(compareRegionCoords);
+  for (const region of sortedRegions) {
+    region.cells.sort((left, right) => left.localIndex - right.localIndex);
+    let mask = 0n;
+    for (const cell of region.cells) {
+      mask |= 1n << BigInt(cell.localIndex);
+    }
+
     await writeFile(
-      path.join(mapDir, vegetationCellPath(cell.cellX, cell.cellZ)),
-      encodeVegetationInstances(cell.instances, modelIds),
+      path.join(mapDir, vegetationRegionPath(region.x, region.z)),
+      encodeVegetationRegionPack(region.cells),
     );
+    regionMasks[vegetationRegionKey(region.x, region.z)] = formatVegetationRegionMask(mask);
   }
 
   const manifest = {
-    version: 4,
+    version: 5,
     models,
     instances: {
-      format: "instanced-f32le-v1",
+      format: vegetationRegionFormat,
+      instanceFormat: vegetationInstanceFormat,
       cellSizeMeters: vegetationCellSizeMeters,
-      cellsDirectory: vegetationCellsDirectory,
-      cellKeys: sortedCells.map((cell) => vegetationCellKey(cell.cellX, cell.cellZ)),
+      regionSizeCells: vegetationRegionSizeCells,
+      regionsDirectory: vegetationRegionsDirectory,
+      regions: regionMasks,
       modelIds,
     },
   };
@@ -538,6 +569,7 @@ async function writePreviewVegetationAssets(mapDir, preset, heightConfig) {
     modelCount: Object.keys(models).length,
     instanceCount: instances.length,
     cellCount: sortedCells.length,
+    regionCount: sortedRegions.length,
   };
 }
 
@@ -623,8 +655,30 @@ function vegetationCellKey(cellX, cellZ) {
   return `${cellX},${cellZ}`;
 }
 
-function vegetationCellPath(cellX, cellZ) {
-  return `${vegetationCellsDirectory}/c_${formatCellCoordinate(cellX)}_${formatCellCoordinate(cellZ)}.instances.f32`;
+function vegetationRegionKey(regionX, regionZ) {
+  return `${regionX},${regionZ}`;
+}
+
+function vegetationRegionCoordsForCell(cellX, cellZ) {
+  return {
+    x: Math.floor(cellX / vegetationRegionSizeCells),
+    z: Math.floor(cellZ / vegetationRegionSizeCells),
+  };
+}
+
+function vegetationRegionLocalCellIndex(cellX, cellZ) {
+  const region = vegetationRegionCoordsForCell(cellX, cellZ);
+  const localX = cellX - region.x * vegetationRegionSizeCells;
+  const localZ = cellZ - region.z * vegetationRegionSizeCells;
+  return localZ * vegetationRegionSizeCells + localX;
+}
+
+function vegetationRegionPath(regionX, regionZ) {
+  return `${vegetationRegionsDirectory}/r_${formatCellCoordinate(regionX)}_${formatCellCoordinate(regionZ)}.vegpack`;
+}
+
+function formatVegetationRegionMask(mask) {
+  return `0x${mask.toString(16).padStart(16, "0")}`;
 }
 
 function formatCellCoordinate(value) {
@@ -650,6 +704,33 @@ function encodeVegetationInstances(instances, modelIds) {
     view.setFloat32(offset + 12, instance.z, true);
     view.setFloat32(offset + 16, instance.rotationY, true);
     view.setFloat32(offset + 20, instance.scale, true);
+  }
+
+  return bytes;
+}
+
+function encodeVegetationRegionPack(cells) {
+  const payloadByteLength = cells.reduce((total, cell) => total + cell.bytes.byteLength, 0);
+  const indexByteLength = vegetationRegionPackHeaderByteLength + cells.length * vegetationRegionPackEntryByteLength;
+  const bytes = Buffer.alloc(indexByteLength + payloadByteLength);
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  view.setUint32(0, vegetationRegionPackMagic, true);
+  view.setUint16(4, vegetationRegionPackVersion, true);
+  view.setUint16(6, cells.length, true);
+
+  let payloadOffset = indexByteLength;
+  for (let index = 0; index < cells.length; index += 1) {
+    const cell = cells[index];
+    if (cell.bytes.byteLength % vegetationInstanceRecordByteLength !== 0) {
+      throw new Error(`Vegetation cell '${cell.key}' has invalid byte length ${cell.bytes.byteLength}`);
+    }
+
+    const entryOffset = vegetationRegionPackHeaderByteLength + index * vegetationRegionPackEntryByteLength;
+    view.setUint16(entryOffset, cell.localIndex, true);
+    view.setUint16(entryOffset + 2, 0, true);
+    view.setUint32(entryOffset + 4, cell.bytes.byteLength / vegetationInstanceRecordByteLength, true);
+    bytes.set(cell.bytes, payloadOffset);
+    payloadOffset += cell.bytes.byteLength;
   }
 
   return bytes;
@@ -760,6 +841,7 @@ async function generateMap(preset) {
     paintLayerCount: preview.paint.layerCount,
     vegetationInstanceCount: preview.vegetation.instanceCount,
     vegetationCellCount: preview.vegetation.cellCount,
+    vegetationRegionCount: preview.vegetation.regionCount,
     areaSquareKilometers: pageKeys.length * pageSizeMeters * pageSizeMeters / 1_000_000,
   };
 }
@@ -828,7 +910,7 @@ async function main() {
     console.log(`  Height pages: ${result.pageCount}`);
     console.log(`  Height regions: ${result.regionCount}`);
     console.log(`  Paint layers: ${result.paintLayerCount}`);
-    console.log(`  Vegetation instances: ${result.vegetationInstanceCount} in ${result.vegetationCellCount} cells`);
+    console.log(`  Vegetation instances: ${result.vegetationInstanceCount} in ${result.vegetationCellCount} cells / ${result.vegetationRegionCount} regions`);
     console.log(`  Area: ${result.areaSquareKilometers.toFixed(2)} km^2`);
     console.log(`  Height range: ${result.minHeight.toFixed(2)}m .. ${result.maxHeight.toFixed(2)}m`);
     console.log(`  Map path: ${result.mapPath}`);

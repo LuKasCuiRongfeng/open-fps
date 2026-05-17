@@ -28,7 +28,7 @@ import {
 import {
   createVegetationDataFromManifest,
   deserializeVegetationManifest,
-  getVegetationCellPathForKey,
+  getVegetationRegions,
   type VegetationMapData,
 } from "@game/world/vegetation";
 
@@ -197,15 +197,15 @@ async function loadBundledVegetationData(
   vegetationJson: string,
 ): Promise<VegetationMapData> {
   const manifest = deserializeVegetationManifest(vegetationJson);
-  const cellEntries = await Promise.all(
-    manifest.instances.cellKeys.map(async (key) => {
+  const regionEntries = await Promise.all(
+    getVegetationRegions(manifest).map(async (region) => {
       const bytes = await fetchRequiredBytes(
-        resolveProjectUrl(mapDirectoryUrl, getVegetationCellPathForKey(key)),
-        `vegetation cell ${key}`,
+        resolveProjectUrl(mapDirectoryUrl, region.path),
+        `vegetation region ${region.key}`,
       );
-      return [key, bytes] as const;
+      return [region.key, bytes] as const;
     }),
   );
 
-  return createVegetationDataFromManifest(manifest, Object.fromEntries(cellEntries));
+  return createVegetationDataFromManifest(manifest, Object.fromEntries(regionEntries));
 }

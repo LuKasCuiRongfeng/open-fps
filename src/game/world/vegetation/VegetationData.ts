@@ -7,16 +7,34 @@ import {
   parsePageKey,
   sortPageKeys,
 } from "@project/MapData";
+import {
+  DEFAULT_VEGETATION_REGION_SIZE_CELLS,
+  VEGETATION_INSTANCE_FORMAT,
+  VEGETATION_INSTANCE_RECORD_BYTE_LENGTH,
+  VEGETATION_REGIONS_DIRECTORY,
+  VEGETATION_REGION_FORMAT,
+  compareRegionCoords,
+  compareRegionKeys,
+  decodeVegetationRegionPack,
+  encodeVegetationRegionPack,
+  formatRegionMask,
+  getVegetationRegionCoordsForCell,
+  getVegetationRegionLocalCellIndex,
+  getVegetationRegionPath,
+  getVegetationRegions,
+  normalizeVegetationRegions,
+  validateVegetationRegionSize,
+  vegetationRegionKey,
+  type VegetationCellPayload,
+  type VegetationInstanceManifest,
+  type VegetationRegionPayload,
+} from "./VegetationRegionData";
 
-export const VEGETATION_DATA_VERSION = 4;
 export const VEGETATION_MODELS_PATH = MAP_VEGETATION_MODELS_PATH;
-export const VEGETATION_CELLS_DIRECTORY = "vegetation/cells";
-export const VEGETATION_INSTANCE_FORMAT = "instanced-f32le-v1";
-export const DEFAULT_VEGETATION_CELL_SIZE_METERS = 32;
+export const VEGETATION_DATA_VERSION = 5;
 
-// EN: v4 keeps all vegetation storage metadata in vegetation/models.json and stores sparse cells as binary records.
-// 中文: v4 将所有植被存储元数据保存在 vegetation/models.json，并把稀疏 cell 保存为二进制记录。
-export const VEGETATION_INSTANCE_RECORD_BYTE_LENGTH = 24;
+// EN: v5 keeps sparse vegetation cell indices in JSON and stores variable-size cell payloads in region packs.
+// 中文: v5 在 JSON 中保存稀疏植被 cell 索引，并把变长 cell 数据写入 region pack。
 export const DEFAULT_VEGETATION_TARGET_HEIGHT_METERS = 8;
 export const DEFAULT_VEGETATION_LOD1_DISTANCE_METERS = 70;
 export const DEFAULT_VEGETATION_LOD2_DISTANCE_METERS = 130;
@@ -76,24 +94,10 @@ export interface VegetationMapData {
   instances: VegetationInstance[];
 }
 
-export interface VegetationInstanceManifest {
-  format: typeof VEGETATION_INSTANCE_FORMAT;
-  cellSizeMeters: number;
-  cellsDirectory: typeof VEGETATION_CELLS_DIRECTORY;
-  cellKeys: string[];
-  modelIds: string[];
-}
-
 export interface VegetationManifest {
   version: typeof VEGETATION_DATA_VERSION;
   models: Record<string, VegetationModelDefinition>;
   instances: VegetationInstanceManifest;
-}
-
-export interface VegetationCellPayload {
-  key: string;
-  path: string;
-  bytes: Uint8Array;
 }
 
 type JsonRecord = Record<string, unknown>;
@@ -150,10 +154,12 @@ export function deserializeVegetationManifest(json: string): VegetationManifest 
 export function createVegetationStoragePayload(
   data: VegetationMapData,
   cellSizeMeters: number,
-): { manifest: VegetationManifest; cells: VegetationCellPayload[] } {
+  regionSizeCells = DEFAULT_VEGETATION_REGION_SIZE_CELLS,
+): { manifest: VegetationManifest; regions: VegetationRegionPayload[] } {
   if (!Number.isFinite(cellSizeMeters) || cellSizeMeters <= 0) {
     throw new Error("Vegetation cell size must be a positive finite number");
   }
+  validateVegetationRegionSize(regionSizeCells);
 
   const models = cloneVegetationModels(data.models);
   const modelIds = Object.keys(models).sort();
@@ -180,13 +186,34 @@ export function createVegetationStoragePayload(
     }
   }
 
-  const cells: VegetationCellPayload[] = [];
+  const regionGroups = new Map<string, { x: number; z: number; cells: VegetationCellPayload[] }>();
   for (const key of sortPageKeys(groupedInstances.keys())) {
     const instances = groupedInstances.get(key) ?? [];
     const { px: cx, pz: cz } = parsePageKey(key);
-    const path = getVegetationCellPath(cx, cz);
+    const region = getVegetationRegionCoordsForCell(cx, cz, regionSizeCells);
+    const regionKey = vegetationRegionKey(region.x, region.z);
+    const group = regionGroups.get(regionKey) ?? { x: region.x, z: region.z, cells: [] };
     const bytes = encodeVegetationCellInstances(instances, modelIndexById);
-    cells.push({ key, path, bytes });
+    group.cells.push({ key, localIndex: getVegetationRegionLocalCellIndex(cx, cz, regionSizeCells), bytes });
+    regionGroups.set(regionKey, group);
+  }
+
+  const regions: VegetationRegionPayload[] = [];
+  const regionMasks = new Map<string, bigint>();
+  for (const group of Array.from(regionGroups.values()).sort(compareRegionCoords)) {
+    const cells = group.cells.sort((left, right) => left.localIndex - right.localIndex);
+    let mask = 0n;
+    for (const cell of cells) {
+      mask |= 1n << BigInt(cell.localIndex);
+    }
+
+    const key = vegetationRegionKey(group.x, group.z);
+    regionMasks.set(key, mask);
+    regions.push({
+      key,
+      path: getVegetationRegionPath(group.x, group.z),
+      bytes: encodeVegetationRegionPack(cells),
+    });
   }
 
   return {
@@ -194,14 +221,20 @@ export function createVegetationStoragePayload(
       version: VEGETATION_DATA_VERSION,
       models,
       instances: {
-        format: VEGETATION_INSTANCE_FORMAT,
+        format: VEGETATION_REGION_FORMAT,
+        instanceFormat: VEGETATION_INSTANCE_FORMAT,
         cellSizeMeters,
-        cellsDirectory: VEGETATION_CELLS_DIRECTORY,
-        cellKeys: cells.map((cell) => cell.key),
+        regionSizeCells,
+        regionsDirectory: VEGETATION_REGIONS_DIRECTORY,
+        regions: Object.fromEntries(
+          Array.from(regionMasks.entries())
+            .sort(([left], [right]) => compareRegionKeys(left, right))
+            .map(([key, mask]) => [key, formatRegionMask(mask)]),
+        ),
         modelIds,
       },
     },
-    cells,
+    regions,
   };
 }
 
@@ -213,20 +246,34 @@ export function getVegetationCellKeys(data: VegetationMapData, cellSizeMeters: n
   return sortPageKeys(new Set(data.instances.map((instance) => getVegetationCellKey(instance.x, instance.z, cellSizeMeters))));
 }
 
+export function getVegetationRegionKeys(
+  data: VegetationMapData,
+  cellSizeMeters: number,
+  regionSizeCells = DEFAULT_VEGETATION_REGION_SIZE_CELLS,
+): string[] {
+  return sortPageKeys(new Set(getVegetationCellKeys(data, cellSizeMeters).map((key) => {
+    const { px: cx, pz: cz } = parsePageKey(key);
+    const region = getVegetationRegionCoordsForCell(cx, cz, regionSizeCells);
+    return vegetationRegionKey(region.x, region.z);
+  })));
+}
+
 export function createVegetationDataFromManifest(
   manifest: VegetationManifest,
-  cells: Record<string, Uint8Array>,
+  regions: Record<string, Uint8Array>,
 ): VegetationMapData {
   const instances: VegetationInstance[] = [];
   const modelIds = manifest.instances.modelIds;
 
-  for (const key of manifest.instances.cellKeys) {
-    const bytes = cells[key];
+  for (const region of getVegetationRegions(manifest)) {
+    const bytes = regions[region.key];
     if (!bytes) {
-      throw new Error(`Vegetation cell '${key}' is missing binary data`);
+      throw new Error(`Vegetation region '${region.key}' is missing binary data`);
     }
 
-    instances.push(...decodeVegetationCellInstances(key, modelIds, bytes));
+    for (const cell of decodeVegetationRegionPack(region, manifest.instances.regionSizeCells, bytes)) {
+      instances.push(...decodeVegetationCellInstances(cell.key, modelIds, cell.bytes));
+    }
   }
 
   return {
@@ -377,8 +424,12 @@ function normalizeInstanceManifest(
   value: JsonRecord,
   models: Record<string, VegetationModelDefinition>,
 ): VegetationInstanceManifest {
-  if (value.format !== VEGETATION_INSTANCE_FORMAT) {
+  if (value.format !== VEGETATION_REGION_FORMAT) {
     throw new Error(`Vegetation instance format '${String(value.format ?? "unknown")}' is not supported`);
+  }
+
+  if (value.instanceFormat !== VEGETATION_INSTANCE_FORMAT) {
+    throw new Error(`Vegetation instance record format '${String(value.instanceFormat ?? "unknown")}' is not supported`);
   }
 
   const cellSizeMeters = readFiniteNumber(value.cellSizeMeters, Number.NaN);
@@ -386,11 +437,14 @@ function normalizeInstanceManifest(
     throw new Error("Vegetation instance manifest has invalid cell size");
   }
 
-  if (value.cellsDirectory !== VEGETATION_CELLS_DIRECTORY) {
-    throw new Error("Vegetation instance manifest has invalid cells directory");
+  const regionSizeCells = readFiniteNumber(value.regionSizeCells, Number.NaN);
+  validateVegetationRegionSize(regionSizeCells);
+
+  if (value.regionsDirectory !== VEGETATION_REGIONS_DIRECTORY) {
+    throw new Error("Vegetation instance manifest has invalid regions directory");
   }
 
-  const cellKeys = normalizeVegetationCellKeys(value.cellKeys);
+  const regions = normalizeVegetationRegions(value.regions, regionSizeCells);
 
   if (!Array.isArray(value.modelIds) || !value.modelIds.every((id) => typeof id === "string")) {
     throw new Error("Vegetation instance manifest must contain model id order");
@@ -409,34 +463,14 @@ function normalizeInstanceManifest(
   }
 
   return {
-    format: VEGETATION_INSTANCE_FORMAT,
+    format: VEGETATION_REGION_FORMAT,
+    instanceFormat: VEGETATION_INSTANCE_FORMAT,
     cellSizeMeters,
-    cellsDirectory: VEGETATION_CELLS_DIRECTORY,
-    cellKeys,
+    regionSizeCells,
+    regionsDirectory: VEGETATION_REGIONS_DIRECTORY,
+    regions,
     modelIds,
   };
-}
-
-function normalizeVegetationCellKeys(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    throw new Error("Vegetation instance manifest must contain cell keys");
-  }
-
-  const keys = new Set<string>();
-  for (const key of value) {
-    if (typeof key !== "string") {
-      throw new Error("Vegetation instance manifest cell keys must be strings");
-    }
-
-    parsePageKey(key);
-    if (keys.has(key)) {
-      throw new Error(`Vegetation instance manifest has duplicate cell key '${key}'`);
-    }
-
-    keys.add(key);
-  }
-
-  return sortPageKeys(keys);
 }
 
 function cloneVegetationModels(
@@ -449,15 +483,6 @@ function cloneVegetationModels(
 
 function getVegetationCellKey(x: number, z: number, cellSizeMeters: number): string {
   return pageKey(Math.floor(x / cellSizeMeters), Math.floor(z / cellSizeMeters));
-}
-
-export function getVegetationCellPath(cx: number, cz: number): string {
-  return `${VEGETATION_CELLS_DIRECTORY}/c_${formatCellCoordinate(cx)}_${formatCellCoordinate(cz)}.instances.f32`;
-}
-
-export function getVegetationCellPathForKey(key: string): string {
-  const { px, pz } = parsePageKey(key);
-  return getVegetationCellPath(px, pz);
 }
 
 function encodeVegetationCellInstances(
@@ -535,10 +560,3 @@ function createLoadedInstanceId(cellKeyValue: string, index: number): string {
   return `vegetation-${safeCellKey}-${index.toString(36)}`;
 }
 
-function formatCellCoordinate(value: number): string {
-  if (!Number.isInteger(value)) {
-    throw new Error(`Vegetation cell coordinate must be an integer: ${value}`);
-  }
-
-  return value < 0 ? `m${Math.abs(value)}` : String(value);
-}
