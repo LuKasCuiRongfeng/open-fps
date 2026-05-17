@@ -1,5 +1,5 @@
-// TextureStorage: versioned paint sidecar manifest and raw RGBA splat-map page storage.
-// TextureStorage：版本化 paint sidecar 清单与原始 RGBA splat map page 存储。
+// TextureStorage: versioned paint sidecar manifest and RGBA8 region-pack storage.
+// TextureStorage：版本化 paint sidecar 清单与 RGBA8 region pack 存储。
 
 import { getPlatform } from "@/platform";
 import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
@@ -26,6 +26,10 @@ import {
 } from "@game/world/terrain/TextureData";
 
 const platform = getPlatform();
+
+interface SavePaintPagesOptions {
+  dirtyRegionKeys?: readonly string[];
+}
 
 export function getPaintSplatMapIndices(splatMapCount: number): number[] {
   return Array.from({ length: splatMapCount }, (_, index) => index);
@@ -122,16 +126,19 @@ export class TextureStorage {
     mapDirectory: string,
     mapData: MapData,
     splatMaps: readonly SplatMapData[],
+    options: SavePaintPagesOptions = {},
   ): Promise<void> {
     const previousRegionPaths = new Set(Object.keys(mapData.paint.splatMaps.regions).map(getPaintRegionPathForKey));
     const resolution = splatMaps[0]?.resolution ?? mapData.paint.splatMaps.resolution;
     const indices = getPaintSplatMapIndices(splatMaps.length);
     mapData.paint = createPaintDataForMap(mapData.worldSizeMeters, mapData.pageSizeMeters, indices, resolution);
+    const dirtyRegionKeys = options.dirtyRegionKeys?.length ? options.dirtyRegionKeys : null;
     const regions = createPaintRegionPackPayload(
       mapData.paint,
       mapData.worldSizeMeters,
       mapData.pageSizeMeters,
       splatMaps,
+      dirtyRegionKeys ?? undefined,
     );
 
     // EN: Region packs are written before the manifest so the manifest never points at missing binary data.
@@ -140,8 +147,10 @@ export class TextureStorage {
       await platform.files.writeBinaryBase64(`${mapDirectory}/${region.path}`, encodePaintRegionPackBase64(region.bytes));
     }));
 
-    const nextRegionPaths = new Set(regions.map((region) => region.path));
-    await removeStalePaintRegions(mapDirectory, previousRegionPaths, nextRegionPaths);
+    if (!dirtyRegionKeys) {
+      const nextRegionPaths = new Set(regions.map((region) => region.path));
+      await removeStalePaintRegions(mapDirectory, previousRegionPaths, nextRegionPaths);
+    }
   }
 
   static async ensurePaintPage(

@@ -227,6 +227,7 @@ export function createPaintRegionPackPayload(
   worldSizeMeters: number,
   pageSizeMeters: number,
   splatMaps: readonly PaintSplatMapPixels[],
+  regionKeys?: Iterable<string>,
 ): PaintRegionPackPayload[] {
   const normalized = normalizePaintData(paintData);
   const splatMapOrder = normalized.splatMaps.indices;
@@ -245,7 +246,8 @@ export function createPaintRegionPackPayload(
     validateFullSplatMap(splatMap.pixels, splatMap.resolution, normalized.splatMaps.resolution);
   }
 
-  const regions = getPaintRegions(normalized);
+  const selectedRegionKeys = regionKeys ? new Set(regionKeys) : null;
+  const regions = getPaintRegions(normalized).filter((region) => !selectedRegionKeys || selectedRegionKeys.has(region.key));
   const pageResolution = normalized.splatMaps.pageResolution;
   const pageByteLength = getExpectedPaintRegionPageByteLength(pageResolution, splatMapOrder.length);
   return regions.map((region) => {
@@ -333,6 +335,44 @@ export function assemblePaintSplatMapPixels(
   }
 
   return pixels;
+}
+
+export function getPaintRegionKeysForWorldBounds(
+  worldSizeMeters: number,
+  pageSizeMeters: number,
+  regionSizePages: number,
+  minWorldX: number,
+  minWorldZ: number,
+  maxWorldX: number,
+  maxWorldZ: number,
+): string[] {
+  const worldSize = readPositiveNumber(worldSizeMeters, "paint world size");
+  const pageSize = readPositiveNumber(pageSizeMeters, "paint page size");
+  const regionSize = normalizePaintRegionSize(regionSizePages);
+  const halfSize = worldSize / 2;
+  const clippedMinX = Math.max(-halfSize, Math.min(minWorldX, maxWorldX));
+  const clippedMaxX = Math.min(halfSize, Math.max(minWorldX, maxWorldX));
+  const clippedMinZ = Math.max(-halfSize, Math.min(minWorldZ, maxWorldZ));
+  const clippedMaxZ = Math.min(halfSize, Math.max(minWorldZ, maxWorldZ));
+
+  if (clippedMaxX < -halfSize || clippedMinX > halfSize || clippedMaxZ < -halfSize || clippedMinZ > halfSize) {
+    return [];
+  }
+
+  const minPageX = getPaintPageCoordForWorldCoordinate(clippedMinX, worldSize, pageSize);
+  const maxPageX = getPaintPageCoordForWorldCoordinate(clippedMaxX, worldSize, pageSize);
+  const minPageZ = getPaintPageCoordForWorldCoordinate(clippedMinZ, worldSize, pageSize);
+  const maxPageZ = getPaintPageCoordForWorldCoordinate(clippedMaxZ, worldSize, pageSize);
+  const keys = new Set<string>();
+
+  for (let pz = minPageZ; pz <= maxPageZ; pz += 1) {
+    for (let px = minPageX; px <= maxPageX; px += 1) {
+      const region = getPaintRegionCoordsForPage(px, pz, regionSize);
+      keys.add(paintRegionKey(region.x, region.z));
+    }
+  }
+
+  return Array.from(keys).sort(compareRegionKeys);
 }
 
 export function encodePaintRegionPackBase64(bytes: Uint8Array | ArrayLike<number>): string {
@@ -440,6 +480,12 @@ function getPaintWorldPageBounds(worldSizeMeters: number, pageSizeMeters: number
   const pageCount = getPaintWorldPageCount(worldSizeMeters, pageSizeMeters);
   const minPage = -Math.floor(pageCount / 2);
   return { minPage, maxPage: minPage + pageCount - 1 };
+}
+
+function getPaintPageCoordForWorldCoordinate(worldCoordinate: number, worldSizeMeters: number, pageSizeMeters: number): number {
+  const bounds = getPaintWorldPageBounds(worldSizeMeters, pageSizeMeters);
+  const normalizedPage = Math.floor((worldCoordinate + worldSizeMeters / 2) / pageSizeMeters) + bounds.minPage;
+  return Math.min(bounds.maxPage, Math.max(bounds.minPage, normalizedPage));
 }
 
 function getPaintRegionCoordsForPage(

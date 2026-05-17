@@ -11,7 +11,7 @@ import {
 } from "@game/world/terrain/TextureData";
 import { TextureStorage, getPaintSplatMapIndices } from "./TextureStorage";
 import { TextureBrush, type TextureBrushSettings } from "./TextureBrush";
-import { createPaintDataForMap, type MapData } from "@project/MapData";
+import { createPaintDataForMap, getPaintRegionKeysForWorldBounds, type MapData } from "@project/MapData";
 
 /**
  * TextureEditor: coordinates texture painting on terrain splat maps.
@@ -57,6 +57,14 @@ export class TextureEditor {
   // Splat map 分辨率
   private resolution = 1024;
 
+  // Dirty paint regions touched by brush strokes since the last save.
+  // 上次保存后被画刷笔画触碰的脏绘制 region。
+  private readonly dirtyPaintRegionKeys = new Set<string>();
+
+  private mapWorldSizeMeters = 1024;
+  private mapPageSizeMeters = 64;
+  private mapPaintRegionSizePages = 8;
+
   // Callbacks.
   // 回调
   private onDirtyChange?: (dirty: boolean) => void;
@@ -88,6 +96,11 @@ export class TextureEditor {
    */
   async loadFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void> {
     this._textureDefinition = await TextureStorage.loadTextureDefinition(mapDirectory, mapData);
+    if (mapData) {
+      this.mapWorldSizeMeters = mapData.worldSizeMeters;
+      this.mapPageSizeMeters = mapData.pageSizeMeters;
+      this.mapPaintRegionSizePages = mapData.paint.splatMaps.regionSizePages;
+    }
 
     if (this._textureDefinition && this.splatMapSet && this.renderer && mapData) {
       this._editingEnabled = true;
@@ -115,6 +128,7 @@ export class TextureEditor {
     }
 
     this._dirty = false;
+    this.dirtyPaintRegionKeys.clear();
   }
 
   /**
@@ -138,7 +152,10 @@ export class TextureEditor {
           splatMapIndex: i,
         });
       }
-      await TextureStorage.savePaintPages(mapDirectory, mapData, splatMaps);
+      const dirtyRegionKeys = this.dirtyPaintRegionKeys.size > 0
+        ? Array.from(this.dirtyPaintRegionKeys)
+        : undefined;
+      await TextureStorage.savePaintPages(mapDirectory, mapData, splatMaps, { dirtyRegionKeys });
       mapData.paint.splatMaps.indices = getPaintSplatMapIndices(splatMapCount);
       await TextureStorage.saveTextureDefinition(mapDirectory, this._textureDefinition, mapData);
     } else {
@@ -146,6 +163,7 @@ export class TextureEditor {
     }
 
     this.setDirty(false);
+    this.dirtyPaintRegionKeys.clear();
   }
 
   // --- Getters / 获取器 ---
@@ -294,7 +312,22 @@ export class TextureEditor {
     if (!stroke) return;
 
     await this.splatMapSet.applyBrush(this.renderer, stroke);
-    this.setDirty(true);
+    const dirtyRegionKeys = getPaintRegionKeysForWorldBounds(
+      this.mapWorldSizeMeters,
+      this.mapPageSizeMeters,
+      this.mapPaintRegionSizePages,
+      stroke.worldX - stroke.radius,
+      stroke.worldZ - stroke.radius,
+      stroke.worldX + stroke.radius,
+      stroke.worldZ + stroke.radius,
+    );
+    for (const key of dirtyRegionKeys) {
+      this.dirtyPaintRegionKeys.add(key);
+    }
+
+    if (dirtyRegionKeys.length > 0) {
+      this.setDirty(true);
+    }
   }
 
   reset(): void {
