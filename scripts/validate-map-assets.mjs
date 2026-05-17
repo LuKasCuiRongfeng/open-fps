@@ -21,6 +21,11 @@ const RGBA8_BYTE_LENGTH = 4;
 const VEGETATION_REGION_HEADER_BYTE_LENGTH = 8;
 const VEGETATION_REGION_ENTRY_BYTE_LENGTH = 8;
 const VEGETATION_INSTANCE_BYTE_LENGTH = 24;
+const COOKED_MAP_DIRECTORY = "cooked/maps";
+const COOKED_MAP_MANIFEST_FILE = "manifest.json";
+const COOKED_MAP_FORMAT = "open-fps-cooked-map-v1";
+const COOKED_MAP_VERSION = 1;
+const COOKED_WORLD_PARTITION_CELL_SIZE_PAGES = 8;
 
 const options = parseArgs(process.argv.slice(2));
 const projectDirectory = path.resolve(options.projectDirectory ?? "test_pro");
@@ -56,6 +61,7 @@ async function validateProject(projectPath, mapIdOverride) {
   await validateTerrain(mapDirectory, mapManifest);
   await validatePaint(mapDirectory, mapManifest);
   await validateVegetation(mapDirectory);
+  await validateCookedMap(projectPath, mapId, mapManifest);
 }
 
 function validateMapManifest(manifest, mapId) {
@@ -233,6 +239,318 @@ async function validateVegetation(mapDirectory) {
   await validateNoOrphanRegionPacks(mapDirectory, VEGETATION_REGION_DIRECTORY, VEGETATION_REGION_EXTENSION, expectedPaths);
 }
 
+async function validateCookedMap(projectPath, mapId, mapManifest) {
+  const cookedPath = path.join(projectPath, COOKED_MAP_DIRECTORY, mapId, COOKED_MAP_MANIFEST_FILE);
+  const cooked = await readJsonFile(cookedPath, "cooked map manifest");
+  const label = relativePath(cookedPath);
+
+  if (cooked.version !== COOKED_MAP_VERSION) {
+    addError(label, `Cooked map manifest must use version ${COOKED_MAP_VERSION}.`);
+  }
+  if (cooked.format !== COOKED_MAP_FORMAT) {
+    addError(label, `Cooked map manifest format must be '${COOKED_MAP_FORMAT}'.`);
+  }
+  if (cooked.mapId !== mapId) {
+    addError(label, `Cooked map manifest must target map '${mapId}'.`);
+  }
+
+  const sourcePaths = {
+    project: PROJECT_FILE,
+    map: `maps/${mapId}/${MAP_FILE}`,
+    terrain: `maps/${mapId}/${TERRAIN_HEIGHT_PATH}`,
+    paint: `maps/${mapId}/${PAINT_PATH}`,
+    vegetation: `maps/${mapId}/${VEGETATION_PATH}`,
+  };
+  if (!isRecord(cooked.source)) {
+    addError(label, "Cooked map manifest must contain source hash metadata.");
+  } else {
+    await validateCookedSourceReference(projectPath, cooked.source.project, sourcePaths.project, label, "project");
+    await validateCookedSourceReference(projectPath, cooked.source.map, sourcePaths.map, label, "map");
+    await validateCookedSourceReference(projectPath, cooked.source.terrain, sourcePaths.terrain, label, "terrain");
+    await validateCookedSourceReference(projectPath, cooked.source.paint, sourcePaths.paint, label, "paint");
+    await validateCookedSourceReference(projectPath, cooked.source.vegetation, sourcePaths.vegetation, label, "vegetation");
+  }
+
+  const terrainManifest = await readJsonFile(path.join(projectPath, sourcePaths.terrain), "terrain height manifest for cooked map");
+  const paintManifest = await readJsonFile(path.join(projectPath, sourcePaths.paint), "paint manifest for cooked map");
+  const vegetationManifest = await readJsonFile(path.join(projectPath, sourcePaths.vegetation), "vegetation manifest for cooked map");
+  const cookedWorld = validateCookedWorld(cooked.world, mapManifest, label);
+  const cookedAssets = validateCookedAssets(cooked.assets, mapId, terrainManifest, paintManifest, vegetationManifest, label);
+
+  if (cookedWorld && cookedAssets) {
+    validateCookedPartition(cooked.partition, cookedWorld, cookedAssets, label);
+  }
+}
+
+async function validateCookedSourceReference(projectPath, reference, expectedPath, label, sourceName) {
+  if (!isRecord(reference)) {
+    addError(label, `Cooked source '${sourceName}' must be an object.`);
+    return;
+  }
+
+  if (reference.path !== expectedPath) {
+    addError(label, `Cooked source '${sourceName}' must point to '${expectedPath}'.`);
+  }
+  if (typeof reference.sha256 !== "string" || !/^[0-9a-f]{64}$/.test(reference.sha256)) {
+    addError(label, `Cooked source '${sourceName}' must contain a lowercase SHA-256 digest.`);
+    return;
+  }
+
+  const bytes = await readRequiredFileBytes(path.join(projectPath, expectedPath), `${sourceName} source for cooked map`);
+  if (!bytes) {
+    return;
+  }
+
+  const actualSha256 = createHash("sha256").update(bytes).digest("hex");
+  if (reference.sha256 !== actualSha256) {
+    addError(label, `Cooked source '${sourceName}' is stale.`);
+  }
+}
+
+function validateCookedWorld(world, mapManifest, label) {
+  if (!isRecord(world)) {
+    addError(label, "Cooked map manifest must contain world metadata.");
+    return null;
+  }
+
+  const sourceWorld = mapManifest.world;
+  const pageBounds = isRecord(world.pageBounds) ? world.pageBounds : null;
+  const expectedPageBounds = getWorldPageBounds(sourceWorld);
+  if (!expectedPageBounds) {
+    return null;
+  }
+
+  validateEqual(world.sizeMeters, sourceWorld.sizeMeters, label, "cooked world sizeMeters");
+  validateEqual(world.pageSizeMeters, sourceWorld.pageSizeMeters, label, "cooked world pageSizeMeters");
+  validateEqual(world.originX, sourceWorld.originX, label, "cooked world originX");
+  validateEqual(world.originZ, sourceWorld.originZ, label, "cooked world originZ");
+
+  if (!pageBounds) {
+    addError(label, "Cooked world must contain pageBounds.");
+    return null;
+  }
+
+  validateEqual(pageBounds.minX, expectedPageBounds.minX, label, "cooked world pageBounds.minX");
+  validateEqual(pageBounds.maxX, expectedPageBounds.maxX, label, "cooked world pageBounds.maxX");
+  validateEqual(pageBounds.minZ, expectedPageBounds.minZ, label, "cooked world pageBounds.minZ");
+  validateEqual(pageBounds.maxZ, expectedPageBounds.maxZ, label, "cooked world pageBounds.maxZ");
+
+  return {
+    sizeMeters: sourceWorld.sizeMeters,
+    pageSizeMeters: sourceWorld.pageSizeMeters,
+    pageBounds: expectedPageBounds,
+  };
+}
+
+function validateCookedAssets(assets, mapId, terrainManifest, paintManifest, vegetationManifest, label) {
+  if (!isRecord(assets)) {
+    addError(label, "Cooked map manifest must contain asset metadata.");
+    return null;
+  }
+
+  const terrain = validateCookedTerrainAsset(assets.terrain, mapId, terrainManifest, label);
+  const paint = validateCookedPaintAsset(assets.paint, mapId, paintManifest, label);
+  const vegetation = validateCookedVegetationAsset(assets.vegetation, mapId, vegetationManifest, label);
+  if (!terrain || !paint || !vegetation) {
+    return null;
+  }
+
+  return { terrain, paint, vegetation };
+}
+
+function validateCookedTerrainAsset(asset, mapId, manifest, label) {
+  if (!isRecord(asset)) {
+    addError(label, "Cooked terrain asset metadata must be an object.");
+    return null;
+  }
+
+  validateEqual(asset.manifestPath, `maps/${mapId}/${TERRAIN_HEIGHT_PATH}`, label, "cooked terrain manifestPath");
+  validateEqual(asset.format, manifest.format, label, "cooked terrain format");
+  validateEqual(asset.sampleFormat, manifest.sampleFormat, label, "cooked terrain sampleFormat");
+  validateEqual(asset.pageResolution, manifest.pageResolution, label, "cooked terrain pageResolution");
+  validateEqual(asset.pageSizeMeters, manifest.pageSizeMeters, label, "cooked terrain pageSizeMeters");
+  validateEqual(asset.regionSizePages, manifest.regionSizePages, label, "cooked terrain regionSizePages");
+  const regions = validateCookedRegionTable(
+    asset.regions,
+    manifest.regions,
+    manifest.regionIntegrity,
+    (key) => `maps/${mapId}/${regionPathFromKey(TERRAIN_REGION_DIRECTORY, TERRAIN_REGION_EXTENSION, key)}`,
+    label,
+    "terrain",
+  );
+
+  return regions ? { ...asset, regions } : null;
+}
+
+function validateCookedPaintAsset(asset, mapId, manifest, label) {
+  if (!isRecord(asset) || !isRecord(manifest.splatMaps)) {
+    addError(label, "Cooked paint asset metadata must be an object.");
+    return null;
+  }
+
+  validateEqual(asset.manifestPath, `maps/${mapId}/${PAINT_PATH}`, label, "cooked paint manifestPath");
+  validateEqual(asset.format, manifest.splatMaps.format, label, "cooked paint format");
+  validateEqual(asset.resolution, manifest.splatMaps.resolution, label, "cooked paint resolution");
+  validateEqual(asset.pageResolution, manifest.splatMaps.pageResolution, label, "cooked paint pageResolution");
+  validateEqual(asset.pageSizeMeters, manifest.splatMaps.pageSizeMeters, label, "cooked paint pageSizeMeters");
+  validateEqual(asset.regionSizePages, manifest.splatMaps.regionSizePages, label, "cooked paint regionSizePages");
+  validateJsonEqual(asset.indices, manifest.splatMaps.indices, label, "cooked paint indices");
+  validateJsonEqual(asset.layers, manifest.layers, label, "cooked paint layers");
+  const regions = validateCookedRegionTable(
+    asset.regions,
+    manifest.splatMaps.regions,
+    manifest.splatMaps.regionIntegrity,
+    (key) => `maps/${mapId}/${regionPathFromKey(PAINT_REGION_DIRECTORY, PAINT_REGION_EXTENSION, key)}`,
+    label,
+    "paint",
+  );
+
+  return regions ? { ...asset, regions } : null;
+}
+
+function validateCookedVegetationAsset(asset, mapId, manifest, label) {
+  if (!isRecord(asset) || !isRecord(manifest.instances)) {
+    addError(label, "Cooked vegetation asset metadata must be an object.");
+    return null;
+  }
+
+  validateEqual(asset.manifestPath, `maps/${mapId}/${VEGETATION_PATH}`, label, "cooked vegetation manifestPath");
+  validateEqual(asset.format, manifest.instances.format, label, "cooked vegetation format");
+  validateEqual(asset.instanceFormat, manifest.instances.instanceFormat, label, "cooked vegetation instanceFormat");
+  validateEqual(asset.cellSizeMeters, manifest.instances.cellSizeMeters, label, "cooked vegetation cellSizeMeters");
+  validateEqual(asset.regionSizeCells, manifest.instances.regionSizeCells, label, "cooked vegetation regionSizeCells");
+  validateJsonEqual(asset.models, manifest.models, label, "cooked vegetation models");
+  validateJsonEqual(asset.modelIds, manifest.instances.modelIds, label, "cooked vegetation modelIds");
+  const regions = validateCookedRegionTable(
+    asset.regions,
+    manifest.instances.regions,
+    manifest.instances.regionIntegrity,
+    (key) => `maps/${mapId}/${regionPathFromKey(VEGETATION_REGION_DIRECTORY, VEGETATION_REGION_EXTENSION, key)}`,
+    label,
+    "vegetation",
+  );
+
+  return regions ? { ...asset, regions } : null;
+}
+
+function validateCookedRegionTable(regions, sourceRegions, sourceIntegrity, resolvePath, label, assetName) {
+  if (!isRecord(regions)) {
+    addError(label, `Cooked ${assetName} regions must be a JSON object.`);
+    return null;
+  }
+  if (!isRecord(sourceRegions) || !isRecord(sourceIntegrity)) {
+    addError(label, `Cooked ${assetName} source metadata is invalid.`);
+    return null;
+  }
+
+  const sourceKeys = Object.keys(sourceRegions).sort(compareRegionKeyStrings);
+  const cookedKeys = Object.keys(regions).sort(compareRegionKeyStrings);
+  if (!sameStringArray(sourceKeys, cookedKeys)) {
+    addError(label, `Cooked ${assetName} region keys must match source region keys.`);
+  }
+
+  for (const key of sourceKeys) {
+    const region = regions[key];
+    const integrity = sourceIntegrity[key];
+    if (!isRecord(region) || !isRecord(integrity)) {
+      addError(label, `Cooked ${assetName} region '${key}' metadata is invalid.`);
+      continue;
+    }
+
+    validateEqual(region.path, resolvePath(key), label, `cooked ${assetName} region '${key}' path`);
+    validateEqual(region.mask, sourceRegions[key], label, `cooked ${assetName} region '${key}' mask`);
+    validateEqual(region.byteLength, integrity.byteLength, label, `cooked ${assetName} region '${key}' byteLength`);
+    validateEqual(region.sha256, integrity.sha256, label, `cooked ${assetName} region '${key}' sha256`);
+  }
+
+  return regions;
+}
+
+function validateCookedPartition(partition, world, assets, label) {
+  if (!isRecord(partition)) {
+    addError(label, "Cooked map manifest must contain world partition metadata.");
+    return;
+  }
+
+  validateEqual(partition.cellSizePages, COOKED_WORLD_PARTITION_CELL_SIZE_PAGES, label, "cooked partition cellSizePages");
+  validateEqual(
+    partition.cellSizeMeters,
+    COOKED_WORLD_PARTITION_CELL_SIZE_PAGES * world.pageSizeMeters,
+    label,
+    "cooked partition cellSizeMeters",
+  );
+
+  if (!Array.isArray(partition.cells)) {
+    addError(label, "Cooked partition cells must be an array.");
+    return;
+  }
+
+  const coveredPages = new Set();
+  for (const cell of partition.cells) {
+    validateCookedPartitionCell(cell, world, assets, coveredPages, label);
+  }
+
+  const pageCount = world.sizeMeters / world.pageSizeMeters;
+  const expectedPageCount = pageCount * pageCount;
+  if (coveredPages.size !== expectedPageCount) {
+    addError(label, `Cooked partition covers ${coveredPages.size} pages, expected ${expectedPageCount}.`);
+  }
+}
+
+function validateCookedPartitionCell(cell, world, assets, coveredPages, label) {
+  if (!isRecord(cell)) {
+    addError(label, "Cooked partition cell must be an object.");
+    return;
+  }
+
+  if (!Number.isInteger(cell.x) || !Number.isInteger(cell.z)) {
+    addError(label, "Cooked partition cell coordinates must be integers.");
+    return;
+  }
+  validateEqual(cell.key, `${cell.x},${cell.z}`, label, `cooked partition cell '${String(cell.key)}' key`);
+
+  const pageRect = readCookedPageRect(cell.pageRect, world, label, `cooked partition cell '${cell.key}'`);
+  if (!pageRect) {
+    return;
+  }
+
+  validateCookedCellBounds(cell.boundsMeters, pageRect, world.pageSizeMeters, label, `cooked partition cell '${cell.key}'`);
+  for (let z = pageRect.minZ; z <= pageRect.maxZ; z += 1) {
+    for (let x = pageRect.minX; x <= pageRect.maxX; x += 1) {
+      const pageKey = `${x},${z}`;
+      if (coveredPages.has(pageKey)) {
+        addError(label, `Cooked partition page '${pageKey}' is covered by multiple cells.`);
+      }
+      coveredPages.add(pageKey);
+    }
+  }
+
+  validateStringArrayMatches(
+    cell.terrainRegions,
+    collectPageRegionKeys(pageRect, assets.terrain.regionSizePages, assets.terrain.regions),
+    label,
+    `cooked partition cell '${cell.key}' terrainRegions`,
+  );
+  validateStringArrayMatches(
+    cell.paintRegions,
+    collectPageRegionKeys(pageRect, assets.paint.regionSizePages, assets.paint.regions),
+    label,
+    `cooked partition cell '${cell.key}' paintRegions`,
+  );
+  validateStringArrayMatches(
+    cell.vegetationRegions,
+    collectVegetationRegionKeys(
+      pageRect,
+      world.pageSizeMeters,
+      assets.vegetation.cellSizeMeters,
+      assets.vegetation.regionSizeCells,
+      assets.vegetation.regions,
+    ),
+    label,
+    `cooked partition cell '${cell.key}' vegetationRegions`,
+  );
+}
+
 async function validateVegetationRegionPack(filePath, region, regionSizeCells, label) {
   if (!existsSync(filePath)) {
     addError(label, "Region pack is missing.");
@@ -364,6 +682,174 @@ function validateRegionPackIntegrity(bytes, integrity, regionKey, label) {
   if (integrity.sha256 !== actualSha256) {
     addError(label, `Region '${regionKey}' sha256 mismatch.`);
   }
+}
+
+async function readRequiredFileBytes(filePath, label) {
+  try {
+    checkedFiles += 1;
+    return await readFile(filePath);
+  } catch (error) {
+    addError(relativePath(filePath), `Failed to read ${label}: ${error.message}`);
+    return null;
+  }
+}
+
+function readCookedPageRect(value, world, label, fieldName) {
+  if (!isRecord(value)) {
+    addError(label, `${fieldName} pageRect must be an object.`);
+    return null;
+  }
+
+  const pageRect = {
+    minX: value.minX,
+    maxX: value.maxX,
+    minZ: value.minZ,
+    maxZ: value.maxZ,
+  };
+  if (!Object.values(pageRect).every(Number.isInteger)) {
+    addError(label, `${fieldName} pageRect values must be integers.`);
+    return null;
+  }
+
+  if (pageRect.minX > pageRect.maxX || pageRect.minZ > pageRect.maxZ) {
+    addError(label, `${fieldName} pageRect min values must not exceed max values.`);
+  }
+  if (
+    pageRect.minX < world.pageBounds.minX
+    || pageRect.maxX > world.pageBounds.maxX
+    || pageRect.minZ < world.pageBounds.minZ
+    || pageRect.maxZ > world.pageBounds.maxZ
+  ) {
+    addError(label, `${fieldName} pageRect is outside world page bounds.`);
+  }
+
+  return pageRect;
+}
+
+function validateCookedCellBounds(value, pageRect, pageSizeMeters, label, fieldName) {
+  if (!isRecord(value)) {
+    addError(label, `${fieldName} boundsMeters must be an object.`);
+    return;
+  }
+
+  const expected = {
+    minX: pageRect.minX * pageSizeMeters,
+    minZ: pageRect.minZ * pageSizeMeters,
+    maxX: (pageRect.maxX + 1) * pageSizeMeters,
+    maxZ: (pageRect.maxZ + 1) * pageSizeMeters,
+  };
+  validateEqual(value.minX, expected.minX, label, `${fieldName} boundsMeters.minX`);
+  validateEqual(value.minZ, expected.minZ, label, `${fieldName} boundsMeters.minZ`);
+  validateEqual(value.maxX, expected.maxX, label, `${fieldName} boundsMeters.maxX`);
+  validateEqual(value.maxZ, expected.maxZ, label, `${fieldName} boundsMeters.maxZ`);
+}
+
+function collectPageRegionKeys(pageRect, regionSizePages, regions) {
+  if (!Number.isInteger(regionSizePages) || regionSizePages <= 0 || !isRecord(regions)) {
+    return [];
+  }
+
+  const keys = new Set();
+  const minRegionX = Math.floor(pageRect.minX / regionSizePages);
+  const maxRegionX = Math.floor(pageRect.maxX / regionSizePages);
+  const minRegionZ = Math.floor(pageRect.minZ / regionSizePages);
+  const maxRegionZ = Math.floor(pageRect.maxZ / regionSizePages);
+  for (let z = minRegionZ; z <= maxRegionZ; z += 1) {
+    for (let x = minRegionX; x <= maxRegionX; x += 1) {
+      const key = `${x},${z}`;
+      if (Object.hasOwn(regions, key)) {
+        keys.add(key);
+      }
+    }
+  }
+
+  return Array.from(keys).sort(compareRegionKeyStrings);
+}
+
+function collectVegetationRegionKeys(pageRect, pageSizeMeters, cellSizeMeters, regionSizeCells, regions) {
+  if (!isPositiveFiniteNumber(cellSizeMeters) || !Number.isInteger(regionSizeCells) || regionSizeCells <= 0 || !isRecord(regions)) {
+    return [];
+  }
+
+  const cellsPerPage = pageSizeMeters / cellSizeMeters;
+  if (!Number.isInteger(cellsPerPage)) {
+    return [];
+  }
+
+  const minCellX = pageRect.minX * cellsPerPage;
+  const maxCellX = (pageRect.maxX + 1) * cellsPerPage - 1;
+  const minCellZ = pageRect.minZ * cellsPerPage;
+  const maxCellZ = (pageRect.maxZ + 1) * cellsPerPage - 1;
+  const keys = new Set();
+  for (let z = Math.floor(minCellZ / regionSizeCells); z <= Math.floor(maxCellZ / regionSizeCells); z += 1) {
+    for (let x = Math.floor(minCellX / regionSizeCells); x <= Math.floor(maxCellX / regionSizeCells); x += 1) {
+      const key = `${x},${z}`;
+      if (Object.hasOwn(regions, key)) {
+        keys.add(key);
+      }
+    }
+  }
+
+  return Array.from(keys).sort(compareRegionKeyStrings);
+}
+
+function regionPathFromKey(directory, extension, key) {
+  const [x, z] = parseGridKey(key, directory);
+  return `${directory}/r_${formatGridCoordinate(x)}_${formatGridCoordinate(z)}${extension}`;
+}
+
+function getWorldPageBounds(world) {
+  if (!isRecord(world) || !isPositiveFiniteNumber(world.sizeMeters) || !isPositiveFiniteNumber(world.pageSizeMeters)) {
+    return null;
+  }
+
+  const pageCount = world.sizeMeters / world.pageSizeMeters;
+  if (!Number.isInteger(pageCount)) {
+    return null;
+  }
+
+  const minPage = -Math.floor(pageCount / 2);
+  const maxPage = minPage + pageCount - 1;
+  return {
+    minX: minPage,
+    maxX: maxPage,
+    minZ: minPage,
+    maxZ: maxPage,
+  };
+}
+
+function validateStringArrayMatches(value, expected, label, fieldName) {
+  if (!Array.isArray(value) || !value.every((entry) => typeof entry === "string")) {
+    addError(label, `${fieldName} must be a string array.`);
+    return;
+  }
+
+  const actual = [...value].sort(compareRegionKeyStrings);
+  if (!sameStringArray(actual, expected)) {
+    addError(label, `${fieldName} must match intersecting asset regions.`);
+  }
+}
+
+function validateEqual(actual, expected, label, fieldName) {
+  if (actual !== expected) {
+    addError(label, `${fieldName} must be ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}.`);
+  }
+}
+
+function validateJsonEqual(actual, expected, label, fieldName) {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    addError(label, `${fieldName} must match source metadata.`);
+  }
+}
+
+function sameStringArray(left, right) {
+  return left.length === right.length && left.every((entry, index) => entry === right[index]);
+}
+
+function compareRegionKeyStrings(left, right) {
+  const [leftX, leftZ] = parseGridKey(left, "region key");
+  const [rightX, rightZ] = parseGridKey(right, "region key");
+  return leftZ - rightZ || leftX - rightX;
 }
 
 async function validateNoOrphanRegionPacks(mapDirectory, regionDirectory, extension, expectedPaths) {

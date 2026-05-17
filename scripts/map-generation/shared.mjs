@@ -32,6 +32,11 @@ export const vegetationRegionPackMagic = 0x31475256;
 export const vegetationRegionPackVersion = 1;
 export const vegetationRegionPackHeaderByteLength = 8;
 export const vegetationRegionPackEntryByteLength = 8;
+export const cookedMapsDirectory = "cooked/maps";
+export const cookedMapManifestFile = "manifest.json";
+export const cookedMapFormat = "open-fps-cooked-map-v1";
+export const cookedMapVersion = 1;
+export const cookedWorldPartitionCellSizePages = 8;
 
 export const defaultPageBounds = {
   minPageX: -8,
@@ -213,8 +218,12 @@ export async function writeJsonFile(filePath, value) {
 export function createRegionIntegrity(bytes) {
   return {
     byteLength: bytes.byteLength,
-    sha256: createHash("sha256").update(bytes).digest("hex"),
+    sha256: createSha256Hex(bytes),
   };
+}
+
+export function createSha256Hex(bytes) {
+  return createHash("sha256").update(bytes).digest("hex");
 }
 
 function selectPresets(mapFilter, generateAll) {

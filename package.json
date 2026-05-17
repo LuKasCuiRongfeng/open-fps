@@ -17,7 +17,8 @@
     "gen:terrain": "node scripts/generate-terrain-map.mjs",
     "gen:paint": "node scripts/generate-paint-map.mjs",
     "gen:vegetation": "node scripts/generate-vegetation-map.mjs",
-    "gen:all": "node scripts/generate-map-assets.mjs"
+    "gen:all": "node scripts/generate-map-assets.mjs",
+    "cook:map": "node scripts/cook-map-assets.mjs"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.6",

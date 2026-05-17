@@ -1,3 +1,4 @@
+import { generateCookedMapAssets } from "./map-generation/cooked-assets.mjs";
 import { generatePaintAssets } from "./map-generation/paint-assets.mjs";
 import { createGenerationContext, removeLegacyProjectMap, updateProjectMetadata } from "./map-generation/shared.mjs";
 import { generateTerrainAssets } from "./map-generation/terrain-assets.mjs";
@@ -11,11 +12,15 @@ async function main() {
     const terrain = await generateTerrainAssets(context, preset);
     const paint = await generatePaintAssets(context, preset);
     const vegetation = await generateVegetationAssets(context, preset);
-    results.push({ preset, terrain, paint, vegetation });
+    results.push({ preset, terrain, paint, vegetation, cooked: null });
   }
 
   await updateProjectMetadata(context, context.presets, { touch: true });
   await removeLegacyProjectMap(context);
+
+  for (const result of results) {
+    result.cooked = await generateCookedMapAssets(context, result.preset);
+  }
 
   console.log(`Generated all map assets for ${results.length} map(s) in ${context.projectArg}`);
   for (const result of results) {
@@ -24,6 +29,7 @@ async function main() {
     console.log(`  Height regions: ${result.terrain.regionCount}`);
     console.log(`  Paint layers: ${result.paint.layerCount}`);
     console.log(`  Vegetation instances: ${result.vegetation.instanceCount} in ${result.vegetation.cellCount} cells / ${result.vegetation.regionCount} regions`);
+    console.log(`  Cooked cells: ${result.cooked.cellCount}`);
     console.log(`  Area: ${result.terrain.areaSquareKilometers.toFixed(2)} km^2`);
     console.log(`  Height range: ${result.terrain.minHeight.toFixed(2)}m .. ${result.terrain.maxHeight.toFixed(2)}m`);
     console.log(`  Map path: ${result.terrain.mapPath}`);
