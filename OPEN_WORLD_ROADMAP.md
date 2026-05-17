@@ -23,6 +23,7 @@
 目标不是简单做一张大地图，而是建立一套能稳定生产高质量开放世界的工程管线：
 
 - 地图规模：`main` 目标约 10 平方公里，用于小型但高密度的开放世界开发样板。
+- 扩展策略：地图尺寸必须优先按 page/cell 整数栅格扩展；从约 10 平方公里扩展到约 20 平方公里时，优先考虑 `4480m x 4480m`（70 个 64m page，约 20.07 平方公里）这类整页尺寸，而不是任意小数面积。
 - 内容气质：强调自然地貌、道路、水体、生态、地标、兴趣点和可玩路径的融合。
 - 技术底座：WebGPU-first，资产 region/cell 化，编辑格式与运行格式分层，支持流式加载、增量保存、自动校验和性能预算。
 - 工作方式：先做正确资产和世界分区管线，再逐步堆内容密度和视觉表现。
@@ -36,6 +37,7 @@
 - 纹理绘制使用 `paint/layers.json` + `.paintpack` region pack。
 - 植被实例使用 `vegetation/models.json` + `.vegpack` region pack。
 - 已有 dirty region/page 保存、编辑器 undo/redo 和安全写入；terrain、paint、vegetation 的 region-pack sidecar 保存均向 manifest-last 提交协议收敛。
+- 已有基础 `main` 地图资产验证脚本，可检查 manifest、region pack、孤儿文件和截断文件。
 
 当前最重要的方向是把这些能力从“能用的资产格式”推进到“可验证、可恢复、可 cook、可流式加载的生产级世界管线”。
 
@@ -316,10 +318,10 @@
 ## 近期优先级
 
 1. 为 height/paint/vegetation pack 增加 checksum 或 content hash 校验。
-2. 增加 `main` 地图资产验证脚本，检查 manifest、region pack、孤儿文件和截断文件。
+2. 扩展 `main` 地图资产验证脚本，让它检查 checksum/content hash、cooked 输出和 world partition 索引。
 3. 设计 cooked map 输出结构，让游戏运行时逐步脱离编辑器 source 结构。
 4. 建立 world partition cell schema，先统一 terrain、paint、vegetation，再接 object/collision/nav。
-5. 起草 `main` 的 10 平方公里世界设计规格，包括道路、水体、区域主题和兴趣点密度。
+5. 起草 `main` 的 10 平方公里世界设计规格，包括道路、水体、区域主题和兴趣点密度，并保留向约 20 平方公里整页扩展的空间。
 
 ## 路线对齐自检
 
