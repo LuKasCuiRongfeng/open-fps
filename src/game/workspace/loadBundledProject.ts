@@ -9,9 +9,14 @@ import {
   createTerrainHeightPageIndex,
   getHeightRegionPackByteLength,
   getHeightRegionPageBytes,
+  MAP_HEIGHT_REGIONS_DIRECTORY,
+  MAP_PAINT_REGIONS_DIRECTORY,
+  TERRAIN_HEIGHT_MANIFEST_VERSION,
   type MapData,
+  type TerrainHeightManifest,
   type TerrainHeightRegionManifest,
 } from "@project/MapData";
+import { validateSidecarRegionIntegrity, type SidecarRegionIntegrityMap } from "@workspace/SidecarAssetIntegrity";
 import {
   createProjectMapRecord,
   deserializeProjectMetadata,
@@ -23,14 +28,25 @@ import { mergeSettingsWithDefaults, type GameSettings } from "@game/settings";
 import {
   createPaintDataFromManifest,
   deserializePaintManifest,
+  PAINT_MANIFEST_VERSION,
+  type PaintManifest,
   type TextureDefinition,
 } from "@game/world/terrain/TextureData";
 import {
   createVegetationDataFromManifest,
   deserializeVegetationManifest,
   getVegetationRegions,
+  VEGETATION_DATA_VERSION,
+  VEGETATION_REGIONS_DIRECTORY,
+  type VegetationManifest,
   type VegetationMapData,
 } from "@game/world/vegetation";
+import {
+  deserializeCookedMapManifest,
+  getCookedMapManifestPath,
+  type CookedMapManifest,
+  type CookedRegionTable,
+} from "./CookedMapManifest";
 
 export const DEFAULT_BUNDLED_PROJECT_URL = "/game-data/test_pro/";
 
@@ -39,6 +55,7 @@ export interface BundledGameProject {
   metadata: ProjectMetadata;
   activeMap: ProjectMapRecord;
   mapDirectoryUrl: string;
+  cookedMap: CookedMapManifest;
   map: MapData;
   settings: GameSettings;
   textureDefinition: TextureDefinition | null;
@@ -97,22 +114,22 @@ export async function loadBundledGameProject(
   );
   const metadata = deserializeProjectMetadata(metadataJson);
   const activeMapId = getCurrentProjectMapId(metadata);
-  const mapDirectoryUrl = normalizeDirectoryUrl(resolveProjectUrl(projectBaseUrl, `maps/${activeMapId}/`));
-
-  const [manifestJson, settingsJson] = await Promise.all([
-    fetchRequiredText(resolveProjectUrl(mapDirectoryUrl, "map.json"), "map manifest"),
+  const [cookedJson, settingsJson] = await Promise.all([
+    fetchRequiredText(resolveProjectUrl(projectBaseUrl, getCookedMapManifestPath(activeMapId)), "cooked map manifest"),
     fetchOptionalText(resolveProjectUrl(projectBaseUrl, "settings.json")),
   ]);
+  const cookedMap = deserializeCookedMapManifest(cookedJson);
+  validateCookedMapSelection(cookedMap, activeMapId);
+  const mapDirectoryUrl = resolveProjectFileDirectoryUrl(projectBaseUrl, cookedMap.source.map.path);
+
+  const manifestJson = await fetchRequiredText(
+    resolveProjectUrl(projectBaseUrl, cookedMap.source.map.path),
+    "map manifest",
+  );
 
   const manifest = deserializeMapManifest(manifestJson);
   const activeMap = createProjectMapRecord(activeMapId, manifest.metadata);
-  const [terrainJson, paintJson, vegetationJson] = await Promise.all([
-    fetchRequiredText(resolveProjectUrl(mapDirectoryUrl, manifest.terrainPath), "terrain height manifest"),
-    fetchOptionalText(resolveProjectUrl(mapDirectoryUrl, manifest.paintPath)),
-    fetchOptionalText(resolveProjectUrl(mapDirectoryUrl, manifest.vegetationPath)),
-  ]);
-
-  const terrainManifest = deserializeTerrainHeightManifest(terrainJson);
+  const terrainManifest = createTerrainManifestFromCooked(cookedMap);
   const heightPageIndex = createTerrainHeightPageIndex(terrainManifest);
   const heightPageCache = new Map<string, ReturnType<NonNullable<MapData["loadHeightPage"]>>>();
   const heightRegionCache = new Map<string, Promise<Uint8Array>>();
@@ -130,9 +147,10 @@ export async function loadBundledGameProject(
 
     const request = (async () => {
       const regionBytes = await loadBundledHeightRegionPack(
-        mapDirectoryUrl,
+        projectBaseUrl,
         location.region,
         terrainManifest.pageResolution,
+        cookedMap.assets.terrain.regions,
         heightRegionCache,
       );
       const pageBytes = getHeightRegionPageBytes(regionBytes, location.page);
@@ -143,21 +161,22 @@ export async function loadBundledGameProject(
   };
 
   const settings = mergeSettingsWithDefaults(settingsJson);
-  const paintManifest = paintJson ? deserializePaintManifest(paintJson) : null;
-  if (paintManifest) {
-    map.paint = createPaintDataFromManifest(paintManifest);
-  }
+  const paintManifest = createPaintManifestFromCooked(cookedMap);
+  map.paint = createPaintDataFromManifest(paintManifest);
 
-  const textureDefinition = paintManifest?.layers ?? null;
-  const vegetationData = vegetationJson
-    ? await loadBundledVegetationData(mapDirectoryUrl, vegetationJson)
-    : null;
+  const textureDefinition = paintManifest.layers;
+  const vegetationData = await loadBundledVegetationData(
+    projectBaseUrl,
+    createVegetationManifestFromCooked(cookedMap),
+    cookedMap,
+  );
 
   return {
     projectBaseUrl,
     metadata,
     activeMap,
     mapDirectoryUrl,
+    cookedMap,
     map,
     settings,
     textureDefinition,
@@ -166,9 +185,10 @@ export async function loadBundledGameProject(
 }
 
 async function loadBundledHeightRegionPack(
-  mapDirectoryUrl: string,
+  projectBaseUrl: string,
   region: TerrainHeightRegionManifest,
   pageResolution: number,
+  cookedRegions: CookedRegionTable,
   cache: Map<string, Promise<Uint8Array>>,
 ): Promise<Uint8Array> {
   const cached = cache.get(region.key);
@@ -177,14 +197,16 @@ async function loadBundledHeightRegionPack(
   }
 
   const request = (async () => {
+    const cookedRegion = getCookedRegion(cookedRegions, region.key, "height region");
     const bytes = await fetchRequiredBytes(
-      resolveProjectUrl(mapDirectoryUrl, region.path),
+      resolveProjectUrl(projectBaseUrl, cookedRegion.path),
       `height region ${region.key}`,
     );
     const expectedByteLength = getHeightRegionPackByteLength(region, pageResolution);
     if (bytes.byteLength !== expectedByteLength) {
       throw new Error(`Invalid height region '${region.key}' byte length`);
     }
+    await validateSidecarRegionIntegrity("Height region", region.key, bytes, cookedRegion);
 
     return bytes;
   })();
@@ -193,19 +215,105 @@ async function loadBundledHeightRegionPack(
 }
 
 async function loadBundledVegetationData(
-  mapDirectoryUrl: string,
-  vegetationJson: string,
+  projectBaseUrl: string,
+  manifest: VegetationManifest,
+  cookedMap: CookedMapManifest,
 ): Promise<VegetationMapData> {
-  const manifest = deserializeVegetationManifest(vegetationJson);
   const regionEntries = await Promise.all(
     getVegetationRegions(manifest).map(async (region) => {
+      const cookedRegion = getCookedRegion(cookedMap.assets.vegetation.regions, region.key, "vegetation region");
       const bytes = await fetchRequiredBytes(
-        resolveProjectUrl(mapDirectoryUrl, region.path),
+        resolveProjectUrl(projectBaseUrl, cookedRegion.path),
         `vegetation region ${region.key}`,
       );
+      await validateSidecarRegionIntegrity("Vegetation region", region.key, bytes, cookedRegion);
       return [region.key, bytes] as const;
     }),
   );
 
   return createVegetationDataFromManifest(manifest, Object.fromEntries(regionEntries));
+}
+
+function resolveProjectFileDirectoryUrl(projectBaseUrl: string, relativeFilePath: string): string {
+  const slashIndex = relativeFilePath.lastIndexOf("/");
+  const directoryPath = slashIndex >= 0 ? relativeFilePath.slice(0, slashIndex + 1) : "";
+  return normalizeDirectoryUrl(resolveProjectUrl(projectBaseUrl, directoryPath));
+}
+
+function validateCookedMapSelection(cookedMap: CookedMapManifest, activeMapId: string): void {
+  if (cookedMap.mapId !== activeMapId) {
+    throw new Error(`Cooked map '${cookedMap.mapId}' does not match active project map '${activeMapId}'`);
+  }
+}
+
+function createTerrainManifestFromCooked(cookedMap: CookedMapManifest): TerrainHeightManifest {
+  const asset = cookedMap.assets.terrain;
+  return deserializeTerrainHeightManifest(JSON.stringify({
+    version: TERRAIN_HEIGHT_MANIFEST_VERSION,
+    format: asset.format,
+    sampleFormat: asset.sampleFormat,
+    pageResolution: asset.pageResolution,
+    pageSizeMeters: asset.pageSizeMeters,
+    regionSizePages: asset.regionSizePages,
+    regionsDirectory: MAP_HEIGHT_REGIONS_DIRECTORY,
+    regions: createCookedRegionMasks(asset.regions),
+    regionIntegrity: createCookedRegionIntegrity(asset.regions),
+  }));
+}
+
+function createPaintManifestFromCooked(cookedMap: CookedMapManifest): PaintManifest {
+  const asset = cookedMap.assets.paint;
+  return deserializePaintManifest(JSON.stringify({
+    version: PAINT_MANIFEST_VERSION,
+    layers: asset.layers,
+    splatMaps: {
+      format: asset.format,
+      resolution: asset.resolution,
+      pageResolution: asset.pageResolution,
+      pageSizeMeters: asset.pageSizeMeters,
+      regionSizePages: asset.regionSizePages,
+      regionsDirectory: MAP_PAINT_REGIONS_DIRECTORY,
+      indices: asset.indices,
+      regions: createCookedRegionMasks(asset.regions),
+      regionIntegrity: createCookedRegionIntegrity(asset.regions),
+    },
+  }));
+}
+
+function createVegetationManifestFromCooked(cookedMap: CookedMapManifest): VegetationManifest {
+  const asset = cookedMap.assets.vegetation;
+  return deserializeVegetationManifest(JSON.stringify({
+    version: VEGETATION_DATA_VERSION,
+    models: asset.models,
+    instances: {
+      format: asset.format,
+      instanceFormat: asset.instanceFormat,
+      cellSizeMeters: asset.cellSizeMeters,
+      regionSizeCells: asset.regionSizeCells,
+      regionsDirectory: VEGETATION_REGIONS_DIRECTORY,
+      regions: createCookedRegionMasks(asset.regions),
+      regionIntegrity: createCookedRegionIntegrity(asset.regions),
+      modelIds: asset.modelIds,
+    },
+  }));
+}
+
+function createCookedRegionMasks(regions: CookedRegionTable): Record<string, string> {
+  return Object.fromEntries(Object.entries(regions).map(([key, region]) => [key, region.mask]));
+}
+
+function createCookedRegionIntegrity(regions: CookedRegionTable): SidecarRegionIntegrityMap {
+  return Object.fromEntries(Object.entries(regions).map(([key, region]) => [key, {
+    byteLength: region.byteLength,
+    sha256: region.sha256,
+  }]));
+}
+
+function getCookedRegion(regions: CookedRegionTable, regionKey: string, label: string) {
+  const region = regions[regionKey];
+  if (!region) {
+    throw new Error(`Cooked ${label} '${regionKey}' is missing from the asset index`);
+  }
+
+  return region;
 }

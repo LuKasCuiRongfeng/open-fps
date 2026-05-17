@@ -53,6 +53,7 @@ import { TerrainTextureArrays } from "../world/terrain/TerrainTextureArrays";
 import { getSplatMapCount, type TextureDefinition } from "../world/terrain/TextureData";
 import { VegetationScene, type VegetationMapData } from "../world/vegetation";
 import { assemblePaintSplatMapPixels, getPaintRegions, type MapData } from "@project/MapData";
+import { validateSidecarRegionIntegrity } from "@workspace/SidecarAssetIntegrity";
 
 export interface GameAppOptions {
   gameplayEnabled?: boolean;
@@ -373,7 +374,11 @@ export class GameApp implements RuntimeAppSession {
     const regions = getPaintRegions(mapData.paint);
     const regionEntries = await Promise.all(regions.map(async (region) => {
       const url = new URL(region.path, mapDirectoryUrl).href;
-      return [region.key, await this.loadPaintRegionPack(url)] as const;
+      const bytes = await this.loadPaintRegionPack(url);
+      if (region.integrity) {
+        await validateSidecarRegionIntegrity("Paint region", region.key, bytes, region.integrity);
+      }
+      return [region.key, bytes] as const;
     }));
     const regionBytesByKey = Object.fromEntries(regionEntries);
 
