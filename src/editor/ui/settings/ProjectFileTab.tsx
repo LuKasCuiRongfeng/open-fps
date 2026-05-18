@@ -57,9 +57,11 @@ export function ProjectFileTab({
   const terrainDirty = terrainEditor?.dirty ?? false;
   const textureEditor = editorApp?.getTextureEditor() ?? null;
   const vegetationEditor = editorApp?.getVegetationEditor() ?? null;
+  const worldObjectEditor = editorApp?.getWorldObjectEditor() ?? null;
   const textureDirty = textureEditor?.dirty ?? false;
   const vegetationDirty = vegetationEditor?.dirty ?? false;
-  const dirty = terrainDirty || textureDirty || vegetationDirty;
+  const worldObjectDirty = worldObjectEditor?.dirty ?? false;
+  const dirty = terrainDirty || textureDirty || vegetationDirty || worldObjectDirty;
   const hasProject = editorWorkspace.currentProjectPath !== null;
   const mapList = editorWorkspace.currentProjectMaps;
   const statusTone = statusMessage ? getStatusTone(statusMessage) : "success";
@@ -86,13 +88,15 @@ export function ProjectFileTab({
     terrainEditor?.setOnDirtyChange(markDirtyStateChanged);
     textureEditor?.setOnDirtyChange(markDirtyStateChanged);
     vegetationEditor?.setOnDirtyChange(markDirtyStateChanged);
+    worldObjectEditor?.setOnDirtyChange(markDirtyStateChanged);
 
     return () => {
       terrainEditor?.setOnDirtyChange(() => {});
       textureEditor?.setOnDirtyChange(() => {});
       vegetationEditor?.setOnDirtyChange(() => {});
+      worldObjectEditor?.setOnDirtyChange(() => {});
     };
-  }, [terrainEditor, textureEditor, vegetationEditor]);
+  }, [terrainEditor, textureEditor, vegetationEditor, worldObjectEditor]);
 
   const handleMapNameChange = (name: string) => {
     setEditableMapName(name);

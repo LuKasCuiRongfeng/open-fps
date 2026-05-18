@@ -30,7 +30,8 @@ export function useCloseConfirmation({
         const terrainDirty = appRef.current?.getTerrainEditor()?.dirty ?? false;
         const textureDirty = appRef.current?.getTextureEditor()?.dirty ?? false;
         const vegetationDirty = appRef.current?.getVegetationEditor()?.dirty ?? false;
-        if (!terrainDirty && !textureDirty && !vegetationDirty) {
+        const worldObjectDirty = appRef.current?.getWorldObjectEditor()?.dirty ?? false;
+        if (!terrainDirty && !textureDirty && !vegetationDirty && !worldObjectDirty) {
           return;
         }
 

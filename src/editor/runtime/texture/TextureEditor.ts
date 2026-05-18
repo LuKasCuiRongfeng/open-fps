@@ -17,6 +17,7 @@ import {
   createPaintDataForMap,
   createPaintRegionPackPayload,
   getPaintRegionKeysForWorldBounds,
+  sortPageKeys,
   type MapData,
   type MapPaintData,
   type PaintRegionPackPayload,
@@ -226,6 +227,10 @@ export class TextureEditor {
 
   get dirty(): boolean {
     return this._dirty;
+  }
+
+  getDirtyPaintRegionKeys(): string[] {
+    return sortPageKeys(this.dirtyPaintRegionKeys);
   }
 
   get layerNames(): readonly string[] {

@@ -2,7 +2,7 @@
 // WorldObjectEditor：世界对象摆放与校验协调器。
 
 import type { PerspectiveCamera } from "three/webgpu";
-import { MAP_WORLD_OBJECTS_PATH, type MapData } from "@project/MapData";
+import { MAP_WORLD_OBJECTS_PATH, sortPageKeys, type MapData } from "@project/MapData";
 import {
   cloneWorldObjectCellPack,
   type WorldObjectArchetypeDefinition,
@@ -48,6 +48,7 @@ export class WorldObjectEditor {
   private mapDirectory = "";
   private sequence = 0;
   private _dirty = false;
+  private readonly dirtyCellKeys = new Set<string>();
   private commandRecorder: EditorCommandRecorder | null = null;
   private onDirtyChange?: (dirty: boolean) => void;
   private readonly changeSubscribers = new Set<() => void>();
@@ -112,6 +113,10 @@ export class WorldObjectEditor {
     return count;
   }
 
+  getDirtyCellKeys(): string[] {
+    return sortPageKeys(this.dirtyCellKeys);
+  }
+
   subscribe(callback: () => void): () => void {
     this.changeSubscribers.add(callback);
     return () => {
@@ -125,6 +130,7 @@ export class WorldObjectEditor {
     this.manifest = loaded.manifest;
     this.packs = loaded.packs;
     this.previousRegionPaths = loaded.previousRegionPaths;
+    this.dirtyCellKeys.clear();
     this.selectedArchetypeId = this.resolveInitialArchetypeId();
     this.setDirty(false);
     this.refreshOverlay();
@@ -146,6 +152,7 @@ export class WorldObjectEditor {
     );
     this.previousRegionPaths = new Set(Object.values(this.manifest.cells).map((cell) => cell.path));
     this.mapDirectory = mapDirectory;
+    this.dirtyCellKeys.clear();
     this.setDirty(false);
     this.notifyChanged();
   }
@@ -247,6 +254,7 @@ export class WorldObjectEditor {
     const pack = this.ensureCellPack(cellKey);
     pack.objects.push(object);
     pack.objects.sort((left, right) => left.id.localeCompare(right.id));
+    this.dirtyCellKeys.add(cellKey);
     return true;
   }
 
@@ -271,6 +279,7 @@ export class WorldObjectEditor {
     if (!pack) return false;
 
     pack.objects = pack.objects.filter((object) => object.id !== nearest?.object.id);
+    this.dirtyCellKeys.add(nearest.key);
     return true;
   }
 
@@ -314,6 +323,9 @@ export class WorldObjectEditor {
       archetypes: snapshot.manifest.archetypes ? { ...snapshot.manifest.archetypes } : undefined,
     };
     this.packs = new Map(Array.from(snapshot.packs.entries()).map(([key, pack]) => [key, cloneWorldObjectCellPack(pack)]));
+    for (const key of snapshot.packs.keys()) {
+      this.dirtyCellKeys.add(key);
+    }
     this.setDirty(true);
     this.refreshOverlay();
     this.notifyChanged();

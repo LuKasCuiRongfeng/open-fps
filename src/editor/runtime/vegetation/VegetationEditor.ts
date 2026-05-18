@@ -51,6 +51,7 @@ export class VegetationEditor {
   private sequence = 0;
   private cellSizeMeters = DEFAULT_VEGETATION_CELL_SIZE_METERS;
   private loadedRegionKeys = new Set<string>();
+  private readonly dirtyCellKeys = new Set<string>();
   private _dirty = false;
   private activeBrushStroke: VegetationBrushStrokeSession | null = null;
   private commandPlaybackInProgress = false;
@@ -123,6 +124,7 @@ export class VegetationEditor {
     const loaded = await VegetationStorage.loadVegetationData(mapDirectory, mapData);
     this.cellSizeMeters = loaded.cellSizeMeters;
     this.loadedRegionKeys = new Set(loaded.regionKeys);
+    this.dirtyCellKeys.clear();
     this.data = loaded.data;
     this.selectedModelId = this.modelDefinitions[0]?.id ?? "";
     this.placementAccumulator = 0;
@@ -136,6 +138,7 @@ export class VegetationEditor {
 
     await VegetationStorage.saveVegetationData(mapDirectory, this.data, this.cellSizeMeters, this.loadedRegionKeys);
     this.loadedRegionKeys = new Set(getVegetationRegionKeys(this.data, this.cellSizeMeters));
+    this.dirtyCellKeys.clear();
     this.setDirty(false);
   }
 
@@ -145,6 +148,10 @@ export class VegetationEditor {
 
   getDataSnapshot(): VegetationMapData {
     return cloneVegetationData(this.data);
+  }
+
+  getDirtyCellKeys(): string[] {
+    return sortPageKeys(this.dirtyCellKeys);
   }
 
   setSelectedModel(modelId: string): void {
@@ -296,6 +303,7 @@ export class VegetationEditor {
     if (this.brushSettings.mode === "erase") {
       if (this.eraseInstancesInBrush()) {
         brushStroke.changed = true;
+        this.markDirtyCells(brushCellKeys);
       }
       return;
     }
@@ -318,6 +326,7 @@ export class VegetationEditor {
 
     if (changed) {
       brushStroke.changed = true;
+      this.markDirtyCells(brushCellKeys);
       this.setDirty(true);
       this.scene.syncInstances(this.selectedModelId);
       this.notifyChanged();
@@ -342,6 +351,7 @@ export class VegetationEditor {
   }
 
   markClean(): void {
+    this.dirtyCellKeys.clear();
     this.setDirty(false);
   }
 
@@ -457,6 +467,7 @@ export class VegetationEditor {
         )),
         ...snapshot.cells.flatMap((cell) => cloneVegetationInstances(cell.instances)),
       ];
+      this.markDirtyCells(snapshot.cells.map((cell) => cell.key));
       this.setDirty(true);
       this.scene.syncInstances();
       this.notifyChanged();
@@ -530,6 +541,12 @@ export class VegetationEditor {
   private createInstanceId(): string {
     this.sequence += 1;
     return `vegetation-${Date.now().toString(36)}-${this.sequence.toString(36)}`;
+  }
+
+  private markDirtyCells(cellKeys: readonly string[]): void {
+    for (const key of cellKeys) {
+      this.dirtyCellKeys.add(key);
+    }
   }
 
   private setDirty(dirty: boolean): void {
