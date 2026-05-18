@@ -138,6 +138,7 @@ export interface CookedMapManifest {
   map: CookedMapInfo;
   source: {
     project: CookedSourceRef;
+    assetRegistry: CookedSourceRef;
     map: CookedSourceRef;
     terrain: CookedSourceRef;
     paint: CookedSourceRef;
@@ -254,6 +255,7 @@ function normalizeCookedSource(value: unknown): CookedMapManifest["source"] {
   const source = readRecord(value, "cooked source metadata");
   return {
     project: normalizeSourceRef(source.project, "project"),
+    assetRegistry: normalizeSourceRef(source.assetRegistry, "asset registry"),
     map: normalizeSourceRef(source.map, "map"),
     terrain: normalizeSourceRef(source.terrain, "terrain"),
     paint: normalizeSourceRef(source.paint, "paint"),

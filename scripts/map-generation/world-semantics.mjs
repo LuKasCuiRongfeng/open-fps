@@ -1,4 +1,5 @@
 import { clamp } from "./shared.mjs";
+import { getWorldObjectModelPath } from "./asset-registry.mjs";
 
 export const semanticPolylineDefinitions = [
   {
@@ -73,8 +74,8 @@ export function createSemanticWorldObjects(heightAt) {
   ];
 }
 
-export function createSemanticArchetypes() {
-  const modelPath = (assetId) => `../../assets/model/${assetId}_1k.gltf/${assetId}_1k.gltf`;
+export function createSemanticArchetypes(assetRegistry) {
+  const modelPath = (assetId) => getWorldObjectModelPath(assetRegistry, assetId);
   return {
     "road-dirt-segment": {
       layer: "road",

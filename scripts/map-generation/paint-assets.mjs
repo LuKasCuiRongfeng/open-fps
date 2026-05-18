@@ -21,6 +21,7 @@ import {
   paintRegionSizePages,
   pageSizeMeters,
 } from "./shared.mjs";
+import { createTerrainPaintLayers, readAssetRegistry } from "./asset-registry.mjs";
 
 export async function generatePaintAssets(context, preset) {
   const mapDir = getMapDir(context, preset);
@@ -39,45 +40,8 @@ export async function generatePaintAssets(context, preset) {
   const heightConfig = buildHeightConfig(preset);
   const heightAt = (x, z) => generateHeight(x, z, preset, heightConfig);
   const semanticObjects = createSemanticWorldObjects(heightAt);
-
-  const layers = {
-    beachSand: {
-      name: "Beach Sand",
-      diffuse: "assets/texture/aerial_beach_01_diff_1k.jpg",
-      normal: "assets/texture/aerial_beach_01_nor_gl_1k.png",
-      arm: "assets/texture/aerial_beach_01_arm_1k.png",
-      displacement: "assets/texture/aerial_beach_01_disp_1k.png",
-      scale: 7,
-      splatMapIndex: 0,
-    },
-    mudLeaves: {
-      name: "Mud Leaves",
-      diffuse: "assets/texture/brown_mud_leaves_01_diff_1k.jpg",
-      normal: "assets/texture/brown_mud_leaves_01_nor_gl_1k.png",
-      arm: "assets/texture/brown_mud_leaves_01_arm_1k.png",
-      displacement: "assets/texture/brown_mud_leaves_01_disp_1k.png",
-      scale: 5,
-      splatMapIndex: 0,
-    },
-    gravelEmbeddedConcrete: {
-      name: "Embedded Gravel Concrete",
-      diffuse: "assets/texture/gravel_embedded_concrete_diff_1k.jpg",
-      normal: "assets/texture/gravel_embedded_concrete_nor_gl_1k.png",
-      arm: "assets/texture/gravel_embedded_concrete_arm_1k.png",
-      displacement: "assets/texture/gravel_embedded_concrete_disp_1k.png",
-      scale: 4,
-      splatMapIndex: 0,
-    },
-    snow: {
-      name: "Snow",
-      diffuse: "assets/texture/snow_03_diff_1k.jpg",
-      normal: "assets/texture/snow_03_nor_gl_1k.png",
-      arm: "assets/texture/snow_03_arm_1k.png",
-      displacement: "assets/texture/snow_03_disp_1k.png",
-      scale: 5,
-      splatMapIndex: 0,
-    },
-  };
+  const assetRegistry = await readAssetRegistry(context);
+  const layers = createTerrainPaintLayers(assetRegistry);
   const manifest = {
     version: 2,
     layers,

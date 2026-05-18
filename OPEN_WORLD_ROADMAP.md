@@ -37,12 +37,15 @@
 - 纹理绘制使用 `paint/layers.json` + `.paintpack` region pack。
 - 植被实例使用 `vegetation/models.json` + `.vegpack` region pack。
 - 世界对象使用 `objects/manifest.json` + `.objectpack` partition cell pack，首批道路、水体、POI 和道具已由 `OPEN_WORLD_DESIGN_SPEC.md` 规则生成，并已有 archetype render/editor/scatter/validation 元数据。
+- `test_pro/assets` 已从裸文件目录升级为项目级资产库：`registry.json` 统一登记资产用途、授权、来源和导入产物，`sources/` 保留 Poly Haven/CC0 来源元数据，`imported/` 存放生成脚本和运行时可引用的模型与材质。
 - 已有 dirty region/page 保存、编辑器 undo/redo 和安全写入；terrain、paint、vegetation、world object 的 sidecar 保存均向 manifest-last 提交协议收敛。
 - terrain、paint、vegetation、objects manifest 已记录 region/cell pack 的 byte length 与 SHA-256，并在加载、保存、生成和资产校验中统一验证。
 - 已有 `main` 地图资产验证脚本，可检查 manifest、region pack、孤儿文件、截断文件和内容 hash。
+- 地图资产验证已覆盖资产注册表、来源元数据、导入产物覆盖率、旧 `assets/model`/`assets/texture` 目录禁用、source manifest 注册引用和 cooked `assetRegistry` source hash。
 - 已有 cooked map manifest v4：记录 source hash、build input signature、content-addressed package artifact index、terrain/paint/vegetation/object asset index，以及 8-page world partition cell dependency 表。
 - web game bundled runtime 已优先读取 cooked manifest，并从 cooked asset index 派生 terrain、paint、vegetation 运行时 manifest。
 - cooked 输出已复制运行时所需的 region pack、terrain texture、vegetation model 和 world object GLTF 资产，game target 不再依赖 source sidecar 目录读取核心运行资产。
+- cooked 输出现在按 `cooked/assets/imported/...` 保留注册表导入路径结构，避免运行时重新依赖 source 资产库，同时保留 source path 和 content hash 可追溯性。
 - cooked 输出已写入 `cooked/cache/maps/<mapId>.json`，用于记录 build input signature、artifact 列表和 stale cook 诊断依据。
 - cooked package 已生成 `content-addressed-sha256-v1` artifact index，并把 runtime artifact 同步写入 `cooked/blobs/sha256/...`。
 - world partition cell 已收敛到 `dependencies` 结构，统一挂载 terrain、paint、vegetation、objects、collision、nav 六类运行时分区依赖。

@@ -3,39 +3,39 @@
   "layers": {
     "beachSand": {
       "name": "Beach Sand",
-      "diffuse": "assets/texture/aerial_beach_01_diff_1k.jpg",
-      "normal": "assets/texture/aerial_beach_01_nor_gl_1k.png",
-      "arm": "assets/texture/aerial_beach_01_arm_1k.png",
-      "displacement": "assets/texture/aerial_beach_01_disp_1k.png",
       "scale": 7,
-      "splatMapIndex": 0
+      "splatMapIndex": 0,
+      "diffuse": "assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_diff_1k.jpg",
+      "normal": "assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_nor_gl_1k.png",
+      "arm": "assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_arm_1k.png",
+      "displacement": "assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_disp_1k.png"
     },
     "mudLeaves": {
       "name": "Mud Leaves",
-      "diffuse": "assets/texture/brown_mud_leaves_01_diff_1k.jpg",
-      "normal": "assets/texture/brown_mud_leaves_01_nor_gl_1k.png",
-      "arm": "assets/texture/brown_mud_leaves_01_arm_1k.png",
-      "displacement": "assets/texture/brown_mud_leaves_01_disp_1k.png",
       "scale": 5,
-      "splatMapIndex": 0
+      "splatMapIndex": 0,
+      "diffuse": "assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_diff_1k.jpg",
+      "normal": "assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_nor_gl_1k.png",
+      "arm": "assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_arm_1k.png",
+      "displacement": "assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_disp_1k.png"
     },
     "gravelEmbeddedConcrete": {
       "name": "Embedded Gravel Concrete",
-      "diffuse": "assets/texture/gravel_embedded_concrete_diff_1k.jpg",
-      "normal": "assets/texture/gravel_embedded_concrete_nor_gl_1k.png",
-      "arm": "assets/texture/gravel_embedded_concrete_arm_1k.png",
-      "displacement": "assets/texture/gravel_embedded_concrete_disp_1k.png",
       "scale": 4,
-      "splatMapIndex": 0
+      "splatMapIndex": 0,
+      "diffuse": "assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_diff_1k.jpg",
+      "normal": "assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_nor_gl_1k.png",
+      "arm": "assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_arm_1k.png",
+      "displacement": "assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_disp_1k.png"
     },
     "snow": {
       "name": "Snow",
-      "diffuse": "assets/texture/snow_03_diff_1k.jpg",
-      "normal": "assets/texture/snow_03_nor_gl_1k.png",
-      "arm": "assets/texture/snow_03_arm_1k.png",
-      "displacement": "assets/texture/snow_03_disp_1k.png",
       "scale": 5,
-      "splatMapIndex": 0
+      "splatMapIndex": 0,
+      "diffuse": "assets/imported/materials/snow_03_1k/snow_03_diff_1k.jpg",
+      "normal": "assets/imported/materials/snow_03_1k/snow_03_nor_gl_1k.png",
+      "arm": "assets/imported/materials/snow_03_1k/snow_03_arm_1k.png",
+      "displacement": "assets/imported/materials/snow_03_1k/snow_03_disp_1k.png"
     }
   },
   "splatMaps": {

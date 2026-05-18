@@ -201,8 +201,7 @@ export class SkySystem {
     readBinaryBase64: (path: string) => Promise<string>,
   ): Promise<boolean> {
     const candidatePaths = [
-      `${projectPath}/assets/textures/starry_4k.exr`,
-      `${projectPath}/assets/texture/starry_4k.exr`,
+      `${projectPath}/assets/imported/materials/skies/starry_4k.exr`,
     ];
     const failures: Array<{ path: string; stage: "read" | "decode"; error: unknown }> = [];
 

@@ -5,9 +5,9 @@
   "build": {
     "tool": "open-fps-cook-map-assets",
     "toolVersion": 4,
-    "generatedAt": "2026-05-18T07:05:05.962Z",
-    "inputSignature": "54498eb7c38bec49672b64d30c70a12ace547d6369758d4aa1dfe892f112fc62",
-    "previousInputSignature": "8d94913c274cf3f078a5e121de56ff21ab1816f0a05d639d4c21e2d0f3889517",
+    "generatedAt": "2026-05-18T07:43:08.246Z",
+    "inputSignature": "fdeda57658d53d00e8c749bd9f6ed8d8057ff1d68b110d229e77b28ec7dc1097",
+    "previousInputSignature": "54498eb7c38bec49672b64d30c70a12ace547d6369758d4aa1dfe892f112fc62",
     "packageLayout": "content-addressed-sha256-v1",
     "artifactCount": 547
   },
@@ -16,17 +16,21 @@
     "metadata": {
       "name": "Frontier Basin",
       "created": 1778997569115,
-      "modified": 1779087797987
+      "modified": 1779090104954
     }
   },
   "source": {
     "project": {
       "path": "project.json",
-      "sha256": "8bbb9a7d699571d84dac2c8211bb4ba9b8d63f13321f036cd24a7a21ada7c84e"
+      "sha256": "1873a6614a6673a8e35830d9324fbbc1373cd511fa71f75d0d192756071aacf0"
+    },
+    "assetRegistry": {
+      "path": "assets/registry.json",
+      "sha256": "e8d63ac08e80a82b4c3fbb90829f60ac020df1239bf97c837c99e7f8a2aed67b"
     },
     "map": {
       "path": "maps/main/map.json",
-      "sha256": "88fdbae14df0ea7e15fa8f7f7704acb9a67653e80e4e6a4868d7727146719ee0"
+      "sha256": "b2be439695a20fd95b141e70deae6e1b0b17d55f5d18a27a6a16e9cbc086414a"
     },
     "terrain": {
       "path": "maps/main/terrain/height/manifest.json",
@@ -34,15 +38,15 @@
     },
     "paint": {
       "path": "maps/main/paint/layers.json",
-      "sha256": "56d2e1ac3443b62e3fa7810da71ea06e18c446f81ad8e4fcdf674748d05962b6"
+      "sha256": "f72f872b622265d1da97b7b5b5cacbbe317ac83e9103b4c5d64379ce1b24b76e"
     },
     "vegetation": {
       "path": "maps/main/vegetation/models.json",
-      "sha256": "dc6ccfa190cf2ae54c5252c7bcfff9ce2c74560608451202d9a19908294ec846"
+      "sha256": "49db7e2b4032d88d4d27bfb3f29df206c3335ef9742452137d296352484c95e0"
     },
     "objects": {
       "path": "maps/main/objects/manifest.json",
-      "sha256": "4e48ce81f9cfae6fc4b9cc7e657efc437e843c96e4577811a43ef7effa0ecc86"
+      "sha256": "d594011944cf1af2e17004aa96a3e674caaaf09e9ea01720d26db7b4f45d58a3"
     }
   },
   "world": {
@@ -465,39 +469,39 @@
       "layers": {
         "beachSand": {
           "name": "Beach Sand",
-          "diffuse": "cooked/assets/texture/aerial_beach_01_diff_1k.jpg",
-          "normal": "cooked/assets/texture/aerial_beach_01_nor_gl_1k.png",
-          "arm": "cooked/assets/texture/aerial_beach_01_arm_1k.png",
-          "displacement": "cooked/assets/texture/aerial_beach_01_disp_1k.png",
           "scale": 7,
-          "splatMapIndex": 0
+          "splatMapIndex": 0,
+          "diffuse": "cooked/assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_diff_1k.jpg",
+          "normal": "cooked/assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_nor_gl_1k.png",
+          "arm": "cooked/assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_arm_1k.png",
+          "displacement": "cooked/assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_disp_1k.png"
         },
         "mudLeaves": {
           "name": "Mud Leaves",
-          "diffuse": "cooked/assets/texture/brown_mud_leaves_01_diff_1k.jpg",
-          "normal": "cooked/assets/texture/brown_mud_leaves_01_nor_gl_1k.png",
-          "arm": "cooked/assets/texture/brown_mud_leaves_01_arm_1k.png",
-          "displacement": "cooked/assets/texture/brown_mud_leaves_01_disp_1k.png",
           "scale": 5,
-          "splatMapIndex": 0
+          "splatMapIndex": 0,
+          "diffuse": "cooked/assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_diff_1k.jpg",
+          "normal": "cooked/assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_nor_gl_1k.png",
+          "arm": "cooked/assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_arm_1k.png",
+          "displacement": "cooked/assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_disp_1k.png"
         },
         "gravelEmbeddedConcrete": {
           "name": "Embedded Gravel Concrete",
-          "diffuse": "cooked/assets/texture/gravel_embedded_concrete_diff_1k.jpg",
-          "normal": "cooked/assets/texture/gravel_embedded_concrete_nor_gl_1k.png",
-          "arm": "cooked/assets/texture/gravel_embedded_concrete_arm_1k.png",
-          "displacement": "cooked/assets/texture/gravel_embedded_concrete_disp_1k.png",
           "scale": 4,
-          "splatMapIndex": 0
+          "splatMapIndex": 0,
+          "diffuse": "cooked/assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_diff_1k.jpg",
+          "normal": "cooked/assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_nor_gl_1k.png",
+          "arm": "cooked/assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_arm_1k.png",
+          "displacement": "cooked/assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_disp_1k.png"
         },
         "snow": {
           "name": "Snow",
-          "diffuse": "cooked/assets/texture/snow_03_diff_1k.jpg",
-          "normal": "cooked/assets/texture/snow_03_nor_gl_1k.png",
-          "arm": "cooked/assets/texture/snow_03_arm_1k.png",
-          "displacement": "cooked/assets/texture/snow_03_disp_1k.png",
           "scale": 5,
-          "splatMapIndex": 0
+          "splatMapIndex": 0,
+          "diffuse": "cooked/assets/imported/materials/snow_03_1k/snow_03_diff_1k.jpg",
+          "normal": "cooked/assets/imported/materials/snow_03_1k/snow_03_nor_gl_1k.png",
+          "arm": "cooked/assets/imported/materials/snow_03_1k/snow_03_arm_1k.png",
+          "displacement": "cooked/assets/imported/materials/snow_03_1k/snow_03_disp_1k.png"
         }
       },
       "regions": {
@@ -894,28 +898,13 @@
       "cellSizeMeters": 32,
       "regionSizeCells": 8,
       "models": {
-        "quiverTree": {
-          "id": "quiverTree",
-          "name": "Quiver Tree",
-          "path": "../../assets/model/quiver_tree_02_1k.gltf/quiver_tree_02_1k.gltf",
-          "lod1Path": "../../assets/model/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf",
-          "lod1DistanceMeters": 70,
-          "lod2Path": "../../assets/model/quiver_tree_02_1k.gltf/lod2/quiver_tree_02_lod2.gltf",
-          "lod2DistanceMeters": 135,
-          "targetHeightMeters": 7.5,
-          "baseScale": 1.2,
-          "castShadow": true,
-          "receiveShadow": true,
-          "maxVisibleDistanceMeters": 260,
-          "shadowDistanceMeters": 70
-        },
         "fern": {
           "id": "fern",
           "name": "Fern",
-          "path": "../../assets/model/fern_02_1k.gltf/fern_02_1k.gltf",
-          "lod1Path": "../../assets/model/fern_02_1k.gltf/lod1/fern_02_lod1.gltf",
+          "path": "../../assets/imported/models/fern_02_1k.gltf/fern_02_1k.gltf",
+          "lod1Path": "../../assets/imported/models/fern_02_1k.gltf/lod1/fern_02_lod1.gltf",
           "lod1DistanceMeters": 35,
-          "lod2Path": "../../assets/model/fern_02_1k.gltf/lod2/fern_02_lod2.gltf",
+          "lod2Path": "../../assets/imported/models/fern_02_1k.gltf/lod2/fern_02_lod2.gltf",
           "lod2DistanceMeters": 75,
           "targetHeightMeters": 0.9,
           "baseScale": 0.85,
@@ -923,6 +912,21 @@
           "receiveShadow": true,
           "maxVisibleDistanceMeters": 120,
           "shadowDistanceMeters": 35
+        },
+        "quiverTree": {
+          "id": "quiverTree",
+          "name": "Quiver Tree",
+          "path": "../../assets/imported/models/quiver_tree_02_1k.gltf/quiver_tree_02_1k.gltf",
+          "lod1Path": "../../assets/imported/models/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf",
+          "lod1DistanceMeters": 70,
+          "lod2Path": "../../assets/imported/models/quiver_tree_02_1k.gltf/lod2/quiver_tree_02_lod2.gltf",
+          "lod2DistanceMeters": 135,
+          "targetHeightMeters": 7.5,
+          "baseScale": 1.2,
+          "castShadow": true,
+          "receiveShadow": true,
+          "maxVisibleDistanceMeters": 260,
+          "shadowDistanceMeters": 70
         }
       },
       "modelIds": [
@@ -2036,7 +2040,7 @@
           },
           "render": {
             "kind": "gltf",
-            "path": "../../assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf",
+            "path": "../../assets/imported/models/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf",
             "targetHeightMeters": 2.4,
             "baseScale": 1.8,
             "castShadow": true,
@@ -2083,7 +2087,7 @@
           },
           "render": {
             "kind": "gltf",
-            "path": "../../assets/model/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf",
+            "path": "../../assets/imported/models/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf",
             "targetHeightMeters": 8.5,
             "baseScale": 1.4,
             "castShadow": true,
@@ -2114,7 +2118,7 @@
           },
           "render": {
             "kind": "gltf",
-            "path": "../../assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf",
+            "path": "../../assets/imported/models/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf",
             "targetHeightMeters": 3.2,
             "baseScale": 3.8,
             "castShadow": true,
@@ -2145,7 +2149,7 @@
           },
           "render": {
             "kind": "gltf",
-            "path": "../../assets/model/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf",
+            "path": "../../assets/imported/models/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf",
             "targetHeightMeters": 3.6,
             "baseScale": 5.8,
             "castShadow": true,
@@ -2188,7 +2192,7 @@
           "collision": false,
           "render": {
             "kind": "gltf",
-            "path": "../../assets/model/boulder_01_1k.gltf/boulder_01_1k.gltf",
+            "path": "../../assets/imported/models/boulder_01_1k.gltf/boulder_01_1k.gltf",
             "targetHeightMeters": 2.2,
             "baseScale": 1.4,
             "castShadow": true,
@@ -2227,7 +2231,7 @@
           },
           "render": {
             "kind": "gltf",
-            "path": "../../assets/model/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf",
+            "path": "../../assets/imported/models/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf",
             "targetHeightMeters": 2.6,
             "baseScale": 0.34,
             "castShadow": true,
@@ -2256,7 +2260,7 @@
           },
           "render": {
             "kind": "gltf",
-            "path": "../../assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf",
+            "path": "../../assets/imported/models/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf",
             "targetHeightMeters": 1.8,
             "baseScale": 2.8,
             "castShadow": true,
@@ -2293,7 +2297,7 @@
           },
           "render": {
             "kind": "gltf",
-            "path": "../../assets/model/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf",
+            "path": "../../assets/imported/models/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf",
             "targetHeightMeters": 2.2,
             "baseScale": 1.35,
             "castShadow": true,
@@ -2322,7 +2326,7 @@
           },
           "render": {
             "kind": "gltf",
-            "path": "../../assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf",
+            "path": "../../assets/imported/models/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf",
             "targetHeightMeters": 2.1,
             "baseScale": 1.2,
             "castShadow": true,
@@ -5866,549 +5870,549 @@
     "blobRoot": "cooked/blobs/sha256",
     "artifactCount": 547,
     "artifacts": {
-      "cooked/assets/model/boulder_01_1k.gltf/boulder_01_1k.gltf": {
-        "path": "cooked/assets/model/boulder_01_1k.gltf/boulder_01_1k.gltf",
-        "blobPath": "cooked/blobs/sha256/51/51487934db898b4c24072780a451e34eca5c02e3ada24a62bbc600bbc4019e92.gltf",
-        "kind": "world-object-model",
-        "byteLength": 2773,
-        "sha256": "51487934db898b4c24072780a451e34eca5c02e3ada24a62bbc600bbc4019e92",
-        "sourcePath": "assets/model/boulder_01_1k.gltf/boulder_01_1k.gltf"
-      },
-      "cooked/assets/model/boulder_01_1k.gltf/boulder_01.bin": {
-        "path": "cooked/assets/model/boulder_01_1k.gltf/boulder_01.bin",
-        "blobPath": "cooked/blobs/sha256/7f/7f5b06503d62bd95bfe9c6b8a354a5cc8ff04a4d271a8cf87a3e3125db4232d7.bin",
-        "kind": "world-object-model",
-        "byteLength": 2938808,
-        "sha256": "7f5b06503d62bd95bfe9c6b8a354a5cc8ff04a4d271a8cf87a3e3125db4232d7",
-        "sourcePath": "assets/model/boulder_01_1k.gltf/boulder_01.bin"
-      },
-      "cooked/assets/model/boulder_01_1k.gltf/textures/boulder_01_arm_1k.jpg": {
-        "path": "cooked/assets/model/boulder_01_1k.gltf/textures/boulder_01_arm_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/c5/c57187c5746b6be913fa53846cb44ff78743e7ca5000f131c9627b99563c2b87.jpg",
-        "kind": "world-object-model",
-        "byteLength": 659386,
-        "sha256": "c57187c5746b6be913fa53846cb44ff78743e7ca5000f131c9627b99563c2b87",
-        "sourcePath": "assets/model/boulder_01_1k.gltf/textures/boulder_01_arm_1k.jpg"
-      },
-      "cooked/assets/model/boulder_01_1k.gltf/textures/boulder_01_diff_1k.jpg": {
-        "path": "cooked/assets/model/boulder_01_1k.gltf/textures/boulder_01_diff_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/c3/c38f0e918f6dc16b8d386ba3cdd89805c78320c119a1ceec85856f82b09a65b8.jpg",
-        "kind": "world-object-model",
-        "byteLength": 987467,
-        "sha256": "c38f0e918f6dc16b8d386ba3cdd89805c78320c119a1ceec85856f82b09a65b8",
-        "sourcePath": "assets/model/boulder_01_1k.gltf/textures/boulder_01_diff_1k.jpg"
-      },
-      "cooked/assets/model/boulder_01_1k.gltf/textures/boulder_01_nor_gl_1k.jpg": {
-        "path": "cooked/assets/model/boulder_01_1k.gltf/textures/boulder_01_nor_gl_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/08/0810cf6e89d89bb6eb065b4d2e2855288f5dcbd2c15c6e40ab90d462021b50aa.jpg",
-        "kind": "world-object-model",
-        "byteLength": 1183552,
-        "sha256": "0810cf6e89d89bb6eb065b4d2e2855288f5dcbd2c15c6e40ab90d462021b50aa",
-        "sourcePath": "assets/model/boulder_01_1k.gltf/textures/boulder_01_nor_gl_1k.jpg"
-      },
-      "cooked/assets/model/fern_02_1k.gltf/fern_02_1k.gltf": {
-        "path": "cooked/assets/model/fern_02_1k.gltf/fern_02_1k.gltf",
-        "blobPath": "cooked/blobs/sha256/33/33974295ee19670af4877705fc7d91f33f42d6302f0d44a625e072271223031f.gltf",
-        "kind": "vegetation-model",
-        "byteLength": 6899,
-        "sha256": "33974295ee19670af4877705fc7d91f33f42d6302f0d44a625e072271223031f",
-        "sourcePath": "assets/model/fern_02_1k.gltf/fern_02_1k.gltf"
-      },
-      "cooked/assets/model/fern_02_1k.gltf/fern_02.bin": {
-        "path": "cooked/assets/model/fern_02_1k.gltf/fern_02.bin",
-        "blobPath": "cooked/blobs/sha256/fe/fe1abb762bcbbc7ad9e86925c8080437a62add257d9280e9142fdc85c226e64c.bin",
-        "kind": "vegetation-model",
-        "byteLength": 176176,
-        "sha256": "fe1abb762bcbbc7ad9e86925c8080437a62add257d9280e9142fdc85c226e64c",
-        "sourcePath": "assets/model/fern_02_1k.gltf/fern_02.bin"
-      },
-      "cooked/assets/model/fern_02_1k.gltf/lod1/fern_02_lod1.gltf": {
-        "path": "cooked/assets/model/fern_02_1k.gltf/lod1/fern_02_lod1.gltf",
-        "blobPath": "cooked/blobs/sha256/bd/bd72ab514e516b103de542635a14a26f7995f6dd05f08a987876b3a48cbf6cf3.gltf",
-        "kind": "vegetation-model",
-        "byteLength": 6672,
-        "sha256": "bd72ab514e516b103de542635a14a26f7995f6dd05f08a987876b3a48cbf6cf3",
-        "sourcePath": "assets/model/fern_02_1k.gltf/lod1/fern_02_lod1.gltf"
-      },
-      "cooked/assets/model/fern_02_1k.gltf/lod1/fern_02.bin": {
-        "path": "cooked/assets/model/fern_02_1k.gltf/lod1/fern_02.bin",
-        "blobPath": "cooked/blobs/sha256/bf/bf51fcb7d455caa28f21e1c9e47527ed1440a64f842f4efa0fe8944ac74baa5b.bin",
-        "kind": "vegetation-model",
-        "byteLength": 87068,
-        "sha256": "bf51fcb7d455caa28f21e1c9e47527ed1440a64f842f4efa0fe8944ac74baa5b",
-        "sourcePath": "assets/model/fern_02_1k.gltf/lod1/fern_02.bin"
-      },
-      "cooked/assets/model/fern_02_1k.gltf/lod2/fern_02_lod2.gltf": {
-        "path": "cooked/assets/model/fern_02_1k.gltf/lod2/fern_02_lod2.gltf",
-        "blobPath": "cooked/blobs/sha256/1c/1cbf6fe017bf278fefa5586c4f625eab02679917050746a4772874164d3b16a7.gltf",
-        "kind": "vegetation-model",
-        "byteLength": 6665,
-        "sha256": "1cbf6fe017bf278fefa5586c4f625eab02679917050746a4772874164d3b16a7",
-        "sourcePath": "assets/model/fern_02_1k.gltf/lod2/fern_02_lod2.gltf"
-      },
-      "cooked/assets/model/fern_02_1k.gltf/lod2/fern_02.bin": {
-        "path": "cooked/assets/model/fern_02_1k.gltf/lod2/fern_02.bin",
-        "blobPath": "cooked/blobs/sha256/8c/8cb179afc00bfdfb048eff9cff99bdf3c04c39b8c48d1a89e1262f50c2c4b7d1.bin",
-        "kind": "vegetation-model",
-        "byteLength": 40420,
-        "sha256": "8cb179afc00bfdfb048eff9cff99bdf3c04c39b8c48d1a89e1262f50c2c4b7d1",
-        "sourcePath": "assets/model/fern_02_1k.gltf/lod2/fern_02.bin"
-      },
-      "cooked/assets/model/fern_02_1k.gltf/textures/fern_02_arm_1k.jpg": {
-        "path": "cooked/assets/model/fern_02_1k.gltf/textures/fern_02_arm_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/eb/ebfb5d76ce9cbdaec20bcd22dce9b755f0b1b8650ef29ca13555e3e6961025d7.jpg",
-        "kind": "vegetation-model",
-        "byteLength": 280359,
-        "sha256": "ebfb5d76ce9cbdaec20bcd22dce9b755f0b1b8650ef29ca13555e3e6961025d7",
-        "sourcePath": "assets/model/fern_02_1k.gltf/textures/fern_02_arm_1k.jpg"
-      },
-      "cooked/assets/model/fern_02_1k.gltf/textures/fern_02_diff_1k.jpg": {
-        "path": "cooked/assets/model/fern_02_1k.gltf/textures/fern_02_diff_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/a8/a828a6e7b4c01c826911e2eac4b3afc7457dab7b3b392a31c681ed88b7d50029.jpg",
-        "kind": "vegetation-model",
-        "byteLength": 315705,
-        "sha256": "a828a6e7b4c01c826911e2eac4b3afc7457dab7b3b392a31c681ed88b7d50029",
-        "sourcePath": "assets/model/fern_02_1k.gltf/textures/fern_02_diff_1k.jpg"
-      },
-      "cooked/assets/model/fern_02_1k.gltf/textures/fern_02_nor_gl_1k.jpg": {
-        "path": "cooked/assets/model/fern_02_1k.gltf/textures/fern_02_nor_gl_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/45/45bce132c6e96a0864bc89ab5da51361ab3f4afa83a6669ae499ab5ca811f621.jpg",
-        "kind": "vegetation-model",
-        "byteLength": 367222,
-        "sha256": "45bce132c6e96a0864bc89ab5da51361ab3f4afa83a6669ae499ab5ca811f621",
-        "sourcePath": "assets/model/fern_02_1k.gltf/textures/fern_02_nor_gl_1k.jpg"
-      },
-      "cooked/assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf": {
-        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf",
-        "blobPath": "cooked/blobs/sha256/ee/eeea9853deb63e43510f8d9d6af21963c88adab77e17ccac9f9b8d3a7d34a923.gltf",
-        "kind": "world-object-model",
-        "byteLength": 21127,
-        "sha256": "eeea9853deb63e43510f8d9d6af21963c88adab77e17ccac9f9b8d3a7d34a923",
-        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf"
-      },
-      "cooked/assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier.bin": {
-        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier.bin",
-        "blobPath": "cooked/blobs/sha256/6e/6ec10b84aaaa02800b095850fc92cf850632e5becd76698dc6609f40f05e1b60.bin",
-        "kind": "world-object-model",
-        "byteLength": 2651092,
-        "sha256": "6ec10b84aaaa02800b095850fc92cf850632e5becd76698dc6609f40f05e1b60",
-        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier.bin"
-      },
-      "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_arm_1k.jpg": {
-        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_arm_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/4c/4c03bcee7d0fb9708be5e5ebc4dd5fd73789f4eb24b6391dff6167f11c3ce95d.jpg",
-        "kind": "world-object-model",
-        "byteLength": 722511,
-        "sha256": "4c03bcee7d0fb9708be5e5ebc4dd5fd73789f4eb24b6391dff6167f11c3ce95d",
-        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_arm_1k.jpg"
-      },
-      "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_diff_1k.jpg": {
-        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_diff_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/26/2670a7eae2a3104e8537e61d90a8d8b169c7eb0f69b51622bec10e9472dc4573.jpg",
-        "kind": "world-object-model",
-        "byteLength": 764066,
-        "sha256": "2670a7eae2a3104e8537e61d90a8d8b169c7eb0f69b51622bec10e9472dc4573",
-        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_diff_1k.jpg"
-      },
-      "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_nor_gl_1k.jpg": {
-        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_nor_gl_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/b2/b23d7b0c23c9a41d50b7e1691e183902765aa4c21ac6ca6da678e874c4ddfb04.jpg",
-        "kind": "world-object-model",
-        "byteLength": 1055218,
-        "sha256": "b23d7b0c23c9a41d50b7e1691e183902765aa4c21ac6ca6da678e874c4ddfb04",
-        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_nor_gl_1k.jpg"
-      },
-      "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_arm_1k.jpg": {
-        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_arm_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/da/dacaff86f936bef10220aa60843efadae53039f064ad1a6fad735b912f1ba285.jpg",
-        "kind": "world-object-model",
-        "byteLength": 813524,
-        "sha256": "dacaff86f936bef10220aa60843efadae53039f064ad1a6fad735b912f1ba285",
-        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_arm_1k.jpg"
-      },
-      "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_diff_1k.jpg": {
-        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_diff_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/da/da9e017b41e052d5e47558bb98e61b577f66e9d44eb2d26dc9b085e317bede9e.jpg",
-        "kind": "world-object-model",
-        "byteLength": 836152,
-        "sha256": "da9e017b41e052d5e47558bb98e61b577f66e9d44eb2d26dc9b085e317bede9e",
-        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_diff_1k.jpg"
-      },
-      "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_nor_gl_1k.jpg": {
-        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_nor_gl_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/9b/9b2d7ca04642e249428969fa32189f36fcea8577a282dbccca1ac15d59dce18e.jpg",
-        "kind": "world-object-model",
-        "byteLength": 978238,
-        "sha256": "9b2d7ca04642e249428969fa32189f36fcea8577a282dbccca1ac15d59dce18e",
-        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_nor_gl_1k.jpg"
-      },
-      "cooked/assets/model/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf": {
-        "path": "cooked/assets/model/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf",
-        "blobPath": "cooked/blobs/sha256/4a/4a857df7868d3731773ce2a0b45f595c4aebf0b9928f2215c0bd2ba32db1c1a8.gltf",
-        "kind": "vegetation-model",
-        "byteLength": 2765,
-        "sha256": "4a857df7868d3731773ce2a0b45f595c4aebf0b9928f2215c0bd2ba32db1c1a8",
-        "sourcePath": "assets/model/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf"
-      },
-      "cooked/assets/model/quiver_tree_02_1k.gltf/lod1/quiver_tree_02.bin": {
-        "path": "cooked/assets/model/quiver_tree_02_1k.gltf/lod1/quiver_tree_02.bin",
-        "blobPath": "cooked/blobs/sha256/db/db2ed3af878f12673eb0ef523012536bb97656b67aedabd83ada47970b6270f5.bin",
-        "kind": "vegetation-model",
-        "byteLength": 783076,
-        "sha256": "db2ed3af878f12673eb0ef523012536bb97656b67aedabd83ada47970b6270f5",
-        "sourcePath": "assets/model/quiver_tree_02_1k.gltf/lod1/quiver_tree_02.bin"
-      },
-      "cooked/assets/model/quiver_tree_02_1k.gltf/lod2/quiver_tree_02_lod2.gltf": {
-        "path": "cooked/assets/model/quiver_tree_02_1k.gltf/lod2/quiver_tree_02_lod2.gltf",
-        "blobPath": "cooked/blobs/sha256/ec/ec259cd36fb3565dfd1954b7298b512f51fe40ad79f20a902b919b2078ea8a45.gltf",
-        "kind": "vegetation-model",
-        "byteLength": 2760,
-        "sha256": "ec259cd36fb3565dfd1954b7298b512f51fe40ad79f20a902b919b2078ea8a45",
-        "sourcePath": "assets/model/quiver_tree_02_1k.gltf/lod2/quiver_tree_02_lod2.gltf"
-      },
-      "cooked/assets/model/quiver_tree_02_1k.gltf/lod2/quiver_tree_02.bin": {
-        "path": "cooked/assets/model/quiver_tree_02_1k.gltf/lod2/quiver_tree_02.bin",
-        "blobPath": "cooked/blobs/sha256/1c/1c05f2fdfa39062bf1927098bba47942ee512f4fe3e6078e1ca60363e2103d37.bin",
-        "kind": "vegetation-model",
-        "byteLength": 297188,
-        "sha256": "1c05f2fdfa39062bf1927098bba47942ee512f4fe3e6078e1ca60363e2103d37",
-        "sourcePath": "assets/model/quiver_tree_02_1k.gltf/lod2/quiver_tree_02.bin"
-      },
-      "cooked/assets/model/quiver_tree_02_1k.gltf/quiver_tree_02_1k.gltf": {
-        "path": "cooked/assets/model/quiver_tree_02_1k.gltf/quiver_tree_02_1k.gltf",
-        "blobPath": "cooked/blobs/sha256/c9/c92ea2f60defaa9c134f43ac606bb7564ade348f92b546ba91c87bc6365d1a56.gltf",
-        "kind": "vegetation-model",
-        "byteLength": 2809,
-        "sha256": "c92ea2f60defaa9c134f43ac606bb7564ade348f92b546ba91c87bc6365d1a56",
-        "sourcePath": "assets/model/quiver_tree_02_1k.gltf/quiver_tree_02_1k.gltf"
-      },
-      "cooked/assets/model/quiver_tree_02_1k.gltf/quiver_tree_02.bin": {
-        "path": "cooked/assets/model/quiver_tree_02_1k.gltf/quiver_tree_02.bin",
-        "blobPath": "cooked/blobs/sha256/fd/fd3598b4aea34bc6864452d2dbb37a04e4bfa7ad1ab6062a3b97c485fae258f3.bin",
-        "kind": "vegetation-model",
-        "byteLength": 2060604,
-        "sha256": "fd3598b4aea34bc6864452d2dbb37a04e4bfa7ad1ab6062a3b97c485fae258f3",
-        "sourcePath": "assets/model/quiver_tree_02_1k.gltf/quiver_tree_02.bin"
-      },
-      "cooked/assets/model/quiver_tree_02_1k.gltf/textures/quiver_tree_02_arm_1k.jpg": {
-        "path": "cooked/assets/model/quiver_tree_02_1k.gltf/textures/quiver_tree_02_arm_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/5d/5d12b154c534503b68766dca96f6486fa0faeb22734b300c58ede695deb2915e.jpg",
-        "kind": "vegetation-model",
-        "byteLength": 759729,
-        "sha256": "5d12b154c534503b68766dca96f6486fa0faeb22734b300c58ede695deb2915e",
-        "sourcePath": "assets/model/quiver_tree_02_1k.gltf/textures/quiver_tree_02_arm_1k.jpg"
-      },
-      "cooked/assets/model/quiver_tree_02_1k.gltf/textures/quiver_tree_02_diff_1k.jpg": {
-        "path": "cooked/assets/model/quiver_tree_02_1k.gltf/textures/quiver_tree_02_diff_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/54/546a745ad765529d3c310178321e145909f4817b06679788ad24d29ec7eae7b7.jpg",
-        "kind": "vegetation-model",
-        "byteLength": 736321,
-        "sha256": "546a745ad765529d3c310178321e145909f4817b06679788ad24d29ec7eae7b7",
-        "sourcePath": "assets/model/quiver_tree_02_1k.gltf/textures/quiver_tree_02_diff_1k.jpg"
-      },
-      "cooked/assets/model/quiver_tree_02_1k.gltf/textures/quiver_tree_02_nor_gl_1k.jpg": {
-        "path": "cooked/assets/model/quiver_tree_02_1k.gltf/textures/quiver_tree_02_nor_gl_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/50/5073a1d9563331d8a7bc57a36cae9f1d1d69470395be0c460a12c57026b5f1f0.jpg",
-        "kind": "vegetation-model",
-        "byteLength": 988408,
-        "sha256": "5073a1d9563331d8a7bc57a36cae9f1d1d69470395be0c460a12c57026b5f1f0",
-        "sourcePath": "assets/model/quiver_tree_02_1k.gltf/textures/quiver_tree_02_nor_gl_1k.jpg"
-      },
-      "cooked/assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_arm_1k.jpg": {
-        "path": "cooked/assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_arm_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/d8/d845cd6ab45288c546267d059ebe1f8a737e174330fe9375e5f99e753f2f95d8.jpg",
-        "kind": "world-object-model",
-        "byteLength": 825646,
-        "sha256": "d845cd6ab45288c546267d059ebe1f8a737e174330fe9375e5f99e753f2f95d8",
-        "sourcePath": "assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_arm_1k.jpg"
-      },
-      "cooked/assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_diff_1k.jpg": {
-        "path": "cooked/assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_diff_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/78/781ebe420ac4d84f2e44b9e9937a596e3d5d90711d978a1392f8bf3771b5bf31.jpg",
-        "kind": "world-object-model",
-        "byteLength": 907451,
-        "sha256": "781ebe420ac4d84f2e44b9e9937a596e3d5d90711d978a1392f8bf3771b5bf31",
-        "sourcePath": "assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_diff_1k.jpg"
-      },
-      "cooked/assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_nor_gl_1k.jpg": {
-        "path": "cooked/assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_nor_gl_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/42/425117514b0386bb6df41cb64a61a624d2596472e05777483d4021b3285e3ceb.jpg",
-        "kind": "world-object-model",
-        "byteLength": 1238404,
-        "sha256": "425117514b0386bb6df41cb64a61a624d2596472e05777483d4021b3285e3ceb",
-        "sourcePath": "assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_nor_gl_1k.jpg"
-      },
-      "cooked/assets/model/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf": {
-        "path": "cooked/assets/model/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf",
-        "blobPath": "cooked/blobs/sha256/9c/9c66ba87d693f35eb404acaa96e0eeff831c295b61a0a903795584cbcc3527c9.gltf",
-        "kind": "world-object-model",
-        "byteLength": 2793,
-        "sha256": "9c66ba87d693f35eb404acaa96e0eeff831c295b61a0a903795584cbcc3527c9",
-        "sourcePath": "assets/model/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf"
-      },
-      "cooked/assets/model/tree_stump_01_1k.gltf/tree_stump_01.bin": {
-        "path": "cooked/assets/model/tree_stump_01_1k.gltf/tree_stump_01.bin",
-        "blobPath": "cooked/blobs/sha256/b4/b4d9ca70b3c908c4a638fbd6a23ed96c84055bbbf14cf44b89e31ad59fa21e0a.bin",
-        "kind": "world-object-model",
-        "byteLength": 965380,
-        "sha256": "b4d9ca70b3c908c4a638fbd6a23ed96c84055bbbf14cf44b89e31ad59fa21e0a",
-        "sourcePath": "assets/model/tree_stump_01_1k.gltf/tree_stump_01.bin"
-      },
-      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_arm_1k.jpg": {
-        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_arm_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/35/35e34115f7657cadce27422730e936418a30e23397fb5c126591dff711acbf4b.jpg",
-        "kind": "world-object-model",
-        "byteLength": 852652,
-        "sha256": "35e34115f7657cadce27422730e936418a30e23397fb5c126591dff711acbf4b",
-        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_arm_1k.jpg"
-      },
-      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_diff_1k.jpg": {
-        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_diff_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/63/639e616e8d69acaadbf69725bb3d13f07a28fdff6c6b15e1d7f0574336564c72.jpg",
-        "kind": "world-object-model",
-        "byteLength": 605063,
-        "sha256": "639e616e8d69acaadbf69725bb3d13f07a28fdff6c6b15e1d7f0574336564c72",
-        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_diff_1k.jpg"
-      },
-      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_nor_gl_1k.jpg": {
-        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_nor_gl_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/3d/3dfa658b4a38a711887c9e4a492a319b20e2a821e4e08435368f98fe0c78a1b8.jpg",
-        "kind": "world-object-model",
-        "byteLength": 538634,
-        "sha256": "3dfa658b4a38a711887c9e4a492a319b20e2a821e4e08435368f98fe0c78a1b8",
-        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_nor_gl_1k.jpg"
-      },
-      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_arm_1k.jpg": {
-        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_arm_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/97/970de5e9f682d4ac2a2098c88dafc1e5a6c27cf1dbe31eb7ed3f8bc2a92eb58f.jpg",
-        "kind": "world-object-model",
-        "byteLength": 848051,
-        "sha256": "970de5e9f682d4ac2a2098c88dafc1e5a6c27cf1dbe31eb7ed3f8bc2a92eb58f",
-        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_arm_1k.jpg"
-      },
-      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_diff_1k.jpg": {
-        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_diff_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/c7/c75f506a0c31093d4d3d425d4c979f49fce2dc99a8e6caefb50809fcf329845e.jpg",
-        "kind": "world-object-model",
-        "byteLength": 618495,
-        "sha256": "c75f506a0c31093d4d3d425d4c979f49fce2dc99a8e6caefb50809fcf329845e",
-        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_diff_1k.jpg"
-      },
-      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_nor_gl_1k.jpg": {
-        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_nor_gl_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/57/57c3d5682f299c97270228e3ec08f6c982fb2c2696ec30a74d0edbfe067235dd.jpg",
-        "kind": "world-object-model",
-        "byteLength": 555954,
-        "sha256": "57c3d5682f299c97270228e3ec08f6c982fb2c2696ec30a74d0edbfe067235dd",
-        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_nor_gl_1k.jpg"
-      },
-      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_arm_1k.jpg": {
-        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_arm_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/78/785b59a19add1951bcd54d7607c18fcafa5a09068349ac437640d495b45a62fd.jpg",
-        "kind": "world-object-model",
-        "byteLength": 904545,
-        "sha256": "785b59a19add1951bcd54d7607c18fcafa5a09068349ac437640d495b45a62fd",
-        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_arm_1k.jpg"
-      },
-      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_diff_1k.jpg": {
-        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_diff_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/39/399134703c974ad4c8bc71107d513e8c89f5ca09f9b6175dc02e2e607b75c43d.jpg",
-        "kind": "world-object-model",
-        "byteLength": 672604,
-        "sha256": "399134703c974ad4c8bc71107d513e8c89f5ca09f9b6175dc02e2e607b75c43d",
-        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_diff_1k.jpg"
-      },
-      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_nor_gl_1k.jpg": {
-        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_nor_gl_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/3b/3be77f6310507c9c37414809ba31c39c89621e8bde916893bd676d54a5ceade2.jpg",
-        "kind": "world-object-model",
-        "byteLength": 620276,
-        "sha256": "3be77f6310507c9c37414809ba31c39c89621e8bde916893bd676d54a5ceade2",
-        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_nor_gl_1k.jpg"
-      },
-      "cooked/assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf": {
-        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf",
-        "blobPath": "cooked/blobs/sha256/ff/ff785e2150198c4cdb3cc74e532b02ce9574d6a7fc3606f5801fcbf68e3136af.gltf",
-        "kind": "world-object-model",
-        "byteLength": 31017,
-        "sha256": "ff785e2150198c4cdb3cc74e532b02ce9574d6a7fc3606f5801fcbf68e3136af",
-        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf"
-      },
-      "cooked/assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01.bin": {
-        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01.bin",
-        "blobPath": "cooked/blobs/sha256/7d/7de8294b07ecb6bd57ea3542760fa45bbefc296a47dd044723eb599ffc56084f.bin",
-        "kind": "world-object-model",
-        "byteLength": 1243556,
-        "sha256": "7de8294b07ecb6bd57ea3542760fa45bbefc296a47dd044723eb599ffc56084f",
-        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01.bin"
-      },
-      "cooked/assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_arm_1k.jpg": {
-        "path": "cooked/assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_arm_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/cd/cd0b031c3924905e16ffd78ead062c2cc274148c4104d09635310097738b4679.jpg",
-        "kind": "world-object-model",
-        "byteLength": 776699,
-        "sha256": "cd0b031c3924905e16ffd78ead062c2cc274148c4104d09635310097738b4679",
-        "sourcePath": "assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_arm_1k.jpg"
-      },
-      "cooked/assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_diff_1k.jpg": {
-        "path": "cooked/assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_diff_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/16/16653f4abaf4c1d9bca94bde3bd8c54d0ea9a5298d1648abcf57de1f7ecc34cc.jpg",
-        "kind": "world-object-model",
-        "byteLength": 711292,
-        "sha256": "16653f4abaf4c1d9bca94bde3bd8c54d0ea9a5298d1648abcf57de1f7ecc34cc",
-        "sourcePath": "assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_diff_1k.jpg"
-      },
-      "cooked/assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_nor_gl_1k.jpg": {
-        "path": "cooked/assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_nor_gl_1k.jpg",
-        "blobPath": "cooked/blobs/sha256/f4/f4ea44c7dc1686123d337039cb713d74e8a2dbc6d1bd2beeac276d06f5df3fab.jpg",
-        "kind": "world-object-model",
-        "byteLength": 594076,
-        "sha256": "f4ea44c7dc1686123d337039cb713d74e8a2dbc6d1bd2beeac276d06f5df3fab",
-        "sourcePath": "assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_nor_gl_1k.jpg"
-      },
-      "cooked/assets/model/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf": {
-        "path": "cooked/assets/model/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf",
-        "blobPath": "cooked/blobs/sha256/fd/fd9c6073acfc671e12b64666053f2805ae33aff5d3dbbcfe5c97c08c06644927.gltf",
-        "kind": "world-object-model",
-        "byteLength": 5612,
-        "sha256": "fd9c6073acfc671e12b64666053f2805ae33aff5d3dbbcfe5c97c08c06644927",
-        "sourcePath": "assets/model/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf"
-      },
-      "cooked/assets/model/wooden_crate_01_1k.gltf/wooden_crate_01.bin": {
-        "path": "cooked/assets/model/wooden_crate_01_1k.gltf/wooden_crate_01.bin",
-        "blobPath": "cooked/blobs/sha256/85/85f381f8035f7a6f2f3b848640894c6d3333b261946dd8a338c0fe19e0bea21e.bin",
-        "kind": "world-object-model",
-        "byteLength": 189408,
-        "sha256": "85f381f8035f7a6f2f3b848640894c6d3333b261946dd8a338c0fe19e0bea21e",
-        "sourcePath": "assets/model/wooden_crate_01_1k.gltf/wooden_crate_01.bin"
-      },
-      "cooked/assets/texture/aerial_beach_01_arm_1k.png": {
-        "path": "cooked/assets/texture/aerial_beach_01_arm_1k.png",
+      "cooked/assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_arm_1k.png": {
+        "path": "cooked/assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_arm_1k.png",
         "blobPath": "cooked/blobs/sha256/9f/9f8c87aca06139b0da1cc7a41a7b3d2b03e0db3d6d5a745dc9c5581feccb561c.png",
         "kind": "terrain-texture",
         "byteLength": 1549349,
         "sha256": "9f8c87aca06139b0da1cc7a41a7b3d2b03e0db3d6d5a745dc9c5581feccb561c",
-        "sourcePath": "assets/texture/aerial_beach_01_arm_1k.png"
+        "sourcePath": "assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_arm_1k.png"
       },
-      "cooked/assets/texture/aerial_beach_01_diff_1k.jpg": {
-        "path": "cooked/assets/texture/aerial_beach_01_diff_1k.jpg",
+      "cooked/assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_diff_1k.jpg": {
+        "path": "cooked/assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_diff_1k.jpg",
         "blobPath": "cooked/blobs/sha256/5b/5b849983d08fda1c6d28b95b55851c2227697598721b25ff2b85e57cf8b04fc4.jpg",
         "kind": "terrain-texture",
         "byteLength": 115382,
         "sha256": "5b849983d08fda1c6d28b95b55851c2227697598721b25ff2b85e57cf8b04fc4",
-        "sourcePath": "assets/texture/aerial_beach_01_diff_1k.jpg"
+        "sourcePath": "assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_diff_1k.jpg"
       },
-      "cooked/assets/texture/aerial_beach_01_disp_1k.png": {
-        "path": "cooked/assets/texture/aerial_beach_01_disp_1k.png",
+      "cooked/assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_disp_1k.png": {
+        "path": "cooked/assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_disp_1k.png",
         "blobPath": "cooked/blobs/sha256/0a/0ad0fb69dd862f101ede0427d86665e83cacb20be82f10b9b4555a728812516c.png",
         "kind": "terrain-texture",
         "byteLength": 2209508,
         "sha256": "0ad0fb69dd862f101ede0427d86665e83cacb20be82f10b9b4555a728812516c",
-        "sourcePath": "assets/texture/aerial_beach_01_disp_1k.png"
+        "sourcePath": "assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_disp_1k.png"
       },
-      "cooked/assets/texture/aerial_beach_01_nor_gl_1k.png": {
-        "path": "cooked/assets/texture/aerial_beach_01_nor_gl_1k.png",
+      "cooked/assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_nor_gl_1k.png": {
+        "path": "cooked/assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_nor_gl_1k.png",
         "blobPath": "cooked/blobs/sha256/61/61d8b0051df9c8516555f9eddf1dfbaa57ffee734153da100606db818c82aaca.png",
         "kind": "terrain-texture",
         "byteLength": 2021795,
         "sha256": "61d8b0051df9c8516555f9eddf1dfbaa57ffee734153da100606db818c82aaca",
-        "sourcePath": "assets/texture/aerial_beach_01_nor_gl_1k.png"
+        "sourcePath": "assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_nor_gl_1k.png"
       },
-      "cooked/assets/texture/brown_mud_leaves_01_arm_1k.png": {
-        "path": "cooked/assets/texture/brown_mud_leaves_01_arm_1k.png",
+      "cooked/assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_arm_1k.png": {
+        "path": "cooked/assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_arm_1k.png",
         "blobPath": "cooked/blobs/sha256/93/939f98687379b70fe2f2e1daf0965d46080d00bb4bbe9afb9e2108ce456ad9ab.png",
         "kind": "terrain-texture",
         "byteLength": 4619226,
         "sha256": "939f98687379b70fe2f2e1daf0965d46080d00bb4bbe9afb9e2108ce456ad9ab",
-        "sourcePath": "assets/texture/brown_mud_leaves_01_arm_1k.png"
+        "sourcePath": "assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_arm_1k.png"
       },
-      "cooked/assets/texture/brown_mud_leaves_01_diff_1k.jpg": {
-        "path": "cooked/assets/texture/brown_mud_leaves_01_diff_1k.jpg",
+      "cooked/assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_diff_1k.jpg": {
+        "path": "cooked/assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_diff_1k.jpg",
         "blobPath": "cooked/blobs/sha256/c5/c598c555f13cd5328409fd5e2a45496a26e319e52299e3959042f1449c2f1b06.jpg",
         "kind": "terrain-texture",
         "byteLength": 1206953,
         "sha256": "c598c555f13cd5328409fd5e2a45496a26e319e52299e3959042f1449c2f1b06",
-        "sourcePath": "assets/texture/brown_mud_leaves_01_diff_1k.jpg"
+        "sourcePath": "assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_diff_1k.jpg"
       },
-      "cooked/assets/texture/brown_mud_leaves_01_disp_1k.png": {
-        "path": "cooked/assets/texture/brown_mud_leaves_01_disp_1k.png",
+      "cooked/assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_disp_1k.png": {
+        "path": "cooked/assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_disp_1k.png",
         "blobPath": "cooked/blobs/sha256/9f/9fa035cad924c4429fee2a510aca0e80acfd943b055f86a962a8a0a1f13be9d3.png",
         "kind": "terrain-texture",
         "byteLength": 1815216,
         "sha256": "9fa035cad924c4429fee2a510aca0e80acfd943b055f86a962a8a0a1f13be9d3",
-        "sourcePath": "assets/texture/brown_mud_leaves_01_disp_1k.png"
+        "sourcePath": "assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_disp_1k.png"
       },
-      "cooked/assets/texture/brown_mud_leaves_01_nor_gl_1k.png": {
-        "path": "cooked/assets/texture/brown_mud_leaves_01_nor_gl_1k.png",
+      "cooked/assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_nor_gl_1k.png": {
+        "path": "cooked/assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_nor_gl_1k.png",
         "blobPath": "cooked/blobs/sha256/0c/0c5c37348830b6a36024a114359e26aaf2f48bf2b435a5ef2d6999bcd4b530b7.png",
         "kind": "terrain-texture",
         "byteLength": 6109028,
         "sha256": "0c5c37348830b6a36024a114359e26aaf2f48bf2b435a5ef2d6999bcd4b530b7",
-        "sourcePath": "assets/texture/brown_mud_leaves_01_nor_gl_1k.png"
+        "sourcePath": "assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_nor_gl_1k.png"
       },
-      "cooked/assets/texture/gravel_embedded_concrete_arm_1k.png": {
-        "path": "cooked/assets/texture/gravel_embedded_concrete_arm_1k.png",
+      "cooked/assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_arm_1k.png": {
+        "path": "cooked/assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_arm_1k.png",
         "blobPath": "cooked/blobs/sha256/f4/f4b524d1bc569277359022086dab657c9cb8fea28d1e3edf04fd120e92a7e5c7.png",
         "kind": "terrain-texture",
         "byteLength": 4516760,
         "sha256": "f4b524d1bc569277359022086dab657c9cb8fea28d1e3edf04fd120e92a7e5c7",
-        "sourcePath": "assets/texture/gravel_embedded_concrete_arm_1k.png"
+        "sourcePath": "assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_arm_1k.png"
       },
-      "cooked/assets/texture/gravel_embedded_concrete_diff_1k.jpg": {
-        "path": "cooked/assets/texture/gravel_embedded_concrete_diff_1k.jpg",
+      "cooked/assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_diff_1k.jpg": {
+        "path": "cooked/assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_diff_1k.jpg",
         "blobPath": "cooked/blobs/sha256/3e/3ea5b493379c4d30c02c04b93361d3e34f91ed04058ffb4ea915702f1cd17049.jpg",
         "kind": "terrain-texture",
         "byteLength": 1137553,
         "sha256": "3ea5b493379c4d30c02c04b93361d3e34f91ed04058ffb4ea915702f1cd17049",
-        "sourcePath": "assets/texture/gravel_embedded_concrete_diff_1k.jpg"
+        "sourcePath": "assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_diff_1k.jpg"
       },
-      "cooked/assets/texture/gravel_embedded_concrete_disp_1k.png": {
-        "path": "cooked/assets/texture/gravel_embedded_concrete_disp_1k.png",
+      "cooked/assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_disp_1k.png": {
+        "path": "cooked/assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_disp_1k.png",
         "blobPath": "cooked/blobs/sha256/4c/4c6a3069fe8aea527129eb826fa49f5388a68c6ede47097a35290d355b76b5b2.png",
         "kind": "terrain-texture",
         "byteLength": 1940655,
         "sha256": "4c6a3069fe8aea527129eb826fa49f5388a68c6ede47097a35290d355b76b5b2",
-        "sourcePath": "assets/texture/gravel_embedded_concrete_disp_1k.png"
+        "sourcePath": "assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_disp_1k.png"
       },
-      "cooked/assets/texture/gravel_embedded_concrete_nor_gl_1k.png": {
-        "path": "cooked/assets/texture/gravel_embedded_concrete_nor_gl_1k.png",
+      "cooked/assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_nor_gl_1k.png": {
+        "path": "cooked/assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_nor_gl_1k.png",
         "blobPath": "cooked/blobs/sha256/47/472090f3bcc44b1d06122c86e2cc44e26bbbd63e92b11a60ef04d4428f1641e2.png",
         "kind": "terrain-texture",
         "byteLength": 6118939,
         "sha256": "472090f3bcc44b1d06122c86e2cc44e26bbbd63e92b11a60ef04d4428f1641e2",
-        "sourcePath": "assets/texture/gravel_embedded_concrete_nor_gl_1k.png"
+        "sourcePath": "assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_nor_gl_1k.png"
       },
-      "cooked/assets/texture/snow_03_arm_1k.png": {
-        "path": "cooked/assets/texture/snow_03_arm_1k.png",
+      "cooked/assets/imported/materials/snow_03_1k/snow_03_arm_1k.png": {
+        "path": "cooked/assets/imported/materials/snow_03_1k/snow_03_arm_1k.png",
         "blobPath": "cooked/blobs/sha256/13/13f64091173a06dd733c331528af4591ed31e9fe5421040a737df1078dae4c42.png",
         "kind": "terrain-texture",
         "byteLength": 1566722,
         "sha256": "13f64091173a06dd733c331528af4591ed31e9fe5421040a737df1078dae4c42",
-        "sourcePath": "assets/texture/snow_03_arm_1k.png"
+        "sourcePath": "assets/imported/materials/snow_03_1k/snow_03_arm_1k.png"
       },
-      "cooked/assets/texture/snow_03_diff_1k.jpg": {
-        "path": "cooked/assets/texture/snow_03_diff_1k.jpg",
+      "cooked/assets/imported/materials/snow_03_1k/snow_03_diff_1k.jpg": {
+        "path": "cooked/assets/imported/materials/snow_03_1k/snow_03_diff_1k.jpg",
         "blobPath": "cooked/blobs/sha256/12/1210d17f1395c030c33c1a2c6dc3f5e0e9edac4c4365d163fc9ebb52416cddc3.jpg",
         "kind": "terrain-texture",
         "byteLength": 574004,
         "sha256": "1210d17f1395c030c33c1a2c6dc3f5e0e9edac4c4365d163fc9ebb52416cddc3",
-        "sourcePath": "assets/texture/snow_03_diff_1k.jpg"
+        "sourcePath": "assets/imported/materials/snow_03_1k/snow_03_diff_1k.jpg"
       },
-      "cooked/assets/texture/snow_03_disp_1k.png": {
-        "path": "cooked/assets/texture/snow_03_disp_1k.png",
+      "cooked/assets/imported/materials/snow_03_1k/snow_03_disp_1k.png": {
+        "path": "cooked/assets/imported/materials/snow_03_1k/snow_03_disp_1k.png",
         "blobPath": "cooked/blobs/sha256/de/dec240115a78f80bf8caa4579c0f9de922d8141e693bb801a804c3fbdfc8f6c0.png",
         "kind": "terrain-texture",
         "byteLength": 2088713,
         "sha256": "dec240115a78f80bf8caa4579c0f9de922d8141e693bb801a804c3fbdfc8f6c0",
-        "sourcePath": "assets/texture/snow_03_disp_1k.png"
+        "sourcePath": "assets/imported/materials/snow_03_1k/snow_03_disp_1k.png"
       },
-      "cooked/assets/texture/snow_03_nor_gl_1k.png": {
-        "path": "cooked/assets/texture/snow_03_nor_gl_1k.png",
+      "cooked/assets/imported/materials/snow_03_1k/snow_03_nor_gl_1k.png": {
+        "path": "cooked/assets/imported/materials/snow_03_1k/snow_03_nor_gl_1k.png",
         "blobPath": "cooked/blobs/sha256/7a/7aadc41b01de4ee86a2010890952d110c15969d4ecbdafb5d63fa42375d80708.png",
         "kind": "terrain-texture",
         "byteLength": 2482890,
         "sha256": "7aadc41b01de4ee86a2010890952d110c15969d4ecbdafb5d63fa42375d80708",
-        "sourcePath": "assets/texture/snow_03_nor_gl_1k.png"
+        "sourcePath": "assets/imported/materials/snow_03_1k/snow_03_nor_gl_1k.png"
+      },
+      "cooked/assets/imported/models/boulder_01_1k.gltf/boulder_01_1k.gltf": {
+        "path": "cooked/assets/imported/models/boulder_01_1k.gltf/boulder_01_1k.gltf",
+        "blobPath": "cooked/blobs/sha256/51/51487934db898b4c24072780a451e34eca5c02e3ada24a62bbc600bbc4019e92.gltf",
+        "kind": "world-object-model",
+        "byteLength": 2773,
+        "sha256": "51487934db898b4c24072780a451e34eca5c02e3ada24a62bbc600bbc4019e92",
+        "sourcePath": "assets/imported/models/boulder_01_1k.gltf/boulder_01_1k.gltf"
+      },
+      "cooked/assets/imported/models/boulder_01_1k.gltf/boulder_01.bin": {
+        "path": "cooked/assets/imported/models/boulder_01_1k.gltf/boulder_01.bin",
+        "blobPath": "cooked/blobs/sha256/7f/7f5b06503d62bd95bfe9c6b8a354a5cc8ff04a4d271a8cf87a3e3125db4232d7.bin",
+        "kind": "world-object-model",
+        "byteLength": 2938808,
+        "sha256": "7f5b06503d62bd95bfe9c6b8a354a5cc8ff04a4d271a8cf87a3e3125db4232d7",
+        "sourcePath": "assets/imported/models/boulder_01_1k.gltf/boulder_01.bin"
+      },
+      "cooked/assets/imported/models/boulder_01_1k.gltf/textures/boulder_01_arm_1k.jpg": {
+        "path": "cooked/assets/imported/models/boulder_01_1k.gltf/textures/boulder_01_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/c5/c57187c5746b6be913fa53846cb44ff78743e7ca5000f131c9627b99563c2b87.jpg",
+        "kind": "world-object-model",
+        "byteLength": 659386,
+        "sha256": "c57187c5746b6be913fa53846cb44ff78743e7ca5000f131c9627b99563c2b87",
+        "sourcePath": "assets/imported/models/boulder_01_1k.gltf/textures/boulder_01_arm_1k.jpg"
+      },
+      "cooked/assets/imported/models/boulder_01_1k.gltf/textures/boulder_01_diff_1k.jpg": {
+        "path": "cooked/assets/imported/models/boulder_01_1k.gltf/textures/boulder_01_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/c3/c38f0e918f6dc16b8d386ba3cdd89805c78320c119a1ceec85856f82b09a65b8.jpg",
+        "kind": "world-object-model",
+        "byteLength": 987467,
+        "sha256": "c38f0e918f6dc16b8d386ba3cdd89805c78320c119a1ceec85856f82b09a65b8",
+        "sourcePath": "assets/imported/models/boulder_01_1k.gltf/textures/boulder_01_diff_1k.jpg"
+      },
+      "cooked/assets/imported/models/boulder_01_1k.gltf/textures/boulder_01_nor_gl_1k.jpg": {
+        "path": "cooked/assets/imported/models/boulder_01_1k.gltf/textures/boulder_01_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/08/0810cf6e89d89bb6eb065b4d2e2855288f5dcbd2c15c6e40ab90d462021b50aa.jpg",
+        "kind": "world-object-model",
+        "byteLength": 1183552,
+        "sha256": "0810cf6e89d89bb6eb065b4d2e2855288f5dcbd2c15c6e40ab90d462021b50aa",
+        "sourcePath": "assets/imported/models/boulder_01_1k.gltf/textures/boulder_01_nor_gl_1k.jpg"
+      },
+      "cooked/assets/imported/models/fern_02_1k.gltf/fern_02_1k.gltf": {
+        "path": "cooked/assets/imported/models/fern_02_1k.gltf/fern_02_1k.gltf",
+        "blobPath": "cooked/blobs/sha256/33/33974295ee19670af4877705fc7d91f33f42d6302f0d44a625e072271223031f.gltf",
+        "kind": "vegetation-model",
+        "byteLength": 6899,
+        "sha256": "33974295ee19670af4877705fc7d91f33f42d6302f0d44a625e072271223031f",
+        "sourcePath": "assets/imported/models/fern_02_1k.gltf/fern_02_1k.gltf"
+      },
+      "cooked/assets/imported/models/fern_02_1k.gltf/fern_02.bin": {
+        "path": "cooked/assets/imported/models/fern_02_1k.gltf/fern_02.bin",
+        "blobPath": "cooked/blobs/sha256/fe/fe1abb762bcbbc7ad9e86925c8080437a62add257d9280e9142fdc85c226e64c.bin",
+        "kind": "vegetation-model",
+        "byteLength": 176176,
+        "sha256": "fe1abb762bcbbc7ad9e86925c8080437a62add257d9280e9142fdc85c226e64c",
+        "sourcePath": "assets/imported/models/fern_02_1k.gltf/fern_02.bin"
+      },
+      "cooked/assets/imported/models/fern_02_1k.gltf/lod1/fern_02_lod1.gltf": {
+        "path": "cooked/assets/imported/models/fern_02_1k.gltf/lod1/fern_02_lod1.gltf",
+        "blobPath": "cooked/blobs/sha256/bd/bd72ab514e516b103de542635a14a26f7995f6dd05f08a987876b3a48cbf6cf3.gltf",
+        "kind": "vegetation-model",
+        "byteLength": 6672,
+        "sha256": "bd72ab514e516b103de542635a14a26f7995f6dd05f08a987876b3a48cbf6cf3",
+        "sourcePath": "assets/imported/models/fern_02_1k.gltf/lod1/fern_02_lod1.gltf"
+      },
+      "cooked/assets/imported/models/fern_02_1k.gltf/lod1/fern_02.bin": {
+        "path": "cooked/assets/imported/models/fern_02_1k.gltf/lod1/fern_02.bin",
+        "blobPath": "cooked/blobs/sha256/bf/bf51fcb7d455caa28f21e1c9e47527ed1440a64f842f4efa0fe8944ac74baa5b.bin",
+        "kind": "vegetation-model",
+        "byteLength": 87068,
+        "sha256": "bf51fcb7d455caa28f21e1c9e47527ed1440a64f842f4efa0fe8944ac74baa5b",
+        "sourcePath": "assets/imported/models/fern_02_1k.gltf/lod1/fern_02.bin"
+      },
+      "cooked/assets/imported/models/fern_02_1k.gltf/lod2/fern_02_lod2.gltf": {
+        "path": "cooked/assets/imported/models/fern_02_1k.gltf/lod2/fern_02_lod2.gltf",
+        "blobPath": "cooked/blobs/sha256/1c/1cbf6fe017bf278fefa5586c4f625eab02679917050746a4772874164d3b16a7.gltf",
+        "kind": "vegetation-model",
+        "byteLength": 6665,
+        "sha256": "1cbf6fe017bf278fefa5586c4f625eab02679917050746a4772874164d3b16a7",
+        "sourcePath": "assets/imported/models/fern_02_1k.gltf/lod2/fern_02_lod2.gltf"
+      },
+      "cooked/assets/imported/models/fern_02_1k.gltf/lod2/fern_02.bin": {
+        "path": "cooked/assets/imported/models/fern_02_1k.gltf/lod2/fern_02.bin",
+        "blobPath": "cooked/blobs/sha256/8c/8cb179afc00bfdfb048eff9cff99bdf3c04c39b8c48d1a89e1262f50c2c4b7d1.bin",
+        "kind": "vegetation-model",
+        "byteLength": 40420,
+        "sha256": "8cb179afc00bfdfb048eff9cff99bdf3c04c39b8c48d1a89e1262f50c2c4b7d1",
+        "sourcePath": "assets/imported/models/fern_02_1k.gltf/lod2/fern_02.bin"
+      },
+      "cooked/assets/imported/models/fern_02_1k.gltf/textures/fern_02_arm_1k.jpg": {
+        "path": "cooked/assets/imported/models/fern_02_1k.gltf/textures/fern_02_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/eb/ebfb5d76ce9cbdaec20bcd22dce9b755f0b1b8650ef29ca13555e3e6961025d7.jpg",
+        "kind": "vegetation-model",
+        "byteLength": 280359,
+        "sha256": "ebfb5d76ce9cbdaec20bcd22dce9b755f0b1b8650ef29ca13555e3e6961025d7",
+        "sourcePath": "assets/imported/models/fern_02_1k.gltf/textures/fern_02_arm_1k.jpg"
+      },
+      "cooked/assets/imported/models/fern_02_1k.gltf/textures/fern_02_diff_1k.jpg": {
+        "path": "cooked/assets/imported/models/fern_02_1k.gltf/textures/fern_02_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/a8/a828a6e7b4c01c826911e2eac4b3afc7457dab7b3b392a31c681ed88b7d50029.jpg",
+        "kind": "vegetation-model",
+        "byteLength": 315705,
+        "sha256": "a828a6e7b4c01c826911e2eac4b3afc7457dab7b3b392a31c681ed88b7d50029",
+        "sourcePath": "assets/imported/models/fern_02_1k.gltf/textures/fern_02_diff_1k.jpg"
+      },
+      "cooked/assets/imported/models/fern_02_1k.gltf/textures/fern_02_nor_gl_1k.jpg": {
+        "path": "cooked/assets/imported/models/fern_02_1k.gltf/textures/fern_02_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/45/45bce132c6e96a0864bc89ab5da51361ab3f4afa83a6669ae499ab5ca811f621.jpg",
+        "kind": "vegetation-model",
+        "byteLength": 367222,
+        "sha256": "45bce132c6e96a0864bc89ab5da51361ab3f4afa83a6669ae499ab5ca811f621",
+        "sourcePath": "assets/imported/models/fern_02_1k.gltf/textures/fern_02_nor_gl_1k.jpg"
+      },
+      "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf": {
+        "path": "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf",
+        "blobPath": "cooked/blobs/sha256/ee/eeea9853deb63e43510f8d9d6af21963c88adab77e17ccac9f9b8d3a7d34a923.gltf",
+        "kind": "world-object-model",
+        "byteLength": 21127,
+        "sha256": "eeea9853deb63e43510f8d9d6af21963c88adab77e17ccac9f9b8d3a7d34a923",
+        "sourcePath": "assets/imported/models/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf"
+      },
+      "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/modular_wooden_pier.bin": {
+        "path": "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/modular_wooden_pier.bin",
+        "blobPath": "cooked/blobs/sha256/6e/6ec10b84aaaa02800b095850fc92cf850632e5becd76698dc6609f40f05e1b60.bin",
+        "kind": "world-object-model",
+        "byteLength": 2651092,
+        "sha256": "6ec10b84aaaa02800b095850fc92cf850632e5becd76698dc6609f40f05e1b60",
+        "sourcePath": "assets/imported/models/modular_wooden_pier_1k.gltf/modular_wooden_pier.bin"
+      },
+      "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_arm_1k.jpg": {
+        "path": "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/4c/4c03bcee7d0fb9708be5e5ebc4dd5fd73789f4eb24b6391dff6167f11c3ce95d.jpg",
+        "kind": "world-object-model",
+        "byteLength": 722511,
+        "sha256": "4c03bcee7d0fb9708be5e5ebc4dd5fd73789f4eb24b6391dff6167f11c3ce95d",
+        "sourcePath": "assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_arm_1k.jpg"
+      },
+      "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_diff_1k.jpg": {
+        "path": "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/26/2670a7eae2a3104e8537e61d90a8d8b169c7eb0f69b51622bec10e9472dc4573.jpg",
+        "kind": "world-object-model",
+        "byteLength": 764066,
+        "sha256": "2670a7eae2a3104e8537e61d90a8d8b169c7eb0f69b51622bec10e9472dc4573",
+        "sourcePath": "assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_diff_1k.jpg"
+      },
+      "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_nor_gl_1k.jpg": {
+        "path": "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/b2/b23d7b0c23c9a41d50b7e1691e183902765aa4c21ac6ca6da678e874c4ddfb04.jpg",
+        "kind": "world-object-model",
+        "byteLength": 1055218,
+        "sha256": "b23d7b0c23c9a41d50b7e1691e183902765aa4c21ac6ca6da678e874c4ddfb04",
+        "sourcePath": "assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_nor_gl_1k.jpg"
+      },
+      "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_arm_1k.jpg": {
+        "path": "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/da/dacaff86f936bef10220aa60843efadae53039f064ad1a6fad735b912f1ba285.jpg",
+        "kind": "world-object-model",
+        "byteLength": 813524,
+        "sha256": "dacaff86f936bef10220aa60843efadae53039f064ad1a6fad735b912f1ba285",
+        "sourcePath": "assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_arm_1k.jpg"
+      },
+      "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_diff_1k.jpg": {
+        "path": "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/da/da9e017b41e052d5e47558bb98e61b577f66e9d44eb2d26dc9b085e317bede9e.jpg",
+        "kind": "world-object-model",
+        "byteLength": 836152,
+        "sha256": "da9e017b41e052d5e47558bb98e61b577f66e9d44eb2d26dc9b085e317bede9e",
+        "sourcePath": "assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_diff_1k.jpg"
+      },
+      "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_nor_gl_1k.jpg": {
+        "path": "cooked/assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/9b/9b2d7ca04642e249428969fa32189f36fcea8577a282dbccca1ac15d59dce18e.jpg",
+        "kind": "world-object-model",
+        "byteLength": 978238,
+        "sha256": "9b2d7ca04642e249428969fa32189f36fcea8577a282dbccca1ac15d59dce18e",
+        "sourcePath": "assets/imported/models/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_nor_gl_1k.jpg"
+      },
+      "cooked/assets/imported/models/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf": {
+        "path": "cooked/assets/imported/models/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf",
+        "blobPath": "cooked/blobs/sha256/4a/4a857df7868d3731773ce2a0b45f595c4aebf0b9928f2215c0bd2ba32db1c1a8.gltf",
+        "kind": "vegetation-model",
+        "byteLength": 2765,
+        "sha256": "4a857df7868d3731773ce2a0b45f595c4aebf0b9928f2215c0bd2ba32db1c1a8",
+        "sourcePath": "assets/imported/models/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf"
+      },
+      "cooked/assets/imported/models/quiver_tree_02_1k.gltf/lod1/quiver_tree_02.bin": {
+        "path": "cooked/assets/imported/models/quiver_tree_02_1k.gltf/lod1/quiver_tree_02.bin",
+        "blobPath": "cooked/blobs/sha256/db/db2ed3af878f12673eb0ef523012536bb97656b67aedabd83ada47970b6270f5.bin",
+        "kind": "vegetation-model",
+        "byteLength": 783076,
+        "sha256": "db2ed3af878f12673eb0ef523012536bb97656b67aedabd83ada47970b6270f5",
+        "sourcePath": "assets/imported/models/quiver_tree_02_1k.gltf/lod1/quiver_tree_02.bin"
+      },
+      "cooked/assets/imported/models/quiver_tree_02_1k.gltf/lod2/quiver_tree_02_lod2.gltf": {
+        "path": "cooked/assets/imported/models/quiver_tree_02_1k.gltf/lod2/quiver_tree_02_lod2.gltf",
+        "blobPath": "cooked/blobs/sha256/ec/ec259cd36fb3565dfd1954b7298b512f51fe40ad79f20a902b919b2078ea8a45.gltf",
+        "kind": "vegetation-model",
+        "byteLength": 2760,
+        "sha256": "ec259cd36fb3565dfd1954b7298b512f51fe40ad79f20a902b919b2078ea8a45",
+        "sourcePath": "assets/imported/models/quiver_tree_02_1k.gltf/lod2/quiver_tree_02_lod2.gltf"
+      },
+      "cooked/assets/imported/models/quiver_tree_02_1k.gltf/lod2/quiver_tree_02.bin": {
+        "path": "cooked/assets/imported/models/quiver_tree_02_1k.gltf/lod2/quiver_tree_02.bin",
+        "blobPath": "cooked/blobs/sha256/1c/1c05f2fdfa39062bf1927098bba47942ee512f4fe3e6078e1ca60363e2103d37.bin",
+        "kind": "vegetation-model",
+        "byteLength": 297188,
+        "sha256": "1c05f2fdfa39062bf1927098bba47942ee512f4fe3e6078e1ca60363e2103d37",
+        "sourcePath": "assets/imported/models/quiver_tree_02_1k.gltf/lod2/quiver_tree_02.bin"
+      },
+      "cooked/assets/imported/models/quiver_tree_02_1k.gltf/quiver_tree_02_1k.gltf": {
+        "path": "cooked/assets/imported/models/quiver_tree_02_1k.gltf/quiver_tree_02_1k.gltf",
+        "blobPath": "cooked/blobs/sha256/c9/c92ea2f60defaa9c134f43ac606bb7564ade348f92b546ba91c87bc6365d1a56.gltf",
+        "kind": "vegetation-model",
+        "byteLength": 2809,
+        "sha256": "c92ea2f60defaa9c134f43ac606bb7564ade348f92b546ba91c87bc6365d1a56",
+        "sourcePath": "assets/imported/models/quiver_tree_02_1k.gltf/quiver_tree_02_1k.gltf"
+      },
+      "cooked/assets/imported/models/quiver_tree_02_1k.gltf/quiver_tree_02.bin": {
+        "path": "cooked/assets/imported/models/quiver_tree_02_1k.gltf/quiver_tree_02.bin",
+        "blobPath": "cooked/blobs/sha256/fd/fd3598b4aea34bc6864452d2dbb37a04e4bfa7ad1ab6062a3b97c485fae258f3.bin",
+        "kind": "vegetation-model",
+        "byteLength": 2060604,
+        "sha256": "fd3598b4aea34bc6864452d2dbb37a04e4bfa7ad1ab6062a3b97c485fae258f3",
+        "sourcePath": "assets/imported/models/quiver_tree_02_1k.gltf/quiver_tree_02.bin"
+      },
+      "cooked/assets/imported/models/quiver_tree_02_1k.gltf/textures/quiver_tree_02_arm_1k.jpg": {
+        "path": "cooked/assets/imported/models/quiver_tree_02_1k.gltf/textures/quiver_tree_02_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/5d/5d12b154c534503b68766dca96f6486fa0faeb22734b300c58ede695deb2915e.jpg",
+        "kind": "vegetation-model",
+        "byteLength": 759729,
+        "sha256": "5d12b154c534503b68766dca96f6486fa0faeb22734b300c58ede695deb2915e",
+        "sourcePath": "assets/imported/models/quiver_tree_02_1k.gltf/textures/quiver_tree_02_arm_1k.jpg"
+      },
+      "cooked/assets/imported/models/quiver_tree_02_1k.gltf/textures/quiver_tree_02_diff_1k.jpg": {
+        "path": "cooked/assets/imported/models/quiver_tree_02_1k.gltf/textures/quiver_tree_02_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/54/546a745ad765529d3c310178321e145909f4817b06679788ad24d29ec7eae7b7.jpg",
+        "kind": "vegetation-model",
+        "byteLength": 736321,
+        "sha256": "546a745ad765529d3c310178321e145909f4817b06679788ad24d29ec7eae7b7",
+        "sourcePath": "assets/imported/models/quiver_tree_02_1k.gltf/textures/quiver_tree_02_diff_1k.jpg"
+      },
+      "cooked/assets/imported/models/quiver_tree_02_1k.gltf/textures/quiver_tree_02_nor_gl_1k.jpg": {
+        "path": "cooked/assets/imported/models/quiver_tree_02_1k.gltf/textures/quiver_tree_02_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/50/5073a1d9563331d8a7bc57a36cae9f1d1d69470395be0c460a12c57026b5f1f0.jpg",
+        "kind": "vegetation-model",
+        "byteLength": 988408,
+        "sha256": "5073a1d9563331d8a7bc57a36cae9f1d1d69470395be0c460a12c57026b5f1f0",
+        "sourcePath": "assets/imported/models/quiver_tree_02_1k.gltf/textures/quiver_tree_02_nor_gl_1k.jpg"
+      },
+      "cooked/assets/imported/models/tree_stump_01_1k.gltf/textures/tree_stump_01_arm_1k.jpg": {
+        "path": "cooked/assets/imported/models/tree_stump_01_1k.gltf/textures/tree_stump_01_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/d8/d845cd6ab45288c546267d059ebe1f8a737e174330fe9375e5f99e753f2f95d8.jpg",
+        "kind": "world-object-model",
+        "byteLength": 825646,
+        "sha256": "d845cd6ab45288c546267d059ebe1f8a737e174330fe9375e5f99e753f2f95d8",
+        "sourcePath": "assets/imported/models/tree_stump_01_1k.gltf/textures/tree_stump_01_arm_1k.jpg"
+      },
+      "cooked/assets/imported/models/tree_stump_01_1k.gltf/textures/tree_stump_01_diff_1k.jpg": {
+        "path": "cooked/assets/imported/models/tree_stump_01_1k.gltf/textures/tree_stump_01_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/78/781ebe420ac4d84f2e44b9e9937a596e3d5d90711d978a1392f8bf3771b5bf31.jpg",
+        "kind": "world-object-model",
+        "byteLength": 907451,
+        "sha256": "781ebe420ac4d84f2e44b9e9937a596e3d5d90711d978a1392f8bf3771b5bf31",
+        "sourcePath": "assets/imported/models/tree_stump_01_1k.gltf/textures/tree_stump_01_diff_1k.jpg"
+      },
+      "cooked/assets/imported/models/tree_stump_01_1k.gltf/textures/tree_stump_01_nor_gl_1k.jpg": {
+        "path": "cooked/assets/imported/models/tree_stump_01_1k.gltf/textures/tree_stump_01_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/42/425117514b0386bb6df41cb64a61a624d2596472e05777483d4021b3285e3ceb.jpg",
+        "kind": "world-object-model",
+        "byteLength": 1238404,
+        "sha256": "425117514b0386bb6df41cb64a61a624d2596472e05777483d4021b3285e3ceb",
+        "sourcePath": "assets/imported/models/tree_stump_01_1k.gltf/textures/tree_stump_01_nor_gl_1k.jpg"
+      },
+      "cooked/assets/imported/models/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf": {
+        "path": "cooked/assets/imported/models/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf",
+        "blobPath": "cooked/blobs/sha256/9c/9c66ba87d693f35eb404acaa96e0eeff831c295b61a0a903795584cbcc3527c9.gltf",
+        "kind": "world-object-model",
+        "byteLength": 2793,
+        "sha256": "9c66ba87d693f35eb404acaa96e0eeff831c295b61a0a903795584cbcc3527c9",
+        "sourcePath": "assets/imported/models/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf"
+      },
+      "cooked/assets/imported/models/tree_stump_01_1k.gltf/tree_stump_01.bin": {
+        "path": "cooked/assets/imported/models/tree_stump_01_1k.gltf/tree_stump_01.bin",
+        "blobPath": "cooked/blobs/sha256/b4/b4d9ca70b3c908c4a638fbd6a23ed96c84055bbbf14cf44b89e31ad59fa21e0a.bin",
+        "kind": "world-object-model",
+        "byteLength": 965380,
+        "sha256": "b4d9ca70b3c908c4a638fbd6a23ed96c84055bbbf14cf44b89e31ad59fa21e0a",
+        "sourcePath": "assets/imported/models/tree_stump_01_1k.gltf/tree_stump_01.bin"
+      },
+      "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_arm_1k.jpg": {
+        "path": "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/35/35e34115f7657cadce27422730e936418a30e23397fb5c126591dff711acbf4b.jpg",
+        "kind": "world-object-model",
+        "byteLength": 852652,
+        "sha256": "35e34115f7657cadce27422730e936418a30e23397fb5c126591dff711acbf4b",
+        "sourcePath": "assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_arm_1k.jpg"
+      },
+      "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_diff_1k.jpg": {
+        "path": "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/63/639e616e8d69acaadbf69725bb3d13f07a28fdff6c6b15e1d7f0574336564c72.jpg",
+        "kind": "world-object-model",
+        "byteLength": 605063,
+        "sha256": "639e616e8d69acaadbf69725bb3d13f07a28fdff6c6b15e1d7f0574336564c72",
+        "sourcePath": "assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_diff_1k.jpg"
+      },
+      "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_nor_gl_1k.jpg": {
+        "path": "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/3d/3dfa658b4a38a711887c9e4a492a319b20e2a821e4e08435368f98fe0c78a1b8.jpg",
+        "kind": "world-object-model",
+        "byteLength": 538634,
+        "sha256": "3dfa658b4a38a711887c9e4a492a319b20e2a821e4e08435368f98fe0c78a1b8",
+        "sourcePath": "assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_nor_gl_1k.jpg"
+      },
+      "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_arm_1k.jpg": {
+        "path": "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/97/970de5e9f682d4ac2a2098c88dafc1e5a6c27cf1dbe31eb7ed3f8bc2a92eb58f.jpg",
+        "kind": "world-object-model",
+        "byteLength": 848051,
+        "sha256": "970de5e9f682d4ac2a2098c88dafc1e5a6c27cf1dbe31eb7ed3f8bc2a92eb58f",
+        "sourcePath": "assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_arm_1k.jpg"
+      },
+      "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_diff_1k.jpg": {
+        "path": "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/c7/c75f506a0c31093d4d3d425d4c979f49fce2dc99a8e6caefb50809fcf329845e.jpg",
+        "kind": "world-object-model",
+        "byteLength": 618495,
+        "sha256": "c75f506a0c31093d4d3d425d4c979f49fce2dc99a8e6caefb50809fcf329845e",
+        "sourcePath": "assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_diff_1k.jpg"
+      },
+      "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_nor_gl_1k.jpg": {
+        "path": "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/57/57c3d5682f299c97270228e3ec08f6c982fb2c2696ec30a74d0edbfe067235dd.jpg",
+        "kind": "world-object-model",
+        "byteLength": 555954,
+        "sha256": "57c3d5682f299c97270228e3ec08f6c982fb2c2696ec30a74d0edbfe067235dd",
+        "sourcePath": "assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_nor_gl_1k.jpg"
+      },
+      "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_arm_1k.jpg": {
+        "path": "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/78/785b59a19add1951bcd54d7607c18fcafa5a09068349ac437640d495b45a62fd.jpg",
+        "kind": "world-object-model",
+        "byteLength": 904545,
+        "sha256": "785b59a19add1951bcd54d7607c18fcafa5a09068349ac437640d495b45a62fd",
+        "sourcePath": "assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_arm_1k.jpg"
+      },
+      "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_diff_1k.jpg": {
+        "path": "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/39/399134703c974ad4c8bc71107d513e8c89f5ca09f9b6175dc02e2e607b75c43d.jpg",
+        "kind": "world-object-model",
+        "byteLength": 672604,
+        "sha256": "399134703c974ad4c8bc71107d513e8c89f5ca09f9b6175dc02e2e607b75c43d",
+        "sourcePath": "assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_diff_1k.jpg"
+      },
+      "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_nor_gl_1k.jpg": {
+        "path": "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/3b/3be77f6310507c9c37414809ba31c39c89621e8bde916893bd676d54a5ceade2.jpg",
+        "kind": "world-object-model",
+        "byteLength": 620276,
+        "sha256": "3be77f6310507c9c37414809ba31c39c89621e8bde916893bd676d54a5ceade2",
+        "sourcePath": "assets/imported/models/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_nor_gl_1k.jpg"
+      },
+      "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf": {
+        "path": "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf",
+        "blobPath": "cooked/blobs/sha256/ff/ff785e2150198c4cdb3cc74e532b02ce9574d6a7fc3606f5801fcbf68e3136af.gltf",
+        "kind": "world-object-model",
+        "byteLength": 31017,
+        "sha256": "ff785e2150198c4cdb3cc74e532b02ce9574d6a7fc3606f5801fcbf68e3136af",
+        "sourcePath": "assets/imported/models/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf"
+      },
+      "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/wooden_barrels_01.bin": {
+        "path": "cooked/assets/imported/models/wooden_barrels_01_1k.gltf/wooden_barrels_01.bin",
+        "blobPath": "cooked/blobs/sha256/7d/7de8294b07ecb6bd57ea3542760fa45bbefc296a47dd044723eb599ffc56084f.bin",
+        "kind": "world-object-model",
+        "byteLength": 1243556,
+        "sha256": "7de8294b07ecb6bd57ea3542760fa45bbefc296a47dd044723eb599ffc56084f",
+        "sourcePath": "assets/imported/models/wooden_barrels_01_1k.gltf/wooden_barrels_01.bin"
+      },
+      "cooked/assets/imported/models/wooden_crate_01_1k.gltf/textures/wooden_crate_01_arm_1k.jpg": {
+        "path": "cooked/assets/imported/models/wooden_crate_01_1k.gltf/textures/wooden_crate_01_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/cd/cd0b031c3924905e16ffd78ead062c2cc274148c4104d09635310097738b4679.jpg",
+        "kind": "world-object-model",
+        "byteLength": 776699,
+        "sha256": "cd0b031c3924905e16ffd78ead062c2cc274148c4104d09635310097738b4679",
+        "sourcePath": "assets/imported/models/wooden_crate_01_1k.gltf/textures/wooden_crate_01_arm_1k.jpg"
+      },
+      "cooked/assets/imported/models/wooden_crate_01_1k.gltf/textures/wooden_crate_01_diff_1k.jpg": {
+        "path": "cooked/assets/imported/models/wooden_crate_01_1k.gltf/textures/wooden_crate_01_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/16/16653f4abaf4c1d9bca94bde3bd8c54d0ea9a5298d1648abcf57de1f7ecc34cc.jpg",
+        "kind": "world-object-model",
+        "byteLength": 711292,
+        "sha256": "16653f4abaf4c1d9bca94bde3bd8c54d0ea9a5298d1648abcf57de1f7ecc34cc",
+        "sourcePath": "assets/imported/models/wooden_crate_01_1k.gltf/textures/wooden_crate_01_diff_1k.jpg"
+      },
+      "cooked/assets/imported/models/wooden_crate_01_1k.gltf/textures/wooden_crate_01_nor_gl_1k.jpg": {
+        "path": "cooked/assets/imported/models/wooden_crate_01_1k.gltf/textures/wooden_crate_01_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/f4/f4ea44c7dc1686123d337039cb713d74e8a2dbc6d1bd2beeac276d06f5df3fab.jpg",
+        "kind": "world-object-model",
+        "byteLength": 594076,
+        "sha256": "f4ea44c7dc1686123d337039cb713d74e8a2dbc6d1bd2beeac276d06f5df3fab",
+        "sourcePath": "assets/imported/models/wooden_crate_01_1k.gltf/textures/wooden_crate_01_nor_gl_1k.jpg"
+      },
+      "cooked/assets/imported/models/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf": {
+        "path": "cooked/assets/imported/models/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf",
+        "blobPath": "cooked/blobs/sha256/fd/fd9c6073acfc671e12b64666053f2805ae33aff5d3dbbcfe5c97c08c06644927.gltf",
+        "kind": "world-object-model",
+        "byteLength": 5612,
+        "sha256": "fd9c6073acfc671e12b64666053f2805ae33aff5d3dbbcfe5c97c08c06644927",
+        "sourcePath": "assets/imported/models/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf"
+      },
+      "cooked/assets/imported/models/wooden_crate_01_1k.gltf/wooden_crate_01.bin": {
+        "path": "cooked/assets/imported/models/wooden_crate_01_1k.gltf/wooden_crate_01.bin",
+        "blobPath": "cooked/blobs/sha256/85/85f381f8035f7a6f2f3b848640894c6d3333b261946dd8a338c0fe19e0bea21e.bin",
+        "kind": "world-object-model",
+        "byteLength": 189408,
+        "sha256": "85f381f8035f7a6f2f3b848640894c6d3333b261946dd8a338c0fe19e0bea21e",
+        "sourcePath": "assets/imported/models/wooden_crate_01_1k.gltf/wooden_crate_01.bin"
       },
       "cooked/maps/main/collision/cells/c_0_0.collisionpack": {
         "path": "cooked/maps/main/collision/cells/c_0_0.collisionpack",

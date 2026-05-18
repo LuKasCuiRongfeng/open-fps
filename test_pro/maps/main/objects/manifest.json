@@ -151,7 +151,7 @@
       },
       "render": {
         "kind": "gltf",
-        "path": "../../assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf",
+        "path": "../../assets/imported/models/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf",
         "targetHeightMeters": 2.4,
         "baseScale": 1.8,
         "castShadow": true,
@@ -198,7 +198,7 @@
       },
       "render": {
         "kind": "gltf",
-        "path": "../../assets/model/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf",
+        "path": "../../assets/imported/models/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf",
         "targetHeightMeters": 8.5,
         "baseScale": 1.4,
         "castShadow": true,
@@ -229,7 +229,7 @@
       },
       "render": {
         "kind": "gltf",
-        "path": "../../assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf",
+        "path": "../../assets/imported/models/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf",
         "targetHeightMeters": 3.2,
         "baseScale": 3.8,
         "castShadow": true,
@@ -260,7 +260,7 @@
       },
       "render": {
         "kind": "gltf",
-        "path": "../../assets/model/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf",
+        "path": "../../assets/imported/models/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf",
         "targetHeightMeters": 3.6,
         "baseScale": 5.8,
         "castShadow": true,
@@ -303,7 +303,7 @@
       "collision": false,
       "render": {
         "kind": "gltf",
-        "path": "../../assets/model/boulder_01_1k.gltf/boulder_01_1k.gltf",
+        "path": "../../assets/imported/models/boulder_01_1k.gltf/boulder_01_1k.gltf",
         "targetHeightMeters": 2.2,
         "baseScale": 1.4,
         "castShadow": true,
@@ -342,7 +342,7 @@
       },
       "render": {
         "kind": "gltf",
-        "path": "../../assets/model/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf",
+        "path": "../../assets/imported/models/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf",
         "targetHeightMeters": 2.6,
         "baseScale": 0.34,
         "castShadow": true,
@@ -371,7 +371,7 @@
       },
       "render": {
         "kind": "gltf",
-        "path": "../../assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf",
+        "path": "../../assets/imported/models/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf",
         "targetHeightMeters": 1.8,
         "baseScale": 2.8,
         "castShadow": true,
@@ -408,7 +408,7 @@
       },
       "render": {
         "kind": "gltf",
-        "path": "../../assets/model/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf",
+        "path": "../../assets/imported/models/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf",
         "targetHeightMeters": 2.2,
         "baseScale": 1.35,
         "castShadow": true,
@@ -437,7 +437,7 @@
       },
       "render": {
         "kind": "gltf",
-        "path": "../../assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf",
+        "path": "../../assets/imported/models/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf",
         "targetHeightMeters": 2.1,
         "baseScale": 1.2,
         "castShadow": true,

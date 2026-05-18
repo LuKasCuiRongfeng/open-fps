@@ -2,6 +2,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { buildHeightConfig, generateHeight } from "./height-field.mjs";
 import { createSemanticArchetypes, createSemanticWorldObjects } from "./world-semantics.mjs";
+import { readAssetRegistry } from "./asset-registry.mjs";
 import {
   cookedWorldPartitionCellSizePages,
   createRegionIntegrity,
@@ -27,6 +28,7 @@ export async function generateWorldObjectAssets(context, preset) {
 
   const pageBounds = getPageBounds(preset);
   const heightConfig = buildHeightConfig(preset);
+  const assetRegistry = await readAssetRegistry(context);
   const partitionCells = createPartitionCells(pageBounds);
   const objects = createSemanticWorldObjects((x, z) => generateHeight(x, z, preset, heightConfig));
   const objectsByCell = new Map(partitionCells.map((cell) => [cell.key, []]));
@@ -47,7 +49,7 @@ export async function generateWorldObjectAssets(context, preset) {
     cellSizeMeters: cookedWorldPartitionCellSizePages * pageSizeMeters,
     cellsDirectory: worldObjectCellsDirectory,
     designSource: "OPEN_WORLD_DESIGN_SPEC.md",
-    archetypes: createSemanticArchetypes(),
+    archetypes: createSemanticArchetypes(assetRegistry),
     cells: {},
   };
 

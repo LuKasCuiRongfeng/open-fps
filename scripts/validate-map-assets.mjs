@@ -6,6 +6,14 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 
 const PROJECT_FILE = "project.json";
+const ASSET_REGISTRY_PATH = "assets/registry.json";
+const ASSET_REGISTRY_FORMAT = "open-fps-asset-registry-v1";
+const ASSET_REGISTRY_VERSION = 1;
+const IMPORTED_ASSET_ROOT = "assets/imported";
+const IMPORTED_MODEL_ROOT = "assets/imported/models";
+const IMPORTED_MATERIAL_ROOT = "assets/imported/materials";
+const SOURCE_METADATA_ROOT = "assets/sources";
+const ACCEPTED_ASSET_LICENSES = new Set(["CC0-1.0"]);
 const MAP_FILE = "map.json";
 const TERRAIN_HEIGHT_PATH = "terrain/height/manifest.json";
 const TERRAIN_REGION_DIRECTORY = "terrain/height/regions";
@@ -66,14 +74,178 @@ async function validateProject(projectPath, mapIdOverride) {
     addWarning(PROJECT_FILE, `Map '${mapId}' is not listed in project metadata maps.`);
   }
 
+  const assetRegistry = await validateAssetRegistry(projectPath);
   const mapDirectory = path.join(projectPath, "maps", mapId);
   const mapManifest = await readJsonFile(path.join(mapDirectory, MAP_FILE), "map manifest");
   validateMapManifest(mapManifest, mapId);
   await validateTerrain(mapDirectory, mapManifest);
-  await validatePaint(mapDirectory, mapManifest);
-  await validateVegetation(mapDirectory);
-  const objectManifest = await validateWorldObjects(mapDirectory);
+  await validatePaint(mapDirectory, mapManifest, assetRegistry);
+  await validateVegetation(mapDirectory, assetRegistry);
+  const objectManifest = await validateWorldObjects(mapDirectory, assetRegistry);
   await validateCookedMap(projectPath, mapId, mapManifest, objectManifest);
+}
+
+async function validateAssetRegistry(projectPath) {
+  const registryPath = path.join(projectPath, ASSET_REGISTRY_PATH);
+  const registry = await readJsonFile(registryPath, "asset registry");
+  const label = ASSET_REGISTRY_PATH;
+
+  if (registry.version !== ASSET_REGISTRY_VERSION) {
+    addError(label, `Asset registry must use version ${ASSET_REGISTRY_VERSION}.`);
+  }
+  validateEqual(registry.format, ASSET_REGISTRY_FORMAT, label, "asset registry format");
+  validateEqual(registry.projectId, path.basename(projectPath), label, "asset registry projectId");
+  validateAssetRegistryPolicy(registry.policy, label);
+  validateAssetRegistryRoots(registry.roots, label);
+
+  if (!isRecord(registry.assets)) {
+    addError(label, "Asset registry must contain an assets object.");
+    return { assets: {}, importedRoots: [] };
+  }
+
+  const importedRoots = [];
+  for (const [assetId, asset] of Object.entries(registry.assets).sort(([left], [right]) => left.localeCompare(right))) {
+    if (!isRecord(asset)) {
+      addError(label, `Asset '${assetId}' metadata must be an object.`);
+      continue;
+    }
+
+    const importedRoot = await validateAssetRegistryEntry(projectPath, assetId, asset, label);
+    if (importedRoot) {
+      importedRoots.push(importedRoot);
+    }
+  }
+
+  await validateImportedAssetCoverage(projectPath, importedRoots, label);
+  validateNoLegacyAssetDirectories(projectPath);
+  return { assets: registry.assets, importedRoots };
+}
+
+function validateAssetRegistryPolicy(policy, label) {
+  if (!isRecord(policy)) {
+    addError(label, "Asset registry policy must be an object.");
+    return;
+  }
+
+  validateEqual(policy.finalContentRequiresRegistryEntry, true, label, "asset registry policy finalContentRequiresRegistryEntry");
+  validateEqual(policy.simpleGeometryFinalContentAllowed, false, label, "asset registry policy simpleGeometryFinalContentAllowed");
+  if (!Array.isArray(policy.acceptedLicenses) || !policy.acceptedLicenses.includes("CC0-1.0")) {
+    addError(label, "Asset registry policy must accept CC0-1.0 assets.");
+  }
+}
+
+function validateAssetRegistryRoots(roots, label) {
+  if (!isRecord(roots)) {
+    addError(label, "Asset registry roots must be an object.");
+    return;
+  }
+
+  validateEqual(roots.importedModels, IMPORTED_MODEL_ROOT, label, "asset registry roots.importedModels");
+  validateEqual(roots.importedMaterials, IMPORTED_MATERIAL_ROOT, label, "asset registry roots.importedMaterials");
+  validateEqual(roots.sourceMetadata, SOURCE_METADATA_ROOT, label, "asset registry roots.sourceMetadata");
+}
+
+async function validateAssetRegistryEntry(projectPath, assetId, asset, label) {
+  validateEqual(asset.id, assetId, label, `asset '${assetId}' id`);
+  if (asset.type !== "model" && asset.type !== "material") {
+    addError(label, `Asset '${assetId}' type must be model or material.`);
+  }
+  if (typeof asset.name !== "string" || asset.name.length === 0) {
+    addError(label, `Asset '${assetId}' must declare a display name.`);
+  }
+  if (typeof asset.provider !== "string" || asset.provider.length === 0) {
+    addError(label, `Asset '${assetId}' must declare a provider.`);
+  }
+  if (!isHttpUrl(asset.sourceUrl)) {
+    addError(label, `Asset '${assetId}' must declare an http(s) sourceUrl.`);
+  }
+  if (!ACCEPTED_ASSET_LICENSES.has(asset.license)) {
+    addError(label, `Asset '${assetId}' license '${String(asset.license)}' is not accepted.`);
+  }
+  if (!isHttpUrl(asset.licenseUrl)) {
+    addError(label, `Asset '${assetId}' must declare an http(s) licenseUrl.`);
+  }
+
+  const imported = isRecord(asset.imported) ? asset.imported : null;
+  if (!imported) {
+    addError(label, `Asset '${assetId}' must declare imported metadata.`);
+    return null;
+  }
+
+  const root = normalizeProjectAssetPath(imported.root);
+  const expectedRoot = asset.type === "model" ? IMPORTED_MODEL_ROOT : IMPORTED_MATERIAL_ROOT;
+  if (!root || !root.startsWith(`${expectedRoot}/`)) {
+    addError(label, `Asset '${assetId}' imported root must be inside ${expectedRoot}.`);
+    return null;
+  }
+
+  await validateAssetSourceMetadata(projectPath, asset, root, label);
+  await validateAssetImportedFiles(projectPath, assetId, imported.files, root, label);
+  return { id: assetId, type: asset.type, root };
+}
+
+async function validateAssetSourceMetadata(projectPath, asset, importedRoot, label) {
+  const sourceMetadataPath = normalizeProjectAssetPath(asset.sourceMetadataPath);
+  if (!sourceMetadataPath || !sourceMetadataPath.startsWith(`${SOURCE_METADATA_ROOT}/`)) {
+    addError(label, `Asset '${asset.id}' sourceMetadataPath must be inside ${SOURCE_METADATA_ROOT}.`);
+    return;
+  }
+
+  const source = await readJsonFile(path.join(projectPath, sourceMetadataPath), `source metadata for ${asset.id}`);
+  validateEqual(source.id, asset.id, sourceMetadataPath, "source metadata id");
+  validateEqual(source.provider, asset.provider, sourceMetadataPath, "source metadata provider");
+  validateEqual(source.sourceUrl, asset.sourceUrl, sourceMetadataPath, "source metadata sourceUrl");
+  validateEqual(source.license, asset.license, sourceMetadataPath, "source metadata license");
+  validateEqual(source.licenseUrl, asset.licenseUrl, sourceMetadataPath, "source metadata licenseUrl");
+  validateEqual(source.importedRoot, importedRoot, sourceMetadataPath, "source metadata importedRoot");
+}
+
+async function validateAssetImportedFiles(projectPath, assetId, files, importedRoot, label) {
+  if (!isRecord(files)) {
+    addError(label, `Asset '${assetId}' imported files must be an object.`);
+    return;
+  }
+
+  const roles = Object.keys(files);
+  if (roles.length === 0) {
+    addError(label, `Asset '${assetId}' must declare at least one imported file.`);
+    return;
+  }
+
+  await Promise.all(roles.map(async (role) => {
+    const filePath = normalizeProjectAssetPath(files[role]);
+    if (!filePath || !filePath.startsWith(`${importedRoot}/`)) {
+      addError(label, `Asset '${assetId}' imported file '${role}' must be inside its imported root.`);
+      return;
+    }
+
+    await readRequiredFileBytes(path.join(projectPath, filePath), `asset '${assetId}' imported file '${role}'`);
+  }));
+}
+
+async function validateImportedAssetCoverage(projectPath, importedRoots, label) {
+  const importedRootPath = path.join(projectPath, IMPORTED_ASSET_ROOT);
+  const files = await listFilesSafe(importedRootPath);
+  if (files.length === 0) {
+    addError(label, "Imported asset root must contain registered assets.");
+    return;
+  }
+
+  for (const filePath of files) {
+    const projectRelative = relativeProjectPath(projectPath, filePath);
+    const owner = importedRoots.find((entry) => projectRelative === entry.root || projectRelative.startsWith(`${entry.root}/`));
+    if (!owner) {
+      addError(projectRelative, "Imported asset file is not covered by any registry entry.");
+    }
+  }
+}
+
+function validateNoLegacyAssetDirectories(projectPath) {
+  for (const legacyPath of ["assets/model", "assets/texture", "cooked/assets/model", "cooked/assets/texture"]) {
+    if (existsSync(path.join(projectPath, legacyPath))) {
+      addError(legacyPath, "Legacy asset directory is forbidden; use assets/imported plus assets/registry.json.");
+    }
+  }
 }
 
 function validateMapManifest(manifest, mapId) {
@@ -118,6 +290,105 @@ function validateMapManifest(manifest, mapId) {
   }
 }
 
+function validatePaintLayerAssetReferences(layers, assetRegistry, label) {
+  const textureFields = ["diffuse", "normal", "displacement", "arm", "ao", "roughness", "metallic"];
+  for (const [layerName, layer] of Object.entries(layers)) {
+    if (!isRecord(layer)) {
+      addError(label, `Paint layer '${layerName}' must be an object.`);
+      continue;
+    }
+
+    for (const field of textureFields) {
+      const value = layer[field];
+      if (typeof value !== "string" || isExternalAssetPath(value)) {
+        continue;
+      }
+
+      validateRegisteredProjectAssetPath(assetRegistry, value, "material", label, `paint layer '${layerName}' ${field}`);
+    }
+  }
+}
+
+function validateVegetationModelAssetReferences(mapDirectory, models, assetRegistry, label) {
+  const modelFields = ["path", "lod1Path", "lod2Path"];
+  for (const [modelId, model] of Object.entries(models)) {
+    if (!isRecord(model)) {
+      addError(label, `Vegetation model '${modelId}' must be an object.`);
+      continue;
+    }
+
+    for (const field of modelFields) {
+      const value = model[field];
+      if (typeof value !== "string" || value.length === 0 || isExternalAssetPath(value)) {
+        continue;
+      }
+
+      const projectRelativePath = resolveProjectAssetReference(projectDirectory, mapDirectory, value, label, `vegetation model '${modelId}' ${field}`);
+      if (projectRelativePath) {
+        validateRegisteredProjectAssetPath(assetRegistry, projectRelativePath, "model", label, `vegetation model '${modelId}' ${field}`);
+      }
+    }
+  }
+}
+
+function validateWorldObjectArchetypeAssetReferences(mapDirectory, archetypes, assetRegistry, label) {
+  for (const [archetypeId, archetype] of Object.entries(archetypes)) {
+    if (!isRecord(archetype)) {
+      addError(label, `World object archetype '${archetypeId}' must be an object.`);
+      continue;
+    }
+
+    const render = archetype.render;
+    if (!isRecord(render)) {
+      continue;
+    }
+
+    if ((archetype.layer === "poi" || archetype.layer === "prop") && render.kind !== "gltf") {
+      addError(label, `World object archetype '${archetypeId}' final POI/prop render must use a registered GLTF model.`);
+    }
+
+    for (const field of ["path", "lod1Path", "lod2Path"]) {
+      const value = render[field];
+      if (typeof value !== "string" || value.length === 0 || isExternalAssetPath(value)) {
+        continue;
+      }
+
+      const projectRelativePath = resolveProjectAssetReference(projectDirectory, mapDirectory, value, label, `world object archetype '${archetypeId}' render.${field}`);
+      if (projectRelativePath) {
+        validateRegisteredProjectAssetPath(assetRegistry, projectRelativePath, "model", label, `world object archetype '${archetypeId}' render.${field}`);
+      }
+    }
+  }
+}
+
+function validateRegisteredProjectAssetPath(assetRegistry, projectRelativePath, expectedType, label, fieldName) {
+  const normalized = normalizeProjectAssetPath(projectRelativePath);
+  if (!normalized) {
+    addError(label, `${fieldName} must be a project-relative asset path.`);
+    return;
+  }
+
+  const owner = assetRegistry.importedRoots.find((entry) => normalized === entry.root || normalized.startsWith(`${entry.root}/`));
+  if (!owner) {
+    addError(label, `${fieldName} must reference an asset declared in ${ASSET_REGISTRY_PATH}.`);
+    return;
+  }
+
+  if (owner.type !== expectedType) {
+    addError(label, `${fieldName} must reference a registered ${expectedType} asset, got ${owner.type}.`);
+  }
+}
+
+function resolveProjectAssetReference(projectPath, baseDirectory, assetPath, label, fieldName) {
+  const absolutePath = path.resolve(baseDirectory, assetPath);
+  if (!isInsideDirectory(absolutePath, projectPath)) {
+    addError(label, `${fieldName} must resolve inside the project directory.`);
+    return null;
+  }
+
+  return relativeProjectPath(projectPath, absolutePath);
+}
+
 async function validateTerrain(mapDirectory, mapManifest) {
   const manifestPath = path.join(mapDirectory, TERRAIN_HEIGHT_PATH);
   const manifest = await readJsonFile(manifestPath, "terrain height manifest");
@@ -158,7 +429,7 @@ async function validateTerrain(mapDirectory, mapManifest) {
   await validateNoOrphanRegionPacks(mapDirectory, TERRAIN_REGION_DIRECTORY, TERRAIN_REGION_EXTENSION, expectedPaths);
 }
 
-async function validatePaint(mapDirectory, mapManifest) {
+async function validatePaint(mapDirectory, mapManifest, assetRegistry) {
   const manifestPath = path.join(mapDirectory, PAINT_PATH);
   const manifest = await readJsonFile(manifestPath, "paint manifest");
   const label = relativePath(manifestPath);
@@ -169,6 +440,8 @@ async function validatePaint(mapDirectory, mapManifest) {
   }
   if (!isRecord(manifest.layers)) {
     addError(label, "Paint manifest must contain texture layers.");
+  } else {
+    validatePaintLayerAssetReferences(manifest.layers, assetRegistry, label);
   }
   if (!isRecord(splatMaps)) {
     addError(label, "Paint manifest must contain splat map metadata.");
@@ -212,7 +485,7 @@ async function validatePaint(mapDirectory, mapManifest) {
   await validateNoOrphanRegionPacks(mapDirectory, PAINT_REGION_DIRECTORY, PAINT_REGION_EXTENSION, expectedPaths);
 }
 
-async function validateVegetation(mapDirectory) {
+async function validateVegetation(mapDirectory, assetRegistry) {
   const manifestPath = path.join(mapDirectory, VEGETATION_PATH);
   const manifest = await readJsonFile(manifestPath, "vegetation manifest");
   const label = relativePath(manifestPath);
@@ -223,6 +496,8 @@ async function validateVegetation(mapDirectory) {
   }
   if (!isRecord(manifest.models)) {
     addError(label, "Vegetation manifest must contain model definitions.");
+  } else {
+    validateVegetationModelAssetReferences(mapDirectory, manifest.models, assetRegistry, label);
   }
   if (!isRecord(instances)) {
     addError(label, "Vegetation manifest must contain instance metadata.");
@@ -255,7 +530,7 @@ async function validateVegetation(mapDirectory) {
   await validateNoOrphanRegionPacks(mapDirectory, VEGETATION_REGION_DIRECTORY, VEGETATION_REGION_EXTENSION, expectedPaths);
 }
 
-async function validateWorldObjects(mapDirectory) {
+async function validateWorldObjects(mapDirectory, assetRegistry) {
   const manifestPath = path.join(mapDirectory, WORLD_OBJECTS_PATH);
   const manifest = await readJsonFile(manifestPath, "world object manifest");
   const label = relativePath(manifestPath);
@@ -269,6 +544,8 @@ async function validateWorldObjects(mapDirectory) {
   validateEqual(manifest.cellsDirectory, WORLD_OBJECT_CELLS_DIRECTORY, label, "world object cellsDirectory");
   if (!isRecord(manifest.archetypes)) {
     addError(label, "World object manifest must contain archetypes.");
+  } else {
+    validateWorldObjectArchetypeAssetReferences(mapDirectory, manifest.archetypes, assetRegistry, label);
   }
   if (!isRecord(manifest.cells)) {
     addError(label, "World object manifest must contain cell metadata.");
@@ -331,6 +608,7 @@ async function validateCookedMap(projectPath, mapId, mapManifest, objectManifest
 
   const sourcePaths = {
     project: PROJECT_FILE,
+    assetRegistry: ASSET_REGISTRY_PATH,
     map: `maps/${mapId}/${MAP_FILE}`,
     terrain: `maps/${mapId}/${TERRAIN_HEIGHT_PATH}`,
     paint: `maps/${mapId}/${PAINT_PATH}`,
@@ -341,6 +619,7 @@ async function validateCookedMap(projectPath, mapId, mapManifest, objectManifest
     addError(label, "Cooked map manifest must contain source hash metadata.");
   } else {
     await validateCookedSourceReference(projectPath, cooked.source.project, sourcePaths.project, label, "project");
+    await validateCookedSourceReference(projectPath, cooked.source.assetRegistry, sourcePaths.assetRegistry, label, "assetRegistry");
     await validateCookedSourceReference(projectPath, cooked.source.map, sourcePaths.map, label, "map");
     await validateCookedSourceReference(projectPath, cooked.source.terrain, sourcePaths.terrain, label, "terrain");
     await validateCookedSourceReference(projectPath, cooked.source.paint, sourcePaths.paint, label, "paint");
@@ -1116,6 +1395,21 @@ async function validateCookedPackage(projectPath, contentPackage, cookedBuild, l
       }
     }
   }));
+
+  await validateCookedImportedAssetCoverage(projectPath, contentPackage.artifacts);
+}
+
+async function validateCookedImportedAssetCoverage(projectPath, artifacts) {
+  const cookedImportedRoot = path.join(projectPath, "cooked", IMPORTED_ASSET_ROOT);
+  const files = await listFilesSafe(cookedImportedRoot);
+  const artifactPaths = new Set(Object.keys(artifacts ?? {}));
+
+  for (const filePath of files) {
+    const projectRelative = relativeProjectPath(projectPath, filePath);
+    if (!artifactPaths.has(projectRelative)) {
+      addError(projectRelative, "Cooked imported asset file is not covered by the cooked package artifact index.");
+    }
+  }
 }
 
 async function validateCookedCache(projectPath, mapId, cooked, label) {
@@ -1684,9 +1978,59 @@ function isExternalAssetPath(assetPath) {
   return /^[a-z]+:\/\//i.test(assetPath) || assetPath.startsWith("data:");
 }
 
+function isHttpUrl(value) {
+  return typeof value === "string" && /^https?:\/\//i.test(value);
+}
+
 function isInsideDirectory(filePath, directory) {
   const relative = path.relative(directory, filePath);
   return Boolean(relative) && !relative.startsWith("..") && !path.isAbsolute(relative);
+}
+
+function normalizeProjectAssetPath(value) {
+  if (typeof value !== "string" || value.length === 0 || path.isAbsolute(value) || value.includes("\\")) {
+    return null;
+  }
+
+  const normalized = path.posix.normalize(value);
+  if (normalized === "." || normalized.startsWith("../") || normalized.includes("/../")) {
+    return null;
+  }
+
+  return normalized;
+}
+
+async function listFilesSafe(directoryPath) {
+  try {
+    return await listFiles(directoryPath);
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
+async function listFiles(directoryPath) {
+  const entries = await readdir(directoryPath, { withFileTypes: true });
+  const files = await Promise.all(entries.map(async (entry) => {
+    const entryPath = path.join(directoryPath, entry.name);
+    if (entry.isDirectory()) {
+      return listFiles(entryPath);
+    }
+    if (entry.isFile()) {
+      return [entryPath];
+    }
+
+    return [];
+  }));
+
+  return files.flat();
+}
+
+function relativeProjectPath(projectPath, filePath) {
+  return path.relative(projectPath, filePath).replaceAll(path.sep, "/");
 }
 
 function isRecord(value) {

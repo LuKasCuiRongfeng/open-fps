@@ -37,15 +37,15 @@ export const MAX_SPLAT_MAPS = 4;
  *   "version": 2,
  *   "layers": {
  *     "rocky": {
- *       "diffuse": "assets/textures/rocky_diffuse.jpg",
- *       "normal": "assets/textures/rocky_normal.jpg"
+ *       "diffuse": "assets/imported/materials/rocky_1k/rocky_diffuse.jpg",
+ *       "normal": "assets/imported/materials/rocky_1k/rocky_normal.png"
  *     },
  *     "grass": {
- *       "diffuse": "assets/textures/grass_diffuse.jpg",
+ *       "diffuse": "assets/imported/materials/grass_1k/grass_diffuse.jpg",
  *       "splatMapIndex": 0
  *     },
  *     "sand": {
- *       "diffuse": "assets/textures/sand_diffuse.jpg",
+ *       "diffuse": "assets/imported/materials/sand_1k/sand_diffuse.jpg",
  *       "splatMapIndex": 1
  *     }
  *   },

@@ -14,6 +14,8 @@
 - 项目没有专职美术支持；新增模型、贴图、材质、HDRI、音效等内容资产时，AI 必须主动使用公开且授权清晰的资源，优先选择 CC0 或允许商用与再分发的公开资源，例如 Poly Haven（https://polyhaven.com/），并在资产元数据、文档或提交说明中保留来源与授权信息。
 - 需要美术资产时，AI 应直接搜索、筛选、下载并接入合适的公开资源；不要因为缺少本地资产就退回简单 cube、sphere、cylinder、plane 等基础几何体作为最终内容。
 - 严禁把简单几何图形当作最终美术占位提交到地图、运行时、cooked 资产或用户可见玩法内容中；简单几何只允许用于编辑器 gizmo、brush indicator、collision/nav/debug overlay、临时诊断或用户明确要求的短期调试，并且不得伪装成最终美术方案。
+- `test_pro/assets` 必须保持项目级资产库结构：`registry.json` 记录资产用途、来源、授权和导入产物；`sources/` 保存外部公开资源元数据；`imported/` 保存生成脚本和运行时可引用的导入产物。不要恢复 `assets/model`、`assets/texture` 或未注册裸文件目录。
+- 地图 source manifest、植被模型、材质层、world object archetype 和 cooked package 只能引用已登记在 `assets/registry.json` 的 imported 资产；新增公开资产时必须同时补 registry、source metadata、导入产物和验证。
 - 当旧代码或功能设计存在实质性缺陷时，AI 代理可以重新设计并重构，只要这样能提升正确性、可维护性或工作流边界；不要仅因为旧设计已存在就保留它。
 - AI 主导的重新设计应保持聚焦：说明设计变更，保留预期的用户可见行为，并验证受影响的工作流。
 - 所有项目 UI 都应保持紧凑、严肃的编辑器式桌面应用审美；避免网页式或卡片网格式呈现模式。

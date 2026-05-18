@@ -100,15 +100,17 @@
 
 ## 当前落地状态
 
+- `test_pro/assets` 已按项目级资产库组织：`registry.json` 记录模型、材质、用途、预算、来源和授权，`sources/polyhaven/.../source.json` 保留 CC0 来源元数据，`imported/models` 与 `imported/materials` 保存生成脚本和 cooked build 可引用的导入产物。
 - `scripts/map-generation/world-object-assets.mjs` 已按本文档生成首批 source world objects：主环路、山脊支路、林中小径、主河、支流、5 个 POI 和若干道路/据点道具。
 - `objects/manifest.json` 已按 512m partition cell 写入 `.objectpack`，记录 byte length 与 SHA-256，并包含 archetype render/editor/scatter/validation 元数据。
-- cooked manifest v4 已把 source objects 纳入 build input signature；object cooked cell pack 复制 source object pack，并把世界对象 GLTF archetype 资产复制到 cooked package。
+- cooked manifest v4 已把 asset registry 和 source objects 纳入 build input signature；object cooked cell pack 复制 source object pack，并把注册过的世界对象 GLTF archetype 资产复制到 `cooked/assets/imported/...` package。
 - collision cooked cell pack 已由 terrain heightfield、水体 volume、POI/prop blocker 派生。
 - nav cooked cell pack 已由 terrain slope、road cost、water blocker/cost 和 object blocker 派生粗粒度 grid。
 - game runtime 已接入 cooked world partition planner，并按玩家/摄像机位置加载 object/collision/nav cell pack。
 - game runtime 已把 object cell pack 实例化为道路/水体 ribbon 和 GLTF POI/prop archetype；collision pack 已进入玩家水平阻挡解析，nav pack 已进入运行时缓存。
 - terrain、paint、vegetation、objects 和 cooked nav 已使用共享 world semantics 规则，使道路、水体和 POI 同时影响地形、材质、植被清理、对象和导航。
 - 编辑器已有 World Diagnostics 页，可检查 source pack integrity、资产健康、partition payload 和 streaming 运行状态；Objects 页已支持 archetype 选择、地形拾取放置、删除、undo/redo 和 manifest-last 保存。
+- validator 已强制 source paint/vegetation/world object 只能引用注册过的 imported 资产，并禁止旧 `assets/model`、`assets/texture` 裸目录回流。
 
 ## 编辑器质量目标
 

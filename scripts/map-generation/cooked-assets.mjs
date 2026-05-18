@@ -27,6 +27,7 @@ import {
   writeJsonFile,
 } from "./shared.mjs";
 import { createCookedPackageBuilder } from "./cooked-package.mjs";
+import { assetRegistryPath } from "./asset-registry.mjs";
 
 export async function generateCookedMapAssets(context, preset) {
   const mapId = preset.id;
@@ -39,8 +40,10 @@ export async function generateCookedMapAssets(context, preset) {
   const paintSource = await readSourceJson(path.join(mapDir, paintManifestPath), context);
   const vegetationSource = await readSourceJson(path.join(mapDir, vegetationModelsPath), context);
   const objectsSource = await readSourceJson(path.join(mapDir, worldObjectsPath), context);
+  const assetRegistrySource = await readSourceJson(path.join(context.projectDir, assetRegistryPath), context);
   const source = {
     project: createSourceRef(projectSource),
+    assetRegistry: createSourceRef(assetRegistrySource),
     map: createSourceRef(mapSource),
     terrain: createSourceRef(terrainSource),
     paint: createSourceRef(paintSource),
@@ -412,8 +415,8 @@ async function copyMapRelativeAssetToCooked(context, mapDir, cookedDir, packageB
 function getCookedAssetCopyRoot(context, sourcePath) {
   const relativePath = projectRelativePath(sourcePath, context);
   const parts = relativePath.split("/");
-  if (parts[0] === "assets" && parts[1] === "model" && parts[2]) {
-    return path.join(context.projectDir, parts[0], parts[1], parts[2]);
+  if (parts[0] === "assets" && parts[1] === "imported" && parts[2] === "models" && parts[3]) {
+    return path.join(context.projectDir, parts[0], parts[1], parts[2], parts[3]);
   }
 
   return sourcePath;

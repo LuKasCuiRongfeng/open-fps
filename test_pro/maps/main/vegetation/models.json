@@ -1,28 +1,13 @@
 {
   "version": 5,
   "models": {
-    "quiverTree": {
-      "id": "quiverTree",
-      "name": "Quiver Tree",
-      "path": "../../assets/model/quiver_tree_02_1k.gltf/quiver_tree_02_1k.gltf",
-      "lod1Path": "../../assets/model/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf",
-      "lod1DistanceMeters": 70,
-      "lod2Path": "../../assets/model/quiver_tree_02_1k.gltf/lod2/quiver_tree_02_lod2.gltf",
-      "lod2DistanceMeters": 135,
-      "targetHeightMeters": 7.5,
-      "baseScale": 1.2,
-      "castShadow": true,
-      "receiveShadow": true,
-      "maxVisibleDistanceMeters": 260,
-      "shadowDistanceMeters": 70
-    },
     "fern": {
       "id": "fern",
       "name": "Fern",
-      "path": "../../assets/model/fern_02_1k.gltf/fern_02_1k.gltf",
-      "lod1Path": "../../assets/model/fern_02_1k.gltf/lod1/fern_02_lod1.gltf",
+      "path": "../../assets/imported/models/fern_02_1k.gltf/fern_02_1k.gltf",
+      "lod1Path": "../../assets/imported/models/fern_02_1k.gltf/lod1/fern_02_lod1.gltf",
       "lod1DistanceMeters": 35,
-      "lod2Path": "../../assets/model/fern_02_1k.gltf/lod2/fern_02_lod2.gltf",
+      "lod2Path": "../../assets/imported/models/fern_02_1k.gltf/lod2/fern_02_lod2.gltf",
       "lod2DistanceMeters": 75,
       "targetHeightMeters": 0.9,
       "baseScale": 0.85,
@@ -30,6 +15,21 @@
       "receiveShadow": true,
       "maxVisibleDistanceMeters": 120,
       "shadowDistanceMeters": 35
+    },
+    "quiverTree": {
+      "id": "quiverTree",
+      "name": "Quiver Tree",
+      "path": "../../assets/imported/models/quiver_tree_02_1k.gltf/quiver_tree_02_1k.gltf",
+      "lod1Path": "../../assets/imported/models/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf",
+      "lod1DistanceMeters": 70,
+      "lod2Path": "../../assets/imported/models/quiver_tree_02_1k.gltf/lod2/quiver_tree_02_lod2.gltf",
+      "lod2DistanceMeters": 135,
+      "targetHeightMeters": 7.5,
+      "baseScale": 1.2,
+      "castShadow": true,
+      "receiveShadow": true,
+      "maxVisibleDistanceMeters": 260,
+      "shadowDistanceMeters": 70
     }
   },
   "instances": {

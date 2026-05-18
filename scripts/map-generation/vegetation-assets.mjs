@@ -29,6 +29,7 @@ import {
   vegetationRegionSizeCells,
   vegetationRegionsDirectory,
 } from "./shared.mjs";
+import { createVegetationModelDefinitions, readAssetRegistry } from "./asset-registry.mjs";
 
 export async function generateVegetationAssets(context, preset) {
   const mapDir = getMapDir(context, preset);
@@ -38,7 +39,8 @@ export async function generateVegetationAssets(context, preset) {
   await mkdir(path.join(vegetationDir, "regions"), { recursive: true });
 
   const heightConfig = buildHeightConfig(preset);
-  const models = createPreviewVegetationModels();
+  const assetRegistry = await readAssetRegistry(context);
+  const models = createVegetationModelDefinitions(assetRegistry);
   const modelIds = ["fern", "quiverTree"];
   const heightAt = (x, z) => generateHeight(x, z, preset, heightConfig);
   const semanticObjects = createSemanticWorldObjects(heightAt);
@@ -108,41 +110,6 @@ export async function generateVegetationAssets(context, preset) {
     instanceCount: instances.length,
     cellCount: sortedCells.length,
     regionCount: sortedRegions.length,
-  };
-}
-
-function createPreviewVegetationModels() {
-  return {
-    quiverTree: {
-      id: "quiverTree",
-      name: "Quiver Tree",
-      path: "../../assets/model/quiver_tree_02_1k.gltf/quiver_tree_02_1k.gltf",
-      lod1Path: "../../assets/model/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf",
-      lod1DistanceMeters: 70,
-      lod2Path: "../../assets/model/quiver_tree_02_1k.gltf/lod2/quiver_tree_02_lod2.gltf",
-      lod2DistanceMeters: 135,
-      targetHeightMeters: 7.5,
-      baseScale: 1.2,
-      castShadow: true,
-      receiveShadow: true,
-      maxVisibleDistanceMeters: 260,
-      shadowDistanceMeters: 70,
-    },
-    fern: {
-      id: "fern",
-      name: "Fern",
-      path: "../../assets/model/fern_02_1k.gltf/fern_02_1k.gltf",
-      lod1Path: "../../assets/model/fern_02_1k.gltf/lod1/fern_02_lod1.gltf",
-      lod1DistanceMeters: 35,
-      lod2Path: "../../assets/model/fern_02_1k.gltf/lod2/fern_02_lod2.gltf",
-      lod2DistanceMeters: 75,
-      targetHeightMeters: 0.9,
-      baseScale: 0.85,
-      castShadow: true,
-      receiveShadow: true,
-      maxVisibleDistanceMeters: 120,
-      shadowDistanceMeters: 35,
-    },
   };
 }
 

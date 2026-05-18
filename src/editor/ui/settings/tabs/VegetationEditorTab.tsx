@@ -168,7 +168,7 @@ export function VegetationEditorTab({
               value={modelPath}
               onChange={(event) => setModelPath(event.target.value)}
               disabled={!canEdit}
-              placeholder="../../assets/model/tree.glb"
+              placeholder="../../assets/imported/models/tree.glb"
             />
             <Button size="sm" variant="success" onClick={handleAddModel} disabled={!canAddModel}>
               <Plus className="h-3.5 w-3.5" aria-hidden="true" />
@@ -197,7 +197,7 @@ export function VegetationEditorTab({
             onChange={(event) => setLod1PathDraft(event.target.value)}
             onBlur={() => setSelectedLod1Path(lod1PathDraft)}
             disabled={!canEdit || !selectedModelId}
-            placeholder="../../assets/model/tree_lod1.glb"
+            placeholder="../../assets/imported/models/tree_lod1.glb"
           />
         </SettingRow>
         <RangeField
@@ -218,7 +218,7 @@ export function VegetationEditorTab({
             onChange={(event) => setLod2PathDraft(event.target.value)}
             onBlur={() => setSelectedLod2Path(lod2PathDraft)}
             disabled={!canEdit || !selectedModelId}
-            placeholder="../../assets/model/tree_billboard.glb"
+            placeholder="../../assets/imported/models/tree_billboard.glb"
           />
         </SettingRow>
         <RangeField
