@@ -2,12 +2,21 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { buildHeightConfig, generateHeight } from "./height-field.mjs";
 import {
+  createSemanticWorldObjects,
+  estimateSlopeDegrees,
+  sampleWorldSemantics,
+  smoothstep,
+} from "./world-semantics.mjs";
+import {
+  clamp,
   compareRegionCoords,
   createRegionIntegrity,
   ensureMapManifestPaths,
   formatGridCoordinate,
   getMapDir,
+  getPageBounds,
   hash2i,
+  pageSizeMeters,
   vegetationCellSizeMeters,
   vegetationInstanceFormat,
   vegetationInstanceRecordByteLength,
@@ -31,7 +40,9 @@ export async function generateVegetationAssets(context, preset) {
   const heightConfig = buildHeightConfig(preset);
   const models = createPreviewVegetationModels();
   const modelIds = ["fern", "quiverTree"];
-  const instances = createPreviewVegetationInstances(preset, heightConfig);
+  const heightAt = (x, z) => generateHeight(x, z, preset, heightConfig);
+  const semanticObjects = createSemanticWorldObjects(heightAt);
+  const instances = createPreviewVegetationInstances(preset, heightAt, semanticObjects);
   const groupedCells = new Map();
 
   for (const instance of instances) {
@@ -135,47 +146,105 @@ function createPreviewVegetationModels() {
   };
 }
 
-function createPreviewVegetationInstances(preset, heightConfig) {
-  const treePoints = [
-    [-220, -140], [-170, -70], [-120, 95], [-65, -180], [-30, 145], [38, -120],
-    [85, 58], [140, -35], [190, 125], [235, -160], [-255, 90], [265, 40],
-  ];
+function createPreviewVegetationInstances(preset, heightAt, semanticObjects) {
   const instances = [];
+  const trees = [];
+  const pageBounds = getPageBounds(preset);
+  const minX = pageBounds.minPageX * pageSizeMeters;
+  const maxX = (pageBounds.maxPageX + 1) * pageSizeMeters;
+  const minZ = pageBounds.minPageZ * pageSizeMeters;
+  const maxZ = (pageBounds.maxPageZ + 1) * pageSizeMeters;
+  const spacing = 86;
+  let treeIndex = 0;
 
-  for (let index = 0; index < treePoints.length; index += 1) {
-    const [worldX, worldZ] = treePoints[index];
-    instances.push({
-      id: `tree-${index}`,
-      modelId: "quiverTree",
-      x: worldX,
-      y: generateHeight(worldX, worldZ, preset, heightConfig),
-      z: worldZ,
-      rotationY: hash2i(index, 17, 9201, preset.seed) * Math.PI * 2,
-      scale: 0.85 + hash2i(index, 29, 9202, preset.seed) * 0.55,
-    });
+  for (let z = minZ + spacing * 0.5; z < maxZ; z += spacing) {
+    for (let x = minX + spacing * 0.5; x < maxX; x += spacing) {
+      const gridX = Math.floor((x - minX) / spacing);
+      const gridZ = Math.floor((z - minZ) / spacing);
+      const jitterX = (hash2i(gridX, gridZ, 9101, preset.seed) - 0.5) * spacing * 0.62;
+      const jitterZ = (hash2i(gridX, gridZ, 9102, preset.seed) - 0.5) * spacing * 0.62;
+      const worldX = x + jitterX;
+      const worldZ = z + jitterZ;
+      const height = heightAt(worldX, worldZ);
+      const slope = estimateSlopeDegrees(worldX, worldZ, heightAt, 10);
+      const semantics = sampleWorldSemantics(worldX, worldZ, semanticObjects);
+      const density = resolveTreeDensity(height, slope, semantics, worldX, worldZ, preset.seed);
+      if (hash2i(gridX, gridZ, 9103, preset.seed) > density) {
+        continue;
+      }
+
+      const tree = {
+        id: `tree-${treeIndex}`,
+        modelId: "quiverTree",
+        x: round(worldX),
+        y: round(height),
+        z: round(worldZ),
+        rotationY: hash2i(gridX, gridZ, 9201, preset.seed) * Math.PI * 2,
+        scale: round(0.82 + hash2i(gridX, gridZ, 9202, preset.seed) * 0.62),
+      };
+      instances.push(tree);
+      trees.push(tree);
+      treeIndex += 1;
+    }
   }
 
   let fernIndex = 0;
-  for (const [baseX, baseZ] of treePoints.slice(0, 9)) {
+  for (const tree of trees) {
+    if (fernIndex > 780) {
+      break;
+    }
+
+    const ringCount = 2 + Math.floor(hash2i(Math.floor(tree.x), Math.floor(tree.z), 9300, preset.seed) * 4);
     for (let ringIndex = 0; ringIndex < 5; ringIndex += 1) {
-      const angle = hash2i(fernIndex, 41, 9301, preset.seed) * Math.PI * 2;
-      const radius = 9 + hash2i(fernIndex, 53, 9302, preset.seed) * 24;
-      const worldX = baseX + Math.cos(angle) * radius;
-      const worldZ = baseZ + Math.sin(angle) * radius;
+      if (ringIndex >= ringCount) {
+        continue;
+      }
+
+      const angle = hash2i(fernIndex, ringIndex, 9301, preset.seed) * Math.PI * 2;
+      const radius = 8 + hash2i(fernIndex, ringIndex, 9302, preset.seed) * 28;
+      const worldX = tree.x + Math.cos(angle) * radius;
+      const worldZ = tree.z + Math.sin(angle) * radius;
+      const height = heightAt(worldX, worldZ);
+      const slope = estimateSlopeDegrees(worldX, worldZ, heightAt, 6);
+      const semantics = sampleWorldSemantics(worldX, worldZ, semanticObjects);
+      if (resolveFernDensity(height, slope, semantics) < hash2i(fernIndex, ringIndex, 9304, preset.seed)) {
+        continue;
+      }
+
       instances.push({
         id: `fern-${fernIndex}`,
         modelId: "fern",
-        x: worldX,
-        y: generateHeight(worldX, worldZ, preset, heightConfig),
-        z: worldZ,
+        x: round(worldX),
+        y: round(height),
+        z: round(worldZ),
         rotationY: angle + Math.PI * 0.5,
-        scale: 0.55 + hash2i(fernIndex, 67, 9303, preset.seed) * 0.7,
+        scale: round(0.55 + hash2i(fernIndex, ringIndex, 9303, preset.seed) * 0.7),
       });
       fernIndex += 1;
     }
   }
 
   return instances;
+}
+
+function resolveTreeDensity(height, slopeDegrees, semantics, worldX, worldZ, seed) {
+  const tooSteep = smoothstep(28, 42, slopeDegrees);
+  const snowline = smoothstep(132, 182, height);
+  const lowWetEdge = semantics.waterBank * (1 - semantics.waterCore) * 0.22;
+  const roadPenalty = semantics.roadShoulder * 0.55 + semantics.roadCore;
+  const clearPenalty = semantics.vegetationClearance * 1.15;
+  const basinNoise = Math.sin((worldX + seed * 0.01) * 0.004) * Math.cos((worldZ - seed * 0.02) * 0.005) * 0.5 + 0.5;
+  return clamp(0.18 + basinNoise * 0.32 + lowWetEdge - tooSteep * 0.65 - snowline * 0.65 - roadPenalty - clearPenalty, 0, 0.82);
+}
+
+function resolveFernDensity(height, slopeDegrees, semantics) {
+  const wetBank = semantics.waterBank * (1 - semantics.waterCore);
+  const clearPenalty = Math.max(semantics.vegetationClearance, semantics.roadShoulder * 0.75);
+  return clamp(0.46 + wetBank * 0.35 - smoothstep(24, 38, slopeDegrees) * 0.55 - smoothstep(116, 166, height) * 0.35 - clearPenalty, 0, 0.9);
+}
+
+function round(value) {
+  return Math.round(value * 1000) / 1000;
 }
 
 function vegetationCellKey(cellX, cellZ) {

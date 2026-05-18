@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "format": "world-object-cell-pack-v1",
+  "cell": {
+    "key": "0,-1",
+    "x": 0,
+    "z": -1,
+    "pageRect": {
+      "minX": 0,
+      "maxX": 7,
+      "minZ": -8,
+      "maxZ": -1
+    },
+    "boundsMeters": {
+      "minX": 0,
+      "minZ": -512,
+      "maxX": 512,
+      "maxZ": 0
+    }
+  },
+  "objects": [
+    {
+      "id": "forest-path-00",
+      "layer": "road",
+      "archetype": "road-forest-path",
+      "position": {
+        "x": 480,
+        "y": 76.953,
+        "z": -200
+      },
+      "rotationY": 1.837,
+      "boundsMeters": {
+        "minX": 251.965,
+        "minZ": -428.035,
+        "maxX": 708.035,
+        "maxZ": 28.035
+      },
+      "spline": {
+        "widthMeters": 5,
+        "points": [
+          {
+            "x": 260,
+            "z": -140
+          },
+          {
+            "x": 700,
+            "z": -260
+          }
+        ]
+      },
+      "tags": [
+        "road",
+        "nav-preferred",
+        "vegetation-clear"
+      ]
+    },
+    {
+      "id": "forest-stream-01",
+      "layer": "water",
+      "archetype": "stream-segment",
+      "position": {
+        "x": 485,
+        "y": 85.095,
+        "z": -320
+      },
+      "rotationY": -0.69,
+      "boundsMeters": {
+        "minX": 225.722,
+        "minZ": -579.278,
+        "maxX": 744.278,
+        "maxZ": -60.722
+      },
+      "spline": {
+        "widthMeters": 7,
+        "points": [
+          {
+            "x": 650,
+            "z": -520
+          },
+          {
+            "x": 320,
+            "z": -120
+          }
+        ]
+      },
+      "tags": [
+        "water",
+        "nav-cost",
+        "vegetation-clear"
+      ]
+    }
+  ]
+}

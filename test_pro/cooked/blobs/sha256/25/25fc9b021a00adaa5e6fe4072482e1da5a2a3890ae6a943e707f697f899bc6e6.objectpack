@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "format": "world-object-cell-pack-v1",
+  "cell": {
+    "key": "-2,-2",
+    "x": -2,
+    "z": -2,
+    "pageRect": {
+      "minX": -16,
+      "maxX": -9,
+      "minZ": -16,
+      "maxZ": -9
+    },
+    "boundsMeters": {
+      "minX": -1024,
+      "minZ": -1024,
+      "maxX": -512,
+      "maxZ": -512
+    }
+  },
+  "objects": [
+    {
+      "id": "main-road-00",
+      "layer": "road",
+      "archetype": "road-dirt-segment",
+      "position": {
+        "x": -670,
+        "y": 85.953,
+        "z": -990
+      },
+      "rotationY": 1.787,
+      "boundsMeters": {
+        "minX": -1089.762,
+        "minZ": -1409.762,
+        "maxX": -250.238,
+        "maxZ": -570.238
+      },
+      "spline": {
+        "widthMeters": 9,
+        "points": [
+          {
+            "x": -1080,
+            "z": -900
+          },
+          {
+            "x": -260,
+            "z": -1080
+          }
+        ]
+      },
+      "tags": [
+        "road",
+        "nav-preferred",
+        "vegetation-clear"
+      ]
+    },
+    {
+      "id": "ridge-road-01",
+      "layer": "road",
+      "archetype": "road-rocky-segment",
+      "position": {
+        "x": -555,
+        "y": 83.357,
+        "z": -950
+      },
+      "rotationY": -2.632,
+      "boundsMeters": {
+        "minX": -749.743,
+        "minZ": -1144.743,
+        "maxX": -360.257,
+        "maxZ": -755.257
+      },
+      "spline": {
+        "widthMeters": 6,
+        "points": [
+          {
+            "x": -460,
+            "z": -780
+          },
+          {
+            "x": -650,
+            "z": -1120
+          }
+        ]
+      },
+      "tags": [
+        "road",
+        "nav-preferred",
+        "vegetation-clear"
+      ]
+    }
+  ]
+}

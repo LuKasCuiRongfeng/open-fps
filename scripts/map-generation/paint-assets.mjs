@@ -1,6 +1,14 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { buildHeightConfig, generateHeight } from "./height-field.mjs";
 import {
+  createSemanticWorldObjects,
+  estimateSlopeDegrees,
+  sampleWorldSemantics,
+  smoothstep,
+} from "./world-semantics.mjs";
+import {
+  clamp,
   createRegionIntegrity,
   ensureMapManifestPaths,
   formatGridCoordinate,
@@ -11,6 +19,7 @@ import {
   paintRegionFormat,
   paintRegionsDirectory,
   paintRegionSizePages,
+  pageSizeMeters,
 } from "./shared.mjs";
 
 export async function generatePaintAssets(context, preset) {
@@ -27,6 +36,9 @@ export async function generatePaintAssets(context, preset) {
     throw new Error(`Paint generation requires a square page grid, got ${pageCountX}x${pageCountZ}`);
   }
   const splatResolution = pageCountX * paintPageResolution;
+  const heightConfig = buildHeightConfig(preset);
+  const heightAt = (x, z) => generateHeight(x, z, preset, heightConfig);
+  const semanticObjects = createSemanticWorldObjects(heightAt);
 
   const layers = {
     beachSand: {
@@ -82,10 +94,7 @@ export async function generatePaintAssets(context, preset) {
     },
   };
 
-  const pixels = Buffer.alloc(splatResolution * splatResolution * 4);
-  for (let offset = 0; offset < pixels.length; offset += 4) {
-    pixels[offset] = 255;
-  }
+  const pixels = createSemanticPaintPixels(pageBounds, splatResolution, preset, heightAt, semanticObjects);
 
   const regionByteLength = await writePaintRegionPacks(paintDir, pageBounds, pixels, splatResolution, manifest);
   await writeFile(path.join(paintDir, "layers.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
@@ -96,6 +105,65 @@ export async function generatePaintAssets(context, preset) {
     regionCount: Object.keys(manifest.splatMaps.regions).length,
     splatByteLength: regionByteLength,
   };
+}
+
+function createSemanticPaintPixels(pageBounds, splatResolution, preset, heightAt, semanticObjects) {
+  const pixels = Buffer.alloc(splatResolution * splatResolution * 4);
+  const metersPerPixel = pageSizeMeters / paintPageResolution;
+  const minX = pageBounds.minPageX * pageSizeMeters;
+  const minZ = pageBounds.minPageZ * pageSizeMeters;
+
+  for (let z = 0; z < splatResolution; z += 1) {
+    for (let x = 0; x < splatResolution; x += 1) {
+      const worldX = minX + (x + 0.5) * metersPerPixel;
+      const worldZ = minZ + (z + 0.5) * metersPerPixel;
+      const height = heightAt(worldX, worldZ);
+      const slope = estimateSlopeDegrees(worldX, worldZ, heightAt, 10);
+      const semantics = sampleWorldSemantics(worldX, worldZ, semanticObjects);
+      const weights = resolvePaintWeights(height, slope, semantics, preset.seed, worldX, worldZ);
+      writeNormalizedRgba(pixels, (z * splatResolution + x) * 4, weights);
+    }
+  }
+
+  return pixels;
+}
+
+function resolvePaintWeights(height, slopeDegrees, semantics, seed, worldX, worldZ) {
+  const elevationSnow = smoothstep(118, 172, height);
+  const steepRock = smoothstep(18, 42, slopeDegrees);
+  const lowSand = 1 - smoothstep(14, 34, height);
+  const terrainNoise = Math.sin((worldX + seed * 0.013) * 0.008) * Math.cos((worldZ - seed * 0.017) * 0.007) * 0.5 + 0.5;
+
+  let sand = 0.28 + lowSand * 0.7 + semantics.waterBank * 1.35;
+  let mud = 0.42 + semantics.waterCore * 1.25 + semantics.waterBank * 0.65 + semantics.roadShoulder * 0.2;
+  let gravel = 0.2 + steepRock * 1.15 + semantics.roadCore * 3.5 + semantics.poiClearance * 0.55;
+  let snow = elevationSnow * (1.2 + steepRock * 0.25);
+
+  sand += terrainNoise * 0.08;
+  mud += (1 - terrainNoise) * 0.08;
+  if (semantics.waterCore > 0.1) {
+    gravel *= 0.35;
+    snow *= 0.25;
+  }
+  if (semantics.roadCore > 0.2) {
+    sand *= 0.35;
+    mud *= 0.55;
+    snow *= 0.15;
+  }
+
+  return [sand, mud, gravel, snow].map((value) => clamp(value, 0, 6));
+}
+
+function writeNormalizedRgba(pixels, offset, weights) {
+  const total = weights.reduce((sum, weight) => sum + weight, 0) || 1;
+  const channels = weights.map((weight) => Math.round((weight / total) * 255));
+  const correction = 255 - channels.reduce((sum, channel) => sum + channel, 0);
+  const strongestChannel = channels.reduce((best, channel, index) => channel > channels[best] ? index : best, 0);
+  channels[strongestChannel] = clamp(channels[strongestChannel] + correction, 0, 255);
+  pixels[offset] = channels[0];
+  pixels[offset + 1] = channels[1];
+  pixels[offset + 2] = channels[2];
+  pixels[offset + 3] = channels[3];
 }
 
 function createPaintRegionMasks(pageBounds) {

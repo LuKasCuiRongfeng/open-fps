@@ -1,5 +1,6 @@
 import type { GameSettings, GameSettingsPatch } from "@game/settings";
 import type { VegetationProfilerSnapshot } from "../world/vegetation";
+import type { RuntimeWorldObjectProfilerSnapshot } from "../world/partition";
 import type { MapData } from "@project/MapData";
 
 export type GameBootPhase =
@@ -24,6 +25,16 @@ export interface RuntimeProfilerSnapshot {
     textures: number;
   };
   vegetation: VegetationProfilerSnapshot;
+  partition: {
+    activeCells: number;
+    plannedLoadCells: number;
+    plannedKeepCells: number;
+    plannedUnloadCells: number;
+    loadedObjectCells: number;
+    loadedCollisionCells: number;
+    loadedNavCells: number;
+    worldObjects: RuntimeWorldObjectProfilerSnapshot;
+  };
 }
 
 export interface RuntimeAppSession<

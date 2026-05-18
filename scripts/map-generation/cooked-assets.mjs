@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { cp, mkdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { buildHeightConfig, generateHeight } from "./height-field.mjs";
+import { estimateSlopeDegrees, findNearestWorldObjectPath, isPointInsideBounds } from "./world-semantics.mjs";
 import {
   compareRegionCoords,
   cookedBuildCacheDirectory,
@@ -611,9 +612,9 @@ function createNavNodes(cell, objects, preset, heightConfig) {
       const worldX = cell.boundsMeters.minX + (x + 0.5) * stepX;
       const worldZ = cell.boundsMeters.minZ + (z + 0.5) * stepZ;
       const height = generateHeight(worldX, worldZ, preset, heightConfig);
-      const slopeDegrees = estimateSlopeDegrees(worldX, worldZ, preset, heightConfig);
-      const roadObject = findNearestSplineObject(worldX, worldZ, objects, "road");
-      const waterObject = findNearestSplineObject(worldX, worldZ, objects, "water");
+      const slopeDegrees = estimateSlopeDegrees(worldX, worldZ, (x, z) => generateHeight(x, z, preset, heightConfig));
+      const roadObject = findNearestWorldObjectPath(worldX, worldZ, objects, "road");
+      const waterObject = findNearestWorldObjectPath(worldX, worldZ, objects, "water");
       const objectBlocker = objects.some((object) => object.collision && isPointInsideBounds(worldX, worldZ, object.boundsMeters));
       const roadPreferred = Boolean(roadObject && roadObject.distanceMeters <= (roadObject.object.spline?.widthMeters ?? 0) * 2.5);
       const waterBlocked = Boolean(waterObject && waterObject.distanceMeters <= (waterObject.object.spline?.widthMeters ?? 0) * 0.9);
@@ -661,52 +662,6 @@ function createNavLinks(nodes) {
   }
 
   return links;
-}
-
-function estimateSlopeDegrees(x, z, preset, heightConfig) {
-  const sampleDistance = 8;
-  const heightLeft = generateHeight(x - sampleDistance, z, preset, heightConfig);
-  const heightRight = generateHeight(x + sampleDistance, z, preset, heightConfig);
-  const heightBack = generateHeight(x, z - sampleDistance, preset, heightConfig);
-  const heightForward = generateHeight(x, z + sampleDistance, preset, heightConfig);
-  const gradientX = (heightRight - heightLeft) / (sampleDistance * 2);
-  const gradientZ = (heightForward - heightBack) / (sampleDistance * 2);
-  return Math.atan(Math.hypot(gradientX, gradientZ)) * 180 / Math.PI;
-}
-
-function findNearestSplineObject(x, z, objects, layer) {
-  let nearest = null;
-  for (const object of objects) {
-    if (object.layer !== layer || !object.spline?.points?.length) {
-      continue;
-    }
-
-    const points = object.spline.points;
-    for (let index = 0; index < points.length - 1; index += 1) {
-      const distanceMeters = distancePointToSegment(x, z, points[index], points[index + 1]);
-      if (!nearest || distanceMeters < nearest.distanceMeters) {
-        nearest = { object, distanceMeters };
-      }
-    }
-  }
-
-  return nearest;
-}
-
-function distancePointToSegment(x, z, start, end) {
-  const dx = end.x - start.x;
-  const dz = end.z - start.z;
-  const lengthSquared = dx * dx + dz * dz;
-  if (lengthSquared === 0) {
-    return Math.hypot(x - start.x, z - start.z);
-  }
-
-  const t = Math.max(0, Math.min(1, ((x - start.x) * dx + (z - start.z) * dz) / lengthSquared));
-  return Math.hypot(x - (start.x + dx * t), z - (start.z + dz * t));
-}
-
-function isPointInsideBounds(x, z, bounds) {
-  return bounds && x >= bounds.minX && x <= bounds.maxX && z >= bounds.minZ && z <= bounds.maxZ;
 }
 
 function createCookedCellInfo(cell) {

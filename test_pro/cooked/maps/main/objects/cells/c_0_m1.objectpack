@@ -25,7 +25,7 @@
       "archetype": "road-forest-path",
       "position": {
         "x": 480,
-        "y": 76.953,
+        "y": 58.495,
         "z": -200
       },
       "rotationY": 1.837,
@@ -60,7 +60,7 @@
       "archetype": "stream-segment",
       "position": {
         "x": 485,
-        "y": 85.095,
+        "y": 65.089,
         "z": -320
       },
       "rotationY": -0.69,

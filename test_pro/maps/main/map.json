@@ -10,10 +10,10 @@
   "terrainPath": "terrain/height/manifest.json",
   "paintPath": "paint/layers.json",
   "vegetationPath": "vegetation/models.json",
+  "objectsPath": "objects/manifest.json",
   "metadata": {
     "name": "Frontier Basin",
     "created": 1778997569115,
-    "modified": 1779022372336
-  },
-  "objectsPath": "objects/manifest.json"
+    "modified": 1779084455453
+  }
 }

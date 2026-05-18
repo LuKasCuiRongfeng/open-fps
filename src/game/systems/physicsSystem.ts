@@ -4,6 +4,14 @@
 import { playerStaticConfig } from "../../config/player";
 import type { GameWorld } from "../ecs/GameEcs";
 import type { GameResources } from "../ecs/resources";
+import type { WorldBoundsMeters, WorldCollisionCellPack, WorldCollisionShape } from "../world/partition";
+
+const PLAYER_COLLISION_RADIUS_METERS = 0.45;
+
+type HorizontalTransform = {
+  x: number;
+  z: number;
+};
 
 /**
  * physicsSystem: integrates velocity into transform, handles gravity and collisions.
@@ -32,10 +40,20 @@ export function physicsSystem(world: GameWorld, res: GameResources): void {
     "physics",
     "playerInput",
   )) {
+    const previousX = transform.x;
+    const previousZ = transform.z;
+
     // Integrate horizontal velocity into position.
     // 将水平速度积分到位置
     transform.x += velocity.vx * dt;
     transform.z += velocity.vz * dt;
+
+    resolveWorldObjectCollision(
+      transform,
+      previousX,
+      previousZ,
+      res.runtime.worldPartition.loadedCells.collision,
+    );
 
     // Query terrain height at new XZ position.
     // 查询新 XZ 位置的地形高度
@@ -92,5 +110,110 @@ export function physicsSystem(world: GameWorld, res: GameResources): void {
       }
     }
   }
+}
+
+function resolveWorldObjectCollision(
+  transform: HorizontalTransform,
+  previousX: number,
+  previousZ: number,
+  collisionCells: ReadonlyMap<string, WorldCollisionCellPack>,
+): void {
+  for (const cell of collisionCells.values()) {
+    for (const shape of cell.shapes) {
+      if (!isBlockingShape(shape)) {
+        continue;
+      }
+
+      if (shape.type === "cylinder") {
+        resolveCylinderCollision(transform, previousX, previousZ, shape);
+      } else {
+        resolveBoxCollision(transform, previousX, previousZ, shape.boundsMeters);
+      }
+    }
+  }
+}
+
+function isBlockingShape(shape: WorldCollisionShape): boolean {
+  return shape.id.startsWith("object-") && shape.boundsMeters !== undefined;
+}
+
+function resolveBoxCollision(
+  transform: HorizontalTransform,
+  previousX: number,
+  previousZ: number,
+  bounds: WorldBoundsMeters | undefined,
+): void {
+  if (!bounds) {
+    return;
+  }
+
+  const minX = bounds.minX - PLAYER_COLLISION_RADIUS_METERS;
+  const maxX = bounds.maxX + PLAYER_COLLISION_RADIUS_METERS;
+  const minZ = bounds.minZ - PLAYER_COLLISION_RADIUS_METERS;
+  const maxZ = bounds.maxZ + PLAYER_COLLISION_RADIUS_METERS;
+  if (transform.x < minX || transform.x > maxX || transform.z < minZ || transform.z > maxZ) {
+    return;
+  }
+
+  if (previousX <= minX) {
+    transform.x = minX;
+    return;
+  }
+  if (previousX >= maxX) {
+    transform.x = maxX;
+    return;
+  }
+  if (previousZ <= minZ) {
+    transform.z = minZ;
+    return;
+  }
+  if (previousZ >= maxZ) {
+    transform.z = maxZ;
+    return;
+  }
+
+  const pushLeft = Math.abs(transform.x - minX);
+  const pushRight = Math.abs(maxX - transform.x);
+  const pushBack = Math.abs(transform.z - minZ);
+  const pushForward = Math.abs(maxZ - transform.z);
+  const smallestPush = Math.min(pushLeft, pushRight, pushBack, pushForward);
+  if (smallestPush === pushLeft) {
+    transform.x = minX;
+  } else if (smallestPush === pushRight) {
+    transform.x = maxX;
+  } else if (smallestPush === pushBack) {
+    transform.z = minZ;
+  } else {
+    transform.z = maxZ;
+  }
+}
+
+function resolveCylinderCollision(
+  transform: HorizontalTransform,
+  previousX: number,
+  previousZ: number,
+  shape: WorldCollisionShape,
+): void {
+  const center = shape.position;
+  if (!center) {
+    resolveBoxCollision(transform, previousX, previousZ, shape.boundsMeters);
+    return;
+  }
+
+  const radius = (shape.radiusMeters ?? 1) + PLAYER_COLLISION_RADIUS_METERS;
+  const dx = transform.x - center.x;
+  const dz = transform.z - center.z;
+  const distance = Math.hypot(dx, dz);
+  if (distance >= radius) {
+    return;
+  }
+
+  const fallbackDx = previousX - center.x;
+  const fallbackDz = previousZ - center.z;
+  const safeDistance = distance > 0.001 ? distance : Math.hypot(fallbackDx, fallbackDz);
+  const normalX = safeDistance > 0.001 ? (distance > 0.001 ? dx : fallbackDx) / safeDistance : 1;
+  const normalZ = safeDistance > 0.001 ? (distance > 0.001 ? dz : fallbackDz) / safeDistance : 0;
+  transform.x = center.x + normalX * radius;
+  transform.z = center.z + normalZ * radius;
 }
 

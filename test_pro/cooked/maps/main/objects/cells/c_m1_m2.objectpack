@@ -25,7 +25,7 @@
       "archetype": "river-segment",
       "position": {
         "x": -165,
-        "y": 55.386,
+        "y": 38.009,
         "z": -550
       },
       "rotationY": 0.305,
@@ -60,7 +60,7 @@
       "archetype": "road-rocky-segment",
       "position": {
         "x": -360,
-        "y": 59.327,
+        "y": 52.269,
         "z": -600
       },
       "rotationY": -2.634,
@@ -95,7 +95,7 @@
       "archetype": "road-sign",
       "position": {
         "x": -260,
-        "y": 57.096,
+        "y": 43.517,
         "z": -520
       },
       "rotationY": 0,

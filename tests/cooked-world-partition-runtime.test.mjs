@@ -1,0 +1,80 @@
+import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { test } from "node:test";
+import { transpileTsModule } from "./helpers/transpile-ts.mjs";
+
+const rootDirectory = path.resolve(import.meta.dirname, "..");
+const dependencyKinds = ["terrain", "paint", "vegetation", "objects", "collision", "nav"];
+
+test("cooked world partition planner creates load, keep, unload, and dependency plans", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "open-fps-partition-"));
+  try {
+    await transpileTsModule(
+      path.join(rootDirectory, "src/game/workspace/CookedMapManifest.ts"),
+      tempRoot,
+    );
+    const runtimePath = await transpileTsModule(
+      path.join(rootDirectory, "src/game/workspace/CookedWorldPartitionRuntime.ts"),
+      tempRoot,
+      (source) => source.replace('} from "./CookedMapManifest";', '} from "./CookedMapManifest.js";'),
+    );
+
+    const { CookedWorldPartitionRuntime } = await import(pathToFileURL(runtimePath).href);
+    const runtime = new CookedWorldPartitionRuntime(createPartition());
+
+    const firstPlan = runtime.createPlan(50, 50, { loadRadiusCells: 0, unloadRadiusCells: 1 });
+    assert.equal(firstPlan.centerCell?.key, "0,0");
+    assert.deepEqual(firstPlan.loadCells.map((cell) => cell.key), ["0,0"]);
+    assert.deepEqual(firstPlan.keepCells.map((cell) => cell.key), []);
+    assert.deepEqual(firstPlan.unloadCellKeys, []);
+    assert.deepEqual(firstPlan.dependencies.objects, ["0,0"]);
+
+    runtime.applyPlan(firstPlan);
+    const secondPlan = runtime.createPlan(150, 50, { loadRadiusCells: 0, unloadRadiusCells: 1 });
+    assert.equal(secondPlan.centerCell?.key, "1,0");
+    assert.deepEqual(secondPlan.loadCells.map((cell) => cell.key), ["1,0"]);
+    assert.deepEqual(secondPlan.keepCells.map((cell) => cell.key), ["0,0"]);
+    assert.deepEqual(secondPlan.unloadCellKeys, []);
+    assert.deepEqual(secondPlan.dependencies.nav, ["0,0", "1,0"]);
+
+    runtime.applyPlan(secondPlan);
+    const outsidePlan = runtime.createPlan(1000, 1000, { loadRadiusCells: 0 });
+    assert.equal(outsidePlan.centerCell, null);
+    assert.deepEqual(outsidePlan.unloadCellKeys, ["0,0", "1,0"]);
+    assert.deepEqual(outsidePlan.dependencies.collision, []);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+function createPartition() {
+  const cells = [];
+  for (let z = -1; z <= 1; z += 1) {
+    for (let x = -1; x <= 1; x += 1) {
+      const key = `${x},${z}`;
+      cells.push({
+        key,
+        x,
+        z,
+        pageRect: { minX: x, maxX: x, minZ: z, maxZ: z },
+        boundsMeters: {
+          minX: x * 100,
+          minZ: z * 100,
+          maxX: (x + 1) * 100,
+          maxZ: (z + 1) * 100,
+        },
+        dependencies: Object.fromEntries(dependencyKinds.map((kind) => [kind, [key]])),
+      });
+    }
+  }
+
+  return {
+    cellSizePages: 1,
+    cellSizeMeters: 100,
+    dependencyKinds,
+    cells,
+  };
+}

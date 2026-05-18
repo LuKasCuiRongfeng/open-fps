@@ -5,6 +5,7 @@ import {
   lerp,
   pageSizeMeters,
 } from "./shared.mjs";
+import { getSemanticPathInfluence } from "./world-semantics.mjs";
 
 const baseHeightConfig = {
   baseHeightMeters: 6,
@@ -237,8 +238,8 @@ function applyFrontierBasinShaping(worldX, worldZ, height, seed) {
   const northeastRise = radialMask(worldX, worldZ, 980, -920, 220, 760);
   const southMesa = radialMask(worldX, worldZ, 760, 980, 180, 700);
   const northRidge = ridgeMask(worldX, worldZ, -1500, -1160, 1460, -700, 45, 260);
-  const riverCorridor = ridgeMask(worldX, worldZ, -1520, -620, 1460, 560, 45, 240);
-  const sideCreek = ridgeMask(worldX, worldZ, -820, 1180, 520, -1040, 35, 180);
+  const waterCorridor = getSemanticPathInfluence(worldX, worldZ, { layer: "water" }, 42, 240);
+  const roadShelf = getSemanticPathInfluence(worldX, worldZ, { layer: "road" }, 8, 58);
   const broadSaddle = radialMask(worldX, worldZ, 260, -420, 120, 520);
   const edgeDistance = Math.max(Math.abs(worldX), Math.abs(worldZ));
   const horizonShoulder = smoothstep(1120, 1580, edgeDistance);
@@ -252,8 +253,8 @@ function applyFrontierBasinShaping(worldX, worldZ, height, seed) {
   shaped += southMesa * (36 + mesaNoise * 22);
   shaped += northRidge * 34;
   shaped += broadSaddle * 18;
-  shaped -= riverCorridor * 24;
-  shaped -= sideCreek * 12;
+  shaped -= waterCorridor * 24;
+  shaped -= roadShelf * 1.8;
 
   const prairieTarget = 20 + prairieNoise * 6 + valueNoise2D(worldX * 0.006, worldZ * 0.006, 7204, seed) * 4;
   shaped = mixHeight(shaped, prairieTarget, centralPrairie * 0.58);

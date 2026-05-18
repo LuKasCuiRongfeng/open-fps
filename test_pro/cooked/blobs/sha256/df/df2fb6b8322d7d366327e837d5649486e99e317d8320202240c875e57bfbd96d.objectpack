@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "format": "world-object-cell-pack-v1",
+  "cell": {
+    "key": "2,-1",
+    "x": 2,
+    "z": -1,
+    "pageRect": {
+      "minX": 16,
+      "maxX": 23,
+      "minZ": -8,
+      "maxZ": -1
+    },
+    "boundsMeters": {
+      "minX": 1024,
+      "minZ": -512,
+      "maxX": 1536,
+      "maxZ": 0
+    }
+  },
+  "objects": []
+}

@@ -25,7 +25,7 @@
       "archetype": "split-rail-fence",
       "position": {
         "x": -900,
-        "y": 98.357,
+        "y": 96.997,
         "z": 340
       },
       "rotationY": 0,
@@ -79,7 +79,7 @@
       "archetype": "road-dirt-segment",
       "position": {
         "x": -870,
-        "y": 94.938,
+        "y": 93.306,
         "z": 350
       },
       "rotationY": -2.653,

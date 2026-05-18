@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "format": "world-object-cell-pack-v1",
+  "cell": {
+    "key": "0,1",
+    "x": 0,
+    "z": 1,
+    "pageRect": {
+      "minX": 0,
+      "maxX": 7,
+      "minZ": 8,
+      "maxZ": 15
+    },
+    "boundsMeters": {
+      "minX": 0,
+      "minZ": 512,
+      "maxX": 512,
+      "maxZ": 1024
+    }
+  },
+  "objects": [
+    {
+      "id": "bridge-planks",
+      "layer": "prop",
+      "archetype": "bridge-debris",
+      "position": {
+        "x": 390,
+        "y": 118.186,
+        "z": 930
+      },
+      "rotationY": 0,
+      "boundsMeters": {
+        "minX": 378,
+        "minZ": 918,
+        "maxX": 402,
+        "maxZ": 942
+      },
+      "radiusMeters": 12,
+      "tags": [
+        "prop",
+        "collision"
+      ],
+      "collision": {
+        "type": "box",
+        "radiusMeters": 12,
+        "heightMeters": 2
+      }
+    },
+    {
+      "id": "main-river-03",
+      "layer": "water",
+      "archetype": "river-segment",
+      "position": {
+        "x": 290,
+        "y": 72.787,
+        "z": 630
+      },
+      "rotationY": 0.449,
+      "boundsMeters": {
+        "minX": -9.666,
+        "minZ": 330.334,
+        "maxX": 589.666,
+        "maxZ": 929.666
+      },
+      "spline": {
+        "widthMeters": 18,
+        "points": [
+          {
+            "x": 160,
+            "z": 360
+          },
+          {
+            "x": 420,
+            "z": 900
+          }
+        ]
+      },
+      "tags": [
+        "water",
+        "nav-cost",
+        "vegetation-clear"
+      ]
+    },
+    {
+      "id": "main-road-04",
+      "layer": "road",
+      "archetype": "road-dirt-segment",
+      "position": {
+        "x": 10,
+        "y": 74.179,
+        "z": 840
+      },
+      "rotationY": -1.603,
+      "boundsMeters": {
+        "minX": -620.317,
+        "minZ": 209.683,
+        "maxX": 640.317,
+        "maxZ": 1470.317
+      },
+      "spline": {
+        "widthMeters": 9,
+        "points": [
+          {
+            "x": 640,
+            "z": 860
+          },
+          {
+            "x": -620,
+            "z": 820
+          }
+        ]
+      },
+      "tags": [
+        "road",
+        "nav-preferred",
+        "vegetation-clear"
+      ]
+    },
+    {
+      "id": "south-bridge",
+      "layer": "poi",
+      "archetype": "broken-bridge",
+      "position": {
+        "x": 430,
+        "y": 121.162,
+        "z": 980
+      },
+      "rotationY": 0,
+      "boundsMeters": {
+        "minX": 392,
+        "minZ": 942,
+        "maxX": 468,
+        "maxZ": 1018
+      },
+      "radiusMeters": 38,
+      "tags": [
+        "poi",
+        "bridge",
+        "water-crossing"
+      ],
+      "collision": {
+        "type": "box",
+        "radiusMeters": 17.1,
+        "heightMeters": 4
+      }
+    }
+  ]
+}

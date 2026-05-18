@@ -8,6 +8,7 @@ import type { GameSettings } from "../settings";
 import type { CookedWorldPartitionRuntime, CookedWorldPartitionPlan } from "../workspace/CookedWorldPartitionRuntime";
 import type { BundledWorldPartitionCellKind } from "../workspace/loadBundledProject";
 import type { TerrainSystemResource } from "../world/terrain/terrain";
+import type { WorldCollisionCellPack, WorldNavCellPack, WorldObjectCellPack } from "../world/partition";
 
 // --- Time Resource / 时间资源 ---
 
@@ -82,6 +83,11 @@ export type RuntimeWorldPartitionResource = {
   loadCellAsset: ((kind: BundledWorldPartitionCellKind, key: string) => Promise<unknown>) | null;
   retainCellAssets: ((activeKeys: ReadonlySet<string>) => void) | null;
   currentPlan: CookedWorldPartitionPlan | null;
+  loadedCells: {
+    objects: Map<string, WorldObjectCellPack>;
+    collision: Map<string, WorldCollisionCellPack>;
+    nav: Map<string, WorldNavCellPack>;
+  };
 };
 
 // --- Combined GameResources / 合并的 GameResources ---

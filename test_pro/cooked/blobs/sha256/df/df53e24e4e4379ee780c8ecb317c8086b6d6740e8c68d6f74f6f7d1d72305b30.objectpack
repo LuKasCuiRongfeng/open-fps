@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "format": "world-object-cell-pack-v1",
+  "cell": {
+    "key": "1,-1",
+    "x": 1,
+    "z": -1,
+    "pageRect": {
+      "minX": 8,
+      "maxX": 15,
+      "minZ": -8,
+      "maxZ": -1
+    },
+    "boundsMeters": {
+      "minX": 512,
+      "minZ": -512,
+      "maxX": 1024,
+      "maxZ": 0
+    }
+  },
+  "objects": [
+    {
+      "id": "forest-clearing",
+      "layer": "poi",
+      "archetype": "forest-clearing",
+      "position": {
+        "x": 980,
+        "y": 90.803,
+        "z": -360
+      },
+      "rotationY": 0,
+      "boundsMeters": {
+        "minX": 938,
+        "minZ": -402,
+        "maxX": 1022,
+        "maxZ": -318
+      },
+      "radiusMeters": 42,
+      "tags": [
+        "poi",
+        "clearing",
+        "encounter-space"
+      ],
+      "collision": {
+        "type": "cylinder",
+        "radiusMeters": 18.900000000000002,
+        "heightMeters": 4
+      }
+    },
+    {
+      "id": "forest-path-01",
+      "layer": "road",
+      "archetype": "road-forest-path",
+      "position": {
+        "x": 930,
+        "y": 90.983,
+        "z": -345
+      },
+      "rotationY": 1.925,
+      "boundsMeters": {
+        "minX": 684.796,
+        "minZ": -590.204,
+        "maxX": 1175.204,
+        "maxZ": -99.796
+      },
+      "spline": {
+        "widthMeters": 5,
+        "points": [
+          {
+            "x": 700,
+            "z": -260
+          },
+          {
+            "x": 1160,
+            "z": -430
+          }
+        ]
+      },
+      "tags": [
+        "road",
+        "nav-preferred",
+        "vegetation-clear"
+      ]
+    },
+    {
+      "id": "main-road-02",
+      "layer": "road",
+      "archetype": "road-dirt-segment",
+      "position": {
+        "x": 940,
+        "y": 99.19,
+        "z": -400
+      },
+      "rotationY": 0.464,
+      "boundsMeters": {
+        "minX": 537.508,
+        "minZ": -802.492,
+        "maxX": 1342.492,
+        "maxZ": 2.492
+      },
+      "spline": {
+        "widthMeters": 9,
+        "points": [
+          {
+            "x": 760,
+            "z": -760
+          },
+          {
+            "x": 1120,
+            "z": -40
+          }
+        ]
+      },
+      "tags": [
+        "road",
+        "nav-preferred",
+        "vegetation-clear"
+      ]
+    },
+    {
+      "id": "sign-forest",
+      "layer": "prop",
+      "archetype": "road-sign",
+      "position": {
+        "x": 610,
+        "y": 82.805,
+        "z": -250
+      },
+      "rotationY": 0,
+      "boundsMeters": {
+        "minX": 605,
+        "minZ": -255,
+        "maxX": 615,
+        "maxZ": -245
+      },
+      "radiusMeters": 5,
+      "tags": [
+        "prop",
+        "collision"
+      ],
+      "collision": {
+        "type": "box",
+        "radiusMeters": 5,
+        "heightMeters": 2
+      }
+    }
+  ]
+}

@@ -25,7 +25,7 @@
       "archetype": "river-segment",
       "position": {
         "x": -335,
-        "y": 67.038,
+        "y": 43.038,
         "z": -1165
       },
       "rotationY": 0.242,
@@ -60,7 +60,7 @@
       "archetype": "lookout-tower",
       "position": {
         "x": -420,
-        "y": 61.858,
+        "y": 37.336,
         "z": -1320
       },
       "rotationY": 0,

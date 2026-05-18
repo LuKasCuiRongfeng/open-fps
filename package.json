@@ -9,6 +9,8 @@
     "build": "pnpm desktop build all",
     "build:web": "pnpm web build all",
     "lint": "oxlint .",
+    "test": "node --test \"tests/**/*.test.mjs\"",
+    "verify": "pnpm lint && pnpm test && pnpm tsc --noEmit && pnpm validate:map",
     "preview": "vite preview",
     "desktop": "node scripts/run-tauri-target.mjs",
     "web": "node scripts/run-web-target.mjs",

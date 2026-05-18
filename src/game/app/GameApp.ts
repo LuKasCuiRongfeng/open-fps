@@ -52,6 +52,12 @@ import { timeToSunPosition, type SkySystem } from "../world/sky/SkySystem";
 import { TerrainTextureArrays } from "../world/terrain/TerrainTextureArrays";
 import { getSplatMapCount, type TextureDefinition } from "../world/terrain/TextureData";
 import { VegetationScene, type VegetationMapData } from "../world/vegetation";
+import {
+  RuntimeWorldObjectScene,
+  isWorldCollisionCellPack,
+  isWorldNavCellPack,
+  isWorldObjectCellPack,
+} from "../world/partition";
 import { assemblePaintSplatMapPixels, getPaintRegions, type MapData } from "@project/MapData";
 import { validateSidecarRegionIntegrity } from "@workspace/SidecarAssetIntegrity";
 import type { CookedWorldPartitionDependencies } from "../workspace/CookedMapManifest";
@@ -98,6 +104,7 @@ export class GameApp implements RuntimeAppSession {
   protected readonly hemi: HemisphereLight;
   protected readonly skySystem: SkySystem;
   protected readonly vegetationScene = new VegetationScene();
+  protected readonly worldObjectScene = new RuntimeWorldObjectScene();
   private readonly gameplayEnabled: boolean;
   private lastFrameMs = 0;
   private lastUpdateMs = 0;
@@ -129,6 +136,7 @@ export class GameApp implements RuntimeAppSession {
     this.skySystem = world.skySystem;
     this.vegetationScene.attach(this.gameRenderer.scene);
     this.vegetationScene.configureVisibility(vegetationRenderConfig.game);
+    this.worldObjectScene.attach(this.gameRenderer.scene);
 
     const rawInputState = createRawInputState();
     this.inputManager = new InputManager(this.gameRenderer.domElement, rawInputState);
@@ -150,11 +158,17 @@ export class GameApp implements RuntimeAppSession {
           loadCellAsset: null,
           retainCellAssets: null,
           currentPlan: null,
+          loadedCells: {
+            objects: new Map(),
+            collision: new Map(),
+            nav: new Map(),
+          },
         },
         settings: this.settings,
       },
     };
     this.vegetationScene.setTerrainAvailability((x, z) => this.resources.runtime.terrain.hasRenderablePageAt(x, z));
+    this.worldObjectScene.setTerrainAvailability((x, z) => this.resources.runtime.terrain.hasRenderablePageAt(x, z));
 
     onBootPhase?.("creating-ecs");
 
@@ -266,6 +280,7 @@ export class GameApp implements RuntimeAppSession {
     this.disposed = true;
 
     this.beforeDispose();
+    this.worldObjectScene.dispose();
     this.vegetationScene.dispose();
     this.inputManager.dispose();
     this.resources.runtime.terrain.dispose();
@@ -322,7 +337,7 @@ export class GameApp implements RuntimeAppSession {
       renderer: {
         // EN: WebGPU keeps render.calls as a lifetime counter; drawCalls is the per-frame metric.
         // 中文: WebGPU 的 render.calls 是生命周期累计值；drawCalls 才是逐帧指标。
-          drawCalls: rendererInfo.render?.drawCalls ?? rendererInfo.render?.calls ?? 0,
+        drawCalls: rendererInfo.render?.drawCalls ?? rendererInfo.render?.calls ?? 0,
         triangles: rendererInfo.render?.triangles ?? 0,
         lines: rendererInfo.render?.lines ?? 0,
         points: rendererInfo.render?.points ?? 0,
@@ -330,6 +345,7 @@ export class GameApp implements RuntimeAppSession {
         textures: rendererInfo.memory?.textures ?? 0,
       },
       vegetation: this.vegetationScene.getProfilerSnapshot(),
+      partition: this.getWorldPartitionProfilerSnapshot(),
     };
   }
 
@@ -381,6 +397,10 @@ export class GameApp implements RuntimeAppSession {
     this.resources.runtime.worldPartition.loadCellAsset = worldPartition?.loadCellAsset ?? null;
     this.resources.runtime.worldPartition.retainCellAssets = worldPartition?.retainCellAssets ?? null;
     this.resources.runtime.worldPartition.currentPlan = null;
+    this.resources.runtime.worldPartition.loadedCells.objects.clear();
+    this.resources.runtime.worldPartition.loadedCells.collision.clear();
+    this.resources.runtime.worldPartition.loadedCells.nav.clear();
+    this.worldObjectScene.clear();
     this.lastWorldPartitionDependencySignature = "";
     this.pendingWorldPartitionLoads.clear();
   }
@@ -626,6 +646,8 @@ export class GameApp implements RuntimeAppSession {
     worldPartition.runtime.applyPlan(plan);
     worldPartition.currentPlan = plan;
     worldPartition.retainCellAssets?.(createActiveWorldPartitionAssetKeys(plan.dependencies));
+    this.retainLoadedWorldPartitionCells(plan.dependencies);
+    this.worldObjectScene.retainCells(new Set(plan.dependencies.objects));
 
     const signature = createWorldPartitionDependencySignature(plan.dependencies);
     if (signature === this.lastWorldPartitionDependencySignature) {
@@ -652,6 +674,9 @@ export class GameApp implements RuntimeAppSession {
 
         this.pendingWorldPartitionLoads.add(loadKey);
         void loader(kind, key)
+          .then((payload) => {
+            this.applyWorldPartitionCellPayload(kind, key, payload);
+          })
           .catch((error: unknown) => {
             console.warn(`[GameApp] Failed to load cooked ${kind} cell '${key}'`, error);
           })
@@ -662,11 +687,53 @@ export class GameApp implements RuntimeAppSession {
     }
   }
 
-  private syncVegetationTerrainVisibility(): void {
-    if (!this.vegetationScene.hasTerrainAvailability()) {
+  private applyWorldPartitionCellPayload(kind: BundledWorldPartitionCellKind, key: string, payload: unknown): void {
+    if (!this.isWorldPartitionCellStillActive(kind, key)) {
       return;
     }
 
+    const loadedCells = this.resources.runtime.worldPartition.loadedCells;
+    if (kind === "objects") {
+      if (!isWorldObjectCellPack(payload)) {
+        console.warn(`[GameApp] Ignoring invalid cooked objects cell '${key}'`);
+        return;
+      }
+
+      loadedCells.objects.set(key, payload);
+      this.worldObjectScene.setCellPayload(key, payload);
+      return;
+    }
+
+    if (kind === "collision") {
+      if (!isWorldCollisionCellPack(payload)) {
+        console.warn(`[GameApp] Ignoring invalid cooked collision cell '${key}'`);
+        return;
+      }
+
+      loadedCells.collision.set(key, payload);
+      return;
+    }
+
+    if (!isWorldNavCellPack(payload)) {
+      console.warn(`[GameApp] Ignoring invalid cooked nav cell '${key}'`);
+      return;
+    }
+
+    loadedCells.nav.set(key, payload);
+  }
+
+  private isWorldPartitionCellStillActive(kind: BundledWorldPartitionCellKind, key: string): boolean {
+    return this.resources.runtime.worldPartition.currentPlan?.dependencies[kind].includes(key) ?? false;
+  }
+
+  private retainLoadedWorldPartitionCells(dependencies: CookedWorldPartitionDependencies): void {
+    const loadedCells = this.resources.runtime.worldPartition.loadedCells;
+    retainMapKeys(loadedCells.objects, new Set(dependencies.objects));
+    retainMapKeys(loadedCells.collision, new Set(dependencies.collision));
+    retainMapKeys(loadedCells.nav, new Set(dependencies.nav));
+  }
+
+  private syncVegetationTerrainVisibility(): void {
     const revision = this.resources.runtime.terrain.getStreamingRevision();
     if (revision === this.lastVegetationTerrainRevision) {
       return;
@@ -675,7 +742,10 @@ export class GameApp implements RuntimeAppSession {
     // EN: Vegetation visibility depends on active terrain pages, which can change after async streaming finishes.
     // 中文: 植被可见性依赖活跃地形 page，而异步流式加载完成后这个集合会变化。
     this.lastVegetationTerrainRevision = revision;
-    this.vegetationScene.invalidateVisibility();
+    if (this.vegetationScene.hasTerrainAvailability()) {
+      this.vegetationScene.invalidateVisibility();
+    }
+    this.worldObjectScene.updateTerrainVisibility();
   }
 
   protected resolveTerrainUpdateTarget(): { x: number; z: number } | null {
@@ -686,6 +756,29 @@ export class GameApp implements RuntimeAppSession {
       }
     }
     return null;
+  }
+
+  private getWorldPartitionProfilerSnapshot(): RuntimeProfilerSnapshot["partition"] {
+    const worldPartition = this.resources.runtime.worldPartition;
+    const currentPlan = worldPartition.currentPlan;
+    return {
+      activeCells: worldPartition.runtime?.getActiveCellKeys().length ?? 0,
+      plannedLoadCells: currentPlan?.loadCells.length ?? 0,
+      plannedKeepCells: currentPlan?.keepCells.length ?? 0,
+      plannedUnloadCells: currentPlan?.unloadCellKeys.length ?? 0,
+      loadedObjectCells: worldPartition.loadedCells.objects.size,
+      loadedCollisionCells: worldPartition.loadedCells.collision.size,
+      loadedNavCells: worldPartition.loadedCells.nav.size,
+      worldObjects: this.worldObjectScene.getProfilerSnapshot(),
+    };
+  }
+}
+
+function retainMapKeys<TKey, TValue>(map: Map<TKey, TValue>, activeKeys: ReadonlySet<TKey>): void {
+  for (const key of map.keys()) {
+    if (!activeKeys.has(key)) {
+      map.delete(key);
+    }
   }
 }
 

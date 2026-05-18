@@ -25,7 +25,7 @@
       "archetype": "bridge-debris",
       "position": {
         "x": 390,
-        "y": 118.186,
+        "y": 94.186,
         "z": 930
       },
       "rotationY": 0,
@@ -52,7 +52,7 @@
       "archetype": "river-segment",
       "position": {
         "x": 290,
-        "y": 72.787,
+        "y": 53.854,
         "z": 630
       },
       "rotationY": 0.449,
@@ -87,7 +87,7 @@
       "archetype": "road-dirt-segment",
       "position": {
         "x": 10,
-        "y": 74.179,
+        "y": 72.591,
         "z": 840
       },
       "rotationY": -1.603,
@@ -122,7 +122,7 @@
       "archetype": "broken-bridge",
       "position": {
         "x": 430,
-        "y": 121.162,
+        "y": 97.162,
         "z": 980
       },
       "rotationY": 0,

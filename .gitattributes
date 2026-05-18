@@ -1,0 +1,17 @@
+*.heightpack binary
+*.paintpack binary
+*.vegpack binary
+*.objectpack binary
+*.collisionpack binary
+*.navpack binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.glb binary
+*.gltf text eol=lf
+*.json text eol=lf
+*.mjs text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.rs text eol=lf
+*.md text eol=lf

@@ -6,6 +6,7 @@ import {
   CloudSun,
   FolderOpen,
   Layers,
+  Map,
   Monitor,
   Mountain,
   Palette,
@@ -25,7 +26,7 @@ import {
   TimeTab,
 } from "@ui/settings/tabs";
 import { ProjectFileTab } from "./ProjectFileTab";
-import { EditorCameraTab, ProfilerTab, TerrainEditorTab, TextureEditorTab, VegetationEditorTab, type ActiveEditorType } from "./tabs";
+import { EditorCameraTab, ProfilerTab, TerrainEditorTab, TextureEditorTab, VegetationEditorTab, WorldDebugTab, type ActiveEditorType } from "./tabs";
 
 export const EDITOR_SETTINGS_TABS = [
   { id: "file", label: "File", Icon: FolderOpen },
@@ -33,6 +34,7 @@ export const EDITOR_SETTINGS_TABS = [
   { id: "terrainEditor", label: "Terrain", Icon: Mountain },
   { id: "textureEditor", label: "Texture", Icon: Layers },
   { id: "vegetationEditor", label: "Vegetation", Icon: Trees },
+  { id: "worldDebug", label: "World", Icon: Map },
   { id: "profiler", label: "Profiler", Icon: Activity },
   { id: "render", label: "Render", Icon: Monitor },
   { id: "camera", label: "Camera", Icon: Camera },
@@ -118,6 +120,11 @@ export const EDITOR_SETTINGS_TAB_REGISTRY: Record<EditorSettingsTabId, EditorSet
         onActiveEditorChange={props.onActiveEditorChange}
       />
     ),
+  },
+  worldDebug: {
+    id: "worldDebug",
+    label: "World Diagnostics",
+    render: (props) => <WorldDebugTab editorApp={props.editorApp} editorWorkspace={props.editorWorkspace} />,
   },
   profiler: {
     id: "profiler",
