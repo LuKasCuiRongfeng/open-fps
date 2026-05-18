@@ -36,43 +36,54 @@
 - 地形高度使用 `terrain/height/manifest.json` + `.heightpack` region pack。
 - 纹理绘制使用 `paint/layers.json` + `.paintpack` region pack。
 - 植被实例使用 `vegetation/models.json` + `.vegpack` region pack。
-- 世界对象使用 `objects/manifest.json` + `.objectpack` partition cell pack，首批道路、水体、POI 和道具已由 `OPEN_WORLD_DESIGN_SPEC.md` 规则生成。
-- 已有 dirty region/page 保存、编辑器 undo/redo 和安全写入；terrain、paint、vegetation 的 region-pack sidecar 保存均向 manifest-last 提交协议收敛。
-- terrain、paint、vegetation manifest 已记录 region pack 的 byte length 与 SHA-256，并在加载、保存、生成和资产校验中统一验证。
+- 世界对象使用 `objects/manifest.json` + `.objectpack` partition cell pack，首批道路、水体、POI 和道具已由 `OPEN_WORLD_DESIGN_SPEC.md` 规则生成，并已有 archetype render/editor/scatter/validation 元数据。
+- 已有 dirty region/page 保存、编辑器 undo/redo 和安全写入；terrain、paint、vegetation、world object 的 sidecar 保存均向 manifest-last 提交协议收敛。
+- terrain、paint、vegetation、objects manifest 已记录 region/cell pack 的 byte length 与 SHA-256，并在加载、保存、生成和资产校验中统一验证。
 - 已有 `main` 地图资产验证脚本，可检查 manifest、region pack、孤儿文件、截断文件和内容 hash。
 - 已有 cooked map manifest v4：记录 source hash、build input signature、content-addressed package artifact index、terrain/paint/vegetation/object asset index，以及 8-page world partition cell dependency 表。
 - web game bundled runtime 已优先读取 cooked manifest，并从 cooked asset index 派生 terrain、paint、vegetation 运行时 manifest。
-- cooked 输出已复制运行时所需的 region pack、terrain texture 和 vegetation model 资产，game target 不再依赖 source sidecar 目录读取核心运行资产。
+- cooked 输出已复制运行时所需的 region pack、terrain texture、vegetation model 和 world object GLTF 资产，game target 不再依赖 source sidecar 目录读取核心运行资产。
 - cooked 输出已写入 `cooked/cache/maps/<mapId>.json`，用于记录 build input signature、artifact 列表和 stale cook 诊断依据。
 - cooked package 已生成 `content-addressed-sha256-v1` artifact index，并把 runtime artifact 同步写入 `cooked/blobs/sha256/...`。
 - world partition cell 已收敛到 `dependencies` 结构，统一挂载 terrain、paint、vegetation、objects、collision、nav 六类运行时分区依赖。
 - objects cooked cell pack 现在来自 source object pack，不再是空生成物；collision cell pack 由 terrain heightfield、水体 volume 和对象 blocker 派生；nav cell pack 由 terrain slope、道路、水体和碰撞 blocker 派生。
-- runtime world partition planner 已接入 game streaming hot path，可按玩家/摄像机位置生成 load/keep/unload cell、预取 object/collision/nav cell pack、缓存已加载 payload，并实例化基础 runtime 世界对象。
-- game runtime 已把 cooked object cell pack 转成道路、水体、POI 和道具的可见代理；collision pack 已进入玩家水平阻挡解析，nav pack 已作为运行时资源缓存，等待后续 AI/调试消费。
+- runtime world partition planner 已接入 game streaming hot path，可按玩家/摄像机位置生成 load/keep/unload cell、预取 object/collision/nav cell pack、缓存已加载 payload，并按 archetype 实例化真实 GLTF 世界对象；道路/水体仍以生成 ribbon 表达，缺失资产时只保留诊断 fallback。
+- game runtime 已把 cooked object cell pack 转成道路、水体、POI 和道具的可见实例；collision pack 已进入玩家水平阻挡解析，nav pack 已作为运行时资源缓存，等待后续 AI/调试消费。
 - 地形、水体/道路对象、paint、vegetation 和 cooked nav 已收敛到共享 world semantics 规则，避免各生成脚本各自维护一套道路、水体和 POI 语义。
-- 编辑器设置面板已有 World Diagnostics 页，可查看 source 资产健康、pack integrity、partition streaming、runtime payload 和可见对象/植被统计。
+- 编辑器设置面板已有 World Diagnostics 页，可查看 source 资产健康、pack integrity、partition streaming、runtime payload 和可见对象/植被统计；Objects 页已支持 archetype 选择、地形拾取放置、删除、undo/redo 和对象 sidecar 保存。
 - CI/release 已接入 `pnpm verify`，覆盖 lint、Node 回归测试、TypeScript 类型检查和地图资产校验。
 - 已有 [`OPEN_WORLD_DESIGN_SPEC.md`](OPEN_WORLD_DESIGN_SPEC.md)，定义 `main` 10 平方公里地图的区域、道路、水系、兴趣点和生成约束。
 
 当前最重要的方向是把这些能力从“真实但仍粗粒度的生产管线”推进到“可编辑、可局部重建、可视化调试且有性能预算的开放世界内容系统”。
 
+## 当前编辑器质量判断
+
+地形、纹理和植被编辑已经具备正确的 sidecar/cell 底座，但还不是业界最佳开放世界方案：
+
+- 地形编辑当前以高度画刷和 procedural 生成结合为主，下一阶段应升级为非破坏性 terrain operation graph：道路/河床/平台/侵蚀/噪声/手工修整都作为可重算层，并支持局部 recook collision/nav/paint/vegetation。
+- 纹理编辑当前是 splat paint 和 region dirty save，方向正确但仍偏手工；目标方案应是 material/biome graph，支持 slope/height/wetness/road-distance masks、macro/micro variation、decal/车辙/湿边和局部材质重建。
+- 植被编辑当前已有 GLTF instancing、LOD、距离裁剪和画刷；目标方案应是 ecology scatter graph，支持 biome mask、保护区/排除区、cluster/edge falloff、impostor budget、collision/nav 预算和局部重散布。
+- 世界对象编辑已从几何代理进入 GLTF archetype + sidecar 事务阶段；仍需补 spline 编辑、prefab 展开、scatter rule 执行、对象 LOD/instancing budget、精确 collision shape 和可视化验证。
+
+因此当前项目已经走在正确架构路径上，但“业界最佳”还需要上述非破坏性规则图、局部重建、预算化渲染和验证工具继续落地。
+
 ## 路线图
 
 ### 1. 统一资产事务模型
 
-目标：terrain、paint、vegetation 和未来 world object sidecar 资产使用统一提交协议。
+目标：terrain、paint、vegetation 和 world object sidecar 资产使用统一提交协议。
 
 当前重点：
 
 - 所有 region pack 先完整写入，再提交 JSON manifest，最后清理旧 pack。
-- 保持 terrain、paint、vegetation 共享 sidecar commit 抽象，world object pack 后续继续向同一事务提交协议收敛。
+- 保持 terrain、paint、vegetation、world object 共享 sidecar commit 抽象。
 - 加载路径要能识别 manifest 指向的 pack 是否缺失、截断或格式不匹配。
 
 验收标准：
 
 - 任意一次保存失败都不会让最新 manifest 指向不存在或不完整的 pack。
 - 旧 pack 只在新 manifest 成功提交后删除。
-- terrain、paint、vegetation 的保存顺序和错误处理语义一致。
+- terrain、paint、vegetation、world object 的保存顺序和错误处理语义一致。
 
 ### 2. 资产完整性与版本治理
 
@@ -129,7 +140,7 @@
 
 当前重点：
 
-- 为 height/paint/vegetation pack 编解码补测试。
+- 为 height/paint/vegetation/object pack 编解码补测试。
 - 为 dirty save、manifest-last commit、缺失 pack、截断 pack、恢复路径补测试。
 - 为地图生成脚本增加最小产物校验。
 - 保持 `pnpm verify` 作为本地与 CI 共同质量门禁。
@@ -165,6 +176,7 @@
 - 引入侵蚀、河床、坡度控制、道路切割、平台和悬崖规则。
 - 生成时考虑通行性、视线、战斗空间和道路连接。
 - 编辑器支持局部重建和手工修整，不强迫全图重算。
+- 建立非破坏性 terrain operation graph，使 procedural 层、spline 切坡层和手工修整层可单独重算、禁用和审查。
 
 验收标准：
 
@@ -181,6 +193,7 @@
 - 增加 slope/height/biome 自动材质规则。
 - 支持 macro variation、detail normal、湿度、泥土、岩石和道路边缘混合。
 - paint 数据继续保持 region pack 和 dirty save。
+- 建立 material/biome graph，把手工 paint 作为 override/mask，而不是唯一来源。
 
 验收标准：
 
@@ -197,6 +210,7 @@
 - 按 biome、坡度、高度、湿度、朝向、道路距离和水源距离分布。
 - 支持 cluster、clearing、edge falloff、密度图和手工保护区。
 - 生成 LOD、impostor、碰撞和阴影策略。
+- 建立 ecology scatter graph，并把道路、水体、object 清理、collision/nav 预算作为可验证输入。
 
 验收标准：
 
@@ -212,13 +226,13 @@
 
 - 建立 spline road 和 river 工具。
 - 支持 mesh/decal/prop placement、岩石散布、围栏、路牌、小建筑和据点对象。
-- world object 已接入分区、校验和 cooked build；下一步补齐编辑事务提交、spline 工具和可视化调试。
+- world object 已接入分区、校验、cooked build、真实 GLTF archetype 渲染和编辑事务提交；下一步补齐 spline 工具、prefab 展开、scatter rule 执行和可视化调试。
 
 验收标准：
 
 - 道路当前已生成导航成本，并已影响地形、材质和植被清理；后续需要 spline 编辑工具、道路 mesh/decal、车辙和更自然的边缘融合。
 - 水体当前已进入 object/collision/nav 派生，并影响地形、边缘材质和植被清理；后续需要更真实的河床高度、可视水面、湿地物种和浅/深水规则。
-- 世界对象能按 cell 被 runtime 预取和基础实例化；后续要替换代理几何为真实 mesh/decal/prop，并进入编辑事务提交。
+- 世界对象能按 cell 被 runtime 预取并以真实 mesh/prop archetype 实例化；后续要补道路 decal/mesh、水面 shader、object instancing/LOD budget 和精确碰撞形状。
 
 ### 11. 渲染质量与性能预算
 

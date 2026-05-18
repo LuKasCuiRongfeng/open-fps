@@ -9,7 +9,7 @@ import { TerrainEditor } from "@editor/runtime/terrain/TerrainEditor";
 import type { BrushStroke, EditorCameraAction } from "@editor/runtime/terrain/TerrainEditor";
 import { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
-import { WorldObjectOverlay } from "@editor/runtime/world-objects";
+import { WorldObjectEditor, WorldObjectOverlay } from "@editor/runtime/world-objects";
 import { TerrainTextureArrays } from "@game/world/terrain/TerrainTextureArrays";
 import type { TerrainHeightPageSnapshot } from "@game/world/terrain/terrain";
 import { getHeightPageKeys, parsePageKey, type MapData } from "@project/MapData";
@@ -56,6 +56,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
   private readonly textureEditor = new TextureEditor();
   private readonly vegetationEditor = new VegetationEditor(this.vegetationScene);
   private readonly worldObjectOverlay = new WorldObjectOverlay();
+  private readonly worldObjectEditor = new WorldObjectEditor(this.worldObjectOverlay);
   private readonly brushIndicator = new BrushIndicatorSystem();
   private readonly history = new EditorCommandHistory();
   private readonly terrainBrushQueue: BrushStroke[][] = [];
@@ -85,6 +86,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
     this.brushIndicator.attach(this.scene);
     this.textureEditor.setCommandRecorder((command) => this.history.record(command));
     this.vegetationEditor.setCommandRecorder((command) => this.history.record(command));
+    this.worldObjectEditor.setCommandRecorder((command) => this.history.record(command));
     this.terrainEditor.setMode("edit");
   }
 
@@ -104,6 +106,10 @@ export class EditorApp extends GameApp implements EditorAppSession {
     return this.vegetationEditor;
   }
 
+  getWorldObjectEditor(): WorldObjectEditor {
+    return this.worldObjectEditor;
+  }
+
   getEditorHistoryState(): EditorHistoryState {
     return this.history.getState();
   }
@@ -113,6 +119,7 @@ export class EditorApp extends GameApp implements EditorAppSession {
     await this.flushPendingTerrainHistory();
     await this.textureEditor.flushPendingHistory();
     this.vegetationEditor.flushPendingHistory();
+    this.worldObjectEditor.flushPendingHistory();
   }
 
   async undoEditorCommand(): Promise<boolean> {
@@ -211,6 +218,19 @@ export class EditorApp extends GameApp implements EditorAppSession {
     );
   }
 
+  updateWorldObjectBrushTarget(mouseX: number, mouseY: number): void {
+    const canvas = this.gameRenderer.domElement;
+    this.worldObjectEditor.updateBrushTarget(
+      mouseX,
+      mouseY,
+      canvas.clientWidth,
+      canvas.clientHeight,
+      this.camera,
+      this.resources.runtime.terrain.heightAt,
+      this.resources.runtime.terrain.hasHeightAt,
+    );
+  }
+
   async loadTexturesFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void> {
     await this.textureEditor.loadFromMapDirectory(mapDirectory, mapData);
     const textureDef = this.textureEditor.textureDefinition;
@@ -243,7 +263,11 @@ export class EditorApp extends GameApp implements EditorAppSession {
   }
 
   async loadWorldObjectsFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void> {
-    await this.worldObjectOverlay.loadFromMapDirectory(mapDirectory, mapData);
+    await this.worldObjectEditor.loadFromMapDirectory(mapDirectory, mapData);
+  }
+
+  async saveWorldObjectsToMapDirectory(mapDirectory: string): Promise<void> {
+    await this.worldObjectEditor.saveToMapDirectory(mapDirectory);
   }
 
   protected override async initRuntimeExtensions(): Promise<void> {
@@ -323,6 +347,13 @@ export class EditorApp extends GameApp implements EditorAppSession {
       return { x, y, z, valid: true };
     }
 
+    if (this.worldObjectEditor.brushTargetValid) {
+      const x = this.worldObjectEditor.brushTargetX;
+      const z = this.worldObjectEditor.brushTargetZ;
+      const y = this.resources.runtime.terrain.heightAt(x, z);
+      return { x, y, z, valid: true };
+    }
+
     return { x: 0, y: 0, z: 0, valid: false };
   }
 
@@ -376,12 +407,14 @@ export class EditorApp extends GameApp implements EditorAppSession {
   protected override beforeDispose(): void {
     this.textureEditor.setCommandRecorder(null);
     this.vegetationEditor.setCommandRecorder(null);
+    this.worldObjectEditor.setCommandRecorder(null);
     this.terrainBrushQueue.length = 0;
     this.activeTerrainStroke = null;
     this.history.clear();
     this.terrainEditor.dispose();
     this.textureEditor.dispose();
     this.vegetationEditor.dispose();
+    this.worldObjectEditor.dispose();
     this.worldObjectOverlay.dispose();
     this.brushIndicator.dispose();
   }
@@ -662,6 +695,20 @@ export class EditorApp extends GameApp implements EditorAppSession {
             falloff: 0.5,
             strength: this.vegetationEditor.brushSettings.mode === "erase" ? 0.85 : 0.45,
             active: this.vegetationEditor.brushActive,
+          };
+        }
+        break;
+
+      case "object":
+        if (this.worldObjectEditor.brushTargetValid) {
+          brushInfo = {
+            targetValid: true,
+            targetX: this.worldObjectEditor.brushTargetX,
+            targetZ: this.worldObjectEditor.brushTargetZ,
+            radius: this.worldObjectEditor.brushRadius,
+            falloff: 0.5,
+            strength: this.worldObjectEditor.currentMode === "erase" ? 0.9 : 0.5,
+            active: this.worldObjectEditor.brushActive,
           };
         }
         break;

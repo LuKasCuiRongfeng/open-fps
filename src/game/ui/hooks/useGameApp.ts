@@ -96,6 +96,12 @@ export function useGameApp({
               app.applySettings(settingsToApply);
             }
 
+            if (bundledProject) {
+              app.setWorldObjectAssetContext(
+                bundledProject.mapDirectoryUrl,
+                bundledProject.cookedMap.assets.objects.archetypes,
+              );
+            }
             app.setWorldPartitionRuntime(bundledProject?.worldPartition ?? null);
 
             // EN: The game runtime requires a map file and cannot synthesize replacement terrain.

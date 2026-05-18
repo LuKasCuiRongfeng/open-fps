@@ -61,6 +61,13 @@ export const BRUSH_INDICATOR_STYLES = {
     activeColor: { r: 0.85, g: 1.0, b: 0.35 },
     opacity: 0.9,
   },
+  /** Object placement (amber/white). / 对象摆放（琥珀/白色） */
+  object: {
+    outerColor: { r: 1.0, g: 0.76, b: 0.28 },
+    innerColor: { r: 1.0, g: 0.92, b: 0.62 },
+    activeColor: { r: 1.0, g: 1.0, b: 0.88 },
+    opacity: 0.9,
+  },
 } as const satisfies Record<string, BrushIndicatorStyle>;
 
 export type BrushIndicatorType = keyof typeof BRUSH_INDICATOR_STYLES;

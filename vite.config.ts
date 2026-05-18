@@ -103,6 +103,7 @@ export default defineConfig(({ mode }) => {
     ].filter((plugin): plugin is Plugin => plugin !== null);
 
     return {
+        cacheDir: path.resolve(__dirname, "node_modules", `.vite-${appTarget}`),
         plugins,
 
         resolve: {

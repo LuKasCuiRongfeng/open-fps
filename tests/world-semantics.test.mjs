@@ -3,6 +3,7 @@ import test from "node:test";
 import { buildHeightConfig, generateHeight } from "../scripts/map-generation/height-field.mjs";
 import { mapPresets } from "../scripts/map-generation/shared.mjs";
 import {
+  createSemanticArchetypes,
   createSemanticWorldObjects,
   getSemanticPathInfluence,
   sampleWorldSemantics,
@@ -30,4 +31,14 @@ test("shared world semantics mark road, water, and POI clearance zones", () => {
 test("terrain shaping can query the same semantic path source", () => {
   assert.ok(getSemanticPathInfluence(-335, -1165, { layer: "water" }, 42, 240) > 0.8);
   assert.ok(getSemanticPathInfluence(-670, -990, { layer: "road" }, 8, 58) > 0.8);
+});
+
+test("semantic object archetypes declare render and editor metadata", () => {
+  const archetypes = createSemanticArchetypes();
+
+  assert.equal(archetypes["supply-crates"].render.kind, "gltf");
+  assert.match(archetypes["supply-crates"].render.path, /wooden_crate_01_1k\.gltf/);
+  assert.equal(archetypes["road-dirt-segment"].render.kind, "ribbon");
+  assert.equal(archetypes["broken-bridge"].validation.blocksNav, true);
+  assert.ok(archetypes.camp.prefab.length >= 1);
 });

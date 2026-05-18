@@ -398,13 +398,13 @@ async function copyProjectAssetToCooked(context, packageBuilder, projectRelative
   return cookedPath;
 }
 
-async function copyMapRelativeAssetToCooked(context, mapDir, cookedDir, packageBuilder, mapRelativeAssetPath) {
+async function copyMapRelativeAssetToCooked(context, mapDir, cookedDir, packageBuilder, mapRelativeAssetPath, packageKind = "vegetation-model") {
   const sourcePath = path.resolve(mapDir, mapRelativeAssetPath);
   ensureInsideProject(context, sourcePath, mapRelativeAssetPath);
   const sourceRoot = getCookedAssetCopyRoot(context, sourcePath);
   const cookedRoot = path.join(context.projectDir, "cooked", projectRelativePath(sourceRoot, context));
   await cp(sourceRoot, cookedRoot, { recursive: true, force: true });
-  await packageBuilder.addCopiedTree(projectRelativePath(cookedRoot, context), "vegetation-model", sourceRoot);
+  await packageBuilder.addCopiedTree(projectRelativePath(cookedRoot, context), packageKind, sourceRoot);
   const cookedAssetPath = path.join(context.projectDir, "cooked", projectRelativePath(sourcePath, context));
   return path.relative(cookedDir, cookedAssetPath).replaceAll(path.sep, "/");
 }
@@ -470,6 +470,8 @@ async function readWorldObjectCellPacks(mapDir, objectManifest) {
 }
 
 async function createCookedObjectCellAssets(context, mapId, mapDir, partition, packageBuilder, objectManifest, objectPacks) {
+  const cookedDir = path.join(context.projectDir, cookedMapsDirectory, mapId);
+  const archetypes = await createCookedObjectArchetypes(context, mapDir, cookedDir, packageBuilder, objectManifest.archetypes ?? {});
   const cells = await Promise.all(partition.cells.map(async (cell) => {
     const sourcePack = objectPacks.get(cell.key);
     const cellRef = objectManifest.cells?.[cell.key];
@@ -497,8 +499,45 @@ async function createCookedObjectCellAssets(context, mapId, mapDir, partition, p
     format: cookedObjectCellFormat,
     cellSizePages: partition.cellSizePages,
     cellSizeMeters: partition.cellSizeMeters,
+    archetypes,
     cells: Object.fromEntries(cells.sort(([left], [right]) => compareRegionKeyStrings(left, right))),
   };
+}
+
+async function createCookedObjectArchetypes(context, mapDir, cookedDir, packageBuilder, archetypes) {
+  const cookedArchetypes = {};
+  for (const [id, archetype] of Object.entries(archetypes ?? {})) {
+    cookedArchetypes[id] = await copyCookedObjectArchetypeAssets(context, mapDir, cookedDir, packageBuilder, archetype);
+  }
+
+  return cookedArchetypes;
+}
+
+async function copyCookedObjectArchetypeAssets(context, mapDir, cookedDir, packageBuilder, archetype) {
+  const nextArchetype = { ...archetype };
+  if (!nextArchetype.render || typeof nextArchetype.render !== "object") {
+    return nextArchetype;
+  }
+
+  const nextRender = { ...nextArchetype.render };
+  for (const field of ["path", "lod1Path", "lod2Path"]) {
+    const value = nextRender[field];
+    if (typeof value !== "string" || isExternalAssetPath(value)) {
+      continue;
+    }
+
+    nextRender[field] = await copyMapRelativeAssetToCooked(
+      context,
+      mapDir,
+      cookedDir,
+      packageBuilder,
+      value,
+      "world-object-model",
+    );
+  }
+
+  nextArchetype.render = nextRender;
+  return nextArchetype;
 }
 
 async function createCookedDerivedCellAssets(preset, mapId, partition, packageBuilder, objectPacks, options) {

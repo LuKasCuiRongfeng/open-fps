@@ -62,6 +62,7 @@ import { assemblePaintSplatMapPixels, getPaintRegions, type MapData } from "@pro
 import { validateSidecarRegionIntegrity } from "@workspace/SidecarAssetIntegrity";
 import type { CookedWorldPartitionDependencies } from "../workspace/CookedMapManifest";
 import type { BundledWorldPartitionCellKind, BundledWorldPartitionRuntime } from "../workspace/loadBundledProject";
+import type { WorldObjectArchetypeDefinition } from "../world/objects";
 
 export interface GameAppOptions {
   gameplayEnabled?: boolean;
@@ -403,6 +404,13 @@ export class GameApp implements RuntimeAppSession {
     this.worldObjectScene.clear();
     this.lastWorldPartitionDependencySignature = "";
     this.pendingWorldPartitionLoads.clear();
+  }
+
+  setWorldObjectAssetContext(
+    baseDirectory: string,
+    archetypes: Record<string, unknown> | null | undefined,
+  ): void {
+    this.worldObjectScene.setAssetContext(baseDirectory, archetypes as Record<string, WorldObjectArchetypeDefinition> | null | undefined);
   }
 
   private async loadPaintPageTextures(

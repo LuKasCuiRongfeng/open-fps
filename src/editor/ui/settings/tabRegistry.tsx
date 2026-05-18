@@ -9,6 +9,7 @@ import {
   Map,
   Monitor,
   Mountain,
+  PackageOpen,
   Palette,
   Trees,
 } from "lucide-react";
@@ -16,6 +17,7 @@ import type { EditorAppSession } from "@editor/app";
 import type { TerrainEditor } from "@editor/runtime";
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import type { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
+import type { WorldObjectEditor } from "@editor/runtime/world-objects";
 import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings";
 import type { MapData } from "@project/MapData";
 import type { EditorWorkspaceController, TerrainMode } from "@editor/ui/hooks/useEditorWorkspace";
@@ -26,7 +28,7 @@ import {
   TimeTab,
 } from "@ui/settings/tabs";
 import { ProjectFileTab } from "./ProjectFileTab";
-import { EditorCameraTab, ProfilerTab, TerrainEditorTab, TextureEditorTab, VegetationEditorTab, WorldDebugTab, type ActiveEditorType } from "./tabs";
+import { EditorCameraTab, ProfilerTab, TerrainEditorTab, TextureEditorTab, VegetationEditorTab, WorldDebugTab, WorldObjectEditorTab, type ActiveEditorType } from "./tabs";
 
 export const EDITOR_SETTINGS_TABS = [
   { id: "file", label: "File", Icon: FolderOpen },
@@ -34,6 +36,7 @@ export const EDITOR_SETTINGS_TABS = [
   { id: "terrainEditor", label: "Terrain", Icon: Mountain },
   { id: "textureEditor", label: "Texture", Icon: Layers },
   { id: "vegetationEditor", label: "Vegetation", Icon: Trees },
+  { id: "worldObjectEditor", label: "Objects", Icon: PackageOpen },
   { id: "worldDebug", label: "World", Icon: Map },
   { id: "profiler", label: "Profiler", Icon: Activity },
   { id: "render", label: "Render", Icon: Monitor },
@@ -50,6 +53,7 @@ export type EditorSettingsTabRenderProps = {
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;
   vegetationEditor: VegetationEditor | null;
+  worldObjectEditor: WorldObjectEditor | null;
   editorWorkspace: EditorWorkspaceController;
   terrainMode: TerrainMode;
   activeEditor: ActiveEditorType;
@@ -115,6 +119,18 @@ export const EDITOR_SETTINGS_TAB_REGISTRY: Record<EditorSettingsTabId, EditorSet
     render: (props) => (
       <VegetationEditorTab
         vegetationEditor={props.vegetationEditor}
+        terrainMode={props.terrainMode}
+        activeEditor={props.activeEditor}
+        onActiveEditorChange={props.onActiveEditorChange}
+      />
+    ),
+  },
+  worldObjectEditor: {
+    id: "worldObjectEditor",
+    label: "Object Editor",
+    render: (props) => (
+      <WorldObjectEditorTab
+        worldObjectEditor={props.worldObjectEditor}
         terrainMode={props.terrainMode}
         activeEditor={props.activeEditor}
         onActiveEditorChange={props.onActiveEditorChange}

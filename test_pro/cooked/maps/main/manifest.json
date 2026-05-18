@@ -5,28 +5,28 @@
   "build": {
     "tool": "open-fps-cook-map-assets",
     "toolVersion": 4,
-    "generatedAt": "2026-05-18T06:08:54.916Z",
-    "inputSignature": "8d94913c274cf3f078a5e121de56ff21ab1816f0a05d639d4c21e2d0f3889517",
-    "previousInputSignature": "d923f4b3e4cc7b0866ee5233ef2eb2404eb44bf19a6979229628ce40e9da0d99",
+    "generatedAt": "2026-05-18T07:05:05.962Z",
+    "inputSignature": "54498eb7c38bec49672b64d30c70a12ace547d6369758d4aa1dfe892f112fc62",
+    "previousInputSignature": "8d94913c274cf3f078a5e121de56ff21ab1816f0a05d639d4c21e2d0f3889517",
     "packageLayout": "content-addressed-sha256-v1",
-    "artifactCount": 513
+    "artifactCount": 547
   },
   "map": {
     "seed": 918273,
     "metadata": {
       "name": "Frontier Basin",
       "created": 1778997569115,
-      "modified": 1779084455453
+      "modified": 1779087797987
     }
   },
   "source": {
     "project": {
       "path": "project.json",
-      "sha256": "7a55f0f227bf06e85e4a7ca44718436b19c7b682f3b4db0904a6bd63076f80c5"
+      "sha256": "8bbb9a7d699571d84dac2c8211bb4ba9b8d63f13321f036cd24a7a21ada7c84e"
     },
     "map": {
       "path": "maps/main/map.json",
-      "sha256": "b968c9c6d0d829691cedd4d8cae9112f51fb95612ff297517552f9eea0cb02b1"
+      "sha256": "88fdbae14df0ea7e15fa8f7f7704acb9a67653e80e4e6a4868d7727146719ee0"
     },
     "terrain": {
       "path": "maps/main/terrain/height/manifest.json",
@@ -42,7 +42,7 @@
     },
     "objects": {
       "path": "maps/main/objects/manifest.json",
-      "sha256": "395b163b77a1d2517440831ce1dddabe823ae9c544c4341645b97433c4868757"
+      "sha256": "4e48ce81f9cfae6fc4b9cc7e657efc437e843c96e4577811a43ef7effa0ecc86"
     }
   },
   "world": {
@@ -1891,6 +1891,467 @@
       "format": "world-object-cell-pack-v1",
       "cellSizePages": 8,
       "cellSizeMeters": 512,
+      "archetypes": {
+        "road-dirt-segment": {
+          "layer": "road",
+          "navCost": 0.45,
+          "clearsVegetation": true,
+          "render": {
+            "kind": "ribbon",
+            "ribbonMaterial": "road"
+          },
+          "editor": {
+            "icon": "route",
+            "color": "#b9854f",
+            "placement": "spline",
+            "defaultRadiusMeters": 9
+          },
+          "scatter": {
+            "mode": "path",
+            "minSpacingMeters": 12,
+            "alignToTerrain": true,
+            "avoidLayers": [
+              "water"
+            ]
+          },
+          "validation": {
+            "requiresTerrain": true,
+            "maxSlopeDegrees": 18,
+            "clearsVegetation": true
+          }
+        },
+        "road-rocky-segment": {
+          "layer": "road",
+          "navCost": 0.65,
+          "clearsVegetation": true,
+          "render": {
+            "kind": "ribbon",
+            "ribbonMaterial": "road"
+          },
+          "editor": {
+            "icon": "route",
+            "color": "#95806a",
+            "placement": "spline",
+            "defaultRadiusMeters": 6
+          },
+          "scatter": {
+            "mode": "path",
+            "minSpacingMeters": 10,
+            "alignToTerrain": true,
+            "avoidLayers": [
+              "water"
+            ]
+          },
+          "validation": {
+            "requiresTerrain": true,
+            "maxSlopeDegrees": 26,
+            "clearsVegetation": true
+          }
+        },
+        "road-forest-path": {
+          "layer": "road",
+          "navCost": 0.55,
+          "clearsVegetation": true,
+          "render": {
+            "kind": "ribbon",
+            "ribbonMaterial": "road"
+          },
+          "editor": {
+            "icon": "route",
+            "color": "#7f9863",
+            "placement": "spline",
+            "defaultRadiusMeters": 5
+          },
+          "scatter": {
+            "mode": "path",
+            "minSpacingMeters": 10,
+            "alignToTerrain": true,
+            "avoidLayers": [
+              "water"
+            ]
+          },
+          "validation": {
+            "requiresTerrain": true,
+            "maxSlopeDegrees": 22,
+            "clearsVegetation": true
+          }
+        },
+        "river-segment": {
+          "layer": "water",
+          "navCost": 3.5,
+          "clearsVegetation": true,
+          "render": {
+            "kind": "ribbon",
+            "ribbonMaterial": "water"
+          },
+          "editor": {
+            "icon": "waves",
+            "color": "#43a4d8",
+            "placement": "spline",
+            "defaultRadiusMeters": 18
+          },
+          "scatter": {
+            "mode": "path",
+            "minSpacingMeters": 16,
+            "alignToTerrain": true
+          },
+          "validation": {
+            "requiresTerrain": true,
+            "maxSlopeDegrees": 12,
+            "clearsVegetation": true
+          }
+        },
+        "stream-segment": {
+          "layer": "water",
+          "navCost": 2.5,
+          "clearsVegetation": true,
+          "render": {
+            "kind": "ribbon",
+            "ribbonMaterial": "water"
+          },
+          "editor": {
+            "icon": "waves",
+            "color": "#64bfe5",
+            "placement": "spline",
+            "defaultRadiusMeters": 7
+          },
+          "scatter": {
+            "mode": "path",
+            "minSpacingMeters": 10,
+            "alignToTerrain": true
+          },
+          "validation": {
+            "requiresTerrain": true,
+            "maxSlopeDegrees": 18,
+            "clearsVegetation": true
+          }
+        },
+        "camp": {
+          "layer": "poi",
+          "navCost": 0.8,
+          "collision": {
+            "type": "box",
+            "radiusMeters": 10,
+            "heightMeters": 3
+          },
+          "render": {
+            "kind": "gltf",
+            "path": "../../assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf",
+            "targetHeightMeters": 2.4,
+            "baseScale": 1.8,
+            "castShadow": true,
+            "receiveShadow": true,
+            "maxVisibleDistanceMeters": 420,
+            "shadowDistanceMeters": 120
+          },
+          "editor": {
+            "icon": "landmark",
+            "color": "#d39a43",
+            "placement": "prefab",
+            "defaultRadiusMeters": 18
+          },
+          "prefab": [
+            {
+              "archetype": "supply-crates",
+              "offsetX": 7,
+              "offsetZ": -4,
+              "rotationY": 0.5,
+              "scale": 0.9
+            },
+            {
+              "archetype": "road-sign",
+              "offsetX": -9,
+              "offsetZ": 5,
+              "rotationY": -0.3,
+              "scale": 1
+            }
+          ],
+          "validation": {
+            "requiresTerrain": true,
+            "maxSlopeDegrees": 10,
+            "blocksNav": true,
+            "clearsVegetation": true
+          }
+        },
+        "lookout-tower": {
+          "layer": "poi",
+          "navCost": 1.1,
+          "collision": {
+            "type": "cylinder",
+            "radiusMeters": 8,
+            "heightMeters": 12
+          },
+          "render": {
+            "kind": "gltf",
+            "path": "../../assets/model/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf",
+            "targetHeightMeters": 8.5,
+            "baseScale": 1.4,
+            "castShadow": true,
+            "receiveShadow": true,
+            "maxVisibleDistanceMeters": 620,
+            "shadowDistanceMeters": 180
+          },
+          "editor": {
+            "icon": "binoculars",
+            "color": "#c9a56c",
+            "placement": "single",
+            "defaultRadiusMeters": 14
+          },
+          "validation": {
+            "requiresTerrain": true,
+            "maxSlopeDegrees": 16,
+            "blocksNav": true,
+            "clearsVegetation": true
+          }
+        },
+        "broken-bridge": {
+          "layer": "poi",
+          "navCost": 1.4,
+          "collision": {
+            "type": "box",
+            "radiusMeters": 16,
+            "heightMeters": 4
+          },
+          "render": {
+            "kind": "gltf",
+            "path": "../../assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf",
+            "targetHeightMeters": 3.2,
+            "baseScale": 3.8,
+            "castShadow": true,
+            "receiveShadow": true,
+            "maxVisibleDistanceMeters": 520,
+            "shadowDistanceMeters": 130
+          },
+          "editor": {
+            "icon": "bridge",
+            "color": "#b88d58",
+            "placement": "single",
+            "defaultRadiusMeters": 24
+          },
+          "validation": {
+            "requiresTerrain": true,
+            "maxSlopeDegrees": 14,
+            "blocksNav": true,
+            "clearsVegetation": true
+          }
+        },
+        "abandoned-homestead": {
+          "layer": "poi",
+          "navCost": 1,
+          "collision": {
+            "type": "box",
+            "radiusMeters": 14,
+            "heightMeters": 4
+          },
+          "render": {
+            "kind": "gltf",
+            "path": "../../assets/model/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf",
+            "targetHeightMeters": 3.6,
+            "baseScale": 5.8,
+            "castShadow": true,
+            "receiveShadow": true,
+            "maxVisibleDistanceMeters": 520,
+            "shadowDistanceMeters": 130
+          },
+          "editor": {
+            "icon": "home",
+            "color": "#ad8f65",
+            "placement": "prefab",
+            "defaultRadiusMeters": 28
+          },
+          "prefab": [
+            {
+              "archetype": "supply-crates",
+              "offsetX": -10,
+              "offsetZ": 8,
+              "rotationY": 0.2,
+              "scale": 1.1
+            },
+            {
+              "archetype": "split-rail-fence",
+              "offsetX": 18,
+              "offsetZ": -6,
+              "rotationY": 1.2,
+              "scale": 1
+            }
+          ],
+          "validation": {
+            "requiresTerrain": true,
+            "maxSlopeDegrees": 9,
+            "blocksNav": true,
+            "clearsVegetation": true
+          }
+        },
+        "forest-clearing": {
+          "layer": "poi",
+          "navCost": 0.7,
+          "collision": false,
+          "render": {
+            "kind": "gltf",
+            "path": "../../assets/model/boulder_01_1k.gltf/boulder_01_1k.gltf",
+            "targetHeightMeters": 2.2,
+            "baseScale": 1.4,
+            "castShadow": true,
+            "receiveShadow": true,
+            "maxVisibleDistanceMeters": 340,
+            "shadowDistanceMeters": 90
+          },
+          "editor": {
+            "icon": "circle",
+            "color": "#7ea06a",
+            "placement": "scatter",
+            "defaultRadiusMeters": 24
+          },
+          "scatter": {
+            "mode": "biome",
+            "densityPerSquareMeter": 0.004,
+            "minSpacingMeters": 18,
+            "alignToTerrain": true,
+            "avoidLayers": [
+              "road",
+              "water"
+            ]
+          },
+          "validation": {
+            "requiresTerrain": true,
+            "maxSlopeDegrees": 18,
+            "clearsVegetation": true
+          }
+        },
+        "road-sign": {
+          "layer": "prop",
+          "collision": {
+            "type": "box",
+            "radiusMeters": 2,
+            "heightMeters": 2.6
+          },
+          "render": {
+            "kind": "gltf",
+            "path": "../../assets/model/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf",
+            "targetHeightMeters": 2.6,
+            "baseScale": 0.34,
+            "castShadow": true,
+            "receiveShadow": true,
+            "maxVisibleDistanceMeters": 220,
+            "shadowDistanceMeters": 55
+          },
+          "editor": {
+            "icon": "signpost",
+            "color": "#d8c071",
+            "placement": "single",
+            "defaultRadiusMeters": 3
+          },
+          "validation": {
+            "requiresTerrain": true,
+            "maxSlopeDegrees": 24,
+            "blocksNav": true
+          }
+        },
+        "split-rail-fence": {
+          "layer": "prop",
+          "collision": {
+            "type": "box",
+            "radiusMeters": 8,
+            "heightMeters": 2
+          },
+          "render": {
+            "kind": "gltf",
+            "path": "../../assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf",
+            "targetHeightMeters": 1.8,
+            "baseScale": 2.8,
+            "castShadow": true,
+            "receiveShadow": true,
+            "maxVisibleDistanceMeters": 260,
+            "shadowDistanceMeters": 60
+          },
+          "editor": {
+            "icon": "fence",
+            "color": "#b28b62",
+            "placement": "spline",
+            "defaultRadiusMeters": 8
+          },
+          "scatter": {
+            "mode": "path",
+            "minSpacingMeters": 7,
+            "alignToTerrain": true,
+            "avoidLayers": [
+              "water"
+            ]
+          },
+          "validation": {
+            "requiresTerrain": true,
+            "maxSlopeDegrees": 20,
+            "blocksNav": true
+          }
+        },
+        "supply-crates": {
+          "layer": "prop",
+          "collision": {
+            "type": "box",
+            "radiusMeters": 3.5,
+            "heightMeters": 2.8
+          },
+          "render": {
+            "kind": "gltf",
+            "path": "../../assets/model/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf",
+            "targetHeightMeters": 2.2,
+            "baseScale": 1.35,
+            "castShadow": true,
+            "receiveShadow": true,
+            "maxVisibleDistanceMeters": 260,
+            "shadowDistanceMeters": 70
+          },
+          "editor": {
+            "icon": "package",
+            "color": "#b78851",
+            "placement": "single",
+            "defaultRadiusMeters": 5
+          },
+          "validation": {
+            "requiresTerrain": true,
+            "maxSlopeDegrees": 18,
+            "blocksNav": true
+          }
+        },
+        "bridge-debris": {
+          "layer": "prop",
+          "collision": {
+            "type": "box",
+            "radiusMeters": 5,
+            "heightMeters": 2.4
+          },
+          "render": {
+            "kind": "gltf",
+            "path": "../../assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf",
+            "targetHeightMeters": 2.1,
+            "baseScale": 1.2,
+            "castShadow": true,
+            "receiveShadow": true,
+            "maxVisibleDistanceMeters": 260,
+            "shadowDistanceMeters": 70
+          },
+          "editor": {
+            "icon": "package-open",
+            "color": "#a98769",
+            "placement": "scatter",
+            "defaultRadiusMeters": 6
+          },
+          "scatter": {
+            "mode": "prefab",
+            "densityPerSquareMeter": 0.008,
+            "minSpacingMeters": 4,
+            "alignToTerrain": true,
+            "avoidLayers": [
+              "water"
+            ]
+          },
+          "validation": {
+            "requiresTerrain": true,
+            "maxSlopeDegrees": 18,
+            "blocksNav": true
+          }
+        }
+      },
       "cells": {
         "-4,-4": {
           "path": "cooked/maps/main/objects/cells/c_m4_m4.objectpack",
@@ -5403,8 +5864,48 @@
   "package": {
     "layout": "content-addressed-sha256-v1",
     "blobRoot": "cooked/blobs/sha256",
-    "artifactCount": 513,
+    "artifactCount": 547,
     "artifacts": {
+      "cooked/assets/model/boulder_01_1k.gltf/boulder_01_1k.gltf": {
+        "path": "cooked/assets/model/boulder_01_1k.gltf/boulder_01_1k.gltf",
+        "blobPath": "cooked/blobs/sha256/51/51487934db898b4c24072780a451e34eca5c02e3ada24a62bbc600bbc4019e92.gltf",
+        "kind": "world-object-model",
+        "byteLength": 2773,
+        "sha256": "51487934db898b4c24072780a451e34eca5c02e3ada24a62bbc600bbc4019e92",
+        "sourcePath": "assets/model/boulder_01_1k.gltf/boulder_01_1k.gltf"
+      },
+      "cooked/assets/model/boulder_01_1k.gltf/boulder_01.bin": {
+        "path": "cooked/assets/model/boulder_01_1k.gltf/boulder_01.bin",
+        "blobPath": "cooked/blobs/sha256/7f/7f5b06503d62bd95bfe9c6b8a354a5cc8ff04a4d271a8cf87a3e3125db4232d7.bin",
+        "kind": "world-object-model",
+        "byteLength": 2938808,
+        "sha256": "7f5b06503d62bd95bfe9c6b8a354a5cc8ff04a4d271a8cf87a3e3125db4232d7",
+        "sourcePath": "assets/model/boulder_01_1k.gltf/boulder_01.bin"
+      },
+      "cooked/assets/model/boulder_01_1k.gltf/textures/boulder_01_arm_1k.jpg": {
+        "path": "cooked/assets/model/boulder_01_1k.gltf/textures/boulder_01_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/c5/c57187c5746b6be913fa53846cb44ff78743e7ca5000f131c9627b99563c2b87.jpg",
+        "kind": "world-object-model",
+        "byteLength": 659386,
+        "sha256": "c57187c5746b6be913fa53846cb44ff78743e7ca5000f131c9627b99563c2b87",
+        "sourcePath": "assets/model/boulder_01_1k.gltf/textures/boulder_01_arm_1k.jpg"
+      },
+      "cooked/assets/model/boulder_01_1k.gltf/textures/boulder_01_diff_1k.jpg": {
+        "path": "cooked/assets/model/boulder_01_1k.gltf/textures/boulder_01_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/c3/c38f0e918f6dc16b8d386ba3cdd89805c78320c119a1ceec85856f82b09a65b8.jpg",
+        "kind": "world-object-model",
+        "byteLength": 987467,
+        "sha256": "c38f0e918f6dc16b8d386ba3cdd89805c78320c119a1ceec85856f82b09a65b8",
+        "sourcePath": "assets/model/boulder_01_1k.gltf/textures/boulder_01_diff_1k.jpg"
+      },
+      "cooked/assets/model/boulder_01_1k.gltf/textures/boulder_01_nor_gl_1k.jpg": {
+        "path": "cooked/assets/model/boulder_01_1k.gltf/textures/boulder_01_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/08/0810cf6e89d89bb6eb065b4d2e2855288f5dcbd2c15c6e40ab90d462021b50aa.jpg",
+        "kind": "world-object-model",
+        "byteLength": 1183552,
+        "sha256": "0810cf6e89d89bb6eb065b4d2e2855288f5dcbd2c15c6e40ab90d462021b50aa",
+        "sourcePath": "assets/model/boulder_01_1k.gltf/textures/boulder_01_nor_gl_1k.jpg"
+      },
       "cooked/assets/model/fern_02_1k.gltf/fern_02_1k.gltf": {
         "path": "cooked/assets/model/fern_02_1k.gltf/fern_02_1k.gltf",
         "blobPath": "cooked/blobs/sha256/33/33974295ee19670af4877705fc7d91f33f42d6302f0d44a625e072271223031f.gltf",
@@ -5477,6 +5978,70 @@
         "sha256": "45bce132c6e96a0864bc89ab5da51361ab3f4afa83a6669ae499ab5ca811f621",
         "sourcePath": "assets/model/fern_02_1k.gltf/textures/fern_02_nor_gl_1k.jpg"
       },
+      "cooked/assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf": {
+        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf",
+        "blobPath": "cooked/blobs/sha256/ee/eeea9853deb63e43510f8d9d6af21963c88adab77e17ccac9f9b8d3a7d34a923.gltf",
+        "kind": "world-object-model",
+        "byteLength": 21127,
+        "sha256": "eeea9853deb63e43510f8d9d6af21963c88adab77e17ccac9f9b8d3a7d34a923",
+        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf"
+      },
+      "cooked/assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier.bin": {
+        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier.bin",
+        "blobPath": "cooked/blobs/sha256/6e/6ec10b84aaaa02800b095850fc92cf850632e5becd76698dc6609f40f05e1b60.bin",
+        "kind": "world-object-model",
+        "byteLength": 2651092,
+        "sha256": "6ec10b84aaaa02800b095850fc92cf850632e5becd76698dc6609f40f05e1b60",
+        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier.bin"
+      },
+      "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_arm_1k.jpg": {
+        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/4c/4c03bcee7d0fb9708be5e5ebc4dd5fd73789f4eb24b6391dff6167f11c3ce95d.jpg",
+        "kind": "world-object-model",
+        "byteLength": 722511,
+        "sha256": "4c03bcee7d0fb9708be5e5ebc4dd5fd73789f4eb24b6391dff6167f11c3ce95d",
+        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_arm_1k.jpg"
+      },
+      "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_diff_1k.jpg": {
+        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/26/2670a7eae2a3104e8537e61d90a8d8b169c7eb0f69b51622bec10e9472dc4573.jpg",
+        "kind": "world-object-model",
+        "byteLength": 764066,
+        "sha256": "2670a7eae2a3104e8537e61d90a8d8b169c7eb0f69b51622bec10e9472dc4573",
+        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_diff_1k.jpg"
+      },
+      "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_nor_gl_1k.jpg": {
+        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/b2/b23d7b0c23c9a41d50b7e1691e183902765aa4c21ac6ca6da678e874c4ddfb04.jpg",
+        "kind": "world-object-model",
+        "byteLength": 1055218,
+        "sha256": "b23d7b0c23c9a41d50b7e1691e183902765aa4c21ac6ca6da678e874c4ddfb04",
+        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_planks_nor_gl_1k.jpg"
+      },
+      "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_arm_1k.jpg": {
+        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/da/dacaff86f936bef10220aa60843efadae53039f064ad1a6fad735b912f1ba285.jpg",
+        "kind": "world-object-model",
+        "byteLength": 813524,
+        "sha256": "dacaff86f936bef10220aa60843efadae53039f064ad1a6fad735b912f1ba285",
+        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_arm_1k.jpg"
+      },
+      "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_diff_1k.jpg": {
+        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/da/da9e017b41e052d5e47558bb98e61b577f66e9d44eb2d26dc9b085e317bede9e.jpg",
+        "kind": "world-object-model",
+        "byteLength": 836152,
+        "sha256": "da9e017b41e052d5e47558bb98e61b577f66e9d44eb2d26dc9b085e317bede9e",
+        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_diff_1k.jpg"
+      },
+      "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_nor_gl_1k.jpg": {
+        "path": "cooked/assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/9b/9b2d7ca04642e249428969fa32189f36fcea8577a282dbccca1ac15d59dce18e.jpg",
+        "kind": "world-object-model",
+        "byteLength": 978238,
+        "sha256": "9b2d7ca04642e249428969fa32189f36fcea8577a282dbccca1ac15d59dce18e",
+        "sourcePath": "assets/model/modular_wooden_pier_1k.gltf/textures/modular_wooden_pier_poles_nor_gl_1k.jpg"
+      },
       "cooked/assets/model/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf": {
         "path": "cooked/assets/model/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf",
         "blobPath": "cooked/blobs/sha256/4a/4a857df7868d3731773ce2a0b45f595c4aebf0b9928f2215c0bd2ba32db1c1a8.gltf",
@@ -5548,6 +6113,174 @@
         "byteLength": 988408,
         "sha256": "5073a1d9563331d8a7bc57a36cae9f1d1d69470395be0c460a12c57026b5f1f0",
         "sourcePath": "assets/model/quiver_tree_02_1k.gltf/textures/quiver_tree_02_nor_gl_1k.jpg"
+      },
+      "cooked/assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_arm_1k.jpg": {
+        "path": "cooked/assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/d8/d845cd6ab45288c546267d059ebe1f8a737e174330fe9375e5f99e753f2f95d8.jpg",
+        "kind": "world-object-model",
+        "byteLength": 825646,
+        "sha256": "d845cd6ab45288c546267d059ebe1f8a737e174330fe9375e5f99e753f2f95d8",
+        "sourcePath": "assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_arm_1k.jpg"
+      },
+      "cooked/assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_diff_1k.jpg": {
+        "path": "cooked/assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/78/781ebe420ac4d84f2e44b9e9937a596e3d5d90711d978a1392f8bf3771b5bf31.jpg",
+        "kind": "world-object-model",
+        "byteLength": 907451,
+        "sha256": "781ebe420ac4d84f2e44b9e9937a596e3d5d90711d978a1392f8bf3771b5bf31",
+        "sourcePath": "assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_diff_1k.jpg"
+      },
+      "cooked/assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_nor_gl_1k.jpg": {
+        "path": "cooked/assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/42/425117514b0386bb6df41cb64a61a624d2596472e05777483d4021b3285e3ceb.jpg",
+        "kind": "world-object-model",
+        "byteLength": 1238404,
+        "sha256": "425117514b0386bb6df41cb64a61a624d2596472e05777483d4021b3285e3ceb",
+        "sourcePath": "assets/model/tree_stump_01_1k.gltf/textures/tree_stump_01_nor_gl_1k.jpg"
+      },
+      "cooked/assets/model/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf": {
+        "path": "cooked/assets/model/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf",
+        "blobPath": "cooked/blobs/sha256/9c/9c66ba87d693f35eb404acaa96e0eeff831c295b61a0a903795584cbcc3527c9.gltf",
+        "kind": "world-object-model",
+        "byteLength": 2793,
+        "sha256": "9c66ba87d693f35eb404acaa96e0eeff831c295b61a0a903795584cbcc3527c9",
+        "sourcePath": "assets/model/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf"
+      },
+      "cooked/assets/model/tree_stump_01_1k.gltf/tree_stump_01.bin": {
+        "path": "cooked/assets/model/tree_stump_01_1k.gltf/tree_stump_01.bin",
+        "blobPath": "cooked/blobs/sha256/b4/b4d9ca70b3c908c4a638fbd6a23ed96c84055bbbf14cf44b89e31ad59fa21e0a.bin",
+        "kind": "world-object-model",
+        "byteLength": 965380,
+        "sha256": "b4d9ca70b3c908c4a638fbd6a23ed96c84055bbbf14cf44b89e31ad59fa21e0a",
+        "sourcePath": "assets/model/tree_stump_01_1k.gltf/tree_stump_01.bin"
+      },
+      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_arm_1k.jpg": {
+        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/35/35e34115f7657cadce27422730e936418a30e23397fb5c126591dff711acbf4b.jpg",
+        "kind": "world-object-model",
+        "byteLength": 852652,
+        "sha256": "35e34115f7657cadce27422730e936418a30e23397fb5c126591dff711acbf4b",
+        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_arm_1k.jpg"
+      },
+      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_diff_1k.jpg": {
+        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/63/639e616e8d69acaadbf69725bb3d13f07a28fdff6c6b15e1d7f0574336564c72.jpg",
+        "kind": "world-object-model",
+        "byteLength": 605063,
+        "sha256": "639e616e8d69acaadbf69725bb3d13f07a28fdff6c6b15e1d7f0574336564c72",
+        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_diff_1k.jpg"
+      },
+      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_nor_gl_1k.jpg": {
+        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/3d/3dfa658b4a38a711887c9e4a492a319b20e2a821e4e08435368f98fe0c78a1b8.jpg",
+        "kind": "world-object-model",
+        "byteLength": 538634,
+        "sha256": "3dfa658b4a38a711887c9e4a492a319b20e2a821e4e08435368f98fe0c78a1b8",
+        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel01_nor_gl_1k.jpg"
+      },
+      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_arm_1k.jpg": {
+        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/97/970de5e9f682d4ac2a2098c88dafc1e5a6c27cf1dbe31eb7ed3f8bc2a92eb58f.jpg",
+        "kind": "world-object-model",
+        "byteLength": 848051,
+        "sha256": "970de5e9f682d4ac2a2098c88dafc1e5a6c27cf1dbe31eb7ed3f8bc2a92eb58f",
+        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_arm_1k.jpg"
+      },
+      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_diff_1k.jpg": {
+        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/c7/c75f506a0c31093d4d3d425d4c979f49fce2dc99a8e6caefb50809fcf329845e.jpg",
+        "kind": "world-object-model",
+        "byteLength": 618495,
+        "sha256": "c75f506a0c31093d4d3d425d4c979f49fce2dc99a8e6caefb50809fcf329845e",
+        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_diff_1k.jpg"
+      },
+      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_nor_gl_1k.jpg": {
+        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/57/57c3d5682f299c97270228e3ec08f6c982fb2c2696ec30a74d0edbfe067235dd.jpg",
+        "kind": "world-object-model",
+        "byteLength": 555954,
+        "sha256": "57c3d5682f299c97270228e3ec08f6c982fb2c2696ec30a74d0edbfe067235dd",
+        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_barrel02_nor_gl_1k.jpg"
+      },
+      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_arm_1k.jpg": {
+        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/78/785b59a19add1951bcd54d7607c18fcafa5a09068349ac437640d495b45a62fd.jpg",
+        "kind": "world-object-model",
+        "byteLength": 904545,
+        "sha256": "785b59a19add1951bcd54d7607c18fcafa5a09068349ac437640d495b45a62fd",
+        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_arm_1k.jpg"
+      },
+      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_diff_1k.jpg": {
+        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/39/399134703c974ad4c8bc71107d513e8c89f5ca09f9b6175dc02e2e607b75c43d.jpg",
+        "kind": "world-object-model",
+        "byteLength": 672604,
+        "sha256": "399134703c974ad4c8bc71107d513e8c89f5ca09f9b6175dc02e2e607b75c43d",
+        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_diff_1k.jpg"
+      },
+      "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_nor_gl_1k.jpg": {
+        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/3b/3be77f6310507c9c37414809ba31c39c89621e8bde916893bd676d54a5ceade2.jpg",
+        "kind": "world-object-model",
+        "byteLength": 620276,
+        "sha256": "3be77f6310507c9c37414809ba31c39c89621e8bde916893bd676d54a5ceade2",
+        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/textures/wooden_barrels_01_pieces_nor_gl_1k.jpg"
+      },
+      "cooked/assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf": {
+        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf",
+        "blobPath": "cooked/blobs/sha256/ff/ff785e2150198c4cdb3cc74e532b02ce9574d6a7fc3606f5801fcbf68e3136af.gltf",
+        "kind": "world-object-model",
+        "byteLength": 31017,
+        "sha256": "ff785e2150198c4cdb3cc74e532b02ce9574d6a7fc3606f5801fcbf68e3136af",
+        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf"
+      },
+      "cooked/assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01.bin": {
+        "path": "cooked/assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01.bin",
+        "blobPath": "cooked/blobs/sha256/7d/7de8294b07ecb6bd57ea3542760fa45bbefc296a47dd044723eb599ffc56084f.bin",
+        "kind": "world-object-model",
+        "byteLength": 1243556,
+        "sha256": "7de8294b07ecb6bd57ea3542760fa45bbefc296a47dd044723eb599ffc56084f",
+        "sourcePath": "assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01.bin"
+      },
+      "cooked/assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_arm_1k.jpg": {
+        "path": "cooked/assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_arm_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/cd/cd0b031c3924905e16ffd78ead062c2cc274148c4104d09635310097738b4679.jpg",
+        "kind": "world-object-model",
+        "byteLength": 776699,
+        "sha256": "cd0b031c3924905e16ffd78ead062c2cc274148c4104d09635310097738b4679",
+        "sourcePath": "assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_arm_1k.jpg"
+      },
+      "cooked/assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_diff_1k.jpg": {
+        "path": "cooked/assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_diff_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/16/16653f4abaf4c1d9bca94bde3bd8c54d0ea9a5298d1648abcf57de1f7ecc34cc.jpg",
+        "kind": "world-object-model",
+        "byteLength": 711292,
+        "sha256": "16653f4abaf4c1d9bca94bde3bd8c54d0ea9a5298d1648abcf57de1f7ecc34cc",
+        "sourcePath": "assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_diff_1k.jpg"
+      },
+      "cooked/assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_nor_gl_1k.jpg": {
+        "path": "cooked/assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_nor_gl_1k.jpg",
+        "blobPath": "cooked/blobs/sha256/f4/f4ea44c7dc1686123d337039cb713d74e8a2dbc6d1bd2beeac276d06f5df3fab.jpg",
+        "kind": "world-object-model",
+        "byteLength": 594076,
+        "sha256": "f4ea44c7dc1686123d337039cb713d74e8a2dbc6d1bd2beeac276d06f5df3fab",
+        "sourcePath": "assets/model/wooden_crate_01_1k.gltf/textures/wooden_crate_01_nor_gl_1k.jpg"
+      },
+      "cooked/assets/model/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf": {
+        "path": "cooked/assets/model/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf",
+        "blobPath": "cooked/blobs/sha256/fd/fd9c6073acfc671e12b64666053f2805ae33aff5d3dbbcfe5c97c08c06644927.gltf",
+        "kind": "world-object-model",
+        "byteLength": 5612,
+        "sha256": "fd9c6073acfc671e12b64666053f2805ae33aff5d3dbbcfe5c97c08c06644927",
+        "sourcePath": "assets/model/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf"
+      },
+      "cooked/assets/model/wooden_crate_01_1k.gltf/wooden_crate_01.bin": {
+        "path": "cooked/assets/model/wooden_crate_01_1k.gltf/wooden_crate_01.bin",
+        "blobPath": "cooked/blobs/sha256/85/85f381f8035f7a6f2f3b848640894c6d3333b261946dd8a338c0fe19e0bea21e.bin",
+        "kind": "world-object-model",
+        "byteLength": 189408,
+        "sha256": "85f381f8035f7a6f2f3b848640894c6d3333b261946dd8a338c0fe19e0bea21e",
+        "sourcePath": "assets/model/wooden_crate_01_1k.gltf/wooden_crate_01.bin"
       },
       "cooked/assets/texture/aerial_beach_01_arm_1k.png": {
         "path": "cooked/assets/texture/aerial_beach_01_arm_1k.png",

@@ -6,6 +6,7 @@ import type { EditorAppSession } from "@editor/app";
 import type { TerrainEditor } from "@editor/runtime";
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import type { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
+import type { WorldObjectEditor } from "@editor/runtime/world-objects";
 import type { ActiveEditorType } from "../settings/tabs/TerrainEditorTab";
 import type { EditorMouseAction } from "@editor/settings";
 
@@ -15,6 +16,7 @@ interface UseEditorInputOptions {
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;
   vegetationEditor: VegetationEditor | null;
+  worldObjectEditor: WorldObjectEditor | null;
   activeEditor: ActiveEditorType;
 }
 
@@ -37,6 +39,7 @@ export function useEditorInput({
   terrainEditor,
   textureEditor,
   vegetationEditor,
+  worldObjectEditor,
   activeEditor,
 }: UseEditorInputOptions): EditorInputHandlers {
   const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -76,6 +79,8 @@ export function useEditorInput({
         textureEditor.startBrush();
       } else if (activeEditor === "vegetation") {
         vegetationEditor?.startBrush();
+      } else if (activeEditor === "object") {
+        worldObjectEditor?.startBrush();
       }
     } else if (action === "orbit" || action === "pan" || action === "zoom") {
       const pointer = getViewportPointer(e.clientX, e.clientY);
@@ -103,6 +108,8 @@ export function useEditorInput({
         textureEditor?.endBrush();
       } else if (activeEditor === "vegetation") {
         vegetationEditor?.endBrush();
+      } else if (activeEditor === "object") {
+        worldObjectEditor?.endBrush();
       }
     } else if (action === "orbit" || action === "pan" || action === "zoom") {
       const pointer = getViewportPointer(e.clientX, e.clientY);
@@ -134,6 +141,8 @@ export function useEditorInput({
             app.updateTextureBrushTarget(pointer.x, pointer.y);
           } else if (activeEditor === "vegetation") {
             app.updateVegetationBrushTarget(pointer.x, pointer.y);
+          } else if (activeEditor === "object") {
+            app.updateWorldObjectBrushTarget(pointer.x, pointer.y);
           }
         }
       }
@@ -155,6 +164,8 @@ export function useEditorInput({
           textureEditor?.endBrush();
         } else if (activeEditor === "vegetation") {
           vegetationEditor?.endBrush();
+        } else if (activeEditor === "object") {
+          worldObjectEditor?.endBrush();
         }
       } else if (action === "orbit" || action === "pan" || action === "zoom") {
         const pointer = getViewportPointer(e.clientX, e.clientY);
@@ -169,7 +180,7 @@ export function useEditorInput({
 
     window.addEventListener("mouseup", handleGlobalMouseUp);
     return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
-  }, [terrainEditor, textureEditor, vegetationEditor, activeEditor, appRef, hostRef]);
+  }, [terrainEditor, textureEditor, vegetationEditor, worldObjectEditor, activeEditor, appRef, hostRef]);
 
   useEffect(() => {
     const overlay = overlayRef.current;

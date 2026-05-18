@@ -103,6 +103,7 @@ export interface CookedCellAsset {
   format: string;
   cellSizePages: number;
   cellSizeMeters: number;
+  archetypes?: Record<string, unknown>;
   cells: CookedCellTable;
 }
 
@@ -566,6 +567,9 @@ function normalizeCellAsset(value: unknown, label: string): CookedCellAsset {
     format: readString(asset.format, `cooked ${label} format`),
     cellSizePages: readPositiveInteger(asset.cellSizePages, `cooked ${label} cellSizePages`),
     cellSizeMeters: readPositiveNumber(asset.cellSizeMeters, `cooked ${label} cellSizeMeters`),
+    archetypes: asset.archetypes === undefined
+      ? undefined
+      : readRecord(asset.archetypes, `cooked ${label} archetypes`),
     cells: normalizeCellTable(asset.cells, `cooked ${label} cells`),
   };
 }

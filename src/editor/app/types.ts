@@ -3,6 +3,7 @@ import type { ActiveEditorType } from "@editor/runtime/common";
 import type { EditorCameraAction, TerrainEditor } from "@editor/runtime/terrain/TerrainEditor";
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import type { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
+import type { WorldObjectEditor } from "@editor/runtime/world-objects";
 import type { EditorHistoryState } from "@editor/runtime/history/EditorCommandHistory";
 import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings";
 import type { MapData } from "@project/MapData";
@@ -11,6 +12,7 @@ export interface EditorAppSession extends RuntimeAppSession<EditorAppSettings, E
   getTerrainEditor(): TerrainEditor;
   getTextureEditor(): TextureEditor;
   getVegetationEditor(): VegetationEditor;
+  getWorldObjectEditor(): WorldObjectEditor;
   getEditorHistoryState(): EditorHistoryState;
   flushPendingEditorCommands(): Promise<void>;
   undoEditorCommand(): Promise<boolean>;
@@ -28,9 +30,11 @@ export interface EditorAppSession extends RuntimeAppSession<EditorAppSettings, E
   updateEditorBrushTarget(mouseX: number, mouseY: number): void;
   updateTextureBrushTarget(mouseX: number, mouseY: number): void;
   updateVegetationBrushTarget(mouseX: number, mouseY: number): void;
+  updateWorldObjectBrushTarget(mouseX: number, mouseY: number): void;
   loadTexturesFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void>;
   saveTexturesToMapDirectory(mapDirectory: string, mapData: MapData): Promise<void>;
   loadVegetationFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void>;
   saveVegetationToMapDirectory(mapDirectory: string): Promise<void>;
   loadWorldObjectsFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void>;
+  saveWorldObjectsToMapDirectory(mapDirectory: string): Promise<void>;
 }

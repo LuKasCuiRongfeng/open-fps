@@ -3,6 +3,7 @@ import type { EditorAppSession } from "@editor/app";
 import type { TerrainEditor } from "@editor/runtime";
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import type { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
+import type { WorldObjectEditor } from "@editor/runtime/world-objects";
 import type { EditorAppSettings, EditorAppSettingsPatch } from "@editor/settings";
 import type { MapData } from "@project/MapData";
 import type { EditorWorkspaceController, TerrainMode } from "@editor/ui/hooks/useEditorWorkspace";
@@ -21,6 +22,7 @@ type EditorSettingsPanelProps = {
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;
   vegetationEditor: VegetationEditor | null;
+  worldObjectEditor: WorldObjectEditor | null;
   editorWorkspace: EditorWorkspaceController;
   terrainMode: TerrainMode;
   activeEditor: ActiveEditorType;
@@ -39,6 +41,7 @@ export function EditorSettingsPanel({
   terrainEditor,
   textureEditor,
   vegetationEditor,
+  worldObjectEditor,
   editorWorkspace,
   terrainMode,
   activeEditor,
@@ -77,6 +80,7 @@ export function EditorSettingsPanel({
         terrainEditor,
         textureEditor,
         vegetationEditor,
+        worldObjectEditor,
         editorWorkspace,
         terrainMode,
         activeEditor,

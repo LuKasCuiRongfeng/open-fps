@@ -1,28 +1,9 @@
 // WorldPartitionPayloads: runtime payload contracts for cooked world partition cells.
 // WorldPartitionPayloads：cooked 世界分区 cell 的运行时 payload 契约。
 
-export type WorldObjectLayer = "road" | "water" | "poi" | "prop" | string;
+import type { WorldObjectCellPack } from "../objects";
 
-export interface WorldObjectEntry {
-  id: string;
-  layer: WorldObjectLayer;
-  archetype: string;
-  position: { x: number; y: number; z: number };
-  rotationY?: number;
-  radiusMeters?: number;
-  boundsMeters?: WorldBoundsMeters;
-  spline?: {
-    widthMeters?: number;
-    points?: Array<{ x: number; z: number }>;
-  };
-}
-
-export interface WorldObjectCellPack {
-  version: 1;
-  format: "world-object-cell-pack-v1";
-  cell: { key: string };
-  objects: WorldObjectEntry[];
-}
+export type { WorldObjectCellPack, WorldObjectEntry, WorldObjectLayer } from "../objects";
 
 export interface WorldCollisionCellPack {
   version: 1;

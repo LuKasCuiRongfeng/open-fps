@@ -237,6 +237,9 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     if (editorApp.getVegetationEditor().shouldSave) {
       editorApp.getVegetationEditor().applyToMapData(mapData);
     }
+    if (editorApp.getWorldObjectEditor().shouldSave) {
+      editorApp.getWorldObjectEditor().applyToMapData(mapData);
+    }
 
     const createNewProject = forceSaveAs || !currentProjectPath;
     const savedProject = createNewProject
@@ -258,6 +261,10 @@ export function useEditorWorkspace(): EditorWorkspaceController {
 
     if (editorApp.getVegetationEditor().shouldSave) {
       await editorApp.saveVegetationToMapDirectory(savedProject.activeMapDirectory);
+    }
+
+    if (editorApp.getWorldObjectEditor().shouldSave) {
+      await editorApp.saveWorldObjectsToMapDirectory(savedProject.activeMapDirectory);
     }
 
     editorApp.markMapDataSaved();
@@ -304,6 +311,9 @@ export function useEditorWorkspace(): EditorWorkspaceController {
     if (app.getVegetationEditor().shouldSave) {
       app.getVegetationEditor().applyToMapData(mapData);
     }
+    if (app.getWorldObjectEditor().shouldSave) {
+      app.getWorldObjectEditor().applyToMapData(mapData);
+    }
     const savedProject = await saveProjectMap(mapData, {
       settings,
       projectName: currentProjectMetadata?.name,
@@ -317,6 +327,10 @@ export function useEditorWorkspace(): EditorWorkspaceController {
 
     if (app.getVegetationEditor().shouldSave) {
       await app.saveVegetationToMapDirectory(savedProject.activeMapDirectory);
+    }
+
+    if (app.getWorldObjectEditor().shouldSave) {
+      await app.saveWorldObjectsToMapDirectory(savedProject.activeMapDirectory);
     }
 
     app.markMapDataSaved();

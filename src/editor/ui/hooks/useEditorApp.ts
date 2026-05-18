@@ -3,6 +3,7 @@ import { EditorApp, type EditorAppSession, type GameBootPhase } from "@editor/ap
 import type { TerrainEditor } from "@editor/runtime";
 import type { TextureEditor } from "@editor/runtime/texture/TextureEditor";
 import type { VegetationEditor } from "@editor/runtime/vegetation/VegetationEditor";
+import type { WorldObjectEditor } from "@editor/runtime/world-objects";
 import type { EditorAppSettings } from "@editor/settings";
 import type { MapData } from "@project/MapData";
 
@@ -23,6 +24,7 @@ interface UseEditorAppReturn {
   terrainEditor: TerrainEditor | null;
   textureEditor: TextureEditor | null;
   vegetationEditor: VegetationEditor | null;
+  worldObjectEditor: WorldObjectEditor | null;
   setSettings: React.Dispatch<React.SetStateAction<EditorAppSettings | null>>;
 }
 
@@ -44,6 +46,7 @@ export function useEditorApp({
   const [terrainEditor, setTerrainEditor] = useState<TerrainEditor | null>(null);
   const [textureEditor, setTextureEditor] = useState<TextureEditor | null>(null);
   const [vegetationEditor, setVegetationEditor] = useState<VegetationEditor | null>(null);
+  const [worldObjectEditor, setWorldObjectEditor] = useState<WorldObjectEditor | null>(null);
 
   bootInputsRef.current = { pendingMapData, pendingSettings, currentMapDirectory };
 
@@ -99,6 +102,7 @@ export function useEditorApp({
             setTerrainEditor(app.getTerrainEditor());
             setTextureEditor(app.getTextureEditor());
             setVegetationEditor(app.getVegetationEditor());
+            setWorldObjectEditor(app.getWorldObjectEditor());
 
             app.setOnTimeUpdate((timeOfDay) => {
               setSettings((prev) => {
@@ -139,6 +143,7 @@ export function useEditorApp({
     terrainEditor,
     textureEditor,
     vegetationEditor,
+    worldObjectEditor,
     setSettings,
   };
 }

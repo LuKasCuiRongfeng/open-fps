@@ -10,68 +10,461 @@
     "road-dirt-segment": {
       "layer": "road",
       "navCost": 0.45,
-      "clearsVegetation": true
+      "clearsVegetation": true,
+      "render": {
+        "kind": "ribbon",
+        "ribbonMaterial": "road"
+      },
+      "editor": {
+        "icon": "route",
+        "color": "#b9854f",
+        "placement": "spline",
+        "defaultRadiusMeters": 9
+      },
+      "scatter": {
+        "mode": "path",
+        "minSpacingMeters": 12,
+        "alignToTerrain": true,
+        "avoidLayers": [
+          "water"
+        ]
+      },
+      "validation": {
+        "requiresTerrain": true,
+        "maxSlopeDegrees": 18,
+        "clearsVegetation": true
+      }
     },
     "road-rocky-segment": {
       "layer": "road",
       "navCost": 0.65,
-      "clearsVegetation": true
+      "clearsVegetation": true,
+      "render": {
+        "kind": "ribbon",
+        "ribbonMaterial": "road"
+      },
+      "editor": {
+        "icon": "route",
+        "color": "#95806a",
+        "placement": "spline",
+        "defaultRadiusMeters": 6
+      },
+      "scatter": {
+        "mode": "path",
+        "minSpacingMeters": 10,
+        "alignToTerrain": true,
+        "avoidLayers": [
+          "water"
+        ]
+      },
+      "validation": {
+        "requiresTerrain": true,
+        "maxSlopeDegrees": 26,
+        "clearsVegetation": true
+      }
     },
     "road-forest-path": {
       "layer": "road",
       "navCost": 0.55,
-      "clearsVegetation": true
+      "clearsVegetation": true,
+      "render": {
+        "kind": "ribbon",
+        "ribbonMaterial": "road"
+      },
+      "editor": {
+        "icon": "route",
+        "color": "#7f9863",
+        "placement": "spline",
+        "defaultRadiusMeters": 5
+      },
+      "scatter": {
+        "mode": "path",
+        "minSpacingMeters": 10,
+        "alignToTerrain": true,
+        "avoidLayers": [
+          "water"
+        ]
+      },
+      "validation": {
+        "requiresTerrain": true,
+        "maxSlopeDegrees": 22,
+        "clearsVegetation": true
+      }
     },
     "river-segment": {
       "layer": "water",
       "navCost": 3.5,
-      "clearsVegetation": true
+      "clearsVegetation": true,
+      "render": {
+        "kind": "ribbon",
+        "ribbonMaterial": "water"
+      },
+      "editor": {
+        "icon": "waves",
+        "color": "#43a4d8",
+        "placement": "spline",
+        "defaultRadiusMeters": 18
+      },
+      "scatter": {
+        "mode": "path",
+        "minSpacingMeters": 16,
+        "alignToTerrain": true
+      },
+      "validation": {
+        "requiresTerrain": true,
+        "maxSlopeDegrees": 12,
+        "clearsVegetation": true
+      }
     },
     "stream-segment": {
       "layer": "water",
       "navCost": 2.5,
-      "clearsVegetation": true
+      "clearsVegetation": true,
+      "render": {
+        "kind": "ribbon",
+        "ribbonMaterial": "water"
+      },
+      "editor": {
+        "icon": "waves",
+        "color": "#64bfe5",
+        "placement": "spline",
+        "defaultRadiusMeters": 7
+      },
+      "scatter": {
+        "mode": "path",
+        "minSpacingMeters": 10,
+        "alignToTerrain": true
+      },
+      "validation": {
+        "requiresTerrain": true,
+        "maxSlopeDegrees": 18,
+        "clearsVegetation": true
+      }
     },
     "camp": {
       "layer": "poi",
       "navCost": 0.8,
-      "collision": true
+      "collision": {
+        "type": "box",
+        "radiusMeters": 10,
+        "heightMeters": 3
+      },
+      "render": {
+        "kind": "gltf",
+        "path": "../../assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf",
+        "targetHeightMeters": 2.4,
+        "baseScale": 1.8,
+        "castShadow": true,
+        "receiveShadow": true,
+        "maxVisibleDistanceMeters": 420,
+        "shadowDistanceMeters": 120
+      },
+      "editor": {
+        "icon": "landmark",
+        "color": "#d39a43",
+        "placement": "prefab",
+        "defaultRadiusMeters": 18
+      },
+      "prefab": [
+        {
+          "archetype": "supply-crates",
+          "offsetX": 7,
+          "offsetZ": -4,
+          "rotationY": 0.5,
+          "scale": 0.9
+        },
+        {
+          "archetype": "road-sign",
+          "offsetX": -9,
+          "offsetZ": 5,
+          "rotationY": -0.3,
+          "scale": 1
+        }
+      ],
+      "validation": {
+        "requiresTerrain": true,
+        "maxSlopeDegrees": 10,
+        "blocksNav": true,
+        "clearsVegetation": true
+      }
     },
     "lookout-tower": {
       "layer": "poi",
       "navCost": 1.1,
-      "collision": true
+      "collision": {
+        "type": "cylinder",
+        "radiusMeters": 8,
+        "heightMeters": 12
+      },
+      "render": {
+        "kind": "gltf",
+        "path": "../../assets/model/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf",
+        "targetHeightMeters": 8.5,
+        "baseScale": 1.4,
+        "castShadow": true,
+        "receiveShadow": true,
+        "maxVisibleDistanceMeters": 620,
+        "shadowDistanceMeters": 180
+      },
+      "editor": {
+        "icon": "binoculars",
+        "color": "#c9a56c",
+        "placement": "single",
+        "defaultRadiusMeters": 14
+      },
+      "validation": {
+        "requiresTerrain": true,
+        "maxSlopeDegrees": 16,
+        "blocksNav": true,
+        "clearsVegetation": true
+      }
     },
     "broken-bridge": {
       "layer": "poi",
       "navCost": 1.4,
-      "collision": true
+      "collision": {
+        "type": "box",
+        "radiusMeters": 16,
+        "heightMeters": 4
+      },
+      "render": {
+        "kind": "gltf",
+        "path": "../../assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf",
+        "targetHeightMeters": 3.2,
+        "baseScale": 3.8,
+        "castShadow": true,
+        "receiveShadow": true,
+        "maxVisibleDistanceMeters": 520,
+        "shadowDistanceMeters": 130
+      },
+      "editor": {
+        "icon": "bridge",
+        "color": "#b88d58",
+        "placement": "single",
+        "defaultRadiusMeters": 24
+      },
+      "validation": {
+        "requiresTerrain": true,
+        "maxSlopeDegrees": 14,
+        "blocksNav": true,
+        "clearsVegetation": true
+      }
     },
     "abandoned-homestead": {
       "layer": "poi",
       "navCost": 1,
-      "collision": true
+      "collision": {
+        "type": "box",
+        "radiusMeters": 14,
+        "heightMeters": 4
+      },
+      "render": {
+        "kind": "gltf",
+        "path": "../../assets/model/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf",
+        "targetHeightMeters": 3.6,
+        "baseScale": 5.8,
+        "castShadow": true,
+        "receiveShadow": true,
+        "maxVisibleDistanceMeters": 520,
+        "shadowDistanceMeters": 130
+      },
+      "editor": {
+        "icon": "home",
+        "color": "#ad8f65",
+        "placement": "prefab",
+        "defaultRadiusMeters": 28
+      },
+      "prefab": [
+        {
+          "archetype": "supply-crates",
+          "offsetX": -10,
+          "offsetZ": 8,
+          "rotationY": 0.2,
+          "scale": 1.1
+        },
+        {
+          "archetype": "split-rail-fence",
+          "offsetX": 18,
+          "offsetZ": -6,
+          "rotationY": 1.2,
+          "scale": 1
+        }
+      ],
+      "validation": {
+        "requiresTerrain": true,
+        "maxSlopeDegrees": 9,
+        "blocksNav": true,
+        "clearsVegetation": true
+      }
     },
     "forest-clearing": {
       "layer": "poi",
       "navCost": 0.7,
-      "collision": false
+      "collision": false,
+      "render": {
+        "kind": "gltf",
+        "path": "../../assets/model/boulder_01_1k.gltf/boulder_01_1k.gltf",
+        "targetHeightMeters": 2.2,
+        "baseScale": 1.4,
+        "castShadow": true,
+        "receiveShadow": true,
+        "maxVisibleDistanceMeters": 340,
+        "shadowDistanceMeters": 90
+      },
+      "editor": {
+        "icon": "circle",
+        "color": "#7ea06a",
+        "placement": "scatter",
+        "defaultRadiusMeters": 24
+      },
+      "scatter": {
+        "mode": "biome",
+        "densityPerSquareMeter": 0.004,
+        "minSpacingMeters": 18,
+        "alignToTerrain": true,
+        "avoidLayers": [
+          "road",
+          "water"
+        ]
+      },
+      "validation": {
+        "requiresTerrain": true,
+        "maxSlopeDegrees": 18,
+        "clearsVegetation": true
+      }
     },
     "road-sign": {
       "layer": "prop",
-      "collision": true
+      "collision": {
+        "type": "box",
+        "radiusMeters": 2,
+        "heightMeters": 2.6
+      },
+      "render": {
+        "kind": "gltf",
+        "path": "../../assets/model/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf",
+        "targetHeightMeters": 2.6,
+        "baseScale": 0.34,
+        "castShadow": true,
+        "receiveShadow": true,
+        "maxVisibleDistanceMeters": 220,
+        "shadowDistanceMeters": 55
+      },
+      "editor": {
+        "icon": "signpost",
+        "color": "#d8c071",
+        "placement": "single",
+        "defaultRadiusMeters": 3
+      },
+      "validation": {
+        "requiresTerrain": true,
+        "maxSlopeDegrees": 24,
+        "blocksNav": true
+      }
     },
     "split-rail-fence": {
       "layer": "prop",
-      "collision": true
+      "collision": {
+        "type": "box",
+        "radiusMeters": 8,
+        "heightMeters": 2
+      },
+      "render": {
+        "kind": "gltf",
+        "path": "../../assets/model/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf",
+        "targetHeightMeters": 1.8,
+        "baseScale": 2.8,
+        "castShadow": true,
+        "receiveShadow": true,
+        "maxVisibleDistanceMeters": 260,
+        "shadowDistanceMeters": 60
+      },
+      "editor": {
+        "icon": "fence",
+        "color": "#b28b62",
+        "placement": "spline",
+        "defaultRadiusMeters": 8
+      },
+      "scatter": {
+        "mode": "path",
+        "minSpacingMeters": 7,
+        "alignToTerrain": true,
+        "avoidLayers": [
+          "water"
+        ]
+      },
+      "validation": {
+        "requiresTerrain": true,
+        "maxSlopeDegrees": 20,
+        "blocksNav": true
+      }
     },
     "supply-crates": {
       "layer": "prop",
-      "collision": true
+      "collision": {
+        "type": "box",
+        "radiusMeters": 3.5,
+        "heightMeters": 2.8
+      },
+      "render": {
+        "kind": "gltf",
+        "path": "../../assets/model/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf",
+        "targetHeightMeters": 2.2,
+        "baseScale": 1.35,
+        "castShadow": true,
+        "receiveShadow": true,
+        "maxVisibleDistanceMeters": 260,
+        "shadowDistanceMeters": 70
+      },
+      "editor": {
+        "icon": "package",
+        "color": "#b78851",
+        "placement": "single",
+        "defaultRadiusMeters": 5
+      },
+      "validation": {
+        "requiresTerrain": true,
+        "maxSlopeDegrees": 18,
+        "blocksNav": true
+      }
     },
     "bridge-debris": {
       "layer": "prop",
-      "collision": true
+      "collision": {
+        "type": "box",
+        "radiusMeters": 5,
+        "heightMeters": 2.4
+      },
+      "render": {
+        "kind": "gltf",
+        "path": "../../assets/model/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf",
+        "targetHeightMeters": 2.1,
+        "baseScale": 1.2,
+        "castShadow": true,
+        "receiveShadow": true,
+        "maxVisibleDistanceMeters": 260,
+        "shadowDistanceMeters": 70
+      },
+      "editor": {
+        "icon": "package-open",
+        "color": "#a98769",
+        "placement": "scatter",
+        "defaultRadiusMeters": 6
+      },
+      "scatter": {
+        "mode": "prefab",
+        "densityPerSquareMeter": 0.008,
+        "minSpacingMeters": 4,
+        "alignToTerrain": true,
+        "avoidLayers": [
+          "water"
+        ]
+      },
+      "validation": {
+        "requiresTerrain": true,
+        "maxSlopeDegrees": 18,
+        "blocksNav": true
+      }
     }
   },
   "cells": {

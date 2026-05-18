@@ -7,12 +7,23 @@ import {
   Group,
   Mesh,
   MeshBasicNodeMaterial,
+  type Object3D,
   type Scene,
 } from "three/webgpu";
 import { color } from "three/tsl";
 import { getPlatform } from "@/platform";
 import { formatUnknownError, isMissingFileSystemResourceError } from "@/platform/errorUtils";
 import type { MapData } from "@project/MapData";
+import {
+  WorldObjectGltfModelLibrary,
+  isGltfWorldObjectArchetype,
+  objectRadiusFromBounds,
+  type WorldObjectArchetypeDefinition,
+  type WorldObjectCellPack,
+  type WorldObjectCellRef,
+  type WorldObjectEntry,
+  type WorldObjectManifest,
+} from "@game/world/objects";
 
 const WORLD_OBJECTS_PATH = "objects/manifest.json";
 const ROAD_RIBBON_HEIGHT_METERS = 0.45;
@@ -24,44 +35,10 @@ const RIBBON_CHUNK_LENGTH_METERS = 96;
 
 const platform = getPlatform();
 
-type WorldObjectLayer = "road" | "water" | "poi" | "prop" | string;
-
-type WorldObjectManifest = {
-  cells: Record<string, WorldObjectCellRef>;
-};
-
-type WorldObjectCellRef = {
-  path: string;
-  objectCount: number;
-};
-
-type WorldObjectCellPack = {
-  objects: WorldObjectEntry[];
-};
-
-type WorldObjectEntry = {
-  id: string;
-  layer: WorldObjectLayer;
-  archetype: string;
-  position: { x: number; y: number; z: number };
-  rotationY?: number;
-  radiusMeters?: number;
-  boundsMeters?: {
-    minX: number;
-    minZ: number;
-    maxX: number;
-    maxZ: number;
-  };
-  spline?: {
-    widthMeters?: number;
-    points?: Array<{ x: number; z: number }>;
-  };
-};
-
 type WorldObjectTerrainAvailability = (xMeters: number, zMeters: number) => boolean;
 
 type WorldObjectOverlayEntry = {
-  mesh: Mesh;
+  object: Object3D;
   sampleX: number;
   sampleZ: number;
 };
@@ -74,7 +51,11 @@ export class WorldObjectOverlay {
   private readonly waterMaterial = createMaterial(0.24, 0.68, 1.0, 0.72);
   private readonly poiMaterial = createMaterial(1.0, 0.82, 0.22, 0.92);
   private readonly propMaterial = createMaterial(0.9, 0.92, 0.96, 0.82);
+  private readonly modelLibrary = new WorldObjectGltfModelLibrary();
   private readonly entries: WorldObjectOverlayEntry[] = [];
+  private archetypes: Record<string, WorldObjectArchetypeDefinition> = {};
+  private assetBaseDirectory = "";
+  private revision = 0;
   private terrainAvailability: WorldObjectTerrainAvailability | null = null;
   private scene: Scene | null = null;
 
@@ -104,6 +85,7 @@ export class WorldObjectOverlay {
 
   async loadFromMapDirectory(mapDirectory: string, mapData?: MapData | null): Promise<void> {
     this.clear();
+    this.assetBaseDirectory = mapDirectory;
     const manifestPath = joinPath(mapDirectory, mapData?.objectsPath ?? WORLD_OBJECTS_PATH);
     let manifestText: string;
     try {
@@ -118,15 +100,32 @@ export class WorldObjectOverlay {
       throw error;
     }
 
-    const manifest = parseManifest(manifestText, manifestPath);
+    const manifest = parseWorldObjectManifest(manifestText, manifestPath);
     const packs = await Promise.all(
-      Object.values(manifest.cells).map(async (cell) => this.loadCellPack(mapDirectory, cell)),
+      Object.entries(manifest.cells).map(async ([key, cell]) => [key, await this.loadCellPack(mapDirectory, cell)] as const),
     );
 
-    for (const object of packs.flatMap((pack) => pack.objects)) {
+    this.setLoadedData(mapDirectory, manifest, new Map(packs));
+  }
+
+  setLoadedData(
+    mapDirectory: string,
+    manifest: WorldObjectManifest,
+    packsByCell: ReadonlyMap<string, WorldObjectCellPack>,
+  ): void {
+    this.clear();
+    this.assetBaseDirectory = mapDirectory;
+    this.archetypes = manifest.archetypes ?? {};
+    this.revision += 1;
+    const revision = this.revision;
+
+    for (const object of Array.from(packsByCell.values()).flatMap((pack) => pack.objects)) {
       this.addObject(object);
     }
     this.updateTerrainVisibility();
+    if (revision !== this.revision) {
+      this.clear();
+    }
   }
 
   setTerrainAvailability(predicate: WorldObjectTerrainAvailability | null): void {
@@ -136,7 +135,7 @@ export class WorldObjectOverlay {
 
   updateTerrainVisibility(): void {
     for (const entry of this.entries) {
-      entry.mesh.visible = this.terrainAvailability?.(entry.sampleX, entry.sampleZ) ?? true;
+      entry.object.visible = this.terrainAvailability?.(entry.sampleX, entry.sampleZ) ?? true;
     }
   }
 
@@ -149,11 +148,12 @@ export class WorldObjectOverlay {
     this.waterMaterial.dispose();
     this.poiMaterial.dispose();
     this.propMaterial.dispose();
+    this.modelLibrary.dispose();
   }
 
   private async loadCellPack(mapDirectory: string, cell: WorldObjectCellRef): Promise<WorldObjectCellPack> {
     const cellPath = joinPath(mapDirectory, cell.path);
-    const pack = parseCellPack(await platform.files.readText(cellPath), cellPath);
+    const pack = parseWorldObjectCellPack(await platform.files.readText(cellPath), cellPath);
     if (pack.objects.length !== cell.objectCount) {
       throw new Error(`World object cell '${cell.path}' object count is stale`);
     }
@@ -174,7 +174,39 @@ export class WorldObjectOverlay {
       return;
     }
 
+    const archetype = this.archetypes[object.archetype];
+    if (isGltfWorldObjectArchetype(archetype) && this.assetBaseDirectory) {
+      this.addModelObject(object, archetype);
+      return;
+    }
+
     this.addMarkerObject(object);
+  }
+
+  private addModelObject(
+    object: WorldObjectEntry,
+    archetype: WorldObjectArchetypeDefinition & { render: NonNullable<WorldObjectArchetypeDefinition["render"]> & { path: string } },
+  ): void {
+    const revision = this.revision;
+    void this.modelLibrary.loadModel(this.assetBaseDirectory, archetype.render)
+      .then((model) => {
+        if (revision !== this.revision) {
+          return;
+        }
+
+        const modelObject = this.modelLibrary.createInstance(model, archetype.render, object);
+        modelObject.name = `world-object-model-${object.layer}-${object.id}`;
+        modelObject.renderOrder = this.root.renderOrder;
+        this.root.add(modelObject);
+        this.entries.push({ object: modelObject, sampleX: object.position.x, sampleZ: object.position.z });
+        this.updateTerrainVisibility();
+      })
+      .catch((error: unknown) => {
+        console.warn(`[WorldObjectOverlay] Failed to load model for '${object.archetype}'`, error);
+        if (revision === this.revision) {
+          this.addMarkerObject(object);
+        }
+      });
   }
 
   private addRibbonObject(object: WorldObjectEntry): void {
@@ -225,7 +257,7 @@ export class WorldObjectOverlay {
     mesh.frustumCulled = false;
     mesh.renderOrder = this.root.renderOrder;
     this.root.add(mesh);
-    this.entries.push({ mesh, sampleX: x, sampleZ: z });
+    this.entries.push({ object: mesh, sampleX: x, sampleZ: z });
   }
 
   private addMarkerObject(object: WorldObjectEntry): void {
@@ -239,7 +271,7 @@ export class WorldObjectOverlay {
     mesh.frustumCulled = false;
     mesh.renderOrder = this.root.renderOrder;
     this.root.add(mesh);
-    this.entries.push({ mesh, sampleX: object.position.x, sampleZ: object.position.z });
+    this.entries.push({ object: mesh, sampleX: object.position.x, sampleZ: object.position.z });
   }
 }
 
@@ -254,7 +286,7 @@ function createMaterial(red: number, green: number, blue: number, opacity: numbe
   return material;
 }
 
-function parseManifest(json: string, label: string): WorldObjectManifest {
+export function parseWorldObjectManifest(json: string, label: string): WorldObjectManifest {
   const parsed = JSON.parse(json) as unknown;
   if (!isRecord(parsed) || !isRecord(parsed.cells)) {
     throw new Error(`World object manifest '${label}' is invalid`);
@@ -269,16 +301,44 @@ function parseManifest(json: string, label: string): WorldObjectManifest {
     };
   }
 
-  return { cells };
+  return {
+    version: readOptionalFiniteNumber(parsed.version, `${label} version`),
+    format: readOptionalString(parsed.format, `${label} format`),
+    cellFormat: readOptionalString(parsed.cellFormat, `${label} cellFormat`),
+    cellSizePages: readOptionalFiniteNumber(parsed.cellSizePages, `${label} cellSizePages`),
+    cellSizeMeters: readOptionalFiniteNumber(parsed.cellSizeMeters, `${label} cellSizeMeters`),
+    cellsDirectory: readOptionalString(parsed.cellsDirectory, `${label} cellsDirectory`),
+    designSource: readOptionalString(parsed.designSource, `${label} designSource`),
+    archetypes: isRecord(parsed.archetypes)
+      ? parsed.archetypes as Record<string, WorldObjectArchetypeDefinition>
+      : undefined,
+    cells,
+  };
 }
 
-function parseCellPack(json: string, label: string): WorldObjectCellPack {
+export function parseWorldObjectCellPack(json: string, label: string): WorldObjectCellPack {
   const parsed = JSON.parse(json) as unknown;
   if (!isRecord(parsed) || !Array.isArray(parsed.objects)) {
     throw new Error(`World object cell pack '${label}' is invalid`);
   }
 
   return {
+    version: readOptionalFiniteNumber(parsed.version, `${label} version`),
+    format: readOptionalString(parsed.format, `${label} format`),
+    cell: isRecord(parsed.cell)
+      ? {
+        key: readString(parsed.cell.key, `${label} cell.key`),
+        x: readOptionalFiniteNumber(parsed.cell.x, `${label} cell.x`) ?? 0,
+        z: readOptionalFiniteNumber(parsed.cell.z, `${label} cell.z`) ?? 0,
+        pageRect: isRecord(parsed.cell.pageRect) ? {
+          minX: readFiniteNumber(parsed.cell.pageRect.minX, `${label} cell.pageRect.minX`),
+          maxX: readFiniteNumber(parsed.cell.pageRect.maxX, `${label} cell.pageRect.maxX`),
+          minZ: readFiniteNumber(parsed.cell.pageRect.minZ, `${label} cell.pageRect.minZ`),
+          maxZ: readFiniteNumber(parsed.cell.pageRect.maxZ, `${label} cell.pageRect.maxZ`),
+        } : undefined,
+        boundsMeters: readOptionalBounds(parsed.cell.boundsMeters, `${label} cell.boundsMeters`),
+      }
+      : undefined,
     objects: parsed.objects.map((object, index) => normalizeWorldObject(object, `${label} object ${index}`)),
   };
 }
@@ -342,15 +402,6 @@ function readOptionalSpline(value: unknown, label: string): WorldObjectEntry["sp
   };
 }
 
-function objectRadiusFromBounds(object: WorldObjectEntry): number {
-  const bounds = object.boundsMeters;
-  if (!bounds) {
-    return object.radiusMeters ?? MARKER_RADIUS_METERS;
-  }
-
-  return Math.max(bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ) * 0.5;
-}
-
 function readRecord(value: unknown, label: string): Record<string, unknown> {
   if (!isRecord(value)) {
     throw new Error(`${label} must be a JSON object`);
@@ -365,6 +416,14 @@ function readString(value: unknown, label: string): string {
   }
 
   return value;
+}
+
+function readOptionalString(value: unknown, label: string): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return readString(value, label);
 }
 
 function readFiniteNumber(value: unknown, label: string): number {
