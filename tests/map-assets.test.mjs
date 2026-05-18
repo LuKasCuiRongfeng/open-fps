@@ -15,7 +15,8 @@ import {
 } from "../scripts/map-generation/shared.mjs";
 
 const rootDirectory = path.resolve(import.meta.dirname, "..");
-const projectDirectory = path.join(rootDirectory, "test_pro");
+const defaultAssetProjectDirectory = "kunlun_wilds";
+const projectDirectory = path.join(rootDirectory, defaultAssetProjectDirectory);
 const mapDirectory = path.join(projectDirectory, "maps", "main");
 
 test("source region pack byte layouts match their manifests", async () => {
@@ -56,7 +57,7 @@ test("source region pack byte layouts match their manifests", async () => {
 
 test("map validator rejects a truncated source pack", async () => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "open-fps-map-"));
-  const tempProject = path.join(tempRoot, "test_pro");
+  const tempProject = path.join(tempRoot, defaultAssetProjectDirectory);
   try {
     await cp(projectDirectory, tempProject, { recursive: true });
     const terrain = await readJson(path.join(tempProject, "maps/main/terrain/height/manifest.json"));

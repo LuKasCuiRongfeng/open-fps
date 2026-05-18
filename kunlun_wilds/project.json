@@ -1,0 +1,10 @@
+{
+  "name": "Kunlun Wilds",
+  "created": 1774839549823,
+  "modified": 1779091442650,
+  "version": 3,
+  "currentMapId": "main",
+  "maps": [
+    "main"
+  ]
+}

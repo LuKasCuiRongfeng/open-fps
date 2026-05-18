@@ -56,7 +56,7 @@ import {
 } from "./CookedMapManifest";
 import { CookedWorldPartitionRuntime } from "./CookedWorldPartitionRuntime";
 
-export const DEFAULT_BUNDLED_PROJECT_URL = "/game-data/test_pro/";
+export const DEFAULT_BUNDLED_PROJECT_URL = "/game-data/kunlun_wilds/";
 
 export interface BundledGameProject {
   projectBaseUrl: string;

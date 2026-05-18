@@ -1,0 +1,314 @@
+{
+  "version": 1,
+  "format": "open-fps-asset-registry-v1",
+  "projectId": "kunlun_wilds",
+  "policy": {
+    "finalContentRequiresRegistryEntry": true,
+    "simpleGeometryFinalContentAllowed": false,
+    "acceptedLicenses": [
+      "CC0-1.0"
+    ],
+    "preferredProviders": [
+      "Poly Haven"
+    ]
+  },
+  "roots": {
+    "importedModels": "assets/imported/models",
+    "importedMaterials": "assets/imported/materials",
+    "sourceMetadata": "assets/sources"
+  },
+  "assets": {
+    "polyhaven:material:aerial_beach_01": {
+      "id": "polyhaven:material:aerial_beach_01",
+      "type": "material",
+      "name": "Aerial Beach 01",
+      "provider": "Poly Haven",
+      "sourceUrl": "https://polyhaven.com/a/aerial_beach_01",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "sourceMetadataPath": "assets/sources/polyhaven/materials/aerial_beach_01/source.json",
+      "imported": {
+        "root": "assets/imported/materials/aerial_beach_01_1k",
+        "resolution": "1k",
+        "files": {
+          "diffuse": "assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_diff_1k.jpg",
+          "normal": "assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_nor_gl_1k.png",
+          "arm": "assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_arm_1k.png",
+          "displacement": "assets/imported/materials/aerial_beach_01_1k/aerial_beach_01_disp_1k.png"
+        }
+      },
+      "usage": {
+        "terrainLayer": {
+          "key": "beachSand",
+          "name": "Beach Sand",
+          "scale": 7,
+          "splatMapIndex": 0,
+          "order": 0
+        }
+      }
+    },
+    "polyhaven:material:brown_mud_leaves_01": {
+      "id": "polyhaven:material:brown_mud_leaves_01",
+      "type": "material",
+      "name": "Brown Mud Leaves 01",
+      "provider": "Poly Haven",
+      "sourceUrl": "https://polyhaven.com/a/brown_mud_leaves_01",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "sourceMetadataPath": "assets/sources/polyhaven/materials/brown_mud_leaves_01/source.json",
+      "imported": {
+        "root": "assets/imported/materials/brown_mud_leaves_01_1k",
+        "resolution": "1k",
+        "files": {
+          "diffuse": "assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_diff_1k.jpg",
+          "normal": "assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_nor_gl_1k.png",
+          "arm": "assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_arm_1k.png",
+          "displacement": "assets/imported/materials/brown_mud_leaves_01_1k/brown_mud_leaves_01_disp_1k.png"
+        }
+      },
+      "usage": {
+        "terrainLayer": {
+          "key": "mudLeaves",
+          "name": "Mud Leaves",
+          "scale": 5,
+          "splatMapIndex": 0,
+          "order": 1
+        }
+      }
+    },
+    "polyhaven:material:gravel_embedded_concrete": {
+      "id": "polyhaven:material:gravel_embedded_concrete",
+      "type": "material",
+      "name": "Embedded Gravel Concrete",
+      "provider": "Poly Haven",
+      "sourceUrl": "https://polyhaven.com/a/gravel_embedded_concrete",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "sourceMetadataPath": "assets/sources/polyhaven/materials/gravel_embedded_concrete/source.json",
+      "imported": {
+        "root": "assets/imported/materials/gravel_embedded_concrete_1k",
+        "resolution": "1k",
+        "files": {
+          "diffuse": "assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_diff_1k.jpg",
+          "normal": "assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_nor_gl_1k.png",
+          "arm": "assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_arm_1k.png",
+          "displacement": "assets/imported/materials/gravel_embedded_concrete_1k/gravel_embedded_concrete_disp_1k.png"
+        }
+      },
+      "usage": {
+        "terrainLayer": {
+          "key": "gravelEmbeddedConcrete",
+          "name": "Embedded Gravel Concrete",
+          "scale": 4,
+          "splatMapIndex": 0,
+          "order": 2
+        }
+      }
+    },
+    "polyhaven:material:snow_03": {
+      "id": "polyhaven:material:snow_03",
+      "type": "material",
+      "name": "Snow 03",
+      "provider": "Poly Haven",
+      "sourceUrl": "https://polyhaven.com/a/snow_03",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "sourceMetadataPath": "assets/sources/polyhaven/materials/snow_03/source.json",
+      "imported": {
+        "root": "assets/imported/materials/snow_03_1k",
+        "resolution": "1k",
+        "files": {
+          "diffuse": "assets/imported/materials/snow_03_1k/snow_03_diff_1k.jpg",
+          "normal": "assets/imported/materials/snow_03_1k/snow_03_nor_gl_1k.png",
+          "arm": "assets/imported/materials/snow_03_1k/snow_03_arm_1k.png",
+          "displacement": "assets/imported/materials/snow_03_1k/snow_03_disp_1k.png"
+        }
+      },
+      "usage": {
+        "terrainLayer": {
+          "key": "snow",
+          "name": "Snow",
+          "scale": 5,
+          "splatMapIndex": 0,
+          "order": 3
+        }
+      }
+    },
+    "polyhaven:model:quiver_tree_02": {
+      "id": "polyhaven:model:quiver_tree_02",
+      "type": "model",
+      "name": "Quiver Tree 02",
+      "provider": "Poly Haven",
+      "sourceUrl": "https://polyhaven.com/a/quiver_tree_02",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "sourceMetadataPath": "assets/sources/polyhaven/models/quiver_tree_02/source.json",
+      "imported": {
+        "root": "assets/imported/models/quiver_tree_02_1k.gltf",
+        "resolution": "1k",
+        "files": {
+          "primary": "assets/imported/models/quiver_tree_02_1k.gltf/quiver_tree_02_1k.gltf",
+          "lod1": "assets/imported/models/quiver_tree_02_1k.gltf/lod1/quiver_tree_02_lod1.gltf",
+          "lod2": "assets/imported/models/quiver_tree_02_1k.gltf/lod2/quiver_tree_02_lod2.gltf"
+        }
+      },
+      "usage": {
+        "vegetationModel": {
+          "key": "quiverTree",
+          "name": "Quiver Tree",
+          "lod1DistanceMeters": 70,
+          "lod2DistanceMeters": 135,
+          "targetHeightMeters": 7.5,
+          "baseScale": 1.2,
+          "maxVisibleDistanceMeters": 260,
+          "shadowDistanceMeters": 70
+        }
+      }
+    },
+    "polyhaven:model:fern_02": {
+      "id": "polyhaven:model:fern_02",
+      "type": "model",
+      "name": "Fern 02",
+      "provider": "Poly Haven",
+      "sourceUrl": "https://polyhaven.com/a/fern_02",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "sourceMetadataPath": "assets/sources/polyhaven/models/fern_02/source.json",
+      "imported": {
+        "root": "assets/imported/models/fern_02_1k.gltf",
+        "resolution": "1k",
+        "files": {
+          "primary": "assets/imported/models/fern_02_1k.gltf/fern_02_1k.gltf",
+          "lod1": "assets/imported/models/fern_02_1k.gltf/lod1/fern_02_lod1.gltf",
+          "lod2": "assets/imported/models/fern_02_1k.gltf/lod2/fern_02_lod2.gltf"
+        }
+      },
+      "usage": {
+        "vegetationModel": {
+          "key": "fern",
+          "name": "Fern",
+          "lod1DistanceMeters": 35,
+          "lod2DistanceMeters": 75,
+          "targetHeightMeters": 0.9,
+          "baseScale": 0.85,
+          "maxVisibleDistanceMeters": 120,
+          "shadowDistanceMeters": 35
+        }
+      }
+    },
+    "polyhaven:model:boulder_01": {
+      "id": "polyhaven:model:boulder_01",
+      "type": "model",
+      "name": "Boulder 01",
+      "provider": "Poly Haven",
+      "sourceUrl": "https://polyhaven.com/a/boulder_01",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "sourceMetadataPath": "assets/sources/polyhaven/models/boulder_01/source.json",
+      "imported": {
+        "root": "assets/imported/models/boulder_01_1k.gltf",
+        "resolution": "1k",
+        "files": {
+          "primary": "assets/imported/models/boulder_01_1k.gltf/boulder_01_1k.gltf"
+        }
+      },
+      "usage": {
+        "worldObjects": [
+          "forest-clearing"
+        ]
+      }
+    },
+    "polyhaven:model:tree_stump_01": {
+      "id": "polyhaven:model:tree_stump_01",
+      "type": "model",
+      "name": "Tree Stump 01",
+      "provider": "Poly Haven",
+      "sourceUrl": "https://polyhaven.com/a/tree_stump_01",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "sourceMetadataPath": "assets/sources/polyhaven/models/tree_stump_01/source.json",
+      "imported": {
+        "root": "assets/imported/models/tree_stump_01_1k.gltf",
+        "resolution": "1k",
+        "files": {
+          "primary": "assets/imported/models/tree_stump_01_1k.gltf/tree_stump_01_1k.gltf"
+        }
+      },
+      "usage": {
+        "worldObjects": [
+          "lookout-tower",
+          "road-sign"
+        ]
+      }
+    },
+    "polyhaven:model:modular_wooden_pier": {
+      "id": "polyhaven:model:modular_wooden_pier",
+      "type": "model",
+      "name": "Modular Wooden Pier",
+      "provider": "Poly Haven",
+      "sourceUrl": "https://polyhaven.com/a/modular_wooden_pier",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "sourceMetadataPath": "assets/sources/polyhaven/models/modular_wooden_pier/source.json",
+      "imported": {
+        "root": "assets/imported/models/modular_wooden_pier_1k.gltf",
+        "resolution": "1k",
+        "files": {
+          "primary": "assets/imported/models/modular_wooden_pier_1k.gltf/modular_wooden_pier_1k.gltf"
+        }
+      },
+      "usage": {
+        "worldObjects": [
+          "broken-bridge",
+          "split-rail-fence"
+        ]
+      }
+    },
+    "polyhaven:model:wooden_crate_01": {
+      "id": "polyhaven:model:wooden_crate_01",
+      "type": "model",
+      "name": "Wooden Crate 01",
+      "provider": "Poly Haven",
+      "sourceUrl": "https://polyhaven.com/a/wooden_crate_01",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "sourceMetadataPath": "assets/sources/polyhaven/models/wooden_crate_01/source.json",
+      "imported": {
+        "root": "assets/imported/models/wooden_crate_01_1k.gltf",
+        "resolution": "1k",
+        "files": {
+          "primary": "assets/imported/models/wooden_crate_01_1k.gltf/wooden_crate_01_1k.gltf"
+        }
+      },
+      "usage": {
+        "worldObjects": [
+          "abandoned-homestead",
+          "supply-crates"
+        ]
+      }
+    },
+    "polyhaven:model:wooden_barrels_01": {
+      "id": "polyhaven:model:wooden_barrels_01",
+      "type": "model",
+      "name": "Wooden Barrels 01",
+      "provider": "Poly Haven",
+      "sourceUrl": "https://polyhaven.com/a/wooden_barrels_01",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "sourceMetadataPath": "assets/sources/polyhaven/models/wooden_barrels_01/source.json",
+      "imported": {
+        "root": "assets/imported/models/wooden_barrels_01_1k.gltf",
+        "resolution": "1k",
+        "files": {
+          "primary": "assets/imported/models/wooden_barrels_01_1k.gltf/wooden_barrels_01_1k.gltf"
+        }
+      },
+      "usage": {
+        "worldObjects": [
+          "camp",
+          "bridge-debris"
+        ]
+      }
+    }
+  }
+}

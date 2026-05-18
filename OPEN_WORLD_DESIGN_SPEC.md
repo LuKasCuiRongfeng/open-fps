@@ -1,6 +1,6 @@
 # `main` 10 平方公里世界设计规格
 
-本文档定义 `main` 地图从测试地形走向小型高密度开放世界样板的内容目标。它服务生成脚本、编辑器工具、world object、collision、nav 和 cooked build，而不是静态设定文案。
+本文档定义默认资产项目 `Kunlun Wilds` 下 `main` 地图从测试地形走向小型高密度开放世界样板的内容目标。`Kunlun Wilds` 取自中国神话中的昆仑意象，用作正式默认 source/cooked 资产项目；本文档服务生成脚本、编辑器工具、world object、collision、nav 和 cooked build，而不是静态设定文案。
 
 ## 基准约束
 
@@ -100,7 +100,7 @@
 
 ## 当前落地状态
 
-- `test_pro/assets` 已按项目级资产库组织：`registry.json` 记录模型、材质、用途、预算、来源和授权，`sources/polyhaven/.../source.json` 保留 CC0 来源元数据，`imported/models` 与 `imported/materials` 保存生成脚本和 cooked build 可引用的导入产物。
+- `kunlun_wilds/assets` 已按项目级资产库组织：`registry.json` 记录模型、材质、用途、预算、来源和授权，`sources/polyhaven/.../source.json` 保留 CC0 来源元数据，`imported/models` 与 `imported/materials` 保存生成脚本和 cooked build 可引用的导入产物。
 - `scripts/map-generation/world-object-assets.mjs` 已按本文档生成首批 source world objects：主环路、山脊支路、林中小径、主河、支流、5 个 POI 和若干道路/据点道具。
 - `objects/manifest.json` 已按 512m partition cell 写入 `.objectpack`，记录 byte length 与 SHA-256，并包含 archetype render/editor/scatter/validation 元数据。
 - cooked manifest v4 已把 asset registry 和 source objects 纳入 build input signature；object cooked cell pack 复制 source object pack，并把注册过的世界对象 GLTF archetype 资产复制到 `cooked/assets/imported/...` package。

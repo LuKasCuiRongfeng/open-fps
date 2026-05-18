@@ -30,14 +30,14 @@
 
 ## 当前阶段
 
-项目已经完成了从原型 JSON/散文件向专业 sidecar 资产体系的关键转向：
+项目已经完成了从原型 JSON/散文件向专业 sidecar 资产体系的关键转向。默认资产项目已正式命名为 `Kunlun Wilds`，目录为 `kunlun_wilds`；该名称取自中国神话中的昆仑意象，作为开放世界默认 source/cooked 资产项目继续演进。
 
 - `map.json` 保持为地图级 manifest，地形、纹理、植被和世界对象数据移出主清单。
 - 地形高度使用 `terrain/height/manifest.json` + `.heightpack` region pack。
 - 纹理绘制使用 `paint/layers.json` + `.paintpack` region pack。
 - 植被实例使用 `vegetation/models.json` + `.vegpack` region pack。
 - 世界对象使用 `objects/manifest.json` + `.objectpack` partition cell pack，首批道路、水体、POI 和道具已由 `OPEN_WORLD_DESIGN_SPEC.md` 规则生成，并已有 archetype render/editor/scatter/validation 元数据。
-- `test_pro/assets` 已从裸文件目录升级为项目级资产库：`registry.json` 统一登记资产用途、授权、来源和导入产物，`sources/` 保留 Poly Haven/CC0 来源元数据，`imported/` 存放生成脚本和运行时可引用的模型与材质。
+- `kunlun_wilds/assets` 已从裸文件目录升级为项目级资产库：`registry.json` 统一登记资产用途、授权、来源和导入产物，`sources/` 保留 Poly Haven/CC0 来源元数据，`imported/` 存放生成脚本和运行时可引用的模型与材质。
 - 已有 dirty region/page 保存、编辑器 undo/redo 和安全写入；terrain、paint、vegetation、world object 的 sidecar 保存均向 manifest-last 提交协议收敛。
 - terrain、paint、vegetation、objects manifest 已记录 region/cell pack 的 byte length 与 SHA-256，并在加载、保存、生成和资产校验中统一验证。
 - 已有 `main` 地图资产验证脚本，可检查 manifest、region pack、孤儿文件、截断文件和内容 hash。
@@ -110,7 +110,7 @@
 
 当前重点：
 
-- 保留 `test_pro/maps/main` 作为 source project。
+- 保留 `kunlun_wilds/maps/main` 作为默认 source project。
 - 增加 cooked map pipeline，把编辑器 sidecar 资产转换成游戏运行时更高效的资源包或索引。
 - 避免运行时依赖大量 JSON 解析、base64 转换和散文件随机读取。
 

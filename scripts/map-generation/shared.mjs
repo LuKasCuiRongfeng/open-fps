@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const rootDir = path.resolve(__dirname, "..", "..");
+export const defaultProjectDirectory = "kunlun_wilds";
 
 export const pageSizeMeters = 64;
 export const heightPageResolution = 129;
@@ -282,5 +283,5 @@ function readProjectArg(args) {
     }
   }
 
-  return "test_pro";
+  return defaultProjectDirectory;
 }

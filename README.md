@@ -12,6 +12,7 @@ Rendering uses Three.js WebGPU. The frontend uses React, TypeScript, Tailwind, a
 - `src/game/`: game app entry, UI, ECS, systems, world, and GPU runtime
 - `src/config/`: shared constants and tunables
 - `src/platform/`: browser and desktop platform boundary
+- `kunlun_wilds/`: formal default asset project, named `Kunlun Wilds` after the Kunlun motif in Chinese mythology
 - `src-tauri/`: Tauri backend and native integration
 - `AI_DEVELOPMENT_GUIDE.md`: project-specific AI development rules
 
@@ -41,7 +42,7 @@ pnpm web build all
 ```
 
 The editor and game targets use separate HTML and TypeScript entries. The editor build writes `dist-editor/editor.html`; the game build writes `dist-game/game.html`.
-The standalone game target loads read-only project data from `/game-data/test_pro/`, copied from the workspace `test_pro/` folder during game builds.
+The standalone game target loads read-only project data from `/game-data/kunlun_wilds/`, copied from the workspace `kunlun_wilds/` folder during game builds.
 
 Desktop:
 

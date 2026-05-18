@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 
 const PROJECT_FILE = "project.json";
+const DEFAULT_PROJECT_DIRECTORY = "kunlun_wilds";
 const ASSET_REGISTRY_PATH = "assets/registry.json";
 const ASSET_REGISTRY_FORMAT = "open-fps-asset-registry-v1";
 const ASSET_REGISTRY_VERSION = 1;
@@ -47,7 +48,7 @@ const COOKED_COLLISION_CELL_FORMAT = "world-collision-cell-pack-v1";
 const COOKED_NAV_CELL_FORMAT = "world-nav-cell-pack-v1";
 
 const options = parseArgs(process.argv.slice(2));
-const projectDirectory = path.resolve(options.projectDirectory ?? "test_pro");
+const projectDirectory = path.resolve(options.projectDirectory ?? DEFAULT_PROJECT_DIRECTORY);
 const requestedMapId = options.mapId;
 const diagnostics = [];
 let checkedFiles = 0;
@@ -1905,7 +1906,7 @@ function parseArgs(args) {
 }
 
 function printHelp() {
-  console.log("Usage: pnpm validate:map [--project test_pro] [--map main]");
+  console.log(`Usage: pnpm validate:map [--project ${DEFAULT_PROJECT_DIRECTORY}] [--map main]`);
 }
 
 function printDiagnostics(items) {

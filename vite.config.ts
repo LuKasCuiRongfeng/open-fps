@@ -7,9 +7,10 @@ import path from "path";
 
 const host = process.env.TAURI_DEV_HOST;
 type AppTarget = "editor" | "game";
-const GAME_DATA_PUBLIC_BASE = "/game-data/test_pro/";
-const GAME_DATA_SOURCE_DIR = path.resolve(__dirname, "test_pro");
-const GAME_DATA_OUTPUT_DIR = path.join("game-data", "test_pro");
+const DEFAULT_ASSET_PROJECT_ID = "kunlun_wilds";
+const GAME_DATA_PUBLIC_BASE = `/game-data/${DEFAULT_ASSET_PROJECT_ID}/`;
+const GAME_DATA_SOURCE_DIR = path.resolve(__dirname, DEFAULT_ASSET_PROJECT_ID);
+const GAME_DATA_OUTPUT_DIR = path.join("game-data", DEFAULT_ASSET_PROJECT_ID);
 
 const MIME_TYPES: Record<string, string> = {
     ".bin": "application/octet-stream",
@@ -82,8 +83,9 @@ function gameDataPlugin(appTarget: AppTarget): Plugin | null {
         async writeBundle() {
             // EN: Game builds carry read-only project data beside the app so runtime never opens an editor workspace.
             // 中文: 游戏构建把只读项目数据随应用一起输出，运行时不再打开编辑器工作区。
+            const gameDataDir = path.resolve(__dirname, "dist-game", "game-data");
             const outputDir = path.resolve(__dirname, "dist-game", GAME_DATA_OUTPUT_DIR);
-            await rm(outputDir, { recursive: true, force: true });
+            await rm(gameDataDir, { recursive: true, force: true });
             await cp(GAME_DATA_SOURCE_DIR, outputDir, { recursive: true });
         },
     };
@@ -146,7 +148,7 @@ export default defineConfig(({ mode }) => {
             watch: {
                 // 3. tell Vite to ignore native build output and editable project data
                 // 3. 告诉 Vite 忽略原生构建输出和可编辑项目数据
-                ignored: ["**/src-tauri/**", "**/test_pro/**"],
+                ignored: ["**/src-tauri/**", `**/${DEFAULT_ASSET_PROJECT_ID}/**`],
             },
         },
     };

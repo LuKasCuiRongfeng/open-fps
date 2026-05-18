@@ -17,7 +17,7 @@ assert.ok(preset, "main map preset should exist");
 const heightConfig = buildHeightConfig(preset);
 const heightAt = (x, z) => generateHeight(x, z, preset, heightConfig);
 const objects = createSemanticWorldObjects(heightAt);
-const assetRegistry = JSON.parse(await readFile(new URL("../test_pro/assets/registry.json", import.meta.url), "utf8"));
+const assetRegistry = JSON.parse(await readFile(new URL("../kunlun_wilds/assets/registry.json", import.meta.url), "utf8"));
 
 test("shared world semantics mark road, water, and POI clearance zones", () => {
   const road = sampleWorldSemantics(-670, -990, objects);
