@@ -47,7 +47,11 @@
 - cooked package 已生成 `content-addressed-sha256-v1` artifact index，并把 runtime artifact 同步写入 `cooked/blobs/sha256/...`。
 - world partition cell 已收敛到 `dependencies` 结构，统一挂载 terrain、paint、vegetation、objects、collision、nav 六类运行时分区依赖。
 - objects cooked cell pack 现在来自 source object pack，不再是空生成物；collision cell pack 由 terrain heightfield、水体 volume 和对象 blocker 派生；nav cell pack 由 terrain slope、道路、水体和碰撞 blocker 派生。
-- runtime world partition planner 已接入 game streaming hot path，可按玩家/摄像机位置生成 load/keep/unload cell、预取 object/collision/nav cell pack，并缓存已加载 payload。
+- runtime world partition planner 已接入 game streaming hot path，可按玩家/摄像机位置生成 load/keep/unload cell、预取 object/collision/nav cell pack、缓存已加载 payload，并实例化基础 runtime 世界对象。
+- game runtime 已把 cooked object cell pack 转成道路、水体、POI 和道具的可见代理；collision pack 已进入玩家水平阻挡解析，nav pack 已作为运行时资源缓存，等待后续 AI/调试消费。
+- 地形、水体/道路对象、paint、vegetation 和 cooked nav 已收敛到共享 world semantics 规则，避免各生成脚本各自维护一套道路、水体和 POI 语义。
+- 编辑器设置面板已有 World Diagnostics 页，可查看 source 资产健康、pack integrity、partition streaming、runtime payload 和可见对象/植被统计。
+- CI/release 已接入 `pnpm verify`，覆盖 lint、Node 回归测试、TypeScript 类型检查和地图资产校验。
 - 已有 [`OPEN_WORLD_DESIGN_SPEC.md`](OPEN_WORLD_DESIGN_SPEC.md)，定义 `main` 10 平方公里地图的区域、道路、水系、兴趣点和生成约束。
 
 当前最重要的方向是把这些能力从“真实但仍粗粒度的生产管线”推进到“可编辑、可局部重建、可视化调试且有性能预算的开放世界内容系统”。
@@ -110,12 +114,12 @@
 
 - 建立统一 cell 坐标体系，挂载 terrain、paint、vegetation、objects、collision、nav、audio 和事件数据。
 - 保持 cooked partition dependency schema 作为 object/collision/nav/audio/event 分区资产的统一入口。
-- 在现有 object/collision/nav 预取基础上，继续设计加载优先级、卸载策略、IO budget 和帧预算。
-- 编辑器提供分区可视化和加载状态调试。
+- 在现有 object/collision/nav 加载和基础实例化之上，继续设计加载优先级、取消策略、IO budget、帧预算和跨 cell 生命周期。
+- 编辑器继续扩展分区可视化、加载状态调试和 cell 边界诊断。
 
 验收标准：
 
-- 玩家/摄像机移动时，terrain 与 object/collision/nav cell pack 已按统一 cell 生命周期规划，下一步要把 payload 实例化为可见对象、物理和 AI 数据。
+- 玩家/摄像机移动时，terrain 与 object/collision/nav cell pack 已按统一 cell 生命周期规划；object 已有基础可见实例，collision 已进入玩家阻挡，nav 已进入运行时缓存。
 - 不同资产类型共享坐标、边界和调度策略。
 - 流式加载不会产生明显卡顿或内容突然消失。
 
@@ -128,6 +132,7 @@
 - 为 height/paint/vegetation pack 编解码补测试。
 - 为 dirty save、manifest-last commit、缺失 pack、截断 pack、恢复路径补测试。
 - 为地图生成脚本增加最小产物校验。
+- 保持 `pnpm verify` 作为本地与 CI 共同质量门禁。
 
 验收标准：
 
@@ -211,9 +216,9 @@
 
 验收标准：
 
-- 道路当前已生成导航成本，后续需要切地形、影响材质并清理植被。
-- 水体当前已进入 object/collision/nav 派生，后续需要河床高度、边缘材质和可视水面。
-- 世界对象能按 cell 被 runtime 预取，后续要实例化渲染并进入编辑器可视化。
+- 道路当前已生成导航成本，并已影响地形、材质和植被清理；后续需要 spline 编辑工具、道路 mesh/decal、车辙和更自然的边缘融合。
+- 水体当前已进入 object/collision/nav 派生，并影响地形、边缘材质和植被清理；后续需要更真实的河床高度、可视水面、湿地物种和浅/深水规则。
+- 世界对象能按 cell 被 runtime 预取和基础实例化；后续要替换代理几何为真实 mesh/decal/prop，并进入编辑事务提交。
 
 ### 11. 渲染质量与性能预算
 
@@ -237,9 +242,9 @@
 
 当前重点：
 
-- 继续强化已生成的 terrain/object/water collision pack，补 vegetation collision 策略。
-- 继续强化已生成的 navigation grid，补跨 cell link、调试可视化和局部重建。
-- 编辑器显示可行走区域、碰撞边界和导航问题。
+- 继续强化已生成的 terrain/object/water collision pack，补 vegetation collision 策略和更精确的形状表达。
+- 继续强化已生成的 navigation grid，补跨 cell link、AI 查询接口、调试可视化和局部重建。
+- 编辑器继续补可行走区域、碰撞边界和导航问题的可视化。
 
 验收标准：
 
@@ -285,7 +290,7 @@
 
 当前重点：
 
-- 增加资产健康面板、region/cell 可视化、streaming debug、LOD debug、保存状态和地图统计。
+- 在已有 World Diagnostics 基础上继续增强 region/cell 可视化、streaming debug、LOD debug、保存状态和地图统计。
 - 支持批量重建、区域锁定、局部重新生成、灾难恢复提示和验证结果跳转。
 - 所有 UI 保持紧凑、严肃的桌面编辑器风格。
 
@@ -329,11 +334,11 @@
 
 ## 近期优先级
 
-1. 将 generated empty object cell pack 升级为真实 world object source/cooked region pack，并接入道路、水体、兴趣点规则。
-2. 将 generated empty collision/nav cell pack 升级为由 terrain/object/vegetation 派生的 collision 和 navigation cooked build。
-3. 把 runtime world partition planner 接入 game streaming hot path，统一 terrain、paint、vegetation、objects、collision、nav 的加载、预取、取消和卸载预算。
-4. 为 content-addressed cooked package 增加发布包打包、重复 blob 清理、压缩策略和加载局部性排序。
-5. 将 `OPEN_WORLD_DESIGN_SPEC.md` 的道路、水体、区域主题和兴趣点约束转成可执行生成参数和编辑器调试视图。
+1. 把 runtime 世界对象代理替换为真实 mesh/decal/prop 实例，并补齐道路、水体和 POI 的编辑事务提交。
+2. 为 world partition streaming 增加载入优先级、取消策略、IO budget、帧预算和跨 cell 生命周期测试。
+3. 强化 collision/nav：跨 cell nav link、AI 查询接口、可行走/阻挡可视化、局部重建和 vegetation collision 策略。
+4. 继续升级地貌、材质和植被生态质量：真实河床、道路边缘、macro variation、湿地/林地物种规则和性能预算。
+5. 为 content-addressed cooked package 增加发布包打包、重复 blob 清理、压缩策略和加载局部性排序。
 
 ## 路线对齐自检
 

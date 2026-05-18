@@ -105,7 +105,10 @@
 - cooked manifest v4 已把 source objects 纳入 build input signature；object cooked cell pack 复制 source object pack。
 - collision cooked cell pack 已由 terrain heightfield、水体 volume、POI/prop blocker 派生。
 - nav cooked cell pack 已由 terrain slope、road cost、water blocker/cost 和 object blocker 派生粗粒度 grid。
-- game runtime 已接入 cooked world partition planner，并按玩家/摄像机位置预取 object/collision/nav cell pack。
+- game runtime 已接入 cooked world partition planner，并按玩家/摄像机位置加载 object/collision/nav cell pack。
+- game runtime 已把 object cell pack 实例化为基础道路、水体、POI 和道具代理；collision pack 已进入玩家水平阻挡解析，nav pack 已进入运行时缓存。
+- terrain、paint、vegetation、objects 和 cooked nav 已使用共享 world semantics 规则，使道路、水体和 POI 同时影响地形、材质、植被清理、对象和导航。
+- 编辑器已有 World Diagnostics 页，可检查 source pack integrity、资产健康、partition payload 和 streaming 运行状态。
 
 ## 验收标准
 
@@ -116,9 +119,9 @@
 - 至少 5 类兴趣点能进入 object cooked cell。
 - terrain/paint/vegetation/object/collision/nav 都能按 partition cell 追踪依赖。
 - validator 能发现缺失 object/collision/nav pack、过期 cook、hash mismatch 和 package blob 缺失。
-- runtime world partition planner 能根据玩家位置给出 load/keep/unload cell 和跨资产 dependency 列表。
+- runtime world partition planner 能根据玩家位置给出 load/keep/unload cell 和跨资产 dependency 列表，并能加载 object/collision/nav payload。
 
-已满足的基础项仍不代表最终开放世界质量完成；下一阶段重点是道路/水体可视化、地形/材质/植被联动、跨 cell nav link、编辑器调试和运行时对象实例化。
+已满足的基础项仍不代表最终开放世界质量完成；下一阶段重点是真实道路/水体表现、地貌/材质/植被质量提升、跨 cell nav link、碰撞/导航可视化、真实 mesh/prop 实例化和局部重建工具。
 
 ## 非目标
 
