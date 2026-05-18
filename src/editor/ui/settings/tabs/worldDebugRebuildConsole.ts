@@ -8,6 +8,27 @@ export type CookRunKind = "dryRun" | "cook";
 export type CookHistoryStatus = "running" | "success" | "error" | "skipped";
 export type CookQueueStatus = CookHistoryStatus | "queued" | "blocked";
 export type CookFailureCategory = "success" | "source" | "cooked" | "graph" | "pack" | "environment" | "validation" | "execution" | "unknown";
+export type CookTargetKind = "sourceManifest" | "sourcePack" | "cookedManifest" | "cookedPack" | "script" | "asset" | "unknown";
+export type CookTargetSectionId = "world-debug-asset-health" | "world-debug-rebuild-graph" | "world-debug-rebuild-plan" | "world-debug-partition-runtime" | "world-debug-streaming";
+export type CookRecoveryActionKind = "refreshDiagnostics" | "copyTargets" | "retryDryRun" | "retryCook" | "fullDryRun";
+
+export type CookTarget = {
+  path: string;
+  label: string;
+  kind: CookTargetKind;
+  stage: string | null;
+  scopeKey: keyof RebuildScopes | null;
+  scopeValue: string | null;
+  sectionId: CookTargetSectionId;
+  sectionLabel: string;
+};
+
+export type CookRecoveryAction = {
+  kind: CookRecoveryActionKind;
+  label: string;
+  tone: MetricTone;
+  detail: string;
+};
 
 export type CookFailureAnalysis = {
   category: CookFailureCategory;
@@ -16,6 +37,7 @@ export type CookFailureAnalysis = {
   detail: string;
   actions: string[];
   targets: string[];
+  targetDetails: CookTarget[];
 };
 
 export type CookHistoryEntry = {
@@ -29,6 +51,7 @@ export type CookHistoryEntry = {
   durationMs: number | null;
   command: string[];
   output: string;
+  request: PlatformCookMapRequest | null;
   analysis: CookFailureAnalysis;
 };
 
@@ -70,7 +93,7 @@ export const emptyRebuildLocks: RebuildLockState = {
   partitionCells: [],
 };
 
-const targetPattern = /(?:[A-Za-z]:)?[\w./\\-]+\.(?:json|heightpack|paintpack|vegpack|objectpack|mjs|glb|png|jpg|jpeg|webp)/g;
+const targetPattern = /(?:[A-Za-z]:)?[\w./\\-]+\.(?:json|heightpack|paintpack|vegpack|objectpack|collisionpack|navpack|mjs|glb|png|jpg|jpeg|webp)/g;
 
 export function createRunningCookEntry(
   id: string,
@@ -89,6 +112,7 @@ export function createRunningCookEntry(
     durationMs: null,
     command: createDisplayCommand(request),
     output: "",
+    request: cloneCookRequest(request),
     analysis: createNeutralAnalysis("Running", "Cook command is still running."),
   };
 }
@@ -122,26 +146,22 @@ export function failCookEntry(entry: CookHistoryEntry, message: string, finished
 }
 
 export function createCookQueue(request: PlatformCookMapRequest, conflicts: readonly LockConflict[] = []): CookQueueItem[] {
-  const blockedReason = formatLockConflictReason(conflicts);
-  const status: CookQueueStatus = blockedReason ? "blocked" : "queued";
   return [
-    {
-      id: createCookId("dryRun"),
-      kind: "dryRun",
-      label: "Dry Run Review",
-      status,
-      request: { ...request, dryRun: true },
-      blockedReason,
-    },
-    {
-      id: createCookId("cook"),
-      kind: "cook",
-      label: request.full ? "Full Cook" : "Scoped Cook",
-      status,
-      request: { ...request, dryRun: false },
-      blockedReason,
-    },
+    createCookQueueItem("dryRun", request, conflicts),
+    createCookQueueItem("cook", request, conflicts),
   ];
+}
+
+export function createCookQueueItem(kind: CookRunKind, request: PlatformCookMapRequest, conflicts: readonly LockConflict[] = []): CookQueueItem {
+  const blockedReason = formatLockConflictReason(conflicts);
+  return {
+    id: createCookId(kind),
+    kind,
+    label: kind === "dryRun" ? "Dry Run Review" : request.full ? "Full Cook" : "Scoped Cook",
+    status: blockedReason ? "blocked" : "queued",
+    request: { ...cloneCookRequest(request), dryRun: kind === "dryRun" },
+    blockedReason,
+  };
 }
 
 export function createCookId(kind: CookRunKind): string {
@@ -160,7 +180,7 @@ export function analyzeCookText(text: string, succeeded: boolean): CookFailureAn
       tone: "success",
       detail: "Cook command completed successfully.",
       actions: ["Refresh diagnostics"],
-      targets: extractCookTargets(text),
+      ...createTargetAnalysisFields(text),
     };
   }
 
@@ -189,6 +209,100 @@ export function analyzeCookText(text: string, succeeded: boolean): CookFailureAn
 
 export function classifyDiagnosticIssue(issue: string): CookFailureAnalysis {
   return analyzeCookText(issue, false);
+}
+
+export function createCookTarget(path: string): CookTarget {
+  const normalizedPath = normalizeTargetPath(path);
+  const stage = inferTargetStage(normalizedPath);
+  const scope = inferTargetScope(normalizedPath, stage);
+  const kind = inferTargetKind(normalizedPath);
+  const section = inferTargetSection(normalizedPath, stage);
+  return {
+    path: normalizedPath,
+    label: formatTargetLabel(normalizedPath, stage, scope?.value ?? null),
+    kind,
+    stage,
+    scopeKey: scope?.key ?? null,
+    scopeValue: scope?.value ?? null,
+    sectionId: section.id,
+    sectionLabel: section.label,
+  };
+}
+
+export function extractCookTargetDetails(text: string): CookTarget[] {
+  const targets = new Map<string, CookTarget>();
+  for (const match of text.matchAll(targetPattern)) {
+    const target = createCookTarget(match[0]);
+    targets.set(target.path, target);
+    if (targets.size >= 6) {
+      break;
+    }
+  }
+
+  return [...targets.values()];
+}
+
+export function createCookRecoveryActions(entry: CookHistoryEntry): CookRecoveryAction[] {
+  const actions: CookRecoveryAction[] = [
+    { kind: "refreshDiagnostics", label: "Refresh", tone: "info", detail: "Refresh source and cooked diagnostics." },
+  ];
+  if (entry.analysis.targets.length > 0) {
+    actions.push({ kind: "copyTargets", label: "Copy Targets", tone: "neutral", detail: "Copy parsed validation targets." });
+  }
+  if (entry.status === "success" || !entry.request) {
+    return actions;
+  }
+
+  actions.push({ kind: "retryDryRun", label: "Queue Dry Run", tone: "info", detail: "Queue the same request as a dry-run review." });
+  if (entry.kind === "cook") {
+    actions.push({ kind: "retryCook", label: "Queue Cook", tone: "warning", detail: "Queue the same cook request again." });
+  }
+  if (!entry.request.full && entry.analysis.category !== "environment") {
+    actions.push({ kind: "fullDryRun", label: "Full Dry Run", tone: "warning", detail: "Queue a full-map dry-run to recover ambiguous scope state." });
+  }
+
+  return actions;
+}
+
+export function createTargetRecoveryRequest(projectPath: string | null, mapId: string | null, target: CookTarget, dryRun: boolean): PlatformCookMapRequest | null {
+  if (!projectPath || !mapId) {
+    return null;
+  }
+
+  if (!target.stage || target.stage === "generationGraph") {
+    return createFullRecoveryRequest(projectPath, mapId, dryRun);
+  }
+
+  const scopes = createEmptyScopes();
+  if (target.scopeKey && target.scopeValue) {
+    scopes[target.scopeKey] = [target.scopeValue];
+  }
+
+  return {
+    projectPath,
+    mapId,
+    dryRun,
+    full: false,
+    changedStages: [target.stage],
+    scopes,
+  };
+}
+
+export function createEntryRecoveryRequest(entry: CookHistoryEntry, action: CookRecoveryActionKind): PlatformCookMapRequest | null {
+  if (!entry.request) {
+    return null;
+  }
+
+  switch (action) {
+    case "retryDryRun":
+      return { ...cloneCookRequest(entry.request), dryRun: true };
+    case "retryCook":
+      return { ...cloneCookRequest(entry.request), dryRun: false };
+    case "fullDryRun":
+      return createFullRecoveryRequest(entry.request.projectPath, entry.request.mapId, true);
+    default:
+      return null;
+  }
 }
 
 export function normalizeRebuildLocks(value: Partial<RebuildLockState> | null | undefined): RebuildLockState {
@@ -318,12 +432,12 @@ function createAnalysis(
     tone: category === "success" ? "success" : category === "execution" || category === "unknown" ? "danger" : "warning",
     detail,
     actions,
-    targets: extractCookTargets(text),
+    ...createTargetAnalysisFields(text),
   };
 }
 
 function createNeutralAnalysis(label: string, detail: string): CookFailureAnalysis {
-  return { category: "unknown", label, tone: "info", detail, actions: [], targets: [] };
+  return { category: "unknown", label, tone: "info", detail, actions: [], targets: [], targetDetails: [] };
 }
 
 function createScopeSummary(key: keyof RebuildScopes, label: string, values: readonly string[]): ScopeSummary {
@@ -405,16 +519,12 @@ function appendScopeArgs(args: string[], flag: string, values: readonly string[]
   }
 }
 
-function extractCookTargets(text: string): string[] {
-  const targets = new Set<string>();
-  for (const match of text.matchAll(targetPattern)) {
-    targets.add(match[0].replace(/\\/g, "/"));
-    if (targets.size >= 6) {
-      break;
-    }
-  }
-
-  return [...targets];
+function createTargetAnalysisFields(text: string): Pick<CookFailureAnalysis, "targets" | "targetDetails"> {
+  const targetDetails = extractCookTargetDetails(text);
+  return {
+    targets: targetDetails.map((target) => target.path),
+    targetDetails,
+  };
 }
 
 function formatDisplayCommandArg(value: string): string {
@@ -428,4 +538,169 @@ export function summarizeLockScopes(locks: RebuildLockState): ScopeSummary[] {
     createScopeSummary("vegetationRegions", "Vegetation", locks.vegetationRegions),
     createScopeSummary("partitionCells", "Cells", locks.partitionCells),
   ];
+}
+
+function cloneCookRequest(request: PlatformCookMapRequest): PlatformCookMapRequest {
+  return {
+    projectPath: request.projectPath,
+    mapId: request.mapId,
+    dryRun: request.dryRun,
+    full: request.full,
+    changedStages: [...request.changedStages],
+    scopes: {
+      terrainRegions: [...request.scopes.terrainRegions],
+      paintRegions: [...request.scopes.paintRegions],
+      vegetationRegions: [...request.scopes.vegetationRegions],
+      partitionCells: [...request.scopes.partitionCells],
+    },
+  };
+}
+
+function createFullRecoveryRequest(projectPath: string, mapId: string, dryRun: boolean): PlatformCookMapRequest {
+  return {
+    projectPath,
+    mapId,
+    dryRun,
+    full: true,
+    changedStages: [],
+    scopes: createEmptyScopes(),
+  };
+}
+
+function createEmptyScopes(): RebuildScopes {
+  return {
+    terrainRegions: [],
+    paintRegions: [],
+    vegetationRegions: [],
+    partitionCells: [],
+  };
+}
+
+function normalizeTargetPath(path: string): string {
+  return path.replace(/\\/g, "/").replace(/^([A-Za-z]:)?\/+/, "");
+}
+
+function inferTargetKind(path: string): CookTargetKind {
+  const normalized = path.toLowerCase();
+  if (normalized.endsWith(".mjs")) {
+    return "script";
+  }
+  if (/\.(glb|gltf|png|jpe?g|webp)$/.test(normalized)) {
+    return "asset";
+  }
+  if (/\.(heightpack|paintpack|vegpack|objectpack|collisionpack|navpack)$/.test(normalized)) {
+    return normalized.includes("cooked/maps/") ? "cookedPack" : "sourcePack";
+  }
+  if (normalized.endsWith(".json")) {
+    return normalized.includes("cooked/maps/") ? "cookedManifest" : "sourceManifest";
+  }
+
+  return "unknown";
+}
+
+function inferTargetStage(path: string): string | null {
+  const normalized = path.toLowerCase();
+  if (normalized.includes("assets/registry.json")) {
+    return "assetRegistry";
+  }
+  if (normalized.includes("generation/graph.json")) {
+    return "generationGraph";
+  }
+  if (normalized.includes("terrain/height/")) {
+    return "terrain";
+  }
+  if (normalized.includes("paint/")) {
+    return "paint";
+  }
+  if (normalized.includes("vegetation/")) {
+    return "vegetation";
+  }
+  if (normalized.includes("objects/")) {
+    return "objects";
+  }
+  if (normalized.includes("collision/")) {
+    return "collision";
+  }
+  if (normalized.includes("nav/")) {
+    return "nav";
+  }
+
+  return null;
+}
+
+function inferTargetScope(path: string, stage: string | null): { key: keyof RebuildScopes; value: string } | null {
+  const gridKey = parseTargetGridKey(path);
+  if (!gridKey) {
+    return null;
+  }
+
+  switch (stage) {
+    case "terrain":
+      return { key: "terrainRegions", value: gridKey };
+    case "paint":
+      return { key: "paintRegions", value: gridKey };
+    case "vegetation":
+      return { key: "vegetationRegions", value: gridKey };
+    case "objects":
+    case "collision":
+    case "nav":
+      return { key: "partitionCells", value: gridKey };
+    default:
+      return null;
+  }
+}
+
+function inferTargetSection(path: string, stage: string | null): { id: CookTargetSectionId; label: string } {
+  const normalized = path.toLowerCase();
+  if (stage === "generationGraph" || normalized.endsWith(".mjs")) {
+    return { id: "world-debug-rebuild-graph", label: "Rebuild Graph" };
+  }
+  if (stage === "collision" || stage === "nav") {
+    return { id: "world-debug-partition-runtime", label: "Partition Runtime" };
+  }
+  if (normalized.includes("cooked/maps/")) {
+    return { id: "world-debug-rebuild-plan", label: "Rebuild Plan" };
+  }
+
+  return { id: "world-debug-asset-health", label: "Asset Health" };
+}
+
+function parseTargetGridKey(path: string): string | null {
+  const fileName = path.split("/").pop() ?? path;
+  const match = /^[rc]_((?:m)?\d+|-?\d+)_((?:m)?\d+|-?\d+)\.[^.]+$/.exec(fileName);
+  if (!match) {
+    return null;
+  }
+
+  const x = parsePackedCoordinate(match[1]);
+  const z = parsePackedCoordinate(match[2]);
+  return x === null || z === null ? null : `${x},${z}`;
+}
+
+function parsePackedCoordinate(value: string): number | null {
+  const normalized = value.startsWith("m") ? `-${value.slice(1)}` : value;
+  const parsed = Number(normalized);
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+function formatTargetLabel(path: string, stage: string | null, scopeValue: string | null): string {
+  if (stage && scopeValue) {
+    return `${formatStageNameForTarget(stage)} ${scopeValue}`;
+  }
+  if (stage) {
+    return formatStageNameForTarget(stage);
+  }
+
+  return path.split("/").pop() ?? path;
+}
+
+function formatStageNameForTarget(stage: string): string {
+  switch (stage) {
+    case "assetRegistry":
+      return "Asset Registry";
+    case "generationGraph":
+      return "Generation Graph";
+    default:
+      return `${stage.slice(0, 1).toUpperCase()}${stage.slice(1)}`;
+  }
 }

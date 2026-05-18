@@ -3,13 +3,17 @@
 import { getPlatform, type PlatformCookMapRequest } from "@/platform";
 import {
   emptyRebuildLocks,
+  createCookTarget,
   normalizeRebuildLocks,
   type CookFailureAnalysis,
+  type CookFailureCategory,
   type CookHistoryEntry,
   type CookHistoryStatus,
   type CookQueueItem,
   type CookQueueStatus,
   type CookRunKind,
+  type CookTarget,
+  type CookTargetKind,
   type RebuildLockState,
 } from "./worldDebugRebuildConsole";
 
@@ -40,6 +44,7 @@ const emptyAnalysis: CookFailureAnalysis = {
   detail: "No persisted analysis is available.",
   actions: [],
   targets: [],
+  targetDetails: [],
 };
 
 export function createEmptyRebuildMapState(): RebuildMapState {
@@ -132,6 +137,7 @@ function normalizeHistoryEntry(value: unknown): CookHistoryEntry | null {
     durationMs: readNullableNumber(record, "durationMs"),
     command: readStringArray(record?.command),
     output: truncateText(readString(record, "output") ?? ""),
+    request: normalizeCookRequest(record?.request),
     analysis: normalizeAnalysis(record?.analysis),
   };
 }
@@ -190,14 +196,44 @@ function normalizeCookRequest(value: unknown): PlatformCookMapRequest | null {
 
 function normalizeAnalysis(value: unknown): CookFailureAnalysis {
   const record = asRecord(value);
+  const targets = readStringArray(record?.targets);
+  const targetDetails = normalizeTargets(record?.targetDetails, targets);
   return {
     ...emptyAnalysis,
-    category: readString(record, "category") as CookFailureAnalysis["category"] ?? emptyAnalysis.category,
+    category: readFailureCategory(record, "category") ?? emptyAnalysis.category,
     label: readString(record, "label") ?? emptyAnalysis.label,
-    tone: readString(record, "tone") as CookFailureAnalysis["tone"] ?? emptyAnalysis.tone,
+    tone: readMetricTone(record, "tone") ?? emptyAnalysis.tone,
     detail: readString(record, "detail") ?? emptyAnalysis.detail,
     actions: readStringArray(record?.actions),
-    targets: readStringArray(record?.targets),
+    targets: targetDetails.length > 0 ? targetDetails.map((target) => target.path) : targets,
+    targetDetails,
+  };
+}
+
+function normalizeTargets(value: unknown, fallbackTargets: readonly string[]): CookTarget[] {
+  const storedTargets = Array.isArray(value)
+    ? value.map(normalizeTarget).filter((target): target is CookTarget => target !== null)
+    : [];
+  return storedTargets.length > 0 ? storedTargets : fallbackTargets.map(createCookTarget);
+}
+
+function normalizeTarget(value: unknown): CookTarget | null {
+  const record = asRecord(value);
+  const path = readString(record, "path");
+  if (!path) {
+    return null;
+  }
+
+  const target = createCookTarget(path);
+  return {
+    ...target,
+    label: readString(record, "label") ?? target.label,
+    kind: readTargetKind(record, "kind") ?? target.kind,
+    stage: readString(record, "stage") ?? target.stage,
+    scopeKey: readScopeKey(record, "scopeKey") ?? target.scopeKey,
+    scopeValue: readString(record, "scopeValue") ?? target.scopeValue,
+    sectionId: readSectionId(record, "sectionId") ?? target.sectionId,
+    sectionLabel: readString(record, "sectionLabel") ?? target.sectionLabel,
   };
 }
 
@@ -214,6 +250,31 @@ function readHistoryStatus(record: Record<string, unknown> | null, key: string):
 function readQueueStatus(record: Record<string, unknown> | null, key: string): CookQueueStatus | null {
   const value = readString(record, key);
   return value === "queued" || value === "blocked" || value === "running" || value === "success" || value === "error" || value === "skipped" ? value : null;
+}
+
+function readFailureCategory(record: Record<string, unknown> | null, key: string): CookFailureCategory | null {
+  const value = readString(record, key);
+  return value === "success" || value === "source" || value === "cooked" || value === "graph" || value === "pack" || value === "environment" || value === "validation" || value === "execution" || value === "unknown" ? value : null;
+}
+
+function readMetricTone(record: Record<string, unknown> | null, key: string): CookFailureAnalysis["tone"] | null {
+  const value = readString(record, key);
+  return value === "neutral" || value === "success" || value === "warning" || value === "danger" || value === "info" ? value : null;
+}
+
+function readTargetKind(record: Record<string, unknown> | null, key: string): CookTargetKind | null {
+  const value = readString(record, key);
+  return value === "sourceManifest" || value === "sourcePack" || value === "cookedManifest" || value === "cookedPack" || value === "script" || value === "asset" || value === "unknown" ? value : null;
+}
+
+function readScopeKey(record: Record<string, unknown> | null, key: string): keyof RebuildLockState | null {
+  const value = readString(record, key);
+  return value === "terrainRegions" || value === "paintRegions" || value === "vegetationRegions" || value === "partitionCells" ? value : null;
+}
+
+function readSectionId(record: Record<string, unknown> | null, key: string): CookTarget["sectionId"] | null {
+  const value = readString(record, key);
+  return value === "world-debug-asset-health" || value === "world-debug-rebuild-graph" || value === "world-debug-rebuild-plan" || value === "world-debug-partition-runtime" || value === "world-debug-streaming" ? value : null;
 }
 
 function readString(record: Record<string, unknown> | null, key: string): string | null {

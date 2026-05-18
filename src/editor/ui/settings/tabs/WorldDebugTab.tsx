@@ -116,10 +116,12 @@ export function WorldDebugTab({ editorApp, editorWorkspace }: WorldDebugTabProps
             : "Idle";
   const partition = profiler?.partition ?? null;
   const partitionActive = (partition?.activeCells ?? 0) > 0;
+  const refreshDiagnostics = () => setDiagnosticsRevision((revision) => revision + 1);
 
   return (
     <SettingsPage>
       <SettingsSection
+        id="world-debug-asset-health"
         title="Asset Health"
         actions={(
           <div className="flex items-center gap-1.5">
@@ -129,7 +131,7 @@ export function WorldDebugTab({ editorApp, editorWorkspace }: WorldDebugTabProps
               size="icon"
               aria-label="Refresh diagnostics"
               title="Refresh diagnostics"
-              onClick={() => setDiagnosticsRevision((revision) => revision + 1)}
+              onClick={refreshDiagnostics}
             />
           </div>
         )}
@@ -169,11 +171,11 @@ export function WorldDebugTab({ editorApp, editorWorkspace }: WorldDebugTabProps
           />
         </SettingRow>
         <SettingRow label="Diagnostics" align="start">
-          {diagnostics.status === "ready" || issueCount > 0 ? <DiagnosticIssueList issues={diagnostics.issues} /> : <ReadonlyField>No diagnostics available</ReadonlyField>}
+          {diagnostics.status === "ready" || issueCount > 0 ? <DiagnosticIssueList issues={diagnostics.issues} onRefreshDiagnostics={refreshDiagnostics} /> : <ReadonlyField>No diagnostics available</ReadonlyField>}
         </SettingRow>
       </SettingsSection>
 
-      <SettingsSection title="Rebuild Graph" actions={<SettingBadge tone={diagnostics.generationExecutors > 0 ? "success" : "warning"}>{diagnostics.generationPolicy}</SettingBadge>}>
+      <SettingsSection id="world-debug-rebuild-graph" title="Rebuild Graph" actions={<SettingBadge tone={diagnostics.generationExecutors > 0 ? "success" : "warning"}>{diagnostics.generationPolicy}</SettingBadge>}>
         <SettingRow label="Execution" align="start">
           <MetricGrid
             items={[
@@ -186,7 +188,7 @@ export function WorldDebugTab({ editorApp, editorWorkspace }: WorldDebugTabProps
         </SettingRow>
       </SettingsSection>
 
-      <SettingsSection title="Rebuild Plan" actions={<SettingBadge tone={rebuildPlan.tone}>{rebuildPlan.label}</SettingBadge>}>
+      <SettingsSection id="world-debug-rebuild-plan" title="Rebuild Plan" actions={<SettingBadge tone={rebuildPlan.tone}>{rebuildPlan.label}</SettingBadge>}>
         <SettingRow label="Changed Inputs" align="start">
           <SourceDriftList diagnostics={diagnostics} liveRebuild={liveRebuild} rebuildPlan={rebuildPlan} />
         </SettingRow>
@@ -204,11 +206,12 @@ export function WorldDebugTab({ editorApp, editorWorkspace }: WorldDebugTabProps
           projectPath={editorWorkspace.currentProjectPath}
           mapId={editorWorkspace.currentMapId}
           plan={rebuildPlan}
-          onCooked={() => setDiagnosticsRevision((revision) => revision + 1)}
+          onDiagnosticsRefresh={refreshDiagnostics}
         />
       </SettingsSection>
 
       <SettingsSection
+        id="world-debug-partition-runtime"
         title="Partition Runtime"
         actions={<SettingBadge tone={partitionActive ? "success" : "warning"}>{partitionActive ? "Cooked" : "Source"}</SettingBadge>}
       >
@@ -234,7 +237,7 @@ export function WorldDebugTab({ editorApp, editorWorkspace }: WorldDebugTabProps
         </SettingRow>
       </SettingsSection>
 
-      <SettingsSection title="Streaming" actions={<SettingBadge tone="info">{profiler?.fps ?? 0} FPS</SettingBadge>}>
+      <SettingsSection id="world-debug-streaming" title="Streaming" actions={<SettingBadge tone="info">{profiler?.fps ?? 0} FPS</SettingBadge>}>
         <SettingRow label="Runtime Scene" align="start">
           <MetricGrid
             items={[

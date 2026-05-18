@@ -55,11 +55,11 @@
 - game runtime 已把 cooked object cell pack 转成道路、水体、POI 和道具的可见实例；collision pack 已进入玩家水平阻挡解析，并记录 vegetation query-clearance 策略；nav pack 已记录 cross-cell portal link，作为后续 AI 查询和调试可视化的跨 cell 连接入口。
 - 地形、水体/道路对象、paint、vegetation 和 cooked nav 已收敛到共享 world semantics 规则，避免各生成脚本各自维护一套道路、水体和 POI 语义。
 - terrain、paint、vegetation、objects、collision 和 nav 的生成依赖已由 generation graph 显式登记；`scripts/map-generation/world-rebuild-planner.mjs` 可把 graph 输入变化解析为 stage closure 与 region/cell scope，`pnpm cook:map` 已支持 dry-run plan 与 scoped cook。
-- 编辑器设置面板已有 World Diagnostics 页，可查看 generation graph、rebuild executor、local scope、预算、source 资产健康、pack integrity、cooked source stale、rebuild plan 命令、scope review、项目级 locked scope、受控 dry-run/cook 多计划队列、持久化执行历史、失败分类、partition streaming、runtime payload 和可见对象/植被统计；Objects 页已支持 archetype 选择、地形拾取放置、删除、undo/redo 和对象 sidecar 保存。
+- 编辑器设置面板已有 World Diagnostics 页，可查看 generation graph、rebuild executor、local scope、预算、source 资产健康、pack integrity、cooked source stale、rebuild plan 命令、scope review、项目级 locked scope、受控 dry-run/cook 多计划队列、持久化执行历史、失败分类、验证 target 跳转、恢复动作、partition streaming、runtime payload 和可见对象/植被统计；Objects 页已支持 archetype 选择、地形拾取放置、删除、undo/redo 和对象 sidecar 保存。
 - CI/release 已接入 `pnpm verify`，覆盖 lint、Node 回归测试、TypeScript 类型检查和地图资产校验。
 - 已有 [`OPEN_WORLD_DESIGN_SPEC.md`](OPEN_WORLD_DESIGN_SPEC.md)，定义 `main` 10 平方公里地图的区域、道路、水系、兴趣点和生成约束。
 
-当前最重要的方向是把这些能力从“已有持久化 rebuild orchestration layer”推进到“可验证跳转、可灾难恢复、可预算化的非破坏性内容生产系统”。
+当前最重要的方向是把这些能力从“已有 target-aware rebuild orchestration layer”推进到“可局部重生成、可预算阻断、可检索恢复的非破坏性内容生产系统”。
 
 ## 当前编辑器质量判断
 
@@ -70,7 +70,7 @@
 - 植被编辑当前已有 GLTF instancing、LOD、距离裁剪和画刷，generation graph 已记录 biome、cluster、edge falloff、保护区/排除区、impostor 与 collision/nav 预算规则；下一阶段要把 ecology scatter executor 接进编辑器局部重散布。
 - 世界对象编辑已从几何代理进入 GLTF archetype + sidecar 事务阶段；source archetype 已登记 spline、prefab、scatter、LOD/instancing budget 和 collision 元数据，仍需补真正的 spline 编辑 UI、prefab 展开执行器、精确 collision shape 和可视化验证。
 
-因此当前项目已经具备业界级开放世界管线的关键底座：可校验 source/cooked 分层、world partition、content-addressed package、generation graph、局部 rebuild plan、scoped cook 和编辑器内持久化 rebuild orchestration layer。距离最终“业界最佳编辑体验”还差验证结果跳转、灾难恢复动作、真实 spline 工具、可视化 collision/nav 调试、预算化渲染闭环和更高质量美术内容填充。
+因此当前项目已经具备业界级开放世界管线的关键底座：可校验 source/cooked 分层、world partition、content-addressed package、generation graph、局部 rebuild plan、scoped cook 和编辑器内 target-aware rebuild orchestration layer。距离最终“业界最佳编辑体验”还差局部重生成入口、执行历史检索、真实 spline 工具、可视化 collision/nav 调试、预算化渲染闭环和更高质量美术内容填充。
 
 ## 路线图
 
@@ -309,8 +309,8 @@
 
 当前重点：
 
-- 在已有 World Diagnostics 基础上继续增强 region/cell 可视化、streaming debug、LOD debug、保存状态、地图统计、cooked stale 诊断、rebuild command plan、scope review、locked scope、持久化执行历史和失败分类。
-- 在已具备项目级 locked scope 与受控多计划队列的基础上，补局部重新生成、灾难恢复提示、验证结果跳转和执行历史检索。
+- 在已有 World Diagnostics 基础上继续增强 region/cell 可视化、streaming debug、LOD debug、保存状态、地图统计、cooked stale 诊断、rebuild command plan、scope review、locked scope、持久化执行历史、失败分类、验证 target 跳转和恢复动作。
+- 在已具备项目级 locked scope、受控多计划队列、target routing 与恢复动作的基础上，补局部重新生成、执行历史检索和预算超限阻断。
 - 所有 UI 保持紧凑、严肃的桌面编辑器风格。
 
 验收标准：
@@ -353,7 +353,7 @@
 
 ## 近期优先级
 
-1. 强化 World Diagnostics 执行闭环：局部重新生成入口、失败恢复动作、验证结果跳转、执行历史检索和预算超限阻断。
+1. 强化 World Diagnostics 执行闭环：局部重新生成入口、执行历史检索、预算超限阻断和 region/cell 可视化选择。
 2. 把 terrain/material/ecology graph 从 metadata 推进到真正可执行：道路切坡、河床、湿边、道路清理、cluster/edge falloff 和手工 override 都能局部重算。
 3. 强化 collision/nav 调试消费：cross-cell portal 可视化、AI 查询接口、可行走/阻挡 overlay、vegetation clearance 诊断和局部 nav rebuild 验证。
 4. 把道路、水体和对象表现升级到真实渲染资产：road mesh/decal、water surface shader、prefab 展开、scatter rule 执行和对象 LOD/instancing budget。

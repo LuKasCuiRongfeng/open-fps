@@ -10,6 +10,7 @@ import { Button, type ButtonProps } from "@ui/components/ui/button";
 type Tone = "neutral" | "primary" | "secondary" | "success" | "warning" | "danger" | "info";
 
 type SettingsSectionProps = {
+  id?: string;
   title: string;
   description?: string;
   actions?: ReactNode;
@@ -81,9 +82,9 @@ export function SettingsPage({ children }: { children: ReactNode }) {
   return <div className="space-y-3 text-xs">{children}</div>;
 }
 
-export function SettingsSection({ title, description, actions, children }: SettingsSectionProps) {
+export function SettingsSection({ id, title, description, actions, children }: SettingsSectionProps) {
   return (
-    <section className="border-b border-stroke-subtle pb-3 last:border-b-0 last:pb-0">
+    <section id={id} className="scroll-mt-3 border-b border-stroke-subtle pb-3 last:border-b-0 last:pb-0">
       <div className="mb-2 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="truncate text-[11px] font-semibold uppercase tracking-wide text-content-secondary">{title}</h2>

@@ -2,7 +2,7 @@
 // WorldRebuildConsole：World Diagnostics 的受控重建执行工作流。
 
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Copy, ListPlus, Lock, Play, RotateCcw, ShieldAlert, Trash2, Unlock } from "lucide-react";
+import { CheckCircle2, Copy, Crosshair, ListPlus, Lock, Play, RefreshCw, RotateCcw, ShieldAlert, Trash2, Unlock } from "lucide-react";
 import { getPlatform, type PlatformCookMapRequest } from "@/platform";
 import { formatUnknownError } from "@/platform/errorUtils";
 import { ReadonlyField, SettingBadge, SettingRow, SettingsButton } from "@ui/settings/SettingsLayout";
@@ -13,8 +13,12 @@ import {
   completeCookEntry,
   createCookId,
   createCookQueue,
+  createCookQueueItem,
+  createCookRecoveryActions,
+  createEntryRecoveryRequest,
   createLockConflicts,
   createRunningCookEntry,
+  createTargetRecoveryRequest,
   emptyRebuildLocks,
   failCookEntry,
   formatLockConflictReason,
@@ -28,6 +32,8 @@ import {
   type CookHistoryEntry,
   type CookHistoryStatus,
   type CookQueueItem,
+  type CookRecoveryActionKind,
+  type CookTarget,
   type CookRunKind,
   type LockConflict,
   type RebuildLockState,
@@ -49,10 +55,10 @@ type WorldRebuildConsoleProps = {
   projectPath: string | null;
   mapId: string | null;
   plan: EditorRebuildPlan;
-  onCooked: () => void;
+  onDiagnosticsRefresh: () => void;
 };
 
-export function WorldRebuildConsole({ projectPath, mapId, plan, onCooked }: WorldRebuildConsoleProps) {
+export function WorldRebuildConsole({ projectPath, mapId, plan, onDiagnosticsRefresh }: WorldRebuildConsoleProps) {
   const [copyStatus, setCopyStatus] = useState("");
   const [locks, setLocks] = useState<RebuildLockState>(emptyRebuildLocks);
   const [history, setHistory] = useState<CookHistoryEntry[]>([]);
@@ -137,7 +143,7 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onCooked }: Worl
 
     const entry = await executeCook(kind, request);
     if (kind === "cook" && entry.status === "success") {
-      onCooked();
+      onDiagnosticsRefresh();
     }
   }
 
@@ -192,9 +198,37 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onCooked }: Worl
       }
 
       if (item.kind === "cook") {
-        onCooked();
+        onDiagnosticsRefresh();
       }
     }
+  }
+
+  async function handleRecoveryAction(entry: CookHistoryEntry, action: CookRecoveryActionKind): Promise<void> {
+    if (action === "refreshDiagnostics") {
+      onDiagnosticsRefresh();
+      return;
+    }
+    if (action === "copyTargets") {
+      await copyTargets(entry.analysis.targets);
+      return;
+    }
+
+    const request = createEntryRecoveryRequest(entry, action);
+    if (!request) {
+      await notifyNotReady();
+      return;
+    }
+
+    queueRecoveryRequest(request, request.dryRun ? "dryRun" : "cook");
+  }
+
+  function handleQueueTargetRecovery(target: CookTarget, kind: CookRunKind): void {
+    const request = createTargetRecoveryRequest(projectPath, mapId, target, kind === "dryRun");
+    if (!request) {
+      return;
+    }
+
+    queueRecoveryRequest(request, kind);
   }
 
   function handleLockPlan(): void {
@@ -254,6 +288,28 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onCooked }: Worl
 
   async function notifyBlocked(conflicts: LockConflict[]): Promise<void> {
     await platform.dialogs.notify(formatLockConflictReason(conflicts) ?? "Cook request is blocked by locked scopes", { title: "Cook Map", kind: "warning" });
+  }
+
+  async function copyTargets(targets: readonly string[]): Promise<void> {
+    if (targets.length === 0) {
+      return;
+    }
+
+    try {
+      await writeClipboard(targets.join("\n"));
+      setCopyStatus("Targets copied");
+    } catch (error) {
+      const message = `Copy failed: ${formatUnknownError(error)}`;
+      setCopyStatus(message);
+      await platform.dialogs.notify(message, { title: "Clipboard", kind: "warning" });
+    }
+  }
+
+  function queueRecoveryRequest(request: PlatformCookMapRequest, kind: CookRunKind): void {
+    const conflicts = createLockConflicts(request, locks);
+    const item = createCookQueueItem(kind, request, conflicts);
+    setQueueAndPersist([...rebuildStateRef.current.queue, item]);
+    setCopyStatus(conflicts.length > 0 ? "Recovery blocked" : "Recovery queued");
   }
 
   function setLocksAndPersist(nextLocks: RebuildLockState): void {
@@ -321,13 +377,20 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onCooked }: Worl
         />
       </SettingRow>
       <SettingRow label="History" align="start">
-        <HistoryPanel history={history} activeRunId={activeRunId} />
+        <HistoryPanel
+          history={history}
+          activeRunId={activeRunId}
+          onRecoveryAction={handleRecoveryAction}
+          onQueueTargetRecovery={handleQueueTargetRecovery}
+          onJumpTarget={scrollToTargetSection}
+          onCopyTarget={(target) => void copyTargetPath(target)}
+        />
       </SettingRow>
     </>
   );
 }
 
-export function DiagnosticIssueList({ issues }: { issues: string[] }) {
+export function DiagnosticIssueList({ issues, onRefreshDiagnostics }: { issues: string[]; onRefreshDiagnostics?: () => void }) {
   if (issues.length === 0) {
     return <ReadonlyField>All checked packs match their manifests</ReadonlyField>;
   }
@@ -343,7 +406,20 @@ export function DiagnosticIssueList({ issues }: { issues: string[] }) {
               <SettingBadge tone={analysis.tone}>{analysis.category}</SettingBadge>
             </div>
             <div>{issue}</div>
-            {analysis.targets.length > 0 && <TargetList targets={analysis.targets} />}
+            {analysis.targetDetails.length > 0 && (
+              <TargetList
+                targets={analysis.targetDetails}
+                onJumpTarget={scrollToTargetSection}
+                onCopyTarget={(target) => void copyTargetPath(target)}
+              />
+            )}
+            {onRefreshDiagnostics && (
+              <div className="mt-1.5 flex justify-end">
+                <SettingsButton Icon={RefreshCw} size="sm" tone="info" onClick={onRefreshDiagnostics}>
+                  Refresh
+                </SettingsButton>
+              </div>
+            )}
           </div>
         );
       })}
@@ -529,7 +605,21 @@ function QueuePanel({
   );
 }
 
-function HistoryPanel({ history, activeRunId }: { history: CookHistoryEntry[]; activeRunId: string | null }) {
+function HistoryPanel({
+  history,
+  activeRunId,
+  onRecoveryAction,
+  onQueueTargetRecovery,
+  onJumpTarget,
+  onCopyTarget,
+}: {
+  history: CookHistoryEntry[];
+  activeRunId: string | null;
+  onRecoveryAction: (entry: CookHistoryEntry, action: CookRecoveryActionKind) => Promise<void>;
+  onQueueTargetRecovery: (target: CookTarget, kind: CookRunKind) => void;
+  onJumpTarget: (target: CookTarget) => void;
+  onCopyTarget: (target: CookTarget) => void;
+}) {
   if (history.length === 0) {
     return <ReadonlyField>Not Run</ReadonlyField>;
   }
@@ -552,18 +642,53 @@ function HistoryPanel({ history, activeRunId }: { history: CookHistoryEntry[]; a
             <MetricTile label="Exit" value={entry.exitCode === null ? "pending" : entry.exitCode.toString()} detail={entry.status} tone={getStatusTone(entry.status)} />
             <MetricTile label="Duration" value={entry.durationMs === null ? "running" : `${(entry.durationMs / 1000).toFixed(1)}s`} detail={formatCookKind(entry.kind)} />
           </div>
-          <AnalysisPanel entry={entry} />
+          <AnalysisPanel
+            entry={entry}
+            onRecoveryAction={onRecoveryAction}
+            onQueueTargetRecovery={onQueueTargetRecovery}
+            onJumpTarget={onJumpTarget}
+            onCopyTarget={onCopyTarget}
+          />
         </div>
       ))}
     </div>
   );
 }
 
-function AnalysisPanel({ entry }: { entry: CookHistoryEntry }) {
+function AnalysisPanel({
+  entry,
+  onRecoveryAction,
+  onQueueTargetRecovery,
+  onJumpTarget,
+  onCopyTarget,
+}: {
+  entry: CookHistoryEntry;
+  onRecoveryAction: (entry: CookHistoryEntry, action: CookRecoveryActionKind) => Promise<void>;
+  onQueueTargetRecovery: (target: CookTarget, kind: CookRunKind) => void;
+  onJumpTarget: (target: CookTarget) => void;
+  onCopyTarget: (target: CookTarget) => void;
+}) {
+  const recoveryActions = createCookRecoveryActions(entry);
   return (
     <div className="mt-2 space-y-1.5">
       <div className="text-[11px] leading-4 text-content-secondary">{entry.analysis.detail}</div>
-      {entry.analysis.targets.length > 0 && <TargetList targets={entry.analysis.targets} />}
+      {entry.analysis.targetDetails.length > 0 && (
+        <TargetList
+          targets={entry.analysis.targetDetails}
+          onJumpTarget={onJumpTarget}
+          onCopyTarget={onCopyTarget}
+          onQueueTargetRecovery={onQueueTargetRecovery}
+        />
+      )}
+      {recoveryActions.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {recoveryActions.map((action) => (
+            <SettingsButton key={action.kind} Icon={getRecoveryActionIcon(action.kind)} size="sm" tone={action.tone} title={action.detail} onClick={() => void onRecoveryAction(entry, action.kind)}>
+              {action.label}
+            </SettingsButton>
+          ))}
+        </div>
+      )}
       {entry.analysis.actions.length > 0 && entry.status !== "success" && (
         <div className="flex flex-wrap gap-1.5">
           {entry.analysis.actions.map((action) => (
@@ -580,11 +705,39 @@ function AnalysisPanel({ entry }: { entry: CookHistoryEntry }) {
   );
 }
 
-function TargetList({ targets }: { targets: string[] }) {
+function TargetList({
+  targets,
+  onJumpTarget,
+  onCopyTarget,
+  onQueueTargetRecovery,
+}: {
+  targets: CookTarget[];
+  onJumpTarget: (target: CookTarget) => void;
+  onCopyTarget: (target: CookTarget) => void;
+  onQueueTargetRecovery?: (target: CookTarget, kind: CookRunKind) => void;
+}) {
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="space-y-1.5">
       {targets.map((target) => (
-        <span key={target} className="rounded-md border border-stroke-subtle px-1.5 py-0.5 font-mono text-[10px] text-content-muted">{target}</span>
+        <div key={target.path} className="field-surface rounded-md border p-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <SettingBadge tone="info">{target.sectionLabel}</SettingBadge>
+                {target.scopeValue && <SettingBadge tone="warning">{target.scopeValue}</SettingBadge>}
+                <span className="text-[11px] font-medium text-content-primary">{target.label}</span>
+              </div>
+              <div className="mt-1 break-all font-mono text-[10px] leading-4 text-content-muted">{target.path}</div>
+            </div>
+            <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+              <SettingsButton Icon={Crosshair} size="icon" title="Jump" aria-label="Jump" onClick={() => onJumpTarget(target)} />
+              <SettingsButton Icon={Copy} size="icon" title="Copy" aria-label="Copy" onClick={() => onCopyTarget(target)} />
+              {onQueueTargetRecovery && (
+                <SettingsButton Icon={ListPlus} size="icon" tone="info" title="Queue dry-run" aria-label="Queue dry-run" onClick={() => onQueueTargetRecovery(target, "dryRun")} />
+              )}
+            </div>
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -667,4 +820,37 @@ function hasPlanScope(plan: EditorRebuildPlan): boolean {
 
 function replaceQueueItem(queue: CookQueueItem[], id: string, patch: Partial<CookQueueItem>): CookQueueItem[] {
   return queue.map((item) => item.id === id ? { ...item, ...patch } : item);
+}
+
+function scrollToTargetSection(target: CookTarget): void {
+  document.getElementById(target.sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function copyTargetPath(target: CookTarget): Promise<void> {
+  try {
+    await writeClipboard(target.path);
+  } catch (error) {
+    await platform.dialogs.notify(`Copy failed: ${formatUnknownError(error)}`, { title: "Clipboard", kind: "warning" });
+  }
+}
+
+async function writeClipboard(text: string): Promise<void> {
+  if (!navigator.clipboard?.writeText) {
+    throw new Error("Clipboard API is not available");
+  }
+
+  await navigator.clipboard.writeText(text);
+}
+
+function getRecoveryActionIcon(kind: CookRecoveryActionKind) {
+  switch (kind) {
+    case "refreshDiagnostics":
+      return RefreshCw;
+    case "copyTargets":
+      return Copy;
+    case "retryCook":
+      return Play;
+    default:
+      return RotateCcw;
+  }
 }

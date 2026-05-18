@@ -25,12 +25,71 @@ test("rebuild console classifies cook failures by actionable category", async ()
     assert.equal(pack.category, "pack");
     assert.equal(pack.label, "Pack Integrity");
     assert.deepEqual(pack.targets, ["terrain/height/regions/r_0_0.heightpack"]);
+    assert.equal(pack.targetDetails[0].stage, "terrain");
+    assert.equal(pack.targetDetails[0].scopeKey, "terrainRegions");
+    assert.equal(pack.targetDetails[0].scopeValue, "0,0");
 
     const graph = helpers.analyzeCookText("Unknown world generation stage 'foo'", false);
     assert.equal(graph.category, "graph");
 
     const environment = helpers.analyzeCookText("Failed to run cook map command: pnpm not found", false);
     assert.equal(environment.category, "environment");
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("rebuild console routes validation targets into sections and recovery requests", async () => {
+  const { helpers, tempRoot } = await importConsoleHelpers();
+  try {
+    const target = helpers.createCookTarget("cooked/maps/main/nav/cells/c_m1_2.navpack");
+    assert.equal(target.sectionId, "world-debug-partition-runtime");
+    assert.equal(target.stage, "nav");
+    assert.equal(target.scopeKey, "partitionCells");
+    assert.equal(target.scopeValue, "-1,2");
+
+    const request = helpers.createTargetRecoveryRequest("kunlun_wilds", "main", target, true);
+    assert.equal(request.full, false);
+    assert.deepEqual(request.changedStages, ["nav"]);
+    assert.deepEqual(request.scopes.partitionCells, ["-1,2"]);
+    assert.equal(request.dryRun, true);
+
+    const graphTarget = helpers.createCookTarget("maps/main/generation/graph.json");
+    const fullRequest = helpers.createTargetRecoveryRequest("kunlun_wilds", "main", graphTarget, true);
+    assert.equal(fullRequest.full, true);
+    assert.deepEqual(fullRequest.changedStages, []);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("rebuild console creates history recovery actions from failed cook entries", async () => {
+  const { helpers, tempRoot } = await importConsoleHelpers();
+  try {
+    const request = {
+      projectPath: "kunlun_wilds",
+      mapId: "main",
+      dryRun: false,
+      full: false,
+      changedStages: ["collision"],
+      scopes: {
+        terrainRegions: [],
+        paintRegions: [],
+        vegetationRegions: [],
+        partitionCells: ["0,0"],
+      },
+    };
+    const running = helpers.createRunningCookEntry("cook-test", "cook", request, 100);
+    const failed = helpers.failCookEntry(running, "cooked/maps/main/collision/cells/c_0_0.collisionpack missing", 200);
+    const actions = helpers.createCookRecoveryActions(failed).map((action) => action.kind);
+    assert.deepEqual(actions, ["refreshDiagnostics", "copyTargets", "retryDryRun", "retryCook", "fullDryRun"]);
+
+    const dryRun = helpers.createEntryRecoveryRequest(failed, "retryDryRun");
+    assert.equal(dryRun.dryRun, true);
+    assert.equal(dryRun.full, false);
+    const fullDryRun = helpers.createEntryRecoveryRequest(failed, "fullDryRun");
+    assert.equal(fullDryRun.dryRun, true);
+    assert.equal(fullDryRun.full, true);
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }
