@@ -1,31 +1,49 @@
 // WorldRebuildConsole: controlled rebuild execution workflow for World Diagnostics.
 // WorldRebuildConsole：World Diagnostics 的受控重建执行工作流。
 
-import { useEffect, useState } from "react";
-import { CheckCircle2, Copy, ListPlus, Play, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CheckCircle2, Copy, ListPlus, Lock, Play, RotateCcw, ShieldAlert, Trash2, Unlock } from "lucide-react";
 import { getPlatform, type PlatformCookMapRequest } from "@/platform";
 import { formatUnknownError } from "@/platform/errorUtils";
 import { ReadonlyField, SettingBadge, SettingRow, SettingsButton } from "@ui/settings/SettingsLayout";
 import { createEditorCookMapRequest, formatStageList, type EditorRebuildPlan, type MetricTone } from "./worldDebugDiagnostics";
 import {
+  addRebuildLocks,
   classifyDiagnosticIssue,
   completeCookEntry,
   createCookId,
   createCookQueue,
+  createLockConflicts,
   createRunningCookEntry,
+  emptyRebuildLocks,
   failCookEntry,
+  formatLockConflictReason,
   formatCookKind,
   formatShortTime,
+  hasRebuildLocks,
+  removeRebuildLocks,
   summarizeCookRisk,
+  summarizeLockScopes,
   summarizePlanScopes,
   type CookHistoryEntry,
   type CookHistoryStatus,
   type CookQueueItem,
   type CookRunKind,
+  type LockConflict,
+  type RebuildLockState,
 } from "./worldDebugRebuildConsole";
+import {
+  createEmptyRebuildMapState,
+  limitPersistedHistory,
+  limitPersistedQueue,
+  loadRebuildMapState,
+  saveRebuildMapState,
+  type RebuildMapState,
+} from "./worldDebugRebuildState";
 
 const platform = getPlatform();
-const HISTORY_LIMIT = 6;
+
+type PersistStatus = "idle" | "loading" | "saving" | "saved" | "error";
 
 type WorldRebuildConsoleProps = {
   projectPath: string | null;
@@ -36,23 +54,53 @@ type WorldRebuildConsoleProps = {
 
 export function WorldRebuildConsole({ projectPath, mapId, plan, onCooked }: WorldRebuildConsoleProps) {
   const [copyStatus, setCopyStatus] = useState("");
+  const [locks, setLocks] = useState<RebuildLockState>(emptyRebuildLocks);
   const [history, setHistory] = useState<CookHistoryEntry[]>([]);
   const [queue, setQueue] = useState<CookQueueItem[]>([]);
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
-  const canRun = platform.hasCapability("worldCookExecution") && plan.status === "ready" && projectPath !== null && mapId !== null;
+  const [persistStatus, setPersistStatus] = useState<PersistStatus>("idle");
+  const rebuildStateRef = useRef<RebuildMapState>(createEmptyRebuildMapState());
+  const cookRequest = createRequest("cook");
+  const lockConflicts = createLockConflicts(cookRequest, locks);
+  const lockBlocked = lockConflicts.length > 0;
+  const canUseCookExecution = platform.hasCapability("worldCookExecution") && projectPath !== null && mapId !== null;
+  const canQueue = canUseCookExecution && plan.status === "ready";
+  const canRunCommand = canQueue && !lockBlocked;
+  const canRunQueue = canUseCookExecution && (queue.some((item) => item.status === "queued") || canRunCommand);
   const running = activeRunId !== null;
   const risk = summarizeCookRisk(plan);
 
   useEffect(() => {
+    let cancelled = false;
     setCopyStatus("");
     setQueue([]);
     setHistory([]);
+    setLocks(emptyRebuildLocks);
     setActiveRunId(null);
-  }, [projectPath, mapId]);
+    setPersistStatus(projectPath && mapId ? "loading" : "idle");
+    rebuildStateRef.current = createEmptyRebuildMapState();
+    void loadRebuildMapState(projectPath, mapId)
+      .then((state) => {
+        if (cancelled) {
+          return;
+        }
 
-  useEffect(() => {
-    setQueue([]);
-  }, [plan.label, plan.commands.map((entry) => entry.command).join("|")]);
+        rebuildStateRef.current = state;
+        setLocks(state.locks);
+        setHistory(state.history);
+        setQueue(state.queue);
+        setPersistStatus(projectPath && mapId ? "saved" : "idle");
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPersistStatus("error");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectPath, mapId]);
 
   async function handleCopyCommand(command: string): Promise<void> {
     setCopyStatus("");
@@ -77,6 +125,12 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onCooked }: Worl
       return;
     }
 
+    const conflicts = createLockConflicts(request, locks);
+    if (conflicts.length > 0) {
+      await notifyBlocked(conflicts);
+      return;
+    }
+
     if (kind === "cook" && !(await confirmCook())) {
       return;
     }
@@ -93,48 +147,70 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onCooked }: Worl
       return;
     }
 
-    setQueue(createCookQueue(request));
+    setQueueAndPersist([...queue, ...createCookQueue(request, createLockConflicts(request, locks))]);
   }
 
   async function handleRunQueue(): Promise<void> {
-    let nextQueue = queue;
-    if (nextQueue.length === 0) {
+    let workingQueue = queue;
+    if (workingQueue.length === 0) {
       const request = createRequest("cook");
       if (!request) {
         await notifyNotReady();
         return;
       }
 
-      nextQueue = createCookQueue(request);
-      setQueue(nextQueue);
+      workingQueue = createCookQueue(request, createLockConflicts(request, locks));
+      setQueueAndPersist(workingQueue);
     }
 
-    const dryRun = nextQueue.find((item) => item.kind === "dryRun");
-    const cook = nextQueue.find((item) => item.kind === "cook");
-    if (dryRun && dryRun.status === "queued") {
-      updateQueueItem(dryRun.id, "running");
-      const dryRunEntry = await executeCook("dryRun", dryRun.request);
-      updateQueueItem(dryRun.id, dryRunEntry.status);
-      if (dryRunEntry.status !== "success") {
+    for (const item of workingQueue) {
+      if (item.status !== "queued") {
+        continue;
+      }
+
+      const conflicts = createLockConflicts(item.request, locks);
+      if (conflicts.length > 0) {
+        workingQueue = replaceQueueItem(workingQueue, item.id, { status: "blocked", blockedReason: formatLockConflictReason(conflicts) });
+        setQueueAndPersist(workingQueue);
+        await notifyBlocked(conflicts);
         return;
       }
-    }
 
-    if (!cook || cook.status !== "queued") {
+      if (item.kind === "cook" && !(await confirmCook())) {
+        workingQueue = replaceQueueItem(workingQueue, item.id, { status: "skipped" });
+        setQueueAndPersist(workingQueue);
+        return;
+      }
+
+      workingQueue = replaceQueueItem(workingQueue, item.id, { status: "running", blockedReason: null });
+      setQueueAndPersist(workingQueue);
+      const entry = await executeCook(item.kind, item.request);
+      workingQueue = replaceQueueItem(workingQueue, item.id, { status: entry.status, blockedReason: null });
+      setQueueAndPersist(workingQueue);
+      if (entry.status !== "success") {
+        return;
+      }
+
+      if (item.kind === "cook") {
+        onCooked();
+      }
+    }
+  }
+
+  function handleLockPlan(): void {
+    if (!hasPlanScope(plan)) {
       return;
     }
 
-    if (!(await confirmCook())) {
-      updateQueueItem(cook.id, "skipped");
-      return;
-    }
+    setLocksAndPersist(addRebuildLocks(locks, plan.scopes));
+  }
 
-    updateQueueItem(cook.id, "running");
-    const cookEntry = await executeCook("cook", cook.request);
-    updateQueueItem(cook.id, cookEntry.status);
-    if (cookEntry.status === "success") {
-      onCooked();
-    }
+  function handleUnlockPlan(): void {
+    setLocksAndPersist(removeRebuildLocks(locks, plan.scopes));
+  }
+
+  function handleClearLocks(): void {
+    setLocksAndPersist(emptyRebuildLocks);
   }
 
   async function executeCook(kind: CookRunKind, request: PlatformCookMapRequest): Promise<CookHistoryEntry> {
@@ -176,24 +252,57 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onCooked }: Worl
     await platform.dialogs.notify("Cook request is not ready", { title: "Cook Map", kind: "warning" });
   }
 
-  function updateQueueItem(id: string, status: CookQueueItem["status"]): void {
-    setQueue((items) => items.map((item) => item.id === id ? { ...item, status } : item));
+  async function notifyBlocked(conflicts: LockConflict[]): Promise<void> {
+    await platform.dialogs.notify(formatLockConflictReason(conflicts) ?? "Cook request is blocked by locked scopes", { title: "Cook Map", kind: "warning" });
+  }
+
+  function setLocksAndPersist(nextLocks: RebuildLockState): void {
+    setLocks(nextLocks);
+    persistState({ ...rebuildStateRef.current, locks: nextLocks });
+  }
+
+  function setQueueAndPersist(nextQueue: CookQueueItem[]): void {
+    const limitedQueue = limitPersistedQueue(nextQueue);
+    setQueue(limitedQueue);
+    persistState({ ...rebuildStateRef.current, queue: limitedQueue });
   }
 
   function pushHistoryEntry(entry: CookHistoryEntry): void {
-    setHistory((entries) => [entry, ...entries.filter((item) => item.id !== entry.id)].slice(0, HISTORY_LIMIT));
+    const nextHistory = limitPersistedHistory([entry, ...rebuildStateRef.current.history.filter((item) => item.id !== entry.id)]);
+    setHistory(nextHistory);
+    persistState({ ...rebuildStateRef.current, history: nextHistory });
+  }
+
+  function persistState(state: RebuildMapState): void {
+    rebuildStateRef.current = state;
+    setPersistStatus("saving");
+    void saveRebuildMapState(projectPath, mapId, state)
+      .then(() => setPersistStatus(projectPath && mapId ? "saved" : "idle"))
+      .catch(() => setPersistStatus("error"));
   }
 
   return (
     <>
+      <SettingRow label="Locks" align="start">
+        <LockPanel
+          locks={locks}
+          plan={plan}
+          conflicts={lockConflicts}
+          persistStatus={persistStatus}
+          onLockPlan={handleLockPlan}
+          onUnlockPlan={handleUnlockPlan}
+          onClearLocks={handleClearLocks}
+        />
+      </SettingRow>
       <SettingRow label="Scope Review" align="start">
-        <ScopeReview plan={plan} risk={risk} />
+        <ScopeReview plan={plan} risk={risk} conflicts={lockConflicts} />
       </SettingRow>
       <SettingRow label="Commands" align="start">
         <CommandList
           plan={plan}
           copyStatus={copyStatus}
-          canRun={canRun}
+          canRun={canRunCommand}
+          blocked={lockBlocked}
           running={running}
           onCopy={handleCopyCommand}
           onRun={handleRun}
@@ -202,9 +311,11 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onCooked }: Worl
       <SettingRow label="Queue" align="start">
         <QueuePanel
           queue={queue}
-          canRun={canRun}
+          canQueue={canQueue}
+          canRun={canRunQueue}
           running={running}
           risk={risk}
+          blocked={lockBlocked}
           onQueue={handleQueuePlan}
           onRunQueue={handleRunQueue}
         />
@@ -241,12 +352,73 @@ export function DiagnosticIssueList({ issues }: { issues: string[] }) {
   );
 }
 
-function ScopeReview({ plan, risk }: { plan: EditorRebuildPlan; risk: { label: string; tone: MetricTone; detail: string } }) {
+function LockPanel({
+  locks,
+  plan,
+  conflicts,
+  persistStatus,
+  onLockPlan,
+  onUnlockPlan,
+  onClearLocks,
+}: {
+  locks: RebuildLockState;
+  plan: EditorRebuildPlan;
+  conflicts: LockConflict[];
+  persistStatus: PersistStatus;
+  onLockPlan: () => void;
+  onUnlockPlan: () => void;
+  onClearLocks: () => void;
+}) {
+  const summaries = summarizeLockScopes(locks);
+  const canLockPlan = hasPlanScope(plan);
+  const locked = hasRebuildLocks(locks);
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <SettingBadge tone={conflicts.length > 0 ? "danger" : locked ? "warning" : "success"}>{conflicts.length > 0 ? "Blocked" : locked ? "Locked" : "Open"}</SettingBadge>
+          <SettingBadge tone={getPersistTone(persistStatus)}>{persistStatus}</SettingBadge>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <SettingsButton Icon={Lock} size="sm" disabled={!canLockPlan} onClick={onLockPlan}>
+            Lock
+          </SettingsButton>
+          <SettingsButton Icon={Unlock} size="sm" disabled={!canLockPlan || !locked} onClick={onUnlockPlan}>
+            Unlock
+          </SettingsButton>
+          <SettingsButton Icon={Trash2} size="sm" tone="warning" disabled={!locked} onClick={onClearLocks}>
+            Clear
+          </SettingsButton>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {summaries.map((summary) => (
+          <MetricTile key={summary.key} label={summary.label} value={formatCount(summary.count)} detail={summary.sample} tone={summary.count > 0 ? "warning" : "neutral"} />
+        ))}
+      </div>
+      {conflicts.length > 0 && (
+        <div className="space-y-1.5">
+          {conflicts.map((conflict) => (
+            <div key={conflict.key} className="field-surface flex items-start gap-2 rounded-md border border-status-danger/40 p-2 text-[11px] leading-4 text-status-danger">
+              <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <div className="min-w-0">
+                <div className="font-medium">{conflict.reason}: {conflict.label}</div>
+                <div className="wrap-break-word font-mono text-[10px] text-content-muted">{conflict.values.join(", ")}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ScopeReview({ plan, risk, conflicts }: { plan: EditorRebuildPlan; risk: { label: string; tone: MetricTone; detail: string }; conflicts: LockConflict[] }) {
   const summaries = summarizePlanScopes(plan);
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-2 gap-2">
-        <MetricTile label="Mode" value={risk.label} detail={risk.detail} tone={risk.tone} />
+        <MetricTile label="Mode" value={conflicts.length > 0 ? "Blocked" : risk.label} detail={conflicts.length > 0 ? formatLockConflictReason(conflicts) ?? "Locked scope conflict" : risk.detail} tone={conflicts.length > 0 ? "danger" : risk.tone} />
         <MetricTile label="Stages" value={formatCount(plan.changedStages.length)} detail={formatStageList(plan.changedStages)} tone={plan.changedStages.length > 0 ? "warning" : "success"} />
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -262,6 +434,7 @@ function CommandList({
   plan,
   copyStatus,
   canRun,
+  blocked,
   running,
   onCopy,
   onRun,
@@ -269,6 +442,7 @@ function CommandList({
   plan: EditorRebuildPlan;
   copyStatus: string;
   canRun: boolean;
+  blocked: boolean;
   running: boolean;
   onCopy: (command: string) => Promise<void>;
   onRun: (kind: CookRunKind) => Promise<void>;
@@ -302,22 +476,27 @@ function CommandList({
         </div>
       ))}
       {copyStatus && <ReadonlyField>{copyStatus}</ReadonlyField>}
+      {blocked && <ReadonlyField>Blocked by locked scopes</ReadonlyField>}
     </div>
   );
 }
 
 function QueuePanel({
   queue,
+  canQueue,
   canRun,
   running,
   risk,
+  blocked,
   onQueue,
   onRunQueue,
 }: {
   queue: CookQueueItem[];
+  canQueue: boolean;
   canRun: boolean;
   running: boolean;
   risk: { label: string; tone: MetricTone; detail: string };
+  blocked: boolean;
   onQueue: () => void;
   onRunQueue: () => Promise<void>;
 }) {
@@ -329,8 +508,8 @@ function QueuePanel({
           <span className="text-[11px] text-content-muted">{risk.detail}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <SettingsButton Icon={ListPlus} size="sm" disabled={!canRun || running} onClick={onQueue}>
-            Queue
+          <SettingsButton Icon={ListPlus} size="sm" disabled={!canQueue || running} onClick={onQueue}>
+            Add Plan
           </SettingsButton>
           <SettingsButton Icon={Play} size="sm" tone="primary" disabled={!canRun || running} onClick={() => void onRunQueue()}>
             Run Queue
@@ -338,11 +517,11 @@ function QueuePanel({
         </div>
       </div>
       {queue.length === 0 ? (
-        <ReadonlyField>{canRun ? "Ready" : "Unavailable"}</ReadonlyField>
+        <ReadonlyField>{blocked ? "Blocked" : canQueue ? "Ready" : "Unavailable"}</ReadonlyField>
       ) : (
         <div className="grid grid-cols-2 gap-2">
           {queue.map((item) => (
-            <MetricTile key={item.id} label={item.label} value={item.status} detail={formatCookKind(item.kind)} tone={getStatusTone(item.status)} />
+            <MetricTile key={item.id} label={item.label} value={item.status} detail={item.blockedReason ?? formatCookKind(item.kind)} tone={getStatusTone(item.status)} />
           ))}
         </div>
       )}
@@ -431,6 +610,22 @@ function getStatusTone(status: CookHistoryStatus | CookQueueItem["status"]): Met
       return "info";
     case "skipped":
       return "warning";
+    case "blocked":
+      return "danger";
+    default:
+      return "neutral";
+  }
+}
+
+function getPersistTone(status: PersistStatus): MetricTone {
+  switch (status) {
+    case "saved":
+      return "success";
+    case "saving":
+    case "loading":
+      return "info";
+    case "error":
+      return "danger";
     default:
       return "neutral";
   }
@@ -461,4 +656,15 @@ function formatCount(value: number): string {
   }
 
   return value.toFixed(0);
+}
+
+function hasPlanScope(plan: EditorRebuildPlan): boolean {
+  return plan.scopes.terrainRegions.length > 0
+    || plan.scopes.paintRegions.length > 0
+    || plan.scopes.vegetationRegions.length > 0
+    || plan.scopes.partitionCells.length > 0;
+}
+
+function replaceQueueItem(queue: CookQueueItem[], id: string, patch: Partial<CookQueueItem>): CookQueueItem[] {
+  return queue.map((item) => item.id === id ? { ...item, ...patch } : item);
 }

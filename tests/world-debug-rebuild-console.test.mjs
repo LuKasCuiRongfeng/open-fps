@@ -57,6 +57,7 @@ test("rebuild console builds review-first queue and compact scope summaries", as
     assert.equal(queue.length, 2);
     assert.equal(queue[0].kind, "dryRun");
     assert.equal(queue[0].request.dryRun, true);
+    assert.equal(queue[0].blockedReason, null);
     assert.equal(queue[1].kind, "cook");
     assert.equal(queue[1].request.dryRun, false);
 
@@ -70,6 +71,45 @@ test("rebuild console builds review-first queue and compact scope summaries", as
     });
     assert.equal(summaries[0].sample, "0,0, 1,0, 2,0, 3,0, 4,0 +1");
     assert.equal(summaries[3].sample, "0,0");
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("rebuild console blocks queued jobs that intersect locked scopes", async () => {
+  const { helpers, tempRoot } = await importConsoleHelpers();
+  try {
+    const request = {
+      projectPath: "kunlun_wilds",
+      mapId: "main",
+      dryRun: false,
+      full: false,
+      changedStages: ["objects"],
+      scopes: {
+        terrainRegions: [],
+        paintRegions: [],
+        vegetationRegions: [],
+        partitionCells: ["0,0", "1,0"],
+      },
+    };
+    const locks = helpers.normalizeRebuildLocks({
+      partitionCells: ["1,0", "bad", "0,0", "0,0"],
+      terrainRegions: ["2,0"],
+    });
+
+    assert.deepEqual(locks.partitionCells, ["0,0", "1,0"]);
+    const conflicts = helpers.createLockConflicts(request, locks);
+    assert.equal(conflicts.length, 1);
+    assert.equal(conflicts[0].key, "partitionCells");
+    assert.deepEqual(conflicts[0].values, ["0,0", "1,0"]);
+
+    const queue = helpers.createCookQueue(request, conflicts);
+    assert.equal(queue[0].status, "blocked");
+    assert.equal(queue[1].status, "blocked");
+    assert.match(queue[0].blockedReason, /Cells 0,0, 1,0/);
+
+    const fullConflicts = helpers.createLockConflicts({ ...request, full: true, scopes: { terrainRegions: [], paintRegions: [], vegetationRegions: [], partitionCells: [] } }, locks);
+    assert.equal(fullConflicts.length, 2);
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }

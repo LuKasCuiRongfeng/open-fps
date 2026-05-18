@@ -6,6 +6,7 @@ import type { EditorRebuildPlan, MetricTone, RebuildScopes } from "./worldDebugD
 
 export type CookRunKind = "dryRun" | "cook";
 export type CookHistoryStatus = "running" | "success" | "error" | "skipped";
+export type CookQueueStatus = CookHistoryStatus | "queued" | "blocked";
 export type CookFailureCategory = "success" | "source" | "cooked" | "graph" | "pack" | "environment" | "validation" | "execution" | "unknown";
 
 export type CookFailureAnalysis = {
@@ -35,8 +36,18 @@ export type CookQueueItem = {
   id: string;
   kind: CookRunKind;
   label: string;
-  status: CookHistoryStatus | "queued";
+  status: CookQueueStatus;
   request: PlatformCookMapRequest;
+  blockedReason: string | null;
+};
+
+export type RebuildLockState = RebuildScopes;
+
+export type LockConflict = {
+  key: keyof RebuildScopes;
+  label: string;
+  values: string[];
+  reason: string;
 };
 
 export type ScopeSummary = {
@@ -50,6 +61,13 @@ export type CookRiskSummary = {
   label: string;
   tone: MetricTone;
   detail: string;
+};
+
+export const emptyRebuildLocks: RebuildLockState = {
+  terrainRegions: [],
+  paintRegions: [],
+  vegetationRegions: [],
+  partitionCells: [],
 };
 
 const targetPattern = /(?:[A-Za-z]:)?[\w./\\-]+\.(?:json|heightpack|paintpack|vegpack|objectpack|mjs|glb|png|jpg|jpeg|webp)/g;
@@ -103,21 +121,25 @@ export function failCookEntry(entry: CookHistoryEntry, message: string, finished
   };
 }
 
-export function createCookQueue(request: PlatformCookMapRequest): CookQueueItem[] {
+export function createCookQueue(request: PlatformCookMapRequest, conflicts: readonly LockConflict[] = []): CookQueueItem[] {
+  const blockedReason = formatLockConflictReason(conflicts);
+  const status: CookQueueStatus = blockedReason ? "blocked" : "queued";
   return [
     {
       id: createCookId("dryRun"),
       kind: "dryRun",
       label: "Dry Run Review",
-      status: "queued",
+      status,
       request: { ...request, dryRun: true },
+      blockedReason,
     },
     {
       id: createCookId("cook"),
       kind: "cook",
       label: request.full ? "Full Cook" : "Scoped Cook",
-      status: "queued",
+      status,
       request: { ...request, dryRun: false },
+      blockedReason,
     },
   ];
 }
@@ -167,6 +189,64 @@ export function analyzeCookText(text: string, succeeded: boolean): CookFailureAn
 
 export function classifyDiagnosticIssue(issue: string): CookFailureAnalysis {
   return analyzeCookText(issue, false);
+}
+
+export function normalizeRebuildLocks(value: Partial<RebuildLockState> | null | undefined): RebuildLockState {
+  return {
+    terrainRegions: uniqueGridKeys(value?.terrainRegions),
+    paintRegions: uniqueGridKeys(value?.paintRegions),
+    vegetationRegions: uniqueGridKeys(value?.vegetationRegions),
+    partitionCells: uniqueGridKeys(value?.partitionCells),
+  };
+}
+
+export function addRebuildLocks(current: RebuildLockState, additions: Partial<RebuildLockState>): RebuildLockState {
+  return normalizeRebuildLocks({
+    terrainRegions: [...current.terrainRegions, ...(additions.terrainRegions ?? [])],
+    paintRegions: [...current.paintRegions, ...(additions.paintRegions ?? [])],
+    vegetationRegions: [...current.vegetationRegions, ...(additions.vegetationRegions ?? [])],
+    partitionCells: [...current.partitionCells, ...(additions.partitionCells ?? [])],
+  });
+}
+
+export function removeRebuildLocks(current: RebuildLockState, removals: Partial<RebuildLockState>): RebuildLockState {
+  return {
+    terrainRegions: removeKeys(current.terrainRegions, removals.terrainRegions),
+    paintRegions: removeKeys(current.paintRegions, removals.paintRegions),
+    vegetationRegions: removeKeys(current.vegetationRegions, removals.vegetationRegions),
+    partitionCells: removeKeys(current.partitionCells, removals.partitionCells),
+  };
+}
+
+export function hasRebuildLocks(locks: RebuildLockState): boolean {
+  return countScopeKeys(locks) > 0;
+}
+
+export function createLockConflicts(request: PlatformCookMapRequest | null, locks: RebuildLockState): LockConflict[] {
+  if (!request || !hasRebuildLocks(locks)) {
+    return [];
+  }
+
+  if (request.full) {
+    return createScopeConflictEntries(locks, "Full cook touches locked scope");
+  }
+
+  return createScopeConflictEntries({
+    terrainRegions: intersectKeys(request.scopes.terrainRegions, locks.terrainRegions),
+    paintRegions: intersectKeys(request.scopes.paintRegions, locks.paintRegions),
+    vegetationRegions: intersectKeys(request.scopes.vegetationRegions, locks.vegetationRegions),
+    partitionCells: intersectKeys(request.scopes.partitionCells, locks.partitionCells),
+  }, "Scoped cook intersects locked scope");
+}
+
+export function formatLockConflictReason(conflicts: readonly LockConflict[]): string | null {
+  if (conflicts.length === 0) {
+    return null;
+  }
+
+  const first = conflicts[0];
+  const total = conflicts.reduce((sum, conflict) => sum + conflict.values.length, 0);
+  return `${first.label} ${first.values.slice(0, 3).join(", ")}${total > 3 ? ` +${total - 3}` : ""}`;
 }
 
 export function summarizePlanScopes(plan: EditorRebuildPlan): ScopeSummary[] {
@@ -256,10 +336,47 @@ function createScopeSummary(key: keyof RebuildScopes, label: string, values: rea
 }
 
 function countPlanScopeKeys(plan: EditorRebuildPlan): number {
-  return plan.scopes.terrainRegions.length
-    + plan.scopes.paintRegions.length
-    + plan.scopes.vegetationRegions.length
-    + plan.scopes.partitionCells.length;
+  return countScopeKeys(plan.scopes);
+}
+
+function countScopeKeys(scopes: RebuildScopes): number {
+  return scopes.terrainRegions.length
+    + scopes.paintRegions.length
+    + scopes.vegetationRegions.length
+    + scopes.partitionCells.length;
+}
+
+function createScopeConflictEntries(scopes: RebuildScopes, reason: string): LockConflict[] {
+  return [
+    createLockConflict("terrainRegions", "Terrain", scopes.terrainRegions, reason),
+    createLockConflict("paintRegions", "Paint", scopes.paintRegions, reason),
+    createLockConflict("vegetationRegions", "Vegetation", scopes.vegetationRegions, reason),
+    createLockConflict("partitionCells", "Cells", scopes.partitionCells, reason),
+  ].filter((entry) => entry.values.length > 0);
+}
+
+function createLockConflict(key: keyof RebuildScopes, label: string, values: string[], reason: string): LockConflict {
+  return { key, label, values, reason };
+}
+
+function uniqueGridKeys(values: readonly string[] | null | undefined): string[] {
+  return [...new Set((values ?? []).filter((value) => /^-?\d+,-?\d+$/.test(value)))].sort(compareGridKeys);
+}
+
+function removeKeys(values: readonly string[], removals: readonly string[] | null | undefined): string[] {
+  const removalSet = new Set(removals ?? []);
+  return values.filter((value) => !removalSet.has(value));
+}
+
+function intersectKeys(left: readonly string[], right: readonly string[]): string[] {
+  const rightSet = new Set(right);
+  return uniqueGridKeys(left.filter((value) => rightSet.has(value)));
+}
+
+function compareGridKeys(left: string, right: string): number {
+  const [leftX = 0, leftZ = 0] = left.split(",").map(Number);
+  const [rightX = 0, rightZ = 0] = right.split(",").map(Number);
+  return leftZ - rightZ || leftX - rightX;
 }
 
 function createDisplayCommand(request: PlatformCookMapRequest): string[] {
@@ -302,4 +419,13 @@ function extractCookTargets(text: string): string[] {
 
 function formatDisplayCommandArg(value: string): string {
   return /\s/.test(value) ? `"${value.replace(/"/g, '\\"')}"` : value;
+}
+
+export function summarizeLockScopes(locks: RebuildLockState): ScopeSummary[] {
+  return [
+    createScopeSummary("terrainRegions", "Terrain", locks.terrainRegions),
+    createScopeSummary("paintRegions", "Paint", locks.paintRegions),
+    createScopeSummary("vegetationRegions", "Vegetation", locks.vegetationRegions),
+    createScopeSummary("partitionCells", "Cells", locks.partitionCells),
+  ];
 }
