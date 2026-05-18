@@ -434,6 +434,7 @@ export class TerrainEditor {
       heightPages: {},
       loadHeightPage: mapData.loadHeightPage,
       terrainPath: mapData.terrainPath,
+      generationGraphPath: mapData.generationGraphPath,
       paintPath: mapData.paintPath,
       paint: clonePaintData(mapData.paint),
       vegetationPath: mapData.vegetationPath,

@@ -8,6 +8,7 @@ import {
   createRegionIntegrity,
   ensureMapManifestPaths,
   formatGridCoordinate,
+  generationGraphPath,
   getMapDir,
   getPageBounds,
   pageSizeMeters,
@@ -18,11 +19,13 @@ import {
   worldObjectsPath,
   writeJsonFile,
 } from "./shared.mjs";
+import { writeWorldGenerationGraph } from "./world-generation-graph.mjs";
 
 export async function generateWorldObjectAssets(context, preset) {
   const mapDir = getMapDir(context, preset);
   const objectDir = path.join(mapDir, "objects");
-  await ensureMapManifestPaths(context, preset, { objectsPath: worldObjectsPath });
+  await writeWorldGenerationGraph(context, preset);
+  await ensureMapManifestPaths(context, preset, { generationGraphPath, objectsPath: worldObjectsPath });
   await rm(objectDir, { recursive: true, force: true });
   await mkdir(path.join(objectDir, "cells"), { recursive: true });
 

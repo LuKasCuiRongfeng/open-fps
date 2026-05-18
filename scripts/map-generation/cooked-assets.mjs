@@ -16,6 +16,7 @@ import {
   cookedWorldPartitionCellSizePages,
   cookedWorldPartitionDependencyKinds,
   createSha256Hex,
+  generationGraphPath,
   getMapDir,
   getMapPath,
   paintManifestPath,
@@ -36,6 +37,7 @@ export async function generateCookedMapAssets(context, preset) {
 
   const projectSource = await readSourceJson(context.projectPath, context);
   const mapSource = await readSourceJson(getMapPath(context, preset), context);
+  const generationGraphSource = await readSourceJson(path.join(mapDir, generationGraphPath), context);
   const terrainSource = await readSourceJson(path.join(mapDir, terrainHeightPath), context);
   const paintSource = await readSourceJson(path.join(mapDir, paintManifestPath), context);
   const vegetationSource = await readSourceJson(path.join(mapDir, vegetationModelsPath), context);
@@ -45,6 +47,7 @@ export async function generateCookedMapAssets(context, preset) {
     project: createSourceRef(projectSource),
     assetRegistry: createSourceRef(assetRegistrySource),
     map: createSourceRef(mapSource),
+    generationGraph: createSourceRef(generationGraphSource),
     terrain: createSourceRef(terrainSource),
     paint: createSourceRef(paintSource),
     vegetation: createSourceRef(vegetationSource),

@@ -17,6 +17,8 @@ type DiagnosticStatus = "idle" | "checking" | "ready" | "error";
 
 type AssetDiagnostics = {
   status: DiagnosticStatus;
+  generationStages: number;
+  generationRules: number;
   terrainRegions: number;
   paintRegions: number;
   vegetationRegions: number;
@@ -39,6 +41,8 @@ type MetricItem = {
 
 const emptyDiagnostics: AssetDiagnostics = {
   status: "idle",
+  generationStages: 0,
+  generationRules: 0,
   terrainRegions: 0,
   paintRegions: 0,
   vegetationRegions: 0,
@@ -128,6 +132,7 @@ export function WorldDebugTab({ editorApp, editorWorkspace }: WorldDebugTabProps
         <SettingRow label="Source Assets" align="start">
           <MetricGrid
             items={[
+              { label: "Graph", value: formatCount(diagnostics.generationStages), detail: `${formatCount(diagnostics.generationRules)} rules` },
               { label: "Terrain", value: formatCount(diagnostics.terrainRegions), detail: "regions" },
               { label: "Paint", value: formatCount(diagnostics.paintRegions), detail: "regions" },
               { label: "Vegetation", value: formatCount(diagnostics.vegetationRegions), detail: `${formatCount(diagnostics.vegetationModels)} models` },
@@ -212,6 +217,11 @@ async function loadAssetDiagnostics(editorApp: EditorAppSession, mapDirectory: s
     issues,
   };
 
+  const generationGraph = await readJsonManifest(joinPath(mapDirectory, mapData.generationGraphPath), issues);
+  const generationStages = readRecordProperty(generationGraph, "stages");
+  diagnostics.generationStages = countRecordEntries(generationStages);
+  diagnostics.generationRules = countGenerationGraphRules(generationStages);
+
   const terrainManifest = await readJsonManifest(joinPath(mapDirectory, mapData.terrainPath), issues);
   diagnostics.terrainRegions = countRecordEntries(readRecordProperty(terrainManifest, "regions"));
   await validateRegionPacks(mapDirectory, terrainManifest, "heightpack", issues, diagnostics);
@@ -231,6 +241,26 @@ async function loadAssetDiagnostics(editorApp: EditorAppSession, mapDirectory: s
   await validateObjectPacks(mapDirectory, objectManifest, issues, diagnostics, mapData);
 
   return diagnostics;
+}
+
+function countGenerationGraphRules(stages: Record<string, unknown> | null): number {
+  if (!stages) {
+    return 0;
+  }
+
+  let count = 0;
+  for (const stage of Object.values(stages)) {
+    const record = asRecord(stage);
+    if (!record) {
+      continue;
+    }
+
+    const operations = Array.isArray(record.operations) ? record.operations : [];
+    const rules = Array.isArray(record.rules) ? record.rules : [];
+    count += operations.length + rules.length;
+  }
+
+  return count;
 }
 
 async function validateRegionPacks(

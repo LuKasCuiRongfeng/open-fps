@@ -109,6 +109,7 @@ export function createTerrainSystem(
     heightPages: {},
     loadHeightPage: source.loadHeightPage,
     terrainPath: source.terrainPath,
+    generationGraphPath: source.generationGraphPath,
     paintPath: source.paintPath,
     paint: clonePaintData(source.paint),
     vegetationPath: source.vegetationPath,

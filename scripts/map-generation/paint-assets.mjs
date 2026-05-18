@@ -12,6 +12,7 @@ import {
   createRegionIntegrity,
   ensureMapManifestPaths,
   formatGridCoordinate,
+  generationGraphPath,
   getMapDir,
   getPageBounds,
   paintManifestPath,
@@ -22,11 +23,13 @@ import {
   pageSizeMeters,
 } from "./shared.mjs";
 import { createTerrainPaintLayers, readAssetRegistry } from "./asset-registry.mjs";
+import { writeWorldGenerationGraph } from "./world-generation-graph.mjs";
 
 export async function generatePaintAssets(context, preset) {
   const mapDir = getMapDir(context, preset);
   const paintDir = path.join(mapDir, "paint");
-  await ensureMapManifestPaths(context, preset, { paintPath: paintManifestPath });
+  await writeWorldGenerationGraph(context, preset);
+  await ensureMapManifestPaths(context, preset, { generationGraphPath, paintPath: paintManifestPath });
   await rm(paintDir, { recursive: true, force: true });
   await mkdir(path.join(paintDir, "regions"), { recursive: true });
 

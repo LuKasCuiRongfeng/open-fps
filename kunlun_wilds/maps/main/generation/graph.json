@@ -1,0 +1,217 @@
+{
+  "version": 1,
+  "format": "open-fps-world-generation-graph-v1",
+  "mapId": "main",
+  "name": "Frontier Basin",
+  "seed": 918273,
+  "shaper": "frontier-basin",
+  "world": {
+    "pageSizeMeters": 64,
+    "pageBounds": {
+      "minPageX": -25,
+      "maxPageX": 24,
+      "minPageZ": -25,
+      "maxPageZ": 24
+    },
+    "partitionCellSizePages": 8
+  },
+  "inputs": {
+    "designSpec": "OPEN_WORLD_DESIGN_SPEC.md",
+    "assetRegistry": "assets/registry.json",
+    "sharedSemantics": "scripts/map-generation/world-semantics.mjs"
+  },
+  "stages": {
+    "semantics": {
+      "kind": "shared-semantic-foundation",
+      "dependencies": [],
+      "outputs": [
+        "roads",
+        "water",
+        "poi",
+        "clearance",
+        "object-archetypes"
+      ],
+      "rebuild": {
+        "scope": "world-partition-cell",
+        "cellSizePages": 8
+      }
+    },
+    "terrain": {
+      "kind": "terrain-operation-graph",
+      "output": "terrain/height/manifest.json",
+      "dependencies": [
+        "semantics"
+      ],
+      "rebuild": {
+        "scope": "height-region",
+        "regionSizePages": 8
+      },
+      "operations": [
+        {
+          "id": "base-height",
+          "type": "constant",
+          "parameters": {
+            "heightMeters": 10
+          }
+        },
+        {
+          "id": "continental-shape",
+          "type": "domain-noise",
+          "parameters": {
+            "amplitudeMeters": 72,
+            "frequencyPerMeter": 0.00022,
+            "powerCurve": 2.1
+          }
+        },
+        {
+          "id": "mountain-ridges",
+          "type": "ridged-noise",
+          "parameters": {
+            "amplitudeMeters": 82,
+            "frequencyPerMeter": 0.00058,
+            "powerCurve": 2.75
+          }
+        },
+        {
+          "id": "rolling-hills",
+          "type": "fractal-noise",
+          "parameters": {
+            "amplitudeMeters": 24,
+            "frequencyPerMeter": 0.0021,
+            "powerCurve": 1.25
+          }
+        },
+        {
+          "id": "valley-carve",
+          "type": "semantic-valley",
+          "parameters": {
+            "amplitudeMeters": 20,
+            "frequencyPerMeter": 0.00052,
+            "heightFadeStartMeters": 34,
+            "heightFadeEndMeters": 86
+          }
+        },
+        {
+          "id": "warp",
+          "type": "domain-warp",
+          "parameters": {
+            "amplitudeMeters": 120,
+            "frequencyPerMeter": 0.00095
+          }
+        },
+        {
+          "id": "erosion-detail",
+          "type": "erosion-detail",
+          "parameters": {
+            "detailFrequency": 0.055,
+            "detailAmplitude": 1
+          }
+        },
+        {
+          "id": "micro-detail",
+          "type": "detail-noise",
+          "parameters": {
+            "amplitudeMeters": 4.5,
+            "frequencyPerMeter": 0.012
+          }
+        }
+      ]
+    },
+    "paint": {
+      "kind": "material-biome-graph",
+      "output": "paint/layers.json",
+      "dependencies": [
+        "semantics",
+        "terrain",
+        "assetRegistry"
+      ],
+      "rebuild": {
+        "scope": "paint-region",
+        "regionSizePages": 8
+      },
+      "rules": [
+        "height-snowline",
+        "slope-rock",
+        "water-bank-wetness",
+        "road-core-gravel",
+        "poi-clearance-gravel",
+        "macro-noise-variation"
+      ]
+    },
+    "vegetation": {
+      "kind": "ecology-scatter-graph",
+      "output": "vegetation/models.json",
+      "dependencies": [
+        "semantics",
+        "terrain",
+        "assetRegistry"
+      ],
+      "rebuild": {
+        "scope": "vegetation-region",
+        "cellSizeMeters": 32,
+        "regionSizeCells": 8
+      },
+      "rules": [
+        "slope-exclusion",
+        "snowline-exclusion",
+        "water-bank-boost",
+        "road-clearance",
+        "poi-clearance",
+        "tree-cluster-understory"
+      ]
+    },
+    "objects": {
+      "kind": "semantic-object-placement-graph",
+      "output": "objects/manifest.json",
+      "dependencies": [
+        "semantics",
+        "terrain",
+        "assetRegistry"
+      ],
+      "rebuild": {
+        "scope": "world-partition-cell",
+        "cellSizePages": 8
+      },
+      "rules": [
+        "roads",
+        "water",
+        "poi",
+        "road-props",
+        "poi-props"
+      ]
+    },
+    "collision": {
+      "kind": "derived-collision-build",
+      "output": "cooked/maps/<mapId>/collision/cells",
+      "dependencies": [
+        "terrain",
+        "objects"
+      ],
+      "rebuild": {
+        "scope": "world-partition-cell",
+        "cellSizePages": 8
+      }
+    },
+    "nav": {
+      "kind": "derived-nav-build",
+      "output": "cooked/maps/<mapId>/nav/cells",
+      "dependencies": [
+        "semantics",
+        "terrain",
+        "objects",
+        "collision"
+      ],
+      "rebuild": {
+        "scope": "world-partition-cell",
+        "cellSizePages": 8
+      }
+    }
+  },
+  "budgets": {
+    "targetAreaSquareKilometers": 10.24,
+    "maxTerrainHeightRegionsPerFullRebuild": 64,
+    "maxPaintRegionsPerFullRebuild": 64,
+    "vegetationCellSizeMeters": 32,
+    "partitionCellSizeMeters": 512
+  }
+}

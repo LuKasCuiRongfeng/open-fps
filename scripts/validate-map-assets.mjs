@@ -16,6 +16,9 @@ const IMPORTED_MATERIAL_ROOT = "assets/imported/materials";
 const SOURCE_METADATA_ROOT = "assets/sources";
 const ACCEPTED_ASSET_LICENSES = new Set(["CC0-1.0"]);
 const MAP_FILE = "map.json";
+const GENERATION_GRAPH_PATH = "generation/graph.json";
+const GENERATION_GRAPH_FORMAT = "open-fps-world-generation-graph-v1";
+const GENERATION_GRAPH_VERSION = 1;
 const TERRAIN_HEIGHT_PATH = "terrain/height/manifest.json";
 const TERRAIN_REGION_DIRECTORY = "terrain/height/regions";
 const TERRAIN_REGION_EXTENSION = ".heightpack";
@@ -79,6 +82,7 @@ async function validateProject(projectPath, mapIdOverride) {
   const mapDirectory = path.join(projectPath, "maps", mapId);
   const mapManifest = await readJsonFile(path.join(mapDirectory, MAP_FILE), "map manifest");
   validateMapManifest(mapManifest, mapId);
+  await validateGenerationGraph(mapDirectory, mapManifest, mapId);
   await validateTerrain(mapDirectory, mapManifest);
   await validatePaint(mapDirectory, mapManifest, assetRegistry);
   await validateVegetation(mapDirectory, assetRegistry);
@@ -278,6 +282,10 @@ function validateMapManifest(manifest, mapId) {
     addError(MAP_FILE, `Map terrainPath must be '${TERRAIN_HEIGHT_PATH}'.`);
   }
 
+  if (manifest.generationGraphPath !== GENERATION_GRAPH_PATH) {
+    addError(MAP_FILE, `Map generationGraphPath must be '${GENERATION_GRAPH_PATH}'.`);
+  }
+
   if (manifest.paintPath !== PAINT_PATH) {
     addError(MAP_FILE, `Map paintPath must be '${PAINT_PATH}'.`);
   }
@@ -289,6 +297,112 @@ function validateMapManifest(manifest, mapId) {
   if (manifest.objectsPath !== WORLD_OBJECTS_PATH) {
     addError(MAP_FILE, `Map objectsPath must be '${WORLD_OBJECTS_PATH}'.`);
   }
+}
+
+async function validateGenerationGraph(mapDirectory, mapManifest, mapId) {
+  const graphPath = path.join(mapDirectory, GENERATION_GRAPH_PATH);
+  const graph = await readJsonFile(graphPath, "world generation graph");
+  const label = relativePath(graphPath);
+
+  validateEqual(graph.version, GENERATION_GRAPH_VERSION, label, "generation graph version");
+  validateEqual(graph.format, GENERATION_GRAPH_FORMAT, label, "generation graph format");
+  validateEqual(graph.mapId, mapId, label, "generation graph mapId");
+  validateEqual(graph.seed, mapManifest.seed, label, "generation graph seed");
+  validateGenerationGraphWorld(graph.world, mapManifest, label);
+  validateGenerationGraphInputs(graph.inputs, label);
+  validateGenerationGraphStages(graph.stages, label);
+  validateGenerationGraphBudgets(graph.budgets, label);
+}
+
+function validateGenerationGraphWorld(world, mapManifest, label) {
+  if (!isRecord(world)) {
+    addError(label, "Generation graph world metadata must be an object.");
+    return;
+  }
+
+  validateEqual(world.pageSizeMeters, mapManifest.world?.pageSizeMeters, label, "generation graph world.pageSizeMeters");
+  validateEqual(world.partitionCellSizePages, COOKED_WORLD_PARTITION_CELL_SIZE_PAGES, label, "generation graph world.partitionCellSizePages");
+  const pageBounds = world.pageBounds;
+  const expectedPageBounds = getWorldPageBounds(mapManifest.world);
+  if (!isRecord(pageBounds) || !expectedPageBounds) {
+    addError(label, "Generation graph world.pageBounds must be an object matching the map world.");
+    return;
+  }
+
+  validateEqual(pageBounds.minPageX, expectedPageBounds.minX, label, "generation graph pageBounds.minPageX");
+  validateEqual(pageBounds.maxPageX, expectedPageBounds.maxX, label, "generation graph pageBounds.maxPageX");
+  validateEqual(pageBounds.minPageZ, expectedPageBounds.minZ, label, "generation graph pageBounds.minPageZ");
+  validateEqual(pageBounds.maxPageZ, expectedPageBounds.maxZ, label, "generation graph pageBounds.maxPageZ");
+}
+
+function validateGenerationGraphInputs(inputs, label) {
+  if (!isRecord(inputs)) {
+    addError(label, "Generation graph inputs must be an object.");
+    return;
+  }
+
+  validateEqual(inputs.designSpec, "OPEN_WORLD_DESIGN_SPEC.md", label, "generation graph inputs.designSpec");
+  validateEqual(inputs.assetRegistry, ASSET_REGISTRY_PATH, label, "generation graph inputs.assetRegistry");
+  validateEqual(inputs.sharedSemantics, "scripts/map-generation/world-semantics.mjs", label, "generation graph inputs.sharedSemantics");
+}
+
+function validateGenerationGraphStages(stages, label) {
+  if (!isRecord(stages)) {
+    addError(label, "Generation graph stages must be an object.");
+    return;
+  }
+
+  const requiredStages = ["semantics", "terrain", "paint", "vegetation", "objects", "collision", "nav"];
+  for (const stageName of requiredStages) {
+    validateGenerationGraphStage(stages[stageName], label, stageName);
+  }
+  validateStageDependencies(stages, label);
+}
+
+function validateGenerationGraphStage(stage, label, stageName) {
+  if (!isRecord(stage)) {
+    addError(label, `Generation graph stage '${stageName}' must be an object.`);
+    return;
+  }
+  if (typeof stage.kind !== "string" || stage.kind.length === 0) {
+    addError(label, `Generation graph stage '${stageName}' must declare a kind.`);
+  }
+  if (!Array.isArray(stage.dependencies) || !stage.dependencies.every((entry) => typeof entry === "string")) {
+    addError(label, `Generation graph stage '${stageName}' dependencies must be a string array.`);
+  }
+  if (!isRecord(stage.rebuild) || typeof stage.rebuild.scope !== "string") {
+    addError(label, `Generation graph stage '${stageName}' must declare a rebuild scope.`);
+  }
+}
+
+function validateStageDependencies(stages, label) {
+  const stageNames = new Set(Object.keys(stages));
+  for (const [stageName, stage] of Object.entries(stages)) {
+    if (!isRecord(stage) || !Array.isArray(stage.dependencies)) {
+      continue;
+    }
+    for (const dependency of stage.dependencies) {
+      if (dependency === "assetRegistry") {
+        continue;
+      }
+      if (!stageNames.has(dependency)) {
+        addError(label, `Generation graph stage '${stageName}' references unknown dependency '${dependency}'.`);
+      }
+    }
+  }
+}
+
+function validateGenerationGraphBudgets(budgets, label) {
+  if (!isRecord(budgets)) {
+    addError(label, "Generation graph budgets must be an object.");
+    return;
+  }
+
+  requirePositiveNumber(budgets.targetAreaSquareKilometers, label, "generation graph budget targetAreaSquareKilometers");
+  requirePositiveInteger(budgets.maxTerrainHeightRegionsPerFullRebuild, label, "generation graph budget maxTerrainHeightRegionsPerFullRebuild");
+  requirePositiveInteger(budgets.maxPaintRegionsPerFullRebuild, label, "generation graph budget maxPaintRegionsPerFullRebuild");
+  requirePositiveNumber(budgets.vegetationCellSizeMeters, label, "generation graph budget vegetationCellSizeMeters");
+  requirePositiveNumber(budgets.partitionCellSizeMeters, label, "generation graph budget partitionCellSizeMeters");
 }
 
 function validatePaintLayerAssetReferences(layers, assetRegistry, label) {
@@ -611,6 +725,7 @@ async function validateCookedMap(projectPath, mapId, mapManifest, objectManifest
     project: PROJECT_FILE,
     assetRegistry: ASSET_REGISTRY_PATH,
     map: `maps/${mapId}/${MAP_FILE}`,
+    generationGraph: `maps/${mapId}/${GENERATION_GRAPH_PATH}`,
     terrain: `maps/${mapId}/${TERRAIN_HEIGHT_PATH}`,
     paint: `maps/${mapId}/${PAINT_PATH}`,
     vegetation: `maps/${mapId}/${VEGETATION_PATH}`,
@@ -622,6 +737,7 @@ async function validateCookedMap(projectPath, mapId, mapManifest, objectManifest
     await validateCookedSourceReference(projectPath, cooked.source.project, sourcePaths.project, label, "project");
     await validateCookedSourceReference(projectPath, cooked.source.assetRegistry, sourcePaths.assetRegistry, label, "assetRegistry");
     await validateCookedSourceReference(projectPath, cooked.source.map, sourcePaths.map, label, "map");
+    await validateCookedSourceReference(projectPath, cooked.source.generationGraph, sourcePaths.generationGraph, label, "generationGraph");
     await validateCookedSourceReference(projectPath, cooked.source.terrain, sourcePaths.terrain, label, "terrain");
     await validateCookedSourceReference(projectPath, cooked.source.paint, sourcePaths.paint, label, "paint");
     await validateCookedSourceReference(projectPath, cooked.source.vegetation, sourcePaths.vegetation, label, "vegetation");

@@ -13,6 +13,7 @@ import {
   createRegionIntegrity,
   ensureMapManifestPaths,
   formatGridCoordinate,
+  generationGraphPath,
   getMapDir,
   getPageBounds,
   hash2i,
@@ -30,11 +31,13 @@ import {
   vegetationRegionsDirectory,
 } from "./shared.mjs";
 import { createVegetationModelDefinitions, readAssetRegistry } from "./asset-registry.mjs";
+import { writeWorldGenerationGraph } from "./world-generation-graph.mjs";
 
 export async function generateVegetationAssets(context, preset) {
   const mapDir = getMapDir(context, preset);
   const vegetationDir = path.join(mapDir, "vegetation");
-  await ensureMapManifestPaths(context, preset, { vegetationPath: vegetationModelsPath });
+  await writeWorldGenerationGraph(context, preset);
+  await ensureMapManifestPaths(context, preset, { generationGraphPath, vegetationPath: vegetationModelsPath });
   await rm(vegetationDir, { recursive: true, force: true });
   await mkdir(path.join(vegetationDir, "regions"), { recursive: true });
 

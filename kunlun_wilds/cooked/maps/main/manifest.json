@@ -5,9 +5,9 @@
   "build": {
     "tool": "open-fps-cook-map-assets",
     "toolVersion": 4,
-    "generatedAt": "2026-05-18T08:04:04.175Z",
-    "inputSignature": "62d8932bb8ae859973ee114502d6cf5e27c166dc3e1ca4ab067fb6b2db966cab",
-    "previousInputSignature": "fdeda57658d53d00e8c749bd9f6ed8d8057ff1d68b110d229e77b28ec7dc1097",
+    "generatedAt": "2026-05-18T08:36:53.724Z",
+    "inputSignature": "65b8c8fbfbdee55f85d3bddbe9aa8fa924068ad9b9e231e10e4f2321aea2577f",
+    "previousInputSignature": "62d8932bb8ae859973ee114502d6cf5e27c166dc3e1ca4ab067fb6b2db966cab",
     "packageLayout": "content-addressed-sha256-v1",
     "artifactCount": 547
   },
@@ -16,13 +16,13 @@
     "metadata": {
       "name": "Frontier Basin",
       "created": 1778997569115,
-      "modified": 1779091358961
+      "modified": 1779093336457
     }
   },
   "source": {
     "project": {
       "path": "project.json",
-      "sha256": "1171f5cf77ba09f6ee3c8fbef68163c954f5743307f2d4ec0fbfbc45a6ada15b"
+      "sha256": "fd2c382e29e031b0200179b0f01e6294ac8ab9e6a73e21d6b3ba7ad80538eb9b"
     },
     "assetRegistry": {
       "path": "assets/registry.json",
@@ -30,7 +30,11 @@
     },
     "map": {
       "path": "maps/main/map.json",
-      "sha256": "941476ea2c17da9d1cfe8f2db04a1aae28498c31195e468629d862e1dd5abc5f"
+      "sha256": "2692353775f188fc8c93b46e508e3821651dfc9ff5f8e6d94d9d3e8c55be1670"
+    },
+    "generationGraph": {
+      "path": "maps/main/generation/graph.json",
+      "sha256": "7476fb970f4bdaef754285d69ce4b4bf3589952eb08483c1938ac8543c993dff"
     },
     "terrain": {
       "path": "maps/main/terrain/height/manifest.json",

@@ -5,6 +5,7 @@ import {
   compareRegionCoords,
   createRegionIntegrity,
   formatGridCoordinate,
+  generationGraphPath,
   getMapDir,
   getMapPath,
   getPageBounds,
@@ -23,12 +24,14 @@ import {
   worldObjectsPath,
   writeJsonFile,
 } from "./shared.mjs";
+import { writeWorldGenerationGraph } from "./world-generation-graph.mjs";
 
 export async function generateTerrainAssets(context, preset) {
   const now = Date.now();
   const mapDir = getMapDir(context, preset);
   const mapPath = getMapPath(context, preset);
   const heightRootDir = path.join(mapDir, "terrain", "height");
+  await writeWorldGenerationGraph(context, preset);
   const heightConfig = buildHeightConfig(preset);
   const bounds = getPageBounds(preset);
   const pageKeys = [];
@@ -100,6 +103,7 @@ export async function generateTerrainAssets(context, preset) {
       originZ: 0,
     },
     terrainPath: terrainHeightPath,
+    generationGraphPath,
     paintPath: existingMap?.paintPath ?? paintManifestPath,
     vegetationPath: existingMap?.vegetationPath ?? vegetationModelsPath,
     objectsPath: existingMap?.objectsPath ?? worldObjectsPath,

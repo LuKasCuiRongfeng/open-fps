@@ -43,6 +43,7 @@ pnpm web build all
 
 The editor and game targets use separate HTML and TypeScript entries. The editor build writes `dist-editor/editor.html`; the game build writes `dist-game/game.html`.
 The standalone game target loads read-only project data from `/game-data/kunlun_wilds/`, copied from the workspace `kunlun_wilds/` folder during game builds.
+`kunlun_wilds/maps/main/generation/graph.json` is the default world generation graph source sidecar; it records generation stages, dependencies, rebuild scopes, and cooked source hashing for the open-world pipeline.
 
 Desktop:
 

@@ -33,6 +33,7 @@
 项目已经完成了从原型 JSON/散文件向专业 sidecar 资产体系的关键转向。默认资产项目已正式命名为 `Kunlun Wilds`，目录为 `kunlun_wilds`；该名称取自中国神话中的昆仑意象，作为开放世界默认 source/cooked 资产项目继续演进。
 
 - `map.json` 保持为地图级 manifest，地形、纹理、植被和世界对象数据移出主清单。
+- `generation/graph.json` 已作为 `main` 的 world generation graph v1 source sidecar，声明 terrain、paint、vegetation、objects、collision、nav 的生成阶段、共享依赖、重建粒度和预算入口。
 - 地形高度使用 `terrain/height/manifest.json` + `.heightpack` region pack。
 - 纹理绘制使用 `paint/layers.json` + `.paintpack` region pack。
 - 植被实例使用 `vegetation/models.json` + `.vegpack` region pack。
@@ -53,7 +54,8 @@
 - runtime world partition planner 已接入 game streaming hot path，可按玩家/摄像机位置生成 load/keep/unload cell、预取 object/collision/nav cell pack、缓存已加载 payload，并按 archetype 实例化真实 GLTF 世界对象；道路/水体仍以生成 ribbon 表达，缺失资产时只保留诊断 fallback。
 - game runtime 已把 cooked object cell pack 转成道路、水体、POI 和道具的可见实例；collision pack 已进入玩家水平阻挡解析，nav pack 已作为运行时资源缓存，等待后续 AI/调试消费。
 - 地形、水体/道路对象、paint、vegetation 和 cooked nav 已收敛到共享 world semantics 规则，避免各生成脚本各自维护一套道路、水体和 POI 语义。
-- 编辑器设置面板已有 World Diagnostics 页，可查看 source 资产健康、pack integrity、partition streaming、runtime payload 和可见对象/植被统计；Objects 页已支持 archetype 选择、地形拾取放置、删除、undo/redo 和对象 sidecar 保存。
+- terrain、paint、vegetation、objects、collision 和 nav 的生成依赖已由 generation graph 显式登记；后续非破坏性 terrain/material/ecology/object 图应优先扩展该 graph，而不是在脚本中继续散落隐式规则。
+- 编辑器设置面板已有 World Diagnostics 页，可查看 generation graph、source 资产健康、pack integrity、partition streaming、runtime payload 和可见对象/植被统计；Objects 页已支持 archetype 选择、地形拾取放置、删除、undo/redo 和对象 sidecar 保存。
 - CI/release 已接入 `pnpm verify`，覆盖 lint、Node 回归测试、TypeScript 类型检查和地图资产校验。
 - 已有 [`OPEN_WORLD_DESIGN_SPEC.md`](OPEN_WORLD_DESIGN_SPEC.md)，定义 `main` 10 平方公里地图的区域、道路、水系、兴趣点和生成约束。
 

@@ -8,12 +8,13 @@
     "originZ": 0
   },
   "terrainPath": "terrain/height/manifest.json",
+  "generationGraphPath": "generation/graph.json",
   "paintPath": "paint/layers.json",
   "vegetationPath": "vegetation/models.json",
   "objectsPath": "objects/manifest.json",
   "metadata": {
     "name": "Frontier Basin",
     "created": 1778997569115,
-    "modified": 1779091358961
+    "modified": 1779093336457
   }
 }

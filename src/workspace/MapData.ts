@@ -50,6 +50,7 @@ export interface MapData {
   heightPages: Record<string, HeightPageData>;
   loadHeightPage?: HeightPageLoader;
   terrainPath: typeof MAP_TERRAIN_HEIGHT_PATH;
+  generationGraphPath: typeof MAP_GENERATION_GRAPH_PATH;
   paintPath: typeof MAP_PAINT_PATH;
   paint: MapPaintData;
   vegetationPath: typeof MAP_VEGETATION_MODELS_PATH;
@@ -68,6 +69,7 @@ export interface MapManifest {
     originZ: 0;
   };
   terrainPath: typeof MAP_TERRAIN_HEIGHT_PATH;
+  generationGraphPath: typeof MAP_GENERATION_GRAPH_PATH;
   paintPath: typeof MAP_PAINT_PATH;
   vegetationPath: typeof MAP_VEGETATION_MODELS_PATH;
   objectsPath: typeof MAP_WORLD_OBJECTS_PATH;
@@ -75,6 +77,7 @@ export interface MapManifest {
 }
 
 export const MAP_DATA_VERSION = 8;
+export const MAP_GENERATION_GRAPH_PATH = "generation/graph.json";
 export const MAP_VEGETATION_MODELS_PATH = "vegetation/models.json";
 export const MAP_WORLD_OBJECTS_PATH = "objects/manifest.json";
 export const DEFAULT_OPEN_WORLD_SIZE_METERS = 3200;
@@ -98,6 +101,7 @@ export function createEmptyMapData(
     heightPageKeys: [],
     heightPages: {},
     terrainPath: MAP_TERRAIN_HEIGHT_PATH,
+    generationGraphPath: MAP_GENERATION_GRAPH_PATH,
     paintPath: MAP_PAINT_PATH,
     paint: createEmptyPaintData(),
     vegetationPath: MAP_VEGETATION_MODELS_PATH,
@@ -154,6 +158,7 @@ export function createMapManifest(mapData: MapData): MapManifest {
       originZ: 0,
     },
     terrainPath: normalizeTerrainPath(mapData.terrainPath),
+    generationGraphPath: normalizeGenerationGraphPath(mapData.generationGraphPath),
     paintPath: normalizePaintPath(mapData.paintPath),
     vegetationPath: normalizeVegetationPath(mapData.vegetationPath),
     objectsPath: normalizeObjectsPath(mapData.objectsPath),
@@ -197,6 +202,7 @@ export function deserializeMapManifest(json: string): MapManifest {
       originZ: 0,
     },
     terrainPath: normalizeTerrainPath(parsed.terrainPath),
+    generationGraphPath: normalizeGenerationGraphPath(parsed.generationGraphPath),
     paintPath: normalizePaintPath(parsed.paintPath),
     vegetationPath: normalizeVegetationPath(parsed.vegetationPath),
     objectsPath: normalizeObjectsPath(parsed.objectsPath),
@@ -226,6 +232,7 @@ export function createMapDataFromManifest(
     heightPageKeys: getTerrainHeightPageKeys(terrainManifest),
     heightPages,
     terrainPath: normalizeTerrainPath(manifest.terrainPath),
+    generationGraphPath: normalizeGenerationGraphPath(manifest.generationGraphPath),
     paintPath: normalizePaintPath(manifest.paintPath),
     paint: createEmptyPaintData(),
     vegetationPath: normalizeVegetationPath(manifest.vegetationPath),
@@ -240,6 +247,18 @@ function normalizeTerrainPath(value: unknown): typeof MAP_TERRAIN_HEIGHT_PATH {
   }
 
   return MAP_TERRAIN_HEIGHT_PATH;
+}
+
+function normalizeGenerationGraphPath(value: unknown): typeof MAP_GENERATION_GRAPH_PATH {
+  if (value === undefined) {
+    return MAP_GENERATION_GRAPH_PATH;
+  }
+
+  if (value !== MAP_GENERATION_GRAPH_PATH) {
+    throw new Error("Map manifest has invalid generation graph path");
+  }
+
+  return MAP_GENERATION_GRAPH_PATH;
 }
 
 function normalizePaintPath(value: unknown): typeof MAP_PAINT_PATH {

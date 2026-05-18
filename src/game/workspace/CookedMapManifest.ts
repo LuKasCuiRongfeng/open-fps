@@ -140,6 +140,7 @@ export interface CookedMapManifest {
     project: CookedSourceRef;
     assetRegistry: CookedSourceRef;
     map: CookedSourceRef;
+    generationGraph: CookedSourceRef;
     terrain: CookedSourceRef;
     paint: CookedSourceRef;
     vegetation: CookedSourceRef;
@@ -257,6 +258,7 @@ function normalizeCookedSource(value: unknown): CookedMapManifest["source"] {
     project: normalizeSourceRef(source.project, "project"),
     assetRegistry: normalizeSourceRef(source.assetRegistry, "asset registry"),
     map: normalizeSourceRef(source.map, "map"),
+    generationGraph: normalizeSourceRef(source.generationGraph, "generation graph"),
     terrain: normalizeSourceRef(source.terrain, "terrain"),
     paint: normalizeSourceRef(source.paint, "paint"),
     vegetation: normalizeSourceRef(source.vegetation, "vegetation"),
