@@ -2,8 +2,8 @@
 // WorldDebugTab：编辑器世界数据的 source 资产与分区诊断。
 
 import { useEffect, useState } from "react";
-import { Copy, RefreshCw } from "lucide-react";
-import { getPlatform } from "@/platform";
+import { Copy, Play, RefreshCw } from "lucide-react";
+import { getPlatform, type PlatformCookMapResult } from "@/platform";
 import { formatUnknownError } from "@/platform/errorUtils";
 import type { EditorAppSession } from "@editor/app";
 import type { RuntimeProfilerSnapshot } from "@game/app";
@@ -11,6 +11,7 @@ import type { EditorWorkspaceController } from "@editor/ui/hooks/useEditorWorksp
 import { ReadonlyField, SettingBadge, SettingRow, SettingsButton, SettingsPage, SettingsSection } from "@ui/settings/SettingsLayout";
 import {
   collectLiveRebuildState,
+  createEditorCookMapRequest,
   createEditorRebuildPlan,
   emptyDiagnostics,
   formatShortTimestamp,
@@ -37,11 +38,18 @@ type WorldDebugTabProps = {
   editorWorkspace: EditorWorkspaceController;
 };
 
+type CookExecutionState = {
+  status: "idle" | "running" | "success" | "error";
+  label: string;
+  output: string;
+};
+
 export function WorldDebugTab({ editorApp, editorWorkspace }: WorldDebugTabProps) {
   const [profiler, setProfiler] = useState<RuntimeProfilerSnapshot | null>(() => editorApp?.getProfilerSnapshot() ?? null);
   const [diagnostics, setDiagnostics] = useState<AssetDiagnostics>(emptyDiagnostics);
   const [diagnosticsRevision, setDiagnosticsRevision] = useState(0);
   const [copyStatus, setCopyStatus] = useState("");
+  const [cookExecution, setCookExecution] = useState<CookExecutionState>(createIdleCookExecution);
 
   useEffect(() => {
     if (!editorApp) {
@@ -87,11 +95,19 @@ export function WorldDebugTab({ editorApp, editorWorkspace }: WorldDebugTabProps
     };
   }, [editorApp, editorWorkspace.currentMapDirectory, editorWorkspace.currentProjectPath, editorWorkspace.currentMapId, diagnosticsRevision]);
 
+  useEffect(() => {
+    setCookExecution(createIdleCookExecution());
+  }, [editorWorkspace.currentProjectPath, editorWorkspace.currentMapId]);
+
   const liveRebuild = collectLiveRebuildState(editorApp, diagnostics);
-  const rebuildPlan = createEditorRebuildPlan(editorWorkspace.currentMapId, diagnostics, liveRebuild);
+  const rebuildPlan = createEditorRebuildPlan(editorWorkspace.currentMapId, diagnostics, liveRebuild, editorWorkspace.currentProjectPath);
   const staleSourceCount = diagnostics.cookedSources.filter((source) => source.status === "stale").length;
   const missingSourceCount = diagnostics.cookedSources.filter((source) => source.status === "missing").length;
   const freshSourceCount = diagnostics.cookedSources.filter((source) => source.status === "fresh").length;
+  const canExecuteCook = platform.hasCapability("worldCookExecution")
+    && rebuildPlan.status === "ready"
+    && editorWorkspace.currentProjectPath !== null
+    && editorWorkspace.currentMapId !== null;
 
   async function handleCopyCommand(command: string): Promise<void> {
     setCopyStatus("");
@@ -106,6 +122,41 @@ export function WorldDebugTab({ editorApp, editorWorkspace }: WorldDebugTabProps
       const message = `Copy failed: ${formatUnknownError(error)}`;
       setCopyStatus(message);
       await platform.dialogs.notify(message, { title: "Clipboard", kind: "warning" });
+    }
+  }
+
+  async function handleRunCook(dryRun: boolean): Promise<void> {
+    const request = createEditorCookMapRequest(
+      editorWorkspace.currentProjectPath,
+      editorWorkspace.currentMapId,
+      rebuildPlan,
+      dryRun,
+    );
+    if (!request) {
+      const message = "Cook request is not ready";
+      setCookExecution({ status: "error", label: message, output: "" });
+      await platform.dialogs.notify(message, { title: "Cook Map", kind: "warning" });
+      return;
+    }
+
+    const label = dryRun ? "Dry Run Running" : "Cook Running";
+    setCookExecution({ status: "running", label, output: "" });
+    try {
+      const result = await platform.world.runCookMap(request);
+      const succeeded = result.exitCode === 0;
+      setCookExecution({
+        status: succeeded ? "success" : "error",
+        label: `${dryRun ? "Dry Run" : "Cook"} ${succeeded ? "Finished" : "Failed"}`,
+        output: formatCookMapResult(result),
+      });
+
+      if (succeeded && !dryRun) {
+        setDiagnosticsRevision((revision) => revision + 1);
+      }
+    } catch (error) {
+      const message = `Cook failed: ${formatUnknownError(error)}`;
+      setCookExecution({ status: "error", label: "Cook Failed", output: message });
+      await platform.dialogs.notify(message, { title: "Cook Map", kind: "error" });
     }
   }
 
@@ -228,7 +279,17 @@ export function WorldDebugTab({ editorApp, editorWorkspace }: WorldDebugTabProps
           />
         </SettingRow>
         <SettingRow label="Commands" align="start">
-          <CommandList plan={rebuildPlan} copyStatus={copyStatus} onCopy={handleCopyCommand} />
+          <CommandList
+            plan={rebuildPlan}
+            copyStatus={copyStatus}
+            canRun={canExecuteCook}
+            running={cookExecution.status === "running"}
+            onCopy={handleCopyCommand}
+            onRun={handleRunCook}
+          />
+        </SettingRow>
+        <SettingRow label="Execution" align="start">
+          <CookExecutionPanel execution={cookExecution} canRun={canExecuteCook} planStatus={rebuildPlan.status} />
         </SettingRow>
       </SettingsSection>
 
@@ -316,11 +377,17 @@ function SourceDriftList({
 function CommandList({
   plan,
   copyStatus,
+  canRun,
+  running,
   onCopy,
+  onRun,
 }: {
   plan: EditorRebuildPlan;
   copyStatus: string;
+  canRun: boolean;
+  running: boolean;
   onCopy: (command: string) => Promise<void>;
+  onRun: (dryRun: boolean) => Promise<void>;
 }) {
   if (plan.commands.length === 0) {
     return <ReadonlyField>{plan.status === "checking" ? "Plan pending" : "No rebuild command needed"}</ReadonlyField>;
@@ -332,14 +399,59 @@ function CommandList({
         <div key={entry.label} className="field-surface rounded-md border p-2">
           <div className="mb-1.5 flex items-center justify-between gap-2">
             <div className="text-[11px] font-medium uppercase tracking-wide text-content-muted">{entry.label}</div>
-            <SettingsButton Icon={Copy} size="sm" onClick={() => void onCopy(entry.command)}>
-              Copy
-            </SettingsButton>
+            <div className="flex items-center gap-1.5">
+              <SettingsButton Icon={Copy} size="sm" onClick={() => void onCopy(entry.command)}>
+                Copy
+              </SettingsButton>
+              <SettingsButton
+                Icon={Play}
+                size="sm"
+                tone={entry.kind === "cook" ? "warning" : "info"}
+                disabled={!canRun || running}
+                onClick={() => void onRun(entry.kind === "dryRun")}
+              >
+                Run
+              </SettingsButton>
+            </div>
           </div>
           <div className="break-all font-mono text-[11px] leading-4 text-content-primary">{entry.command}</div>
         </div>
       ))}
       {copyStatus && <ReadonlyField>{copyStatus}</ReadonlyField>}
+    </div>
+  );
+}
+
+function CookExecutionPanel({
+  execution,
+  canRun,
+  planStatus,
+}: {
+  execution: CookExecutionState;
+  canRun: boolean;
+  planStatus: EditorRebuildPlan["status"];
+}) {
+  if (execution.status === "idle") {
+    const label = canRun
+      ? "Ready"
+      : planStatus === "save-first"
+        ? "Save First"
+        : platform.hasCapability("worldCookExecution")
+          ? "Pending"
+          : "Unavailable";
+    return <ReadonlyField>{label}</ReadonlyField>;
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className={`field-surface rounded-md border p-2 text-[11px] font-medium ${getExecutionToneClass(execution.status)}`}>
+        {execution.label}
+      </div>
+      {execution.output && (
+        <pre className="field-surface max-h-40 overflow-auto whitespace-pre-wrap wrap-break-word rounded-md border p-2 font-mono text-[11px] leading-4 text-content-secondary">
+          {execution.output}
+        </pre>
+      )}
     </div>
   );
 }
@@ -371,6 +483,45 @@ function getMetricToneClass(tone: MetricTone = "neutral"): string {
     default:
       return "text-content-primary";
   }
+}
+
+function getExecutionToneClass(status: CookExecutionState["status"]): string {
+  switch (status) {
+    case "success":
+      return "text-status-success";
+    case "error":
+      return "text-status-danger";
+    case "running":
+      return "text-status-info";
+    default:
+      return "text-content-secondary";
+  }
+}
+
+function createIdleCookExecution(): CookExecutionState {
+  return { status: "idle", label: "Not Run", output: "" };
+}
+
+function formatCookMapResult(result: PlatformCookMapResult): string {
+  const lines = [
+    `$ ${result.command.map(formatDisplayCommandArg).join(" ")}`,
+    `exit ${result.exitCode} in ${(result.durationMs / 1000).toFixed(1)}s`,
+  ];
+
+  const stdout = result.stdout.trim();
+  const stderr = result.stderr.trim();
+  if (stdout) {
+    lines.push(stdout);
+  }
+  if (stderr) {
+    lines.push(`stderr:\n${stderr}`);
+  }
+
+  return lines.join("\n\n");
+}
+
+function formatDisplayCommandArg(value: string): string {
+  return /\s/.test(value) ? `"${value.replace(/"/g, '\\"')}"` : value;
 }
 
 function formatBytes(value: number): string {

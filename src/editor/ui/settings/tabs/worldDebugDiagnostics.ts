@@ -1,7 +1,7 @@
 // WorldDebugDiagnostics: cooked source freshness and rebuild command planning.
 // WorldDebugDiagnostics：cooked source 新鲜度检查与重建命令规划。
 
-import { getPlatform } from "@/platform";
+import { getPlatform, type PlatformCookMapRequest } from "@/platform";
 import { formatUnknownError } from "@/platform/errorUtils";
 import type { EditorAppSession } from "@editor/app";
 import { getVegetationRegionCoordsForCell, vegetationRegionKey } from "@game/world/vegetation";
@@ -40,6 +40,7 @@ export type LiveRebuildState = {
 };
 
 export type RebuildCommand = {
+  kind: "dryRun" | "cook";
   label: string;
   command: string;
 };
@@ -228,6 +229,7 @@ export function createEditorRebuildPlan(
   mapId: string | null,
   diagnostics: AssetDiagnostics,
   liveRebuild: LiveRebuildState,
+  projectPath: string | null = null,
 ): EditorRebuildPlan {
   if (!mapId) {
     return createEmptyEditorRebuildPlan("No Map", "idle", "warning");
@@ -265,7 +267,7 @@ export function createEditorRebuildPlan(
   }
 
   const normalizedStages = full ? [] : uniqueStageNames(changedStages);
-  const commands = createRebuildCommands(mapId, full, normalizedStages, scopes);
+  const commands = createRebuildCommands(projectPath, mapId, full, normalizedStages, scopes);
   return {
     status: liveRebuild.unsaved ? "save-first" : "ready",
     label: liveRebuild.unsaved ? "Save First" : "Ready",
@@ -275,6 +277,27 @@ export function createEditorRebuildPlan(
     liveLabels: createLiveRebuildLabels(liveRebuild),
     scopes,
     commands,
+  };
+}
+
+export function createEditorCookMapRequest(
+  projectPath: string | null,
+  mapId: string | null,
+  plan: EditorRebuildPlan,
+  dryRun: boolean,
+): PlatformCookMapRequest | null {
+  if (!projectPath || !mapId || plan.status !== "ready") {
+    return null;
+  }
+
+  const full = plan.changedStages.includes("full");
+  return {
+    projectPath,
+    mapId,
+    dryRun,
+    full,
+    changedStages: full ? [] : [...plan.changedStages],
+    scopes: full ? cloneScopes(emptyScopes) : cloneScopes(plan.scopes),
   };
 }
 
@@ -468,16 +491,16 @@ function createEmptyEditorRebuildPlan(label: string, status: RebuildPlanStatus, 
   };
 }
 
-function createRebuildCommands(mapId: string, full: boolean, changedStages: readonly string[], scopes: RebuildScopes): RebuildCommand[] {
-  const args = createRebuildCommandArgs(mapId, full, changedStages, scopes);
+function createRebuildCommands(projectPath: string | null, mapId: string, full: boolean, changedStages: readonly string[], scopes: RebuildScopes): RebuildCommand[] {
+  const args = createRebuildCommandArgs(projectPath, mapId, full, changedStages, scopes);
   return [
-    { label: "Dry Run", command: ["pnpm cook:map --", ...args, "--plan"].join(" ") },
-    { label: "Cook", command: ["pnpm cook:map --", ...args].join(" ") },
+    { kind: "dryRun", label: "Dry Run", command: ["pnpm cook:map --", ...args, "--plan"].join(" ") },
+    { kind: "cook", label: "Cook", command: ["pnpm cook:map --", ...args].join(" ") },
   ];
 }
 
-function createRebuildCommandArgs(mapId: string, full: boolean, changedStages: readonly string[], scopes: RebuildScopes): string[] {
-  const args = ["--map", quoteCommandArg(mapId)];
+function createRebuildCommandArgs(projectPath: string | null, mapId: string, full: boolean, changedStages: readonly string[], scopes: RebuildScopes): string[] {
+  const args = projectPath ? [quoteCommandArg(projectPath), "--map", quoteCommandArg(mapId)] : ["--map", quoteCommandArg(mapId)];
   if (full) {
     args.push("--full");
     return args;
@@ -501,7 +524,7 @@ function appendScopeArgs(args: string[], flag: string, keys: readonly string[]):
 }
 
 function quoteCommandArg(value: string): string {
-  return /\s|,/.test(value) ? `"${value.replace(/"/g, '\\"')}"` : value;
+  return /^[A-Za-z0-9._/-]+$/.test(value) ? value : `'${value.replace(/'/g, "''")}'`;
 }
 
 function createLiveRebuildLabels(liveRebuild: LiveRebuildState): string[] {

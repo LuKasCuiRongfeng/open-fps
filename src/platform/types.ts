@@ -5,7 +5,8 @@ export type PlatformCapability =
     | "fileImportExport"
     | "assetUrlResolution"
     | "windowCloseControl"
-    | "pngRgbaCodec";
+    | "pngRgbaCodec"
+    | "worldCookExecution";
 
 export type PlatformDialogFilter = {
     name: string;
@@ -49,6 +50,30 @@ export type PlatformPngRgbaData = {
     base64Pixels: string;
     width: number;
     height: number;
+};
+
+export type PlatformCookMapScopes = {
+    terrainRegions: string[];
+    paintRegions: string[];
+    vegetationRegions: string[];
+    partitionCells: string[];
+};
+
+export type PlatformCookMapRequest = {
+    projectPath: string;
+    mapId: string;
+    dryRun: boolean;
+    full: boolean;
+    changedStages: string[];
+    scopes: PlatformCookMapScopes;
+};
+
+export type PlatformCookMapResult = {
+    command: string[];
+    exitCode: number;
+    stdout: string;
+    stderr: string;
+    durationMs: number;
 };
 
 export interface PlatformDialogs {
@@ -99,6 +124,10 @@ export interface PlatformWindow {
     setDecorations(visible: boolean): Promise<void>;
 }
 
+export interface PlatformWorld {
+    runCookMap(request: PlatformCookMapRequest): Promise<PlatformCookMapResult>;
+}
+
 export interface PlatformHost {
     readonly runtime: PlatformRuntime;
     hasCapability(capability: PlatformCapability): boolean;
@@ -106,4 +135,5 @@ export interface PlatformHost {
     readonly files: PlatformFiles;
     readonly projects: PlatformProjects;
     readonly window: PlatformWindow;
+    readonly world: PlatformWorld;
 }

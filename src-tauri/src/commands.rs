@@ -1,10 +1,12 @@
 // Tauri commands for project management.
 // Tauri 项目管理命令
 
+use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::process::{Command, Stdio};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use tauri::Manager;
 
 /// Project file names.
@@ -14,6 +16,49 @@ const MAP_FILE: &str = "map.json";
 const MAPS_DIR: &str = "maps";
 const SETTINGS_FILE: &str = "settings.json";
 const RECENT_PROJECTS_FILE: &str = "recent_projects.json";
+const COOK_MAP_MAX_STAGE_COUNT: usize = 16;
+const COOK_MAP_MAX_SCOPE_KEYS: usize = 4096;
+const COOK_MAP_MAX_OUTPUT_CHARS: usize = 24_000;
+const COOK_MAP_ALLOWED_STAGES: &[&str] = &[
+    "assetRegistry",
+    "semantics",
+    "terrain",
+    "paint",
+    "vegetation",
+    "objects",
+    "collision",
+    "nav",
+];
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CookMapScopes {
+    terrain_regions: Vec<String>,
+    paint_regions: Vec<String>,
+    vegetation_regions: Vec<String>,
+    partition_cells: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CookMapRequest {
+    project_path: String,
+    map_id: String,
+    dry_run: bool,
+    full: bool,
+    changed_stages: Vec<String>,
+    scopes: CookMapScopes,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CookMapResult {
+    command: Vec<String>,
+    exit_code: i32,
+    stdout: String,
+    stderr: String,
+    duration_ms: u64,
+}
 
 /// Ensure project folder exists, create if not.
 /// 确保项目文件夹存在，不存在则创建
@@ -441,6 +486,234 @@ pub async fn remove_recent_project(
     paths.retain(|p| p != &project_path);
 
     save_recent_project_paths(&recent_file, &paths)
+}
+
+// --- Controlled world cook execution / 受控世界 cook 执行 ---
+
+/// Run the whitelisted map cook workflow for the editor.
+/// 为编辑器运行白名单地图 cook 工作流。
+#[tauri::command]
+pub async fn run_cook_map(request: CookMapRequest) -> Result<CookMapResult, String> {
+    tauri::async_runtime::spawn_blocking(move || run_cook_map_blocking(request))
+        .await
+        .map_err(|e| format!("Failed to join cook command task: {}", e))?
+}
+
+fn run_cook_map_blocking(request: CookMapRequest) -> Result<CookMapResult, String> {
+    // EN: Build argv from structured fields only; never pass user text through a shell.
+    // 中文: 只从结构化字段构造 argv；绝不把用户文本交给 shell 解释。
+    let args = create_cook_map_args(&request)?;
+    let repository_root = repository_root()?;
+    let script_path = repository_root.join("scripts").join("cook-map-assets.mjs");
+    if !script_path.exists() {
+        return Err("Cook map script is not available in this build".to_string());
+    }
+
+    let executable = pnpm_executable();
+    let mut command_display = Vec::with_capacity(args.len() + 1);
+    command_display.push(executable.to_string());
+    command_display.extend(args.iter().cloned());
+
+    let started_at = Instant::now();
+    let output = Command::new(executable)
+        .current_dir(&repository_root)
+        .args(&args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .map_err(|e| format!("Failed to run cook map command: {}", e))?;
+
+    Ok(CookMapResult {
+        command: command_display,
+        exit_code: output
+            .status
+            .code()
+            .unwrap_or_else(|| if output.status.success() { 0 } else { -1 }),
+        stdout: truncate_command_output(&output.stdout),
+        stderr: truncate_command_output(&output.stderr),
+        duration_ms: started_at.elapsed().as_millis().min(u128::from(u64::MAX)) as u64,
+    })
+}
+
+fn create_cook_map_args(request: &CookMapRequest) -> Result<Vec<String>, String> {
+    let project_path = validate_cook_project_path(&request.project_path)?;
+    validate_single_path_segment(&request.map_id, "map_id")?;
+    validate_cook_stages(&request.changed_stages)?;
+    validate_cook_scopes(&request.scopes)?;
+
+    if request.full && (has_cook_stage_input(request) || has_cook_scope_input(&request.scopes)) {
+        return Err("Full cook request cannot include changed stages or local scopes".to_string());
+    }
+
+    if !request.full && !has_cook_stage_input(request) && !has_cook_scope_input(&request.scopes) {
+        return Err(
+            "Cook request must include a full rebuild or at least one local change".to_string(),
+        );
+    }
+
+    let mut args = vec![
+        "cook:map".to_string(),
+        "--".to_string(),
+        project_path.to_string_lossy().to_string(),
+        "--map".to_string(),
+        request.map_id.clone(),
+    ];
+
+    if request.dry_run {
+        args.push("--plan".to_string());
+    }
+
+    if request.full {
+        args.push("--full".to_string());
+        return Ok(args);
+    }
+
+    if !request.changed_stages.is_empty() {
+        args.push("--changed-stage".to_string());
+        args.push(request.changed_stages.join(","));
+    }
+
+    append_cook_scope_args(
+        &mut args,
+        "--terrain-region",
+        &request.scopes.terrain_regions,
+    );
+    append_cook_scope_args(&mut args, "--paint-region", &request.scopes.paint_regions);
+    append_cook_scope_args(
+        &mut args,
+        "--vegetation-region",
+        &request.scopes.vegetation_regions,
+    );
+    append_cook_scope_args(&mut args, "--cell", &request.scopes.partition_cells);
+    Ok(args)
+}
+
+fn validate_cook_project_path(value: &str) -> Result<PathBuf, String> {
+    if value.trim().is_empty() {
+        return Err("project_path cannot be empty".to_string());
+    }
+
+    let path = fs::canonicalize(PathBuf::from(value))
+        .map_err(|e| format!("Failed to resolve project path: {}", e))?;
+    if !path.is_dir() {
+        return Err("project_path must point to a project folder".to_string());
+    }
+    if !path.join(PROJECT_FILE).exists() {
+        return Err("project_path is missing project.json".to_string());
+    }
+
+    Ok(path)
+}
+
+fn validate_cook_stages(stages: &[String]) -> Result<(), String> {
+    if stages.len() > COOK_MAP_MAX_STAGE_COUNT {
+        return Err(format!(
+            "Cook request has too many changed stages: {}",
+            stages.len()
+        ));
+    }
+
+    for stage in stages {
+        if !COOK_MAP_ALLOWED_STAGES.contains(&stage.as_str()) {
+            return Err(format!("Unknown cook stage '{}'", stage));
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_cook_scopes(scopes: &CookMapScopes) -> Result<(), String> {
+    validate_grid_key_list("terrain region", &scopes.terrain_regions)?;
+    validate_grid_key_list("paint region", &scopes.paint_regions)?;
+    validate_grid_key_list("vegetation region", &scopes.vegetation_regions)?;
+    validate_grid_key_list("partition cell", &scopes.partition_cells)
+}
+
+fn validate_grid_key_list(field_name: &str, values: &[String]) -> Result<(), String> {
+    if values.len() > COOK_MAP_MAX_SCOPE_KEYS {
+        return Err(format!(
+            "Cook request has too many {} keys: {}",
+            field_name,
+            values.len()
+        ));
+    }
+
+    for value in values {
+        validate_grid_key(field_name, value)?;
+    }
+
+    Ok(())
+}
+
+fn validate_grid_key(field_name: &str, value: &str) -> Result<(), String> {
+    let (x, z) = value
+        .split_once(',')
+        .ok_or_else(|| format!("{} key '{}' must use '<x>,<z>'", field_name, value))?;
+    if !is_integer_text(x) || !is_integer_text(z) {
+        return Err(format!(
+            "{} key '{}' must use integer coordinates",
+            field_name, value
+        ));
+    }
+
+    x.parse::<i32>()
+        .and_then(|_| z.parse::<i32>())
+        .map_err(|_| {
+            format!(
+                "{} key '{}' is outside the supported coordinate range",
+                field_name, value
+            )
+        })?;
+    Ok(())
+}
+
+fn is_integer_text(value: &str) -> bool {
+    let digits = value.strip_prefix('-').unwrap_or(value);
+    !digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_digit())
+}
+
+fn has_cook_stage_input(request: &CookMapRequest) -> bool {
+    !request.changed_stages.is_empty()
+}
+
+fn has_cook_scope_input(scopes: &CookMapScopes) -> bool {
+    !scopes.terrain_regions.is_empty()
+        || !scopes.paint_regions.is_empty()
+        || !scopes.vegetation_regions.is_empty()
+        || !scopes.partition_cells.is_empty()
+}
+
+fn append_cook_scope_args(args: &mut Vec<String>, flag: &str, values: &[String]) {
+    for value in values {
+        args.push(flag.to_string());
+        args.push(value.clone());
+    }
+}
+
+fn repository_root() -> Result<PathBuf, String> {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .map(Path::to_path_buf)
+        .ok_or_else(|| "Failed to resolve repository root".to_string())
+}
+
+fn pnpm_executable() -> &'static str {
+    if cfg!(windows) { "pnpm.cmd" } else { "pnpm" }
+}
+
+fn truncate_command_output(bytes: &[u8]) -> String {
+    let text = String::from_utf8_lossy(bytes);
+    if text.chars().count() <= COOK_MAP_MAX_OUTPUT_CHARS {
+        return text.to_string();
+    }
+
+    let mut truncated = text
+        .chars()
+        .take(COOK_MAP_MAX_OUTPUT_CHARS)
+        .collect::<String>();
+    truncated.push_str("\n[output truncated]");
+    truncated
 }
 
 // --- Generic file operations / 通用文件操作 ---

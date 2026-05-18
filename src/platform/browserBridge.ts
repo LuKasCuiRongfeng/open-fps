@@ -2,6 +2,8 @@ import type {
   PlatformCapability,
   PlatformCloseRequest,
   PlatformConfirmOptions,
+  PlatformCookMapRequest,
+  PlatformCookMapResult,
   PlatformHost,
   PlatformNotifyOptions,
   PlatformOpenFileOptions,
@@ -325,6 +327,12 @@ export function createBrowserPlatform(): PlatformHost {
       },
 
       async setDecorations(): Promise<void> {
+      },
+    },
+
+    world: {
+      async runCookMap(_request: PlatformCookMapRequest): Promise<PlatformCookMapResult> {
+        unsupported("Cook map execution");
       },
     },
   };

@@ -23,6 +23,8 @@ pub fn run_editor() {
             list_recent_projects,
             add_recent_project,
             remove_recent_project,
+            // Controlled editor workflows / 受控编辑器工作流
+            run_cook_map,
             // Generic file operations / 通用文件操作
             read_text_file,
             write_text_file,

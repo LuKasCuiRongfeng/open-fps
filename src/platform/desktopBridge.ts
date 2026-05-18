@@ -1,6 +1,8 @@
 import type {
   PlatformCapability,
   PlatformCloseRequest,
+  PlatformCookMapRequest,
+  PlatformCookMapResult,
   PlatformHost,
   PlatformOpenFileOptions,
   PlatformOpenFolderOptions,
@@ -20,6 +22,7 @@ const DESKTOP_CAPABILITIES = new Set<PlatformCapability>([
   "assetUrlResolution",
   "windowCloseControl",
   "pngRgbaCodec",
+  "worldCookExecution",
 ]);
 
 let coreModule: Promise<TauriCore> | null = null;
@@ -242,6 +245,12 @@ export function createDesktopPlatform(): PlatformHost {
       async setDecorations(visible: boolean): Promise<void> {
         const { getCurrentWindow } = await loadWindow();
         await getCurrentWindow().setDecorations(visible);
+      },
+    },
+
+    world: {
+      runCookMap(request: PlatformCookMapRequest): Promise<PlatformCookMapResult> {
+        return invokeCommand<PlatformCookMapResult>("run_cook_map", { request });
       },
     },
   };
