@@ -19,6 +19,10 @@ type AssetDiagnostics = {
   status: DiagnosticStatus;
   generationStages: number;
   generationRules: number;
+  generationExecutors: number;
+  generationLocalScopes: number;
+  generationBudgets: number;
+  generationPolicy: string;
   terrainRegions: number;
   paintRegions: number;
   vegetationRegions: number;
@@ -43,6 +47,10 @@ const emptyDiagnostics: AssetDiagnostics = {
   status: "idle",
   generationStages: 0,
   generationRules: 0,
+  generationExecutors: 0,
+  generationLocalScopes: 0,
+  generationBudgets: 0,
+  generationPolicy: "none",
   terrainRegions: 0,
   paintRegions: 0,
   vegetationRegions: 0,
@@ -166,6 +174,19 @@ export function WorldDebugTab({ editorApp, editorWorkspace }: WorldDebugTabProps
         </SettingRow>
       </SettingsSection>
 
+      <SettingsSection title="Rebuild Graph" actions={<SettingBadge tone={diagnostics.generationExecutors > 0 ? "success" : "warning"}>{diagnostics.generationPolicy}</SettingBadge>}>
+        <SettingRow label="Execution" align="start">
+          <MetricGrid
+            items={[
+              { label: "Executors", value: formatCount(diagnostics.generationExecutors), detail: "stages", tone: diagnostics.generationExecutors > 0 ? "success" : "warning" },
+              { label: "Scopes", value: formatCount(diagnostics.generationLocalScopes), detail: "local types" },
+              { label: "Budgets", value: formatCount(diagnostics.generationBudgets), detail: "limits" },
+              { label: "Planner", value: diagnostics.generationPolicy, detail: "policy" },
+            ]}
+          />
+        </SettingRow>
+      </SettingsSection>
+
       <SettingsSection
         title="Partition Runtime"
         actions={<SettingBadge tone={partitionActive ? "success" : "warning"}>{partitionActive ? "Cooked" : "Source"}</SettingBadge>}
@@ -219,8 +240,14 @@ async function loadAssetDiagnostics(editorApp: EditorAppSession, mapDirectory: s
 
   const generationGraph = await readJsonManifest(joinPath(mapDirectory, mapData.generationGraphPath), issues);
   const generationStages = readRecordProperty(generationGraph, "stages");
+  const localRebuild = readRecordProperty(generationGraph, "localRebuild");
+  const defaultPolicy = readRecordProperty(localRebuild, "defaultPolicy");
   diagnostics.generationStages = countRecordEntries(generationStages);
   diagnostics.generationRules = countGenerationGraphRules(generationStages);
+  diagnostics.generationExecutors = countGenerationGraphExecutors(generationStages);
+  diagnostics.generationLocalScopes = countGenerationGraphLocalScopes(generationStages);
+  diagnostics.generationBudgets = countRecordEntries(readRecordProperty(generationGraph, "budgets"));
+  diagnostics.generationPolicy = readStringProperty(defaultPolicy, "mode") ?? "none";
 
   const terrainManifest = await readJsonManifest(joinPath(mapDirectory, mapData.terrainPath), issues);
   diagnostics.terrainRegions = countRecordEntries(readRecordProperty(terrainManifest, "regions"));
@@ -472,4 +499,37 @@ function formatCount(value: number): string {
   }
 
   return value.toFixed(0);
+}
+
+function countGenerationGraphExecutors(stages: Record<string, unknown> | null): number {
+  if (!stages) {
+    return 0;
+  }
+
+  let count = 0;
+  for (const stage of Object.values(stages)) {
+    const execution = readRecordProperty(asRecord(stage), "execution");
+    if (readStringProperty(execution, "executor")) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+function countGenerationGraphLocalScopes(stages: Record<string, unknown> | null): number {
+  if (!stages) {
+    return 0;
+  }
+
+  const scopes = new Set<string>();
+  for (const stage of Object.values(stages)) {
+    const rebuild = readRecordProperty(asRecord(stage), "rebuild");
+    const scope = readStringProperty(rebuild, "scope");
+    if (scope) {
+      scopes.add(scope);
+    }
+  }
+
+  return scopes.size;
 }

@@ -33,7 +33,7 @@
 项目已经完成了从原型 JSON/散文件向专业 sidecar 资产体系的关键转向。默认资产项目已正式命名为 `Kunlun Wilds`，目录为 `kunlun_wilds`；该名称取自中国神话中的昆仑意象，作为开放世界默认 source/cooked 资产项目继续演进。
 
 - `map.json` 保持为地图级 manifest，地形、纹理、植被和世界对象数据移出主清单。
-- `generation/graph.json` 已作为 `main` 的 world generation graph v1 source sidecar，声明 terrain、paint、vegetation、objects、collision、nav 的生成阶段、共享依赖、重建粒度和预算入口。
+- `generation/graph.json` 已作为 `main` 的 world generation graph v1 source sidecar，声明 terrain、paint、vegetation、objects、collision、nav 的生成阶段、共享依赖、可执行 executor、局部重建粒度、invalidation 和预算入口。
 - 地形高度使用 `terrain/height/manifest.json` + `.heightpack` region pack。
 - 纹理绘制使用 `paint/layers.json` + `.paintpack` region pack。
 - 植被实例使用 `vegetation/models.json` + `.vegpack` region pack。
@@ -48,29 +48,29 @@
 - cooked 输出已复制运行时所需的 region pack、terrain texture、vegetation model 和 world object GLTF 资产，game target 不再依赖 source sidecar 目录读取核心运行资产。
 - cooked 输出现在按 `cooked/assets/imported/...` 保留注册表导入路径结构，避免运行时重新依赖 source 资产库，同时保留 source path 和 content hash 可追溯性。
 - cooked 输出已写入 `cooked/cache/maps/<mapId>.json`，用于记录 build input signature、artifact 列表和 stale cook 诊断依据。
-- cooked package 已生成 `content-addressed-sha256-v1` artifact index，并把 runtime artifact 同步写入 `cooked/blobs/sha256/...`。
+- cooked package 已生成 `content-addressed-sha256-v1` artifact index，并把 runtime artifact 同步写入 `cooked/blobs/sha256/...`；package manifest 已记录 streaming locality、去重策略和压缩策略入口。
 - world partition cell 已收敛到 `dependencies` 结构，统一挂载 terrain、paint、vegetation、objects、collision、nav 六类运行时分区依赖。
 - objects cooked cell pack 现在来自 source object pack，不再是空生成物；collision cell pack 由 terrain heightfield、水体 volume 和对象 blocker 派生；nav cell pack 由 terrain slope、道路、水体和碰撞 blocker 派生。
-- runtime world partition planner 已接入 game streaming hot path，可按玩家/摄像机位置生成 load/keep/unload cell、预取 object/collision/nav cell pack、缓存已加载 payload，并按 archetype 实例化真实 GLTF 世界对象；道路/水体仍以生成 ribbon 表达，缺失资产时只保留诊断 fallback。
-- game runtime 已把 cooked object cell pack 转成道路、水体、POI 和道具的可见实例；collision pack 已进入玩家水平阻挡解析，nav pack 已作为运行时资源缓存，等待后续 AI/调试消费。
+- runtime world partition planner 已接入 game streaming hot path，可按玩家/摄像机位置生成 load/keep/unload cell、预取 object/collision/nav cell pack、缓存已加载 payload，并按 archetype 实例化真实 GLTF 世界对象；道路/水体仍以生成 ribbon 表达，但 source archetype 已记录 road decal、water surface、edge blend、LOD/instancing 和 per-cell budget 元数据。
+- game runtime 已把 cooked object cell pack 转成道路、水体、POI 和道具的可见实例；collision pack 已进入玩家水平阻挡解析，并记录 vegetation query-clearance 策略；nav pack 已记录 cross-cell portal link，作为后续 AI 查询和调试可视化的跨 cell 连接入口。
 - 地形、水体/道路对象、paint、vegetation 和 cooked nav 已收敛到共享 world semantics 规则，避免各生成脚本各自维护一套道路、水体和 POI 语义。
-- terrain、paint、vegetation、objects、collision 和 nav 的生成依赖已由 generation graph 显式登记；后续非破坏性 terrain/material/ecology/object 图应优先扩展该 graph，而不是在脚本中继续散落隐式规则。
-- 编辑器设置面板已有 World Diagnostics 页，可查看 generation graph、source 资产健康、pack integrity、partition streaming、runtime payload 和可见对象/植被统计；Objects 页已支持 archetype 选择、地形拾取放置、删除、undo/redo 和对象 sidecar 保存。
+- terrain、paint、vegetation、objects、collision 和 nav 的生成依赖已由 generation graph 显式登记；`scripts/map-generation/world-rebuild-planner.mjs` 可把 graph 输入变化解析为 stage closure 与 region/cell scope，`pnpm cook:map` 已支持 dry-run plan 与 scoped cook。
+- 编辑器设置面板已有 World Diagnostics 页，可查看 generation graph、rebuild executor、local scope、预算、source 资产健康、pack integrity、partition streaming、runtime payload 和可见对象/植被统计；Objects 页已支持 archetype 选择、地形拾取放置、删除、undo/redo 和对象 sidecar 保存。
 - CI/release 已接入 `pnpm verify`，覆盖 lint、Node 回归测试、TypeScript 类型检查和地图资产校验。
 - 已有 [`OPEN_WORLD_DESIGN_SPEC.md`](OPEN_WORLD_DESIGN_SPEC.md)，定义 `main` 10 平方公里地图的区域、道路、水系、兴趣点和生成约束。
 
-当前最重要的方向是把这些能力从“真实但仍粗粒度的生产管线”推进到“可编辑、可局部重建、可视化调试且有性能预算的开放世界内容系统”。
+当前最重要的方向是把这些能力从“已有可执行局部 cook 底座”推进到“编辑器可触发、可审查、可恢复、可预算化的非破坏性内容生产系统”。
 
 ## 当前编辑器质量判断
 
 地形、纹理和植被编辑已经具备正确的 sidecar/cell 底座，但还不是业界最佳开放世界方案：
 
-- 地形编辑当前以高度画刷和 procedural 生成结合为主，下一阶段应升级为非破坏性 terrain operation graph：道路/河床/平台/侵蚀/噪声/手工修整都作为可重算层，并支持局部 recook collision/nav/paint/vegetation。
-- 纹理编辑当前是 splat paint 和 region dirty save，方向正确但仍偏手工；目标方案应是 material/biome graph，支持 slope/height/wetness/road-distance masks、macro/micro variation、decal/车辙/湿边和局部材质重建。
-- 植被编辑当前已有 GLTF instancing、LOD、距离裁剪和画刷；目标方案应是 ecology scatter graph，支持 biome mask、保护区/排除区、cluster/edge falloff、impostor budget、collision/nav 预算和局部重散布。
-- 世界对象编辑已从几何代理进入 GLTF archetype + sidecar 事务阶段；仍需补 spline 编辑、prefab 展开、scatter rule 执行、对象 LOD/instancing budget、精确 collision shape 和可视化验证。
+- 地形编辑当前以高度画刷和 procedural 生成结合为主，generation graph 已记录道路切坡、河床、平台、侵蚀、噪声和手工 override 的 operation；下一阶段要把这些 operation 变成编辑器可调、可禁用、可局部执行的非破坏性层。
+- 纹理编辑当前是 splat paint 和 region dirty save，generation graph 已记录 slope/height/wetness/road-distance/biome/decal/macro variation 规则；下一阶段要把 material/biome graph 与手工 paint override 合并成可局部重算的材质工作流。
+- 植被编辑当前已有 GLTF instancing、LOD、距离裁剪和画刷，generation graph 已记录 biome、cluster、edge falloff、保护区/排除区、impostor 与 collision/nav 预算规则；下一阶段要把 ecology scatter executor 接进编辑器局部重散布。
+- 世界对象编辑已从几何代理进入 GLTF archetype + sidecar 事务阶段；source archetype 已登记 spline、prefab、scatter、LOD/instancing budget 和 collision 元数据，仍需补真正的 spline 编辑 UI、prefab 展开执行器、精确 collision shape 和可视化验证。
 
-因此当前项目已经走在正确架构路径上，但“业界最佳”还需要上述非破坏性规则图、局部重建、预算化渲染和验证工具继续落地。
+因此当前项目已经具备业界级开放世界管线的关键底座：可校验 source/cooked 分层、world partition、content-addressed package、generation graph、局部 rebuild plan 和 scoped cook。距离最终“业界最佳编辑体验”还差编辑器内图形化执行、真实 spline 工具、可视化 collision/nav 调试、预算化渲染闭环和更高质量美术内容填充。
 
 ## 路线图
 
@@ -353,11 +353,11 @@
 
 ## 近期优先级
 
-1. 把 runtime 世界对象代理替换为真实 mesh/decal/prop 实例，并补齐道路、水体和 POI 的编辑事务提交。
-2. 为 world partition streaming 增加载入优先级、取消策略、IO budget、帧预算和跨 cell 生命周期测试。
-3. 强化 collision/nav：跨 cell nav link、AI 查询接口、可行走/阻挡可视化、局部重建和 vegetation collision 策略。
-4. 继续升级地貌、材质和植被生态质量：真实河床、道路边缘、macro variation、湿地/林地物种规则和性能预算。
-5. 为 content-addressed cooked package 增加发布包打包、重复 blob 清理、压缩策略和加载局部性排序。
+1. 把 graph executor 接进编辑器操作流：dirty region/cell 变化后显示 rebuild dry-run plan，并支持一键局部 cook、失败定位和恢复提示。
+2. 把 terrain/material/ecology graph 从 metadata 推进到真正可执行：道路切坡、河床、湿边、道路清理、cluster/edge falloff 和手工 override 都能局部重算。
+3. 强化 collision/nav 调试消费：cross-cell portal 可视化、AI 查询接口、可行走/阻挡 overlay、vegetation clearance 诊断和局部 nav rebuild 验证。
+4. 把道路、水体和对象表现升级到真实渲染资产：road mesh/decal、water surface shader、prefab 展开、scatter rule 执行和对象 LOD/instancing budget。
+5. 为 content-addressed cooked package 增加发布级压缩、重复 blob 清理、加载局部性排序和 release 校验。
 
 ## 路线对齐自检
 

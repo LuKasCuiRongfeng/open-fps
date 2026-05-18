@@ -30,7 +30,9 @@ import {
 import { createCookedPackageBuilder } from "./cooked-package.mjs";
 import { assetRegistryPath } from "./asset-registry.mjs";
 
-export async function generateCookedMapAssets(context, preset) {
+export async function generateCookedMapAssets(context, preset, options = {}) {
+  const rebuildPlan = options.rebuildPlan ?? null;
+  const scopedCook = rebuildPlan?.mode === "scoped";
   const mapId = preset.id;
   const mapDir = getMapDir(context, preset);
   const cookedDir = path.join(context.projectDir, cookedMapsDirectory, mapId);
@@ -55,15 +57,19 @@ export async function generateCookedMapAssets(context, preset) {
   };
   const inputSignature = createCookInputSignature(mapId, source);
   const cache = await readCookCache(context, mapId);
-  if (await isCookCacheUsable(context, cookedDir, cache, inputSignature)) {
+  if (!scopedCook && await isCookCacheUsable(context, cookedDir, cache, inputSignature)) {
     return createCookResult(context, cookedDir, mapId, true);
   }
 
-  await rm(cookedDir, { recursive: true, force: true });
+  const previousManifest = scopedCook ? await readExistingCookedManifest(cookedDir, mapId) : null;
+
+  if (!scopedCook) {
+    await rm(cookedDir, { recursive: true, force: true });
+  }
   await mkdir(cookedDir, { recursive: true });
 
   const world = createCookedWorld(mapSource.json.world);
-  const packageBuilder = createCookedPackageBuilder(context);
+  const packageBuilder = createCookedPackageBuilder(context, previousManifest?.package);
   const coreAssets = await createCookedAssets(
     context,
     mapId,
@@ -73,6 +79,10 @@ export async function generateCookedMapAssets(context, preset) {
     terrainSource.json,
     paintSource.json,
     vegetationSource.json,
+    {
+      previousAssets: previousManifest?.assets,
+      rebuildPlan,
+    },
   );
   const basePartition = createWorldPartition(world, coreAssets);
   const partitionAssets = await createCookedPartitionCellAssets(
@@ -83,11 +93,15 @@ export async function generateCookedMapAssets(context, preset) {
     basePartition,
     packageBuilder,
     objectsSource.json,
+    {
+      previousAssets: previousManifest?.assets,
+      rebuildPlan,
+    },
   );
   const assets = { ...coreAssets, ...partitionAssets };
   const partition = attachPartitionCellAssetDependencies(basePartition, partitionAssets);
   const contentPackage = packageBuilder.createPackage();
-  const build = createCookedBuildMetadata(inputSignature, contentPackage, cache);
+  const build = createCookedBuildMetadata(inputSignature, contentPackage, cache, rebuildPlan);
 
   const manifest = {
     version: cookedMapVersion,
@@ -110,6 +124,18 @@ export async function generateCookedMapAssets(context, preset) {
   await writeCookCache(context, mapId, manifest);
 
   return createCookResultFromManifest(context, outputPath, manifest, false);
+}
+
+async function readExistingCookedManifest(cookedDir, mapId) {
+  try {
+    return JSON.parse(await readFile(path.join(cookedDir, cookedMapManifestFile), "utf8"));
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      throw new Error(`Scoped cook for '${mapId}' requires an existing cooked manifest. Run pnpm cook:map -- --map ${mapId} --full first.`);
+    }
+
+    throw error;
+  }
 }
 
 async function readSourceJson(filePath, context) {
@@ -172,7 +198,7 @@ function createCookInputSignature(mapId, source) {
   }), "utf8"));
 }
 
-function createCookedBuildMetadata(inputSignature, contentPackage, cache) {
+function createCookedBuildMetadata(inputSignature, contentPackage, cache, rebuildPlan = null) {
   return {
     tool: "open-fps-cook-map-assets",
     toolVersion: cookedMapVersion,
@@ -181,6 +207,27 @@ function createCookedBuildMetadata(inputSignature, contentPackage, cache) {
     previousInputSignature: typeof cache?.inputSignature === "string" ? cache.inputSignature : null,
     packageLayout: contentPackage.layout,
     artifactCount: contentPackage.artifactCount,
+    rebuild: createCookedRebuildMetadata(rebuildPlan),
+  };
+}
+
+function createCookedRebuildMetadata(rebuildPlan) {
+  if (!rebuildPlan) {
+    return {
+      mode: "full",
+      planId: null,
+      stages: ["semantics", "terrain", "paint", "vegetation", "objects", "collision", "nav"],
+      scopes: null,
+      estimatedArtifacts: null,
+    };
+  }
+
+  return {
+    mode: rebuildPlan.mode,
+    planId: rebuildPlan.planId,
+    stages: rebuildPlan.stages,
+    scopes: rebuildPlan.scopes,
+    estimatedArtifacts: rebuildPlan.budget.estimatedArtifacts,
   };
 }
 
@@ -255,9 +302,15 @@ function createCookedWorld(world) {
   };
 }
 
-async function createCookedAssets(context, mapId, mapDir, cookedDir, packageBuilder, terrain, paint, vegetation) {
-  const layers = await createCookedPaintLayers(context, packageBuilder, paint.layers);
-  const models = await createCookedVegetationModels(context, mapDir, cookedDir, packageBuilder, vegetation.models);
+async function createCookedAssets(context, mapId, mapDir, cookedDir, packageBuilder, terrain, paint, vegetation, options = {}) {
+  const previousAssets = options.previousAssets ?? null;
+  const rebuildPlan = options.rebuildPlan ?? null;
+  const layers = shouldRebuildStage(rebuildPlan, "paint")
+    ? await createCookedPaintLayers(context, packageBuilder, paint.layers)
+    : previousAssets?.paint?.layers ?? await createCookedPaintLayers(context, packageBuilder, paint.layers);
+  const models = shouldRebuildStage(rebuildPlan, "vegetation")
+    ? await createCookedVegetationModels(context, mapDir, cookedDir, packageBuilder, vegetation.models)
+    : previousAssets?.vegetation?.models ?? await createCookedVegetationModels(context, mapDir, cookedDir, packageBuilder, vegetation.models);
   return {
     terrain: {
       manifestPath: mapSourcePath(mapId, terrainHeightPath),
@@ -275,6 +328,10 @@ async function createCookedAssets(context, mapId, mapDir, cookedDir, packageBuil
         terrainRegionPath,
         packageBuilder,
         "terrain",
+        {
+          previousRegions: previousAssets?.terrain?.regions,
+          selectedKeys: getSelectedScopeKeys(rebuildPlan, "terrain", "terrainRegions"),
+        },
       ),
     },
     paint: {
@@ -295,6 +352,10 @@ async function createCookedAssets(context, mapId, mapDir, cookedDir, packageBuil
         paintRegionPath,
         packageBuilder,
         "paint",
+        {
+          previousRegions: previousAssets?.paint?.regions,
+          selectedKeys: getSelectedScopeKeys(rebuildPlan, "paint", "paintRegions"),
+        },
       ),
     },
     vegetation: {
@@ -314,18 +375,27 @@ async function createCookedAssets(context, mapId, mapDir, cookedDir, packageBuil
         vegetationRegionPath,
         packageBuilder,
         "vegetation",
+        {
+          previousRegions: previousAssets?.vegetation?.regions,
+          selectedKeys: getSelectedScopeKeys(rebuildPlan, "vegetation", "vegetationRegions"),
+        },
       ),
     },
   };
 }
 
-async function createCookedRegions(context, mapDir, mapId, regions, integrityMap, resolveSourcePath, packageBuilder, label) {
+async function createCookedRegions(context, mapDir, mapId, regions, integrityMap, resolveSourcePath, packageBuilder, label, options = {}) {
   if (!regions || typeof regions !== "object" || !integrityMap || typeof integrityMap !== "object") {
     throw new Error(`Cannot cook ${label} regions without masks and integrity metadata`);
   }
 
+  const selectedKeys = options.selectedKeys ?? null;
+  const cookedRegions = selectedKeys instanceof Set && options.previousRegions
+    ? { ...options.previousRegions }
+    : {};
   const entries = await Promise.all(
     Object.entries(regions)
+      .filter(([key]) => !selectedKeys || selectedKeys.has(key))
       .sort(([left], [right]) => compareRegionKeyStrings(left, right))
       .map(async ([key, mask]) => {
         const integrity = integrityMap[key];
@@ -345,7 +415,11 @@ async function createCookedRegions(context, mapDir, mapId, regions, integrityMap
         }];
       }),
   );
-  return Object.fromEntries(entries);
+  for (const [key, region] of entries) {
+    cookedRegions[key] = region;
+  }
+
+  return sortRecordByGridKey(cookedRegions);
 }
 
 async function createCookedPaintLayers(context, packageBuilder, layers) {
@@ -432,23 +506,50 @@ function ensureInsideProject(context, filePath, label) {
   }
 }
 
-async function createCookedPartitionCellAssets(context, preset, mapId, mapDir, partition, packageBuilder, objectManifest) {
+async function createCookedPartitionCellAssets(context, preset, mapId, mapDir, partition, packageBuilder, objectManifest, options = {}) {
+  const previousAssets = options.previousAssets ?? null;
+  const rebuildPlan = options.rebuildPlan ?? null;
   const objectPacks = await readWorldObjectCellPacks(mapDir, objectManifest);
-  const objects = await createCookedObjectCellAssets(context, mapId, mapDir, partition, packageBuilder, objectManifest, objectPacks);
-  const collision = await createCookedDerivedCellAssets(preset, mapId, partition, packageBuilder, objectPacks, {
-    directory: "collision",
-    extension: "collisionpack",
-    format: cookedCollisionCellFormat,
-    kind: "world-collision-cell",
-    createPack: createCollisionCellPack,
-  });
-  const nav = await createCookedDerivedCellAssets(preset, mapId, partition, packageBuilder, objectPacks, {
-    directory: "nav",
-    extension: "navpack",
-    format: cookedNavCellFormat,
-    kind: "world-nav-cell",
-    createPack: createNavCellPack,
-  });
+  const objects = shouldRebuildStage(rebuildPlan, "objects")
+    ? await createCookedObjectCellAssets(context, mapId, mapDir, partition, packageBuilder, objectManifest, objectPacks, {
+      previousCells: previousAssets?.objects?.cells,
+      selectedKeys: getSelectedScopeKeys(rebuildPlan, "objects", "partitionCells"),
+    })
+    : previousAssets?.objects ?? await createCookedObjectCellAssets(context, mapId, mapDir, partition, packageBuilder, objectManifest, objectPacks);
+  const collision = shouldRebuildStage(rebuildPlan, "collision")
+    ? await createCookedDerivedCellAssets(preset, mapId, partition, packageBuilder, objectPacks, {
+      directory: "collision",
+      extension: "collisionpack",
+      format: cookedCollisionCellFormat,
+      kind: "world-collision-cell",
+      createPack: createCollisionCellPack,
+      previousCells: previousAssets?.collision?.cells,
+      selectedKeys: getSelectedScopeKeys(rebuildPlan, "collision", "partitionCells"),
+    })
+    : previousAssets?.collision ?? await createCookedDerivedCellAssets(preset, mapId, partition, packageBuilder, objectPacks, {
+      directory: "collision",
+      extension: "collisionpack",
+      format: cookedCollisionCellFormat,
+      kind: "world-collision-cell",
+      createPack: createCollisionCellPack,
+    });
+  const nav = shouldRebuildStage(rebuildPlan, "nav")
+    ? await createCookedDerivedCellAssets(preset, mapId, partition, packageBuilder, objectPacks, {
+      directory: "nav",
+      extension: "navpack",
+      format: cookedNavCellFormat,
+      kind: "world-nav-cell",
+      createPack: createNavCellPack,
+      previousCells: previousAssets?.nav?.cells,
+      selectedKeys: getSelectedScopeKeys(rebuildPlan, "nav", "partitionCells"),
+    })
+    : previousAssets?.nav ?? await createCookedDerivedCellAssets(preset, mapId, partition, packageBuilder, objectPacks, {
+      directory: "nav",
+      extension: "navpack",
+      format: cookedNavCellFormat,
+      kind: "world-nav-cell",
+      createPack: createNavCellPack,
+    });
 
   return { objects, collision, nav };
 }
@@ -475,10 +576,16 @@ async function readWorldObjectCellPacks(mapDir, objectManifest) {
   return new Map(entries);
 }
 
-async function createCookedObjectCellAssets(context, mapId, mapDir, partition, packageBuilder, objectManifest, objectPacks) {
+async function createCookedObjectCellAssets(context, mapId, mapDir, partition, packageBuilder, objectManifest, objectPacks, options = {}) {
   const cookedDir = path.join(context.projectDir, cookedMapsDirectory, mapId);
   const archetypes = await createCookedObjectArchetypes(context, mapDir, cookedDir, packageBuilder, objectManifest.archetypes ?? {});
-  const cells = await Promise.all(partition.cells.map(async (cell) => {
+  const selectedKeys = options.selectedKeys ?? null;
+  const cookedCells = selectedKeys instanceof Set && options.previousCells
+    ? { ...options.previousCells }
+    : {};
+  const cells = await Promise.all(partition.cells
+    .filter((cell) => !selectedKeys || selectedKeys.has(cell.key))
+    .map(async (cell) => {
     const sourcePack = objectPacks.get(cell.key);
     const cellRef = objectManifest.cells?.[cell.key];
     if (!sourcePack || !cellRef) {
@@ -499,6 +606,9 @@ async function createCookedObjectCellAssets(context, mapId, mapDir, partition, p
       sha256: artifact.sha256,
     }];
   }));
+  for (const [key, cell] of cells) {
+    cookedCells[key] = cell;
+  }
 
   return {
     manifestPath: mapSourcePath(mapId, worldObjectsPath),
@@ -506,7 +616,7 @@ async function createCookedObjectCellAssets(context, mapId, mapDir, partition, p
     cellSizePages: partition.cellSizePages,
     cellSizeMeters: partition.cellSizeMeters,
     archetypes,
-    cells: Object.fromEntries(cells.sort(([left], [right]) => compareRegionKeyStrings(left, right))),
+    cells: sortRecordByGridKey(cookedCells),
   };
 }
 
@@ -548,7 +658,13 @@ async function copyCookedObjectArchetypeAssets(context, mapDir, cookedDir, packa
 
 async function createCookedDerivedCellAssets(preset, mapId, partition, packageBuilder, objectPacks, options) {
   const heightConfig = buildHeightConfig(preset);
-  const cells = await Promise.all(partition.cells.map(async (cell) => {
+  const selectedKeys = options.selectedKeys ?? null;
+  const cookedCells = selectedKeys instanceof Set && options.previousCells
+    ? { ...options.previousCells }
+    : {};
+  const cells = await Promise.all(partition.cells
+    .filter((cell) => !selectedKeys || selectedKeys.has(cell.key))
+    .map(async (cell) => {
     const objectPack = objectPacks.get(cell.key)?.pack ?? null;
     const runtimePath = mapCookedPath(mapId, cellPackPath(options.directory, options.extension, cell.key));
     const pack = options.createPack(cell, objectPack, preset, heightConfig);
@@ -560,12 +676,15 @@ async function createCookedDerivedCellAssets(preset, mapId, partition, packageBu
       sha256: artifact.sha256,
     }];
   }));
+  for (const [key, cell] of cells) {
+    cookedCells[key] = cell;
+  }
 
   return {
     format: options.format,
     cellSizePages: partition.cellSizePages,
     cellSizeMeters: partition.cellSizeMeters,
-    cells: Object.fromEntries(cells.sort(([left], [right]) => compareRegionKeyStrings(left, right))),
+    cells: sortRecordByGridKey(cookedCells),
   };
 }
 
@@ -612,6 +731,12 @@ function createCollisionCellPack(cell, objectPack) {
     sourceDependencies: {
       terrain: cell.dependencies.terrain,
       objects: [cell.key],
+      vegetation: cell.dependencies.vegetation,
+    },
+    vegetationStrategy: {
+      mode: "query-clearance-only",
+      blocksNav: false,
+      maxCollisionProxiesPerCell: 0,
     },
     shapes,
   };
@@ -635,6 +760,7 @@ function createNavCellPack(cell, objectPack, preset, heightConfig) {
     },
     nodes,
     links: createNavLinks(nodes),
+    crossCellLinks: createNavCrossCellLinks(cell, nodes),
     modifiers: objects
       .filter((object) => object.layer === "road" || object.layer === "water")
       .map((object) => ({
@@ -643,6 +769,44 @@ function createNavCellPack(cell, objectPack, preset, heightConfig) {
         archetype: object.archetype,
         widthMeters: object.spline?.widthMeters ?? object.radiusMeters ?? 0,
       })),
+  };
+}
+
+function createNavCrossCellLinks(cell, nodes) {
+  const links = [];
+  for (const node of nodes) {
+    if (!node.walkable) {
+      continue;
+    }
+
+    if (node.x === 0) {
+      links.push(createNavPortalLink(cell, node, "west", cell.x - 1, cell.z));
+    }
+    if (node.x === 3) {
+      links.push(createNavPortalLink(cell, node, "east", cell.x + 1, cell.z));
+    }
+    if (node.z === 0) {
+      links.push(createNavPortalLink(cell, node, "north", cell.x, cell.z - 1));
+    }
+    if (node.z === 3) {
+      links.push(createNavPortalLink(cell, node, "south", cell.x, cell.z + 1));
+    }
+  }
+
+  return links;
+}
+
+function createNavPortalLink(cell, node, edge, targetCellX, targetCellZ) {
+  return {
+    from: node.id,
+    edge,
+    targetCell: `${targetCellX},${targetCellZ}`,
+    cost: node.cost,
+    portalMeters: {
+      x: node.position.x,
+      z: node.position.z,
+    },
+    sourceCell: cell.key,
   };
 }
 
@@ -736,6 +900,22 @@ function attachPartitionCellAssetDependencies(partition, assets) {
       },
     })),
   };
+}
+
+function shouldRebuildStage(rebuildPlan, stageName) {
+  return !rebuildPlan || rebuildPlan.mode === "full" || rebuildPlan.stages.includes(stageName);
+}
+
+function getSelectedScopeKeys(rebuildPlan, stageName, scopeName) {
+  if (!rebuildPlan || rebuildPlan.mode === "full" || !rebuildPlan.stages.includes(stageName)) {
+    return null;
+  }
+
+  return new Set(rebuildPlan.scopes[scopeName] ?? []);
+}
+
+function sortRecordByGridKey(record) {
+  return Object.fromEntries(Object.entries(record).sort(([left], [right]) => compareRegionKeyStrings(left, right)));
 }
 
 function isExternalAssetPath(assetPath) {

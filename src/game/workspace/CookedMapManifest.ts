@@ -160,13 +160,36 @@ export interface CookedBuildInfo {
   previousInputSignature: string | null;
   packageLayout: string;
   artifactCount: number;
+  rebuild: CookedRebuildInfo;
+}
+
+export interface CookedRebuildInfo {
+  mode: "full" | "scoped";
+  planId: string | null;
+  stages: string[];
+  scopes: CookedRebuildScopes | null;
+  estimatedArtifacts: number | null;
+}
+
+export interface CookedRebuildScopes {
+  terrainRegions: string[];
+  paintRegions: string[];
+  vegetationRegions: string[];
+  partitionCells: string[];
 }
 
 export interface CookedPackageInfo {
   layout: typeof COOKED_PACKAGE_LAYOUT;
   blobRoot: string;
   artifactCount: number;
+  streaming: CookedPackageStreamingInfo;
   artifacts: Record<string, CookedPackageArtifact>;
+}
+
+export interface CookedPackageStreamingInfo {
+  locality: string;
+  duplicateBlobPolicy: string;
+  compression: string;
 }
 
 export interface CookedPackageArtifact {
@@ -232,6 +255,47 @@ function normalizeCookedBuild(value: unknown): CookedBuildInfo {
     previousInputSignature: readNullableSha256(build.previousInputSignature, "cooked build previousInputSignature"),
     packageLayout: readString(build.packageLayout, "cooked build packageLayout"),
     artifactCount: readNonNegativeInteger(build.artifactCount, "cooked build artifactCount"),
+    rebuild: normalizeCookedRebuild(build.rebuild),
+  };
+}
+
+function normalizeCookedRebuild(value: unknown): CookedRebuildInfo {
+  if (value === undefined) {
+    return {
+      mode: "full",
+      planId: null,
+      stages: [],
+      scopes: null,
+      estimatedArtifacts: null,
+    };
+  }
+
+  const rebuild = readRecord(value, "cooked rebuild metadata");
+  const mode = readString(rebuild.mode, "cooked rebuild mode");
+  if (mode !== "full" && mode !== "scoped") {
+    throw new Error(`Cooked rebuild mode '${mode}' is not supported`);
+  }
+
+  return {
+    mode,
+    planId: readNullableString(rebuild.planId, "cooked rebuild planId"),
+    stages: readStringArray(rebuild.stages, "cooked rebuild stages"),
+    scopes: normalizeCookedRebuildScopes(rebuild.scopes),
+    estimatedArtifacts: readNullableNonNegativeInteger(rebuild.estimatedArtifacts, "cooked rebuild estimatedArtifacts"),
+  };
+}
+
+function normalizeCookedRebuildScopes(value: unknown): CookedRebuildScopes | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const scopes = readRecord(value, "cooked rebuild scopes");
+  return {
+    terrainRegions: readStringArray(scopes.terrainRegions, "cooked rebuild terrainRegions"),
+    paintRegions: readStringArray(scopes.paintRegions, "cooked rebuild paintRegions"),
+    vegetationRegions: readStringArray(scopes.vegetationRegions, "cooked rebuild vegetationRegions"),
+    partitionCells: readStringArray(scopes.partitionCells, "cooked rebuild partitionCells"),
   };
 }
 
@@ -449,6 +513,14 @@ function readOptionalString(value: unknown, label: string): string | undefined {
   return readString(value, label);
 }
 
+function readNullableString(value: unknown, label: string): string | null {
+  if (value === null) {
+    return null;
+  }
+
+  return readString(value, label);
+}
+
 function readStringArray(value: unknown, label: string): string[] {
   if (!Array.isArray(value) || !value.every((entry) => typeof entry === "string")) {
     throw new Error(`${label} must be a string array`);
@@ -494,6 +566,14 @@ function readNonNegativeInteger(value: unknown, label: string): number {
 function readOptionalNonNegativeInteger(value: unknown, label: string): number | undefined {
   if (value === undefined) {
     return undefined;
+  }
+
+  return readNonNegativeInteger(value, label);
+}
+
+function readNullableNonNegativeInteger(value: unknown, label: string): number | null {
+  if (value === null) {
+    return null;
   }
 
   return readNonNegativeInteger(value, label);
@@ -610,6 +690,24 @@ function normalizeCookedPackage(value: unknown): CookedPackageInfo {
     layout: readPackageLayout(contentPackage.layout, "cooked package layout"),
     blobRoot: readString(contentPackage.blobRoot, "cooked package blobRoot"),
     artifactCount: readNonNegativeInteger(contentPackage.artifactCount, "cooked package artifactCount"),
+    streaming: normalizeCookedPackageStreaming(contentPackage.streaming),
     artifacts: Object.fromEntries(artifactEntries),
+  };
+}
+
+function normalizeCookedPackageStreaming(value: unknown): CookedPackageStreamingInfo {
+  if (value === undefined) {
+    return {
+      locality: "unspecified",
+      duplicateBlobPolicy: "unspecified",
+      compression: "unspecified",
+    };
+  }
+
+  const streaming = readRecord(value, "cooked package streaming metadata");
+  return {
+    locality: readString(streaming.locality, "cooked package streaming locality"),
+    duplicateBlobPolicy: readString(streaming.duplicateBlobPolicy, "cooked package streaming duplicateBlobPolicy"),
+    compression: readString(streaming.compression, "cooked package streaming compression"),
   };
 }

@@ -270,14 +270,39 @@ function readFlagValue(args, flag) {
 }
 
 function readProjectArg(args) {
+  const flagsWithValue = new Set([
+    "--changed-stage",
+    "--cell",
+    "--map",
+    "--paint-region",
+    "--partition-cell",
+    "--stage",
+    "--terrain-region",
+    "--vegetation-region",
+  ]);
+
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
-    if (arg === "--map") {
+    if (flagsWithValue.has(arg)) {
       index += 1;
       continue;
     }
 
-    if (arg === "--all" || arg.startsWith("--map=")) {
+    if (
+      arg === "--all"
+      || arg === "--dry-run"
+      || arg === "--force"
+      || arg === "--full"
+      || arg === "--plan"
+      || arg.startsWith("--changed-stage=")
+      || arg.startsWith("--cell=")
+      || arg.startsWith("--map=")
+      || arg.startsWith("--paint-region=")
+      || arg.startsWith("--partition-cell=")
+      || arg.startsWith("--stage=")
+      || arg.startsWith("--terrain-region=")
+      || arg.startsWith("--vegetation-region=")
+    ) {
       continue;
     }
 

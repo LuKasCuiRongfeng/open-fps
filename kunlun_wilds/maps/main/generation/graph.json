@@ -20,6 +20,21 @@
     "assetRegistry": "assets/registry.json",
     "sharedSemantics": "scripts/map-generation/world-semantics.mjs"
   },
+  "localRebuild": {
+    "planner": "scripts/map-generation/world-rebuild-planner.mjs",
+    "planFormat": "open-fps-world-rebuild-plan-v1",
+    "defaultPolicy": {
+      "mode": "scoped-first",
+      "fullRebuildRequiresExplicitFlag": true,
+      "staleCookAction": "plan-affected-scopes"
+    },
+    "editorDiagnostics": [
+      "stage-closure",
+      "affected-scopes",
+      "stale-cooked-cells",
+      "budget-warnings"
+    ]
+  },
   "stages": {
     "semantics": {
       "kind": "shared-semantic-foundation",
@@ -34,6 +49,18 @@
       "rebuild": {
         "scope": "world-partition-cell",
         "cellSizePages": 8
+      },
+      "execution": {
+        "executor": "shared-semantics-generator",
+        "localRebuild": true,
+        "invalidates": [
+          "terrain",
+          "paint",
+          "vegetation",
+          "objects",
+          "collision",
+          "nav"
+        ]
       }
     },
     "terrain": {
@@ -45,6 +72,17 @@
       "rebuild": {
         "scope": "height-region",
         "regionSizePages": 8
+      },
+      "execution": {
+        "executor": "terrain-operation-executor",
+        "localRebuild": true,
+        "invalidates": [
+          "paint",
+          "vegetation",
+          "objects",
+          "collision",
+          "nav"
+        ]
       },
       "operations": [
         {
@@ -92,6 +130,33 @@
           }
         },
         {
+          "id": "road-grade",
+          "type": "semantic-road-cut",
+          "parameters": {
+            "maxSlopeDegrees": 18,
+            "shoulderMeters": 16,
+            "blendMeters": 22
+          }
+        },
+        {
+          "id": "river-bed",
+          "type": "semantic-water-carve",
+          "parameters": {
+            "bankBlendMeters": 28,
+            "minDepthMeters": 1.2,
+            "maxDepthMeters": 3.8
+          }
+        },
+        {
+          "id": "poi-platforms",
+          "type": "semantic-platform",
+          "parameters": {
+            "radiusMultiplier": 1.2,
+            "maxSlopeDegrees": 10,
+            "blendMeters": 18
+          }
+        },
+        {
           "id": "warp",
           "type": "domain-warp",
           "parameters": {
@@ -114,6 +179,14 @@
             "amplitudeMeters": 4.5,
             "frequencyPerMeter": 0.012
           }
+        },
+        {
+          "id": "manual-height-override",
+          "type": "authoring-layer",
+          "parameters": {
+            "blendMode": "replace",
+            "defaultEnabled": true
+          }
         }
       ]
     },
@@ -129,13 +202,24 @@
         "scope": "paint-region",
         "regionSizePages": 8
       },
+      "execution": {
+        "executor": "material-biome-executor",
+        "localRebuild": true,
+        "invalidates": []
+      },
       "rules": [
         "height-snowline",
         "slope-rock",
+        "aspect-dryness",
+        "basin-grassland-biome",
+        "forest-floor-litter",
         "water-bank-wetness",
         "road-core-gravel",
+        "road-shoulder-dirt",
+        "road-rut-decal-mask",
         "poi-clearance-gravel",
-        "macro-noise-variation"
+        "macro-noise-variation",
+        "manual-paint-override"
       ]
     },
     "vegetation": {
@@ -151,13 +235,26 @@
         "cellSizeMeters": 32,
         "regionSizeCells": 8
       },
+      "execution": {
+        "executor": "ecology-scatter-executor",
+        "localRebuild": true,
+        "invalidates": [
+          "collision",
+          "nav"
+        ]
+      },
       "rules": [
         "slope-exclusion",
         "snowline-exclusion",
+        "basin-grass-clusters",
+        "forest-edge-falloff",
         "water-bank-boost",
         "road-clearance",
         "poi-clearance",
-        "tree-cluster-understory"
+        "manual-protected-zone",
+        "manual-exclusion-zone",
+        "tree-cluster-understory",
+        "impostor-distance-budget"
       ]
     },
     "objects": {
@@ -172,12 +269,24 @@
         "scope": "world-partition-cell",
         "cellSizePages": 8
       },
+      "execution": {
+        "executor": "semantic-object-executor",
+        "localRebuild": true,
+        "invalidates": [
+          "collision",
+          "nav"
+        ]
+      },
       "rules": [
-        "roads",
-        "water",
-        "poi",
+        "spline-roads",
+        "spline-rivers",
+        "spline-fences",
+        "poi-prefabs",
         "road-props",
-        "poi-props"
+        "poi-props",
+        "rock-scatter",
+        "collision-shape-authoring",
+        "lod-instancing-budget"
       ]
     },
     "collision": {
@@ -190,7 +299,20 @@
       "rebuild": {
         "scope": "world-partition-cell",
         "cellSizePages": 8
-      }
+      },
+      "execution": {
+        "executor": "collision-cell-executor",
+        "localRebuild": true,
+        "invalidates": [
+          "nav"
+        ]
+      },
+      "strategies": [
+        "terrain-heightfield",
+        "water-volume",
+        "object-blockers",
+        "vegetation-query-clearance"
+      ]
     },
     "nav": {
       "kind": "derived-nav-build",
@@ -204,7 +326,19 @@
       "rebuild": {
         "scope": "world-partition-cell",
         "cellSizePages": 8
-      }
+      },
+      "execution": {
+        "executor": "nav-cell-executor",
+        "localRebuild": true,
+        "invalidates": []
+      },
+      "strategies": [
+        "slope-cost",
+        "road-preference",
+        "water-cost",
+        "object-blockers",
+        "cross-cell-portals"
+      ]
     }
   },
   "budgets": {
@@ -212,6 +346,13 @@
     "maxTerrainHeightRegionsPerFullRebuild": 64,
     "maxPaintRegionsPerFullRebuild": 64,
     "vegetationCellSizeMeters": 32,
-    "partitionCellSizeMeters": 512
+    "partitionCellSizeMeters": 512,
+    "maxPartitionCellsPerScopedCook": 9,
+    "targetFrameRateFps": 60,
+    "maxDrawCalls": 1800,
+    "maxGpuMemoryMiB": 1536,
+    "maxVisibleVegetationInstances": 120000,
+    "packageLayout": "content-addressed-sha256-v1",
+    "packageCompression": "none-dev-ready-for-zstd"
   }
 }

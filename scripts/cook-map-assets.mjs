@@ -1,21 +1,48 @@
 import { generateCookedMapAssets } from "./map-generation/cooked-assets.mjs";
 import { createGenerationContext } from "./map-generation/shared.mjs";
+import {
+  createRebuildRequestFromArgs,
+  createWorldRebuildPlanFromContext,
+  formatRebuildPlanForConsole,
+  hasRebuildRequest,
+} from "./map-generation/world-rebuild-planner.mjs";
 
 async function main() {
   const context = createGenerationContext();
+  const rebuildRequest = createRebuildRequestFromArgs(context.args);
+  const usesRebuildPlan = hasRebuildRequest(rebuildRequest);
   const results = [];
 
   for (const preset of context.presets) {
-    results.push(await generateCookedMapAssets(context, preset));
+    const rebuildPlan = usesRebuildPlan
+      ? await createWorldRebuildPlanFromContext(context, preset, rebuildRequest)
+      : null;
+    if (rebuildRequest.dryRun && rebuildPlan) {
+      results.push({ preset, rebuildPlan, cooked: null });
+      continue;
+    }
+
+    results.push({
+      preset,
+      rebuildPlan,
+      cooked: await generateCookedMapAssets(context, preset, { rebuildPlan }),
+    });
   }
 
-  console.log(`Generated cooked map data for ${results.length} map(s) in ${context.projectArg}`);
+  console.log(`${rebuildRequest.dryRun ? "Planned" : "Generated"} cooked map data for ${results.length} map(s) in ${context.projectArg}`);
   for (const result of results) {
-    const cacheLabel = result.cacheHit ? "cache hit" : "rebuilt";
-    console.log(`- ${result.mapId}: ${result.cellCount} world partition cells (${cacheLabel})`);
-    console.log(`  Generated cell assets: objects=${result.objectCellCount}, collision=${result.collisionCellCount}, nav=${result.navCellCount}`);
-    console.log(`  Cooked package artifacts: ${result.artifactCount}`);
-    console.log(`  Cooked manifest: ${result.path}`);
+    if (result.rebuildPlan) {
+      console.log(formatRebuildPlanForConsole(result.rebuildPlan));
+    }
+    if (!result.cooked) {
+      continue;
+    }
+
+    const cacheLabel = result.cooked.cacheHit ? "cache hit" : "rebuilt";
+    console.log(`- ${result.cooked.mapId}: ${result.cooked.cellCount} world partition cells (${cacheLabel})`);
+    console.log(`  Generated cell assets: objects=${result.cooked.objectCellCount}, collision=${result.cooked.collisionCellCount}, nav=${result.cooked.navCellCount}`);
+    console.log(`  Cooked package artifacts: ${result.cooked.artifactCount}`);
+    console.log(`  Cooked manifest: ${result.cooked.path}`);
   }
 }
 

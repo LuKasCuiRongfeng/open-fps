@@ -373,6 +373,25 @@ function validateGenerationGraphStage(stage, label, stageName) {
   if (!isRecord(stage.rebuild) || typeof stage.rebuild.scope !== "string") {
     addError(label, `Generation graph stage '${stageName}' must declare a rebuild scope.`);
   }
+  if (stage.execution !== undefined) {
+    validateGenerationGraphExecution(stage.execution, label, stageName);
+  }
+}
+
+function validateGenerationGraphExecution(execution, label, stageName) {
+  if (!isRecord(execution)) {
+    addError(label, `Generation graph stage '${stageName}' execution metadata must be an object.`);
+    return;
+  }
+  if (typeof execution.executor !== "string" || execution.executor.length === 0) {
+    addError(label, `Generation graph stage '${stageName}' execution.executor must be a non-empty string.`);
+  }
+  if (execution.localRebuild !== true) {
+    addError(label, `Generation graph stage '${stageName}' execution.localRebuild must be true.`);
+  }
+  if (!Array.isArray(execution.invalidates) || !execution.invalidates.every((entry) => typeof entry === "string")) {
+    addError(label, `Generation graph stage '${stageName}' execution.invalidates must be a string array.`);
+  }
 }
 
 function validateStageDependencies(stages, label) {
@@ -403,6 +422,11 @@ function validateGenerationGraphBudgets(budgets, label) {
   requirePositiveInteger(budgets.maxPaintRegionsPerFullRebuild, label, "generation graph budget maxPaintRegionsPerFullRebuild");
   requirePositiveNumber(budgets.vegetationCellSizeMeters, label, "generation graph budget vegetationCellSizeMeters");
   requirePositiveNumber(budgets.partitionCellSizeMeters, label, "generation graph budget partitionCellSizeMeters");
+  requireOptionalPositiveInteger(budgets.maxPartitionCellsPerScopedCook, label, "generation graph budget maxPartitionCellsPerScopedCook");
+  requireOptionalPositiveInteger(budgets.targetFrameRateFps, label, "generation graph budget targetFrameRateFps");
+  requireOptionalPositiveInteger(budgets.maxDrawCalls, label, "generation graph budget maxDrawCalls");
+  requireOptionalPositiveInteger(budgets.maxGpuMemoryMiB, label, "generation graph budget maxGpuMemoryMiB");
+  requireOptionalPositiveInteger(budgets.maxVisibleVegetationInstances, label, "generation graph budget maxVisibleVegetationInstances");
 }
 
 function validatePaintLayerAssetReferences(layers, assetRegistry, label) {
@@ -785,6 +809,7 @@ function validateCookedBuild(build, source, mapId, label) {
   if (!Number.isInteger(build.artifactCount) || build.artifactCount < 0) {
     addError(label, "Cooked build artifactCount must be a non-negative integer.");
   }
+  validateCookedRebuild(build.rebuild, label);
 
   const expectedInputSignature = createCookInputSignature(mapId, source);
   validateEqual(build.inputSignature, expectedInputSignature, label, "cooked build inputSignature");
@@ -792,6 +817,29 @@ function validateCookedBuild(build, source, mapId, label) {
     inputSignature: expectedInputSignature,
     artifactCount: Number.isInteger(build.artifactCount) ? build.artifactCount : -1,
   };
+}
+
+function validateCookedRebuild(rebuild, label) {
+  if (!isRecord(rebuild)) {
+    addError(label, "Cooked build must contain rebuild metadata.");
+    return;
+  }
+
+  if (rebuild.mode !== "full" && rebuild.mode !== "scoped") {
+    addError(label, "Cooked rebuild mode must be 'full' or 'scoped'.");
+  }
+  if (rebuild.planId !== null && (typeof rebuild.planId !== "string" || rebuild.planId.length === 0)) {
+    addError(label, "Cooked rebuild planId must be null or a non-empty string.");
+  }
+  if (!Array.isArray(rebuild.stages) || !rebuild.stages.every((entry) => typeof entry === "string")) {
+    addError(label, "Cooked rebuild stages must be a string array.");
+  }
+  if (rebuild.mode === "scoped" && !isRecord(rebuild.scopes)) {
+    addError(label, "Scoped cooked rebuild must include affected scopes.");
+  }
+  if (rebuild.estimatedArtifacts !== null && (!Number.isInteger(rebuild.estimatedArtifacts) || rebuild.estimatedArtifacts < 0)) {
+    addError(label, "Cooked rebuild estimatedArtifacts must be null or a non-negative integer.");
+  }
 }
 
 function validateCookedMapInfo(mapInfo, mapManifest, label) {
@@ -1202,6 +1250,9 @@ function validateCookedCellPayload(pack, key, label, fieldName, expectedFormat, 
     if (!Array.isArray(pack.links)) {
       addError(label, `${fieldName} must contain nav links.`);
     }
+    if (!Array.isArray(pack.crossCellLinks)) {
+      addError(label, `${fieldName} must contain cross-cell nav links.`);
+    }
     if (Array.isArray(pack.nodes) && !pack.nodes.some((node) => isRecord(node) && node.walkable === true)) {
       addError(label, `${fieldName} must contain at least one walkable nav node.`);
     }
@@ -1471,6 +1522,7 @@ async function validateCookedPackage(projectPath, contentPackage, cookedBuild, l
   if (cookedBuild && contentPackage.artifactCount !== cookedBuild.artifactCount) {
     addError(label, "Cooked package artifactCount must match build metadata.");
   }
+  validateCookedPackageStreaming(contentPackage.streaming, label);
   if (!isRecord(contentPackage.artifacts)) {
     addError(label, "Cooked package artifacts must be a JSON object.");
     return;
@@ -1514,6 +1566,18 @@ async function validateCookedPackage(projectPath, contentPackage, cookedBuild, l
   }));
 
   await validateCookedImportedAssetCoverage(projectPath, contentPackage.artifacts);
+}
+
+function validateCookedPackageStreaming(streaming, label) {
+  if (!isRecord(streaming)) {
+    addError(label, "Cooked package must contain streaming metadata.");
+    return;
+  }
+  validateEqual(streaming.locality, "world-partition-cell-runtime-path-v1", label, "cooked package streaming.locality");
+  validateEqual(streaming.duplicateBlobPolicy, "content-addressed-sha256", label, "cooked package streaming.duplicateBlobPolicy");
+  if (typeof streaming.compression !== "string" || streaming.compression.length === 0) {
+    addError(label, "Cooked package streaming.compression must be a non-empty string.");
+  }
 }
 
 async function validateCookedImportedAssetCoverage(projectPath, artifacts) {
@@ -2050,6 +2114,14 @@ function requirePositiveInteger(value, label, fieldName) {
   }
 
   return value;
+}
+
+function requireOptionalPositiveInteger(value, label, fieldName) {
+  if (value === undefined) {
+    return null;
+  }
+
+  return requirePositiveInteger(value, label, fieldName);
 }
 
 function requirePositiveNumber(value, label, fieldName) {

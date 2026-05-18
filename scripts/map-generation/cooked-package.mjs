@@ -6,8 +6,8 @@ import {
   createSha256Hex,
 } from "./shared.mjs";
 
-export function createCookedPackageBuilder(context) {
-  const artifacts = new Map();
+export function createCookedPackageBuilder(context, seedPackage = null) {
+  const artifacts = new Map(Object.entries(seedPackage?.artifacts ?? {}));
 
   return {
     async copyFile(sourcePath, runtimePath, kind, sourceRelativePath = null) {
@@ -47,6 +47,11 @@ export function createCookedPackageBuilder(context) {
         layout: cookedPackageLayout,
         blobRoot: cookedBlobDirectory,
         artifactCount: entries.length,
+        streaming: {
+          locality: "world-partition-cell-runtime-path-v1",
+          duplicateBlobPolicy: "content-addressed-sha256",
+          compression: "none-dev-ready-for-zstd",
+        },
         artifacts: Object.fromEntries(entries),
       };
     },
