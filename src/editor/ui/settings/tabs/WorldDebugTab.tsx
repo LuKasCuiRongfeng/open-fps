@@ -29,6 +29,7 @@ import {
   type RebuildCommand,
   type WorldDebugSelection,
   type WorldDebugSelectionKind,
+  type WorldDebugPatchLayerStack,
 } from "./worldDebugDiagnostics";
 
 const platform = getPlatform();
@@ -271,6 +272,9 @@ export function WorldDebugTab({ editorApp, editorWorkspace }: WorldDebugTabProps
               { label: "Generated", value: formatShortTimestamp(diagnostics.cookedGeneratedAt), detail: "cooked build" },
             ]}
           />
+        </SettingRow>
+        <SettingRow label="Layer Stack" align="start">
+          <LayerCompositionPanel stacks={diagnostics.patchLayers} />
         </SettingRow>
         <SettingRow label="Diagnostics" align="start">
           {diagnostics.status === "ready" || issueCount > 0 ? <DiagnosticIssueList issues={diagnostics.issues} onRefreshDiagnostics={refreshDiagnostics} /> : <ReadonlyField>No diagnostics available</ReadonlyField>}
@@ -550,6 +554,39 @@ function WorldPartitionInspectorPanel({
           { label: "Cost", value: Number.isFinite(result?.cost ?? Infinity) ? (result?.cost ?? 0).toFixed(2) : "inf", detail: "path cost", tone: result?.status === "ok" ? "success" : "warning" },
         ]}
       />
+    </div>
+  );
+}
+
+function LayerCompositionPanel({ stacks }: { stacks: WorldDebugPatchLayerStack[] }) {
+  if (stacks.length === 0) {
+    return <ReadonlyField>No patch layers declared</ReadonlyField>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {stacks.map((stack) => {
+        const activeLayer = stack.layers.find((layer) => layer.id === stack.activeLayerId);
+        return (
+          <div key={stack.asset} className="field-surface rounded-md border p-2">
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <div className="text-[11px] font-medium uppercase tracking-wide text-content-muted">{stack.asset}</div>
+              <SettingBadge tone={stack.mode === "ordered-nondestructive-v1" ? "success" : "warning"}>{activeLayer?.label ?? stack.activeLayerId}</SettingBadge>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {stack.layers.map((layer) => (
+                <MetricTile
+                  key={layer.id}
+                  label={layer.label}
+                  value={layer.kind}
+                  detail={`${formatCount(layer.regionCount)} regions${layer.enabled ? "" : " off"}`}
+                  tone={!layer.enabled ? "warning" : layer.kind === "manual" ? "info" : layer.kind === "base" ? "neutral" : "success"}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

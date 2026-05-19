@@ -112,6 +112,14 @@ export interface WorldObjectValidationDefinition {
   clearsVegetation?: boolean;
 }
 
+export interface WorldObjectBudgetDefinition {
+  lodGroup?: string;
+  instanceMode?: "unique-gltf" | "batched-gltf" | "instanced-gltf" | string;
+  maxInstancesPerCell?: number;
+  maxVisibleDistanceMeters?: number;
+  maxDrawCallsPerCell?: number;
+}
+
 export interface WorldObjectArchetypeDefinition {
   id?: string;
   layer: WorldObjectLayer;
@@ -122,6 +130,7 @@ export interface WorldObjectArchetypeDefinition {
   editor?: WorldObjectEditorDefinition;
   scatter?: WorldObjectScatterRuleDefinition;
   validation?: WorldObjectValidationDefinition;
+  budget?: WorldObjectBudgetDefinition;
   prefab?: Array<{
     archetype: string;
     offsetX?: number;

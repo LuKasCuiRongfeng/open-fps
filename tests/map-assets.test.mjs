@@ -25,6 +25,7 @@ const brotliDecompressAsync = promisify(brotliDecompress);
 
 test("source region pack byte layouts match their manifests", async () => {
   const terrain = await readJson(path.join(mapDirectory, "terrain/height/manifest.json"));
+  assertPatchLayers(terrain.patchLayers, ["terrain-procedural", "road-cut-grade", "riverbed-grade", "manual-height-override"]);
   for (const [key, mask] of Object.entries(terrain.regions)) {
     const packPath = path.join(mapDirectory, "terrain/height/regions", regionFileName("r", key, "heightpack"));
     const bytes = await readFile(packPath);
@@ -33,6 +34,7 @@ test("source region pack byte layouts match their manifests", async () => {
   }
 
   const paint = await readJson(path.join(mapDirectory, "paint/layers.json"));
+  assertPatchLayers(paint.splatMaps.patchLayers, ["material-biome", "road-decal-mask", "water-wet-edge", "manual-paint-override"]);
   for (const [key, mask] of Object.entries(paint.splatMaps.regions)) {
     const packPath = path.join(mapDirectory, "paint/regions", regionFileName("r", key, "paintpack"));
     const bytes = await readFile(packPath);
@@ -41,6 +43,7 @@ test("source region pack byte layouts match their manifests", async () => {
   }
 
   const vegetation = await readJson(path.join(mapDirectory, "vegetation/models.json"));
+  assertPatchLayers(vegetation.instances.patchLayers, ["ecology-scatter", "road-water-clearance", "manual-vegetation-override"]);
   for (const [key, mask] of Object.entries(vegetation.instances.regions)) {
     const packPath = path.join(mapDirectory, "vegetation/regions", regionFileName("r", key, "vegpack"));
     const bytes = await readFile(packPath);
@@ -194,4 +197,12 @@ function readCellCoordinates(runtimePath) {
 
 function compressedByteLength(manifest, cell) {
   return manifest.package.artifacts[cell.path]?.compression?.byteLength ?? cell.byteLength;
+}
+
+function assertPatchLayers(patchLayers, expectedLayerIds) {
+  assert.equal(patchLayers.mode, "ordered-nondestructive-v1");
+  assert.ok(patchLayers.layers.some((layer) => layer.kind === "base"));
+  for (const layerId of expectedLayerIds) {
+    assert.ok(patchLayers.layers.some((layer) => layer.id === layerId), `patch layer ${layerId}`);
+  }
 }

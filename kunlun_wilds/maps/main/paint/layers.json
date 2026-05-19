@@ -125,11 +125,11 @@
       },
       "-2,-4": {
         "byteLength": 32768,
-        "sha256": "93662a790f01ed6434025305508c0e0215aded48071a3d6f6bfbe33a24e6bf90"
+        "sha256": "a3a1627b7024dccbc9c594f52bd2fd81484112ed8939a6891ea72f46aad07afe"
       },
       "-1,-4": {
         "byteLength": 32768,
-        "sha256": "df23b31dd117fc6f49f22b020f85df91ad3e608b391ffd69614bb308e464710e"
+        "sha256": "b48eaf5c0166f0e02b22cba4a495478731ac274f94d1c2a2e0f9571190c77ae1"
       },
       "0,-4": {
         "byteLength": 32768,
@@ -157,19 +157,19 @@
       },
       "-2,-3": {
         "byteLength": 262144,
-        "sha256": "c711822e21c35d8c5e46e2a4d91d72d23edf3b4b7af986e5a622d70562a6659b"
+        "sha256": "63a82baeb872dd1882d358eeebf9eae91a8d4add908e87792d301d9fab675a69"
       },
       "-1,-3": {
         "byteLength": 262144,
-        "sha256": "348420ac5846cf215aee27ffb8b403dfb08bfbf5b8920ddb17b2dec1e7d8928e"
+        "sha256": "7ecebdd8e805ce91bf521981f21772d6047dc20f22dbf4e96f6c8c6069afc2cc"
       },
       "0,-3": {
         "byteLength": 262144,
-        "sha256": "53f70246011c49913636100ce2de5d49aab7225b3c8976a0d62e4bc594611e6d"
+        "sha256": "8a538b1d4f0b485bce77d57dcb65daedb02fa0bae0072ff74dd3e02fc2bef279"
       },
       "1,-3": {
         "byteLength": 262144,
-        "sha256": "fa3c6fd0d56289433bf8a017cd703e3cfc28a62f71f9726c887e6303be2596ed"
+        "sha256": "907abf398c92e86b8d4f4858b843130f0872a736b7631068c569d0972437b2ae"
       },
       "2,-3": {
         "byteLength": 262144,
@@ -185,27 +185,27 @@
       },
       "-3,-2": {
         "byteLength": 262144,
-        "sha256": "158c3f2deff810071268fff5d5215902a6802485e7f296dfefb71631d8ee0ecb"
+        "sha256": "39c40e8bb1ddd61afd5b4a7c2e8dbd52e0681a0001551d83ce51b7632f37c491"
       },
       "-2,-2": {
         "byteLength": 262144,
-        "sha256": "f417afe3b6dfb0146e0f9c614bef218175964d7df7a6ac02d35790aa82f0663e"
+        "sha256": "6d8b145e0646910c960dffd5d9267b91bd12e11b6ca8b52fd9b8456e7e5a8d5a"
       },
       "-1,-2": {
         "byteLength": 262144,
-        "sha256": "560baab14d91aa18cd2a783a27e751c1617fdce49f1ed1ee65063c18128e5fcc"
+        "sha256": "598dc208a92cc566bae25d392ab23f3488d9616309054b3b452a8df00e035d68"
       },
       "0,-2": {
         "byteLength": 262144,
-        "sha256": "2f07cb87b6605cdb1a509a5b812af8588c2ec3ba28ce4f9322668d91fdc3d3c1"
+        "sha256": "7f5cdce4a09c693be8851ee50c4db8dade5effbc13f654843c9ea5dafc88a44e"
       },
       "1,-2": {
         "byteLength": 262144,
-        "sha256": "e9e5fd2ebb8ca4e470ee409bf14212ca6cab92b569245faf0999ef4adb17e343"
+        "sha256": "830f3b573fd6ab9478f3ffab964610171810bf5652f8fe2432762d8a06622d0f"
       },
       "2,-2": {
         "byteLength": 262144,
-        "sha256": "cf5b0ce8d0a054fce2c9f07cc62fa80e7b692dd67fd4fd1d4c5bb608faebdaf6"
+        "sha256": "49e497e98c2afc68a97871d3095a5039e53f5dcc803889b63970e8cf15cf3eb7"
       },
       "3,-2": {
         "byteLength": 32768,
@@ -217,27 +217,27 @@
       },
       "-3,-1": {
         "byteLength": 262144,
-        "sha256": "b455109ae364be569fe169f1f2c7897195b654b3a59a86ea4d4fdcd1f125cc9f"
+        "sha256": "122a21814e5e5aa42a81272e7ea98d95d21702d5940e31aa7345dcaee1f80876"
       },
       "-2,-1": {
         "byteLength": 262144,
-        "sha256": "cadc22e757abd689543542b1b7155194c155c16e22a5d8430235183ac9f8dbf7"
+        "sha256": "341b45222babec4dbc0d30a01c0bc5757348d1dcc3b284d246b8744445ecac19"
       },
       "-1,-1": {
         "byteLength": 262144,
-        "sha256": "3956b311619255574de79174962cb7918c3c1c5d179567a029782eaa5f687e9c"
+        "sha256": "033ab3955dc2feafa3f1bb7821cb5670ed94245e89ca25364d68fac874f56d8a"
       },
       "0,-1": {
         "byteLength": 262144,
-        "sha256": "e71453a2e50965ee083c7e457d348b8ab3386d53290b7ad9c5a3db3aae122758"
+        "sha256": "8c4baeabde99452d86a02db09dcd4c70065201603ca6f6108aa099f2f1c36daf"
       },
       "1,-1": {
         "byteLength": 262144,
-        "sha256": "4bb37be5963bcc30d8a7e0b82478b39e19f3cc69765dcb3ed0f4068f95918a7e"
+        "sha256": "f64d6d2f42cea65fc8ffaed668bfd8345049db09d529561e5eadc1db36be1256"
       },
       "2,-1": {
         "byteLength": 262144,
-        "sha256": "0dfd44bf0b8e0d447b7318597d6df7ad7b70aed2e0882f351ddb1e8605863404"
+        "sha256": "4ee71644f64f26c1101cda01398b2671227f38aa153913a19a9b2bceab4300ec"
       },
       "3,-1": {
         "byteLength": 32768,
@@ -249,27 +249,27 @@
       },
       "-3,0": {
         "byteLength": 262144,
-        "sha256": "0d15742a40492f3f0e6696ddc5734e3e488f5a3d9303a5b3e9d091ba21c5e3cc"
+        "sha256": "95858b59ec42fc1f941222610d64806b9b3f81359518e8c45b8f7bbf806b987a"
       },
       "-2,0": {
         "byteLength": 262144,
-        "sha256": "5773315e9b68067ba0e60c2726ac9b178da2d0c2afccf9c0fda4bb0c9ea263c2"
+        "sha256": "c30096be2ee7f849b7f6bdc107a5e84f51a29801add183b9379aa4609eb1218a"
       },
       "-1,0": {
         "byteLength": 262144,
-        "sha256": "ae5434a269ec7eac773206f8ebcb5eaf011518ab7720022ee4e7e39a61ff1312"
+        "sha256": "6eb2ddd3333041e224153ab2dea74feae1c354ea9ec20253dde6467eb9ec4394"
       },
       "0,0": {
         "byteLength": 262144,
-        "sha256": "77ed7a5ceea1ae295ae6195de9406956f49160af17468fb631baae1a5fce8ece"
+        "sha256": "519f7b23072d6728751f6cc177dac92262bedd2fc79a98662626c40d02c55416"
       },
       "1,0": {
         "byteLength": 262144,
-        "sha256": "6cf763413e099a40950761f1773b8cf92bb3639afae665f1d6600f5fb417dd9e"
+        "sha256": "dfa71c99ba0cd2f9019f54cda48dd2ff8b6dab868c1745e54c0022e4a7625c5c"
       },
       "2,0": {
         "byteLength": 262144,
-        "sha256": "cd6fc3b94986808e63dd18aef56ca6b6c258002c7b6dc12dc8c0cfbdce72e2cd"
+        "sha256": "628d3f6e3c85b1adb826ab577cb8e0e7fc58cccb1e7b40d161dbb944f4ecb111"
       },
       "3,0": {
         "byteLength": 32768,
@@ -285,19 +285,19 @@
       },
       "-2,1": {
         "byteLength": 262144,
-        "sha256": "66f19cee45397b01e537973ea019e6398e9fec99f4bb926e2e8efd88ed79dca9"
+        "sha256": "dfc620592dea2b6709bf2a14cfd737cbed4de7268412d804cc9dda93eae9c913"
       },
       "-1,1": {
         "byteLength": 262144,
-        "sha256": "bbe4ff04da4f9fbdafa394d41bfd6fd626612aaeaa44aa91ac838f553c5354b7"
+        "sha256": "08f03ab3811f4da00be59991af8e4c0d65233322570349c936df857ddcc1bf21"
       },
       "0,1": {
         "byteLength": 262144,
-        "sha256": "7db618e35de7b288c415247cfe53f96552fc9d8bbfe418b8db157aa4756932d4"
+        "sha256": "184cc0a926ba6768d7bc787d54233b8f3a5a215c766820b8a67f265e0b13fdd6"
       },
       "1,1": {
         "byteLength": 262144,
-        "sha256": "bf2d81cba81a1c8ad160b4e575e2daa429e267b9876e69ace427f4ab531d9b02"
+        "sha256": "af902a842e0fd5a9edb5e8d90639b727fdd1320aa5fe16039db8d2cfbe872af6"
       },
       "2,1": {
         "byteLength": 262144,
@@ -325,11 +325,11 @@
       },
       "0,2": {
         "byteLength": 262144,
-        "sha256": "e68fc682ad637638c6304a882e6d202a3d23fc4ed28eb27ccae38875b7e360d2"
+        "sha256": "cf50a4fa3501c1cc26174b10063c9a9acd4bfcba8bbe374e649e717380f42ccc"
       },
       "1,2": {
         "byteLength": 262144,
-        "sha256": "2c441d897880f1177cf17b2f264d51efad345e2ea8fa6f3dd9cbdb7459810fc9"
+        "sha256": "148e63ca00a3720df8f96545ea187cd9c59139c27e54dd79fb301554e5bf0a88"
       },
       "2,2": {
         "byteLength": 262144,
@@ -357,11 +357,11 @@
       },
       "0,3": {
         "byteLength": 32768,
-        "sha256": "554c2824dda1546c7a7a207e042782ce2f17f4185f0fbb2f3048f3e625835474"
+        "sha256": "cd4fd4f4789f8e855d87ff20e3dd0709edbf9c0c215813076d8c80be0919e4d2"
       },
       "1,3": {
         "byteLength": 32768,
-        "sha256": "0f9866a1c38c4cc7773bfc1c198f8f81e3a861095cea3e2f1f60f1bb97c937a4"
+        "sha256": "27937c45f1ba2322106edba75fd75b10bfe03053cdc14e2ffd9af6ddd023adf9"
       },
       "2,3": {
         "byteLength": 32768,
@@ -371,6 +371,317 @@
         "byteLength": 4096,
         "sha256": "e1e56299861b08c26e46bfe28736fb814f7852dd12b9b2b750ddae3e70b69866"
       }
+    },
+    "patchLayers": {
+      "mode": "ordered-nondestructive-v1",
+      "activeLayerId": "manual-paint-override",
+      "layers": [
+        {
+          "id": "base",
+          "label": "Base Paint",
+          "kind": "base",
+          "order": 0,
+          "enabled": true,
+          "regions": [
+            "-4,-4",
+            "-3,-4",
+            "-2,-4",
+            "-1,-4",
+            "0,-4",
+            "1,-4",
+            "2,-4",
+            "3,-4",
+            "-4,-3",
+            "-3,-3",
+            "-2,-3",
+            "-1,-3",
+            "0,-3",
+            "1,-3",
+            "2,-3",
+            "3,-3",
+            "-4,-2",
+            "-3,-2",
+            "-2,-2",
+            "-1,-2",
+            "0,-2",
+            "1,-2",
+            "2,-2",
+            "3,-2",
+            "-4,-1",
+            "-3,-1",
+            "-2,-1",
+            "-1,-1",
+            "0,-1",
+            "1,-1",
+            "2,-1",
+            "3,-1",
+            "-4,0",
+            "-3,0",
+            "-2,0",
+            "-1,0",
+            "0,0",
+            "1,0",
+            "2,0",
+            "3,0",
+            "-4,1",
+            "-3,1",
+            "-2,1",
+            "-1,1",
+            "0,1",
+            "1,1",
+            "2,1",
+            "3,1",
+            "-4,2",
+            "-3,2",
+            "-2,2",
+            "-1,2",
+            "0,2",
+            "1,2",
+            "2,2",
+            "3,2",
+            "-4,3",
+            "-3,3",
+            "-2,3",
+            "-1,3",
+            "0,3",
+            "1,3",
+            "2,3",
+            "3,3"
+          ],
+          "source": "source/base"
+        },
+        {
+          "id": "material-biome",
+          "label": "Material Biome",
+          "kind": "procedural",
+          "order": 1,
+          "enabled": true,
+          "regions": [
+            "-4,-4",
+            "-3,-4",
+            "-2,-4",
+            "-1,-4",
+            "0,-4",
+            "1,-4",
+            "2,-4",
+            "3,-4",
+            "-4,-3",
+            "-3,-3",
+            "-2,-3",
+            "-1,-3",
+            "0,-3",
+            "1,-3",
+            "2,-3",
+            "3,-3",
+            "-4,-2",
+            "-3,-2",
+            "-2,-2",
+            "-1,-2",
+            "0,-2",
+            "1,-2",
+            "2,-2",
+            "3,-2",
+            "-4,-1",
+            "-3,-1",
+            "-2,-1",
+            "-1,-1",
+            "0,-1",
+            "1,-1",
+            "2,-1",
+            "3,-1",
+            "-4,0",
+            "-3,0",
+            "-2,0",
+            "-1,0",
+            "0,0",
+            "1,0",
+            "2,0",
+            "3,0",
+            "-4,1",
+            "-3,1",
+            "-2,1",
+            "-1,1",
+            "0,1",
+            "1,1",
+            "2,1",
+            "3,1",
+            "-4,2",
+            "-3,2",
+            "-2,2",
+            "-1,2",
+            "0,2",
+            "1,2",
+            "2,2",
+            "3,2",
+            "-4,3",
+            "-3,3",
+            "-2,3",
+            "-1,3",
+            "0,3",
+            "1,3",
+            "2,3",
+            "3,3"
+          ],
+          "source": "generation/graph.json#paint.rules"
+        },
+        {
+          "id": "road-decal-mask",
+          "label": "Road Decal Mask",
+          "kind": "generated",
+          "order": 2,
+          "enabled": true,
+          "regions": [
+            "-4,-4",
+            "-3,-4",
+            "-2,-4",
+            "-1,-4",
+            "0,-4",
+            "1,-4",
+            "2,-4",
+            "3,-4",
+            "-4,-3",
+            "-3,-3",
+            "-2,-3",
+            "-1,-3",
+            "0,-3",
+            "1,-3",
+            "2,-3",
+            "3,-3",
+            "-4,-2",
+            "-3,-2",
+            "-2,-2",
+            "-1,-2",
+            "0,-2",
+            "1,-2",
+            "2,-2",
+            "3,-2",
+            "-4,-1",
+            "-3,-1",
+            "-2,-1",
+            "-1,-1",
+            "0,-1",
+            "1,-1",
+            "2,-1",
+            "3,-1",
+            "-4,0",
+            "-3,0",
+            "-2,0",
+            "-1,0",
+            "0,0",
+            "1,0",
+            "2,0",
+            "3,0",
+            "-4,1",
+            "-3,1",
+            "-2,1",
+            "-1,1",
+            "0,1",
+            "1,1",
+            "2,1",
+            "3,1",
+            "-4,2",
+            "-3,2",
+            "-2,2",
+            "-1,2",
+            "0,2",
+            "1,2",
+            "2,2",
+            "3,2",
+            "-4,3",
+            "-3,3",
+            "-2,3",
+            "-1,3",
+            "0,3",
+            "1,3",
+            "2,3",
+            "3,3"
+          ],
+          "source": "generation/graph.json#semantics.road"
+        },
+        {
+          "id": "water-wet-edge",
+          "label": "Water Wet Edge",
+          "kind": "generated",
+          "order": 3,
+          "enabled": true,
+          "regions": [
+            "-4,-4",
+            "-3,-4",
+            "-2,-4",
+            "-1,-4",
+            "0,-4",
+            "1,-4",
+            "2,-4",
+            "3,-4",
+            "-4,-3",
+            "-3,-3",
+            "-2,-3",
+            "-1,-3",
+            "0,-3",
+            "1,-3",
+            "2,-3",
+            "3,-3",
+            "-4,-2",
+            "-3,-2",
+            "-2,-2",
+            "-1,-2",
+            "0,-2",
+            "1,-2",
+            "2,-2",
+            "3,-2",
+            "-4,-1",
+            "-3,-1",
+            "-2,-1",
+            "-1,-1",
+            "0,-1",
+            "1,-1",
+            "2,-1",
+            "3,-1",
+            "-4,0",
+            "-3,0",
+            "-2,0",
+            "-1,0",
+            "0,0",
+            "1,0",
+            "2,0",
+            "3,0",
+            "-4,1",
+            "-3,1",
+            "-2,1",
+            "-1,1",
+            "0,1",
+            "1,1",
+            "2,1",
+            "3,1",
+            "-4,2",
+            "-3,2",
+            "-2,2",
+            "-1,2",
+            "0,2",
+            "1,2",
+            "2,2",
+            "3,2",
+            "-4,3",
+            "-3,3",
+            "-2,3",
+            "-1,3",
+            "0,3",
+            "1,3",
+            "2,3",
+            "3,3"
+          ],
+          "source": "generation/graph.json#semantics.water"
+        },
+        {
+          "id": "manual-paint-override",
+          "label": "Manual Paint Override",
+          "kind": "manual",
+          "order": 4,
+          "enabled": true,
+          "regions": [],
+          "source": "editor/paint"
+        }
+      ]
     }
   }
 }

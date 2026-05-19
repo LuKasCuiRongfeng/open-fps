@@ -25,7 +25,7 @@
       "archetype": "supply-crates",
       "position": {
         "x": -145,
-        "y": 40.653,
+        "y": 35.924,
         "z": -220
       },
       "rotationY": 0,
@@ -52,7 +52,7 @@
       "archetype": "camp",
       "position": {
         "x": -180,
-        "y": 41.04,
+        "y": 36.658,
         "z": -240
       },
       "rotationY": 0,

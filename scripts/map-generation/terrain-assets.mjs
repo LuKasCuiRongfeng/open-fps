@@ -25,6 +25,7 @@ import {
   writeJsonFile,
 } from "./shared.mjs";
 import { writeWorldGenerationGraph } from "./world-generation-graph.mjs";
+import { createGeneratedPatchLayers } from "./sidecar-patch-layers.mjs";
 
 export async function generateTerrainAssets(context, preset) {
   const now = Date.now();
@@ -72,6 +73,7 @@ export async function generateTerrainAssets(context, preset) {
     regionsDirectory: heightRegionsDirectory,
     regions: {},
     regionIntegrity: {},
+    patchLayers: createGeneratedPatchLayers([], "Base Terrain", []),
   };
 
   for (const region of Array.from(regionGroups.values()).sort(compareRegionCoords)) {
@@ -88,6 +90,13 @@ export async function generateTerrainAssets(context, preset) {
     terrainHeightManifest.regions[heightRegionKey(region.x, region.z)] = formatHeightRegionMask(regionMask);
     terrainHeightManifest.regionIntegrity[heightRegionKey(region.x, region.z)] = createRegionIntegrity(packBytes);
   }
+
+  terrainHeightManifest.patchLayers = createGeneratedPatchLayers(Object.keys(terrainHeightManifest.regions), "Base Terrain", [
+    { id: "terrain-procedural", label: "Procedural Landform", kind: "procedural", source: "generation/graph.json#terrain.operations" },
+    { id: "road-cut-grade", label: "Road Cut Grade", source: "generation/graph.json#semantics.road" },
+    { id: "riverbed-grade", label: "Riverbed Grade", source: "generation/graph.json#semantics.water" },
+    { id: "manual-height-override", label: "Manual Height Override", kind: "manual", regions: [], source: "editor/terrain" },
+  ]);
 
   const existingMap = await readMapManifest(context, preset);
   const pageCountX = bounds.maxPageX - bounds.minPageX + 1;

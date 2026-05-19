@@ -18,5 +18,86 @@
       "maxZ": 1024
     }
   },
-  "objects": []
+  "objects": [
+    {
+      "id": "west-fence-01",
+      "layer": "prop",
+      "archetype": "split-rail-fence",
+      "position": {
+        "x": -960,
+        "y": 83.758,
+        "z": 605
+      },
+      "rotationY": 1.212,
+      "boundsMeters": {
+        "minX": -1088.16,
+        "minZ": 476.84,
+        "maxX": -831.84,
+        "maxZ": 733.16
+      },
+      "spline": {
+        "widthMeters": 4,
+        "points": [
+          {
+            "x": -1080,
+            "z": 560
+          },
+          {
+            "x": -840,
+            "z": 650
+          }
+        ]
+      },
+      "tags": [
+        "prop",
+        "spline",
+        "collision"
+      ],
+      "collision": {
+        "type": "box",
+        "radiusMeters": 4,
+        "heightMeters": 2
+      }
+    },
+    {
+      "id": "west-fence-02",
+      "layer": "prop",
+      "archetype": "split-rail-fence",
+      "position": {
+        "x": -760,
+        "y": 73.502,
+        "z": 535
+      },
+      "rotationY": 2.534,
+      "boundsMeters": {
+        "minX": -900.089,
+        "minZ": 394.911,
+        "maxX": -619.911,
+        "maxZ": 675.089
+      },
+      "spline": {
+        "widthMeters": 4,
+        "points": [
+          {
+            "x": -840,
+            "z": 650
+          },
+          {
+            "x": -680,
+            "z": 420
+          }
+        ]
+      },
+      "tags": [
+        "prop",
+        "spline",
+        "collision"
+      ],
+      "collision": {
+        "type": "box",
+        "radiusMeters": 4,
+        "heightMeters": 2
+      }
+    }
+  ]
 }

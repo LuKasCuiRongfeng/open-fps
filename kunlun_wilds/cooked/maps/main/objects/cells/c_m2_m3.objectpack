@@ -20,12 +20,40 @@
   },
   "objects": [
     {
+      "id": "ridge-marker",
+      "layer": "poi",
+      "archetype": "lookout-tower",
+      "position": {
+        "x": -620,
+        "y": 80.821,
+        "z": -1040
+      },
+      "rotationY": 0,
+      "boundsMeters": {
+        "minX": -638,
+        "minZ": -1058,
+        "maxX": -602,
+        "maxZ": -1022
+      },
+      "radiusMeters": 18,
+      "tags": [
+        "poi",
+        "ridge",
+        "vista"
+      ],
+      "collision": {
+        "type": "cylinder",
+        "radiusMeters": 8.1,
+        "heightMeters": 12
+      }
+    },
+    {
       "id": "ridge-road-02",
       "layer": "road",
       "archetype": "road-rocky-segment",
       "position": {
         "x": -535,
-        "y": 46.133,
+        "y": 39.013,
         "z": -1250
       },
       "rotationY": 2.417,
@@ -53,6 +81,33 @@
         "nav-preferred",
         "vegetation-clear"
       ]
+    },
+    {
+      "id": "ridge-supplies",
+      "layer": "prop",
+      "archetype": "supply-crates",
+      "position": {
+        "x": -610,
+        "y": 80.33,
+        "z": -1070
+      },
+      "rotationY": 0,
+      "boundsMeters": {
+        "minX": -616,
+        "minZ": -1076,
+        "maxX": -604,
+        "maxZ": -1064
+      },
+      "radiusMeters": 6,
+      "tags": [
+        "prop",
+        "collision"
+      ],
+      "collision": {
+        "type": "box",
+        "radiusMeters": 6,
+        "heightMeters": 2
+      }
     }
   ]
 }

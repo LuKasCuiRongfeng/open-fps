@@ -53,24 +53,24 @@
 - objects cooked cell pack 现在来自 source object pack，不再是空生成物；collision cell pack 由 terrain heightfield、水体 volume 和对象 blocker 派生；nav cell pack 由 terrain slope、道路、水体和碰撞 blocker 派生。
 - runtime world partition planner 已接入 game streaming hot path，可按玩家/摄像机位置生成 load/keep/unload cell、预取 object/collision/nav cell pack、缓存已加载 payload，并按 archetype 实例化真实 GLTF 世界对象；道路已用 decal-like surface mesh 表达，水体已使用 TSL water surface shader，source archetype 继续记录 edge blend、LOD/instancing 和 per-cell budget 元数据。
 - game runtime 已把 cooked object cell pack 转成道路、水体、POI 和道具的可见实例；collision pack 已进入玩家水平阻挡解析，并记录 vegetation query-clearance 策略；nav pack 已记录 cross-cell portal link，runtime 已提供 AI nav nearest/path 查询和 collision/nav overlay 调试开关。
-- 地形、水体/道路对象、paint、vegetation 和 cooked nav 已收敛到共享 world semantics 规则，避免各生成脚本各自维护一套道路、水体和 POI 语义。
+- 地形、水体/道路对象、paint、vegetation 和 cooked nav 已收敛到共享 world semantics 规则，并显式输出 terrain/material/ecology influence（road cut、riverbed cut、rut mask、wet edge、clearance），避免各生成脚本各自维护一套道路、水体和 POI 语义。
 - terrain、paint、vegetation、objects、collision 和 nav 的生成依赖已由 generation graph 显式登记；`scripts/map-generation/world-rebuild-planner.mjs` 可把 graph 输入变化解析为 stage closure 与 region/cell scope，`pnpm cook:map` 已支持 dry-run plan、scoped cook 和预算超限阻断，`pnpm gen:graph` 已能把 graph executor 映射到真实 terrain/paint/vegetation/object/cooked stage dispatcher，桌面编辑器可从 World Diagnostics 选择 region/cell 后直接执行 graph dry-run/run。
-- 编辑器设置面板已有 World Diagnostics 页，可查看 generation graph、rebuild executor、local scope、预算、source 资产健康、pack integrity、cooked source stale、rebuild plan 命令、scope review、项目级 locked scope、受控 dry-run/cook 多计划队列、持久化执行历史、失败分类、验证 target 跳转、恢复动作、partition streaming、runtime payload、per-cell budget hotspot、collision/nav overlay inspector、nav path probe 和可见对象/植被统计；UI 与 CLI 均会阻断超出 scoped cook 预算的实际 cook；Objects 页已支持 archetype 选择、地形拾取放置、删除、基础 spline road/river 控制点编辑、undo/redo 和对象 sidecar 保存。
-- CI/release 已接入 `pnpm verify`，覆盖 lint、Node 回归测试、TypeScript 类型检查和地图资产校验。
+- 编辑器设置面板已有 World Diagnostics 页，可查看 generation graph、rebuild executor、local scope、预算、source 资产健康、pack integrity、cooked source stale、rebuild plan 命令、scope review、项目级 locked scope、受控 dry-run/cook 多计划队列、持久化执行历史、失败分类、验证 target 跳转、恢复动作、partition streaming、runtime payload、sidecar layer stack、per-cell budget hotspot、collision/nav overlay inspector、nav path probe 和可见对象/植被统计；UI 与 CLI 均会阻断超出 scoped cook 预算的实际 cook；Objects 页已支持 archetype 选择、地形拾取放置、删除、spline append/insert/move/width、prefab 展开、scatter rule 放置、per-cell budget cap 阻断、undo/redo 和对象 sidecar 保存。
+- CI/release 已接入 `pnpm verify`，覆盖 lint、Node 回归测试、TypeScript 类型检查、地图资产校验和 cooked release package Brotli smoke。
 - 已有 [`OPEN_WORLD_DESIGN_SPEC.md`](OPEN_WORLD_DESIGN_SPEC.md)，定义 `main` 10 平方公里地图的区域、道路、水系、兴趣点和生成约束。
 
-当前最重要的方向是把这些能力从“已有可选择 scope 的 graph/cook orchestration layer”推进到“更完整的非破坏性内容生产系统”：真实 layer composition、prefab/scatter UI、历史检索、预算化渲染闭环和更高质量内容填充。
+当前最重要的方向是把这些能力从“已有可选择 scope 的 graph/cook orchestration layer 与第一版 layer/prefab/scatter 工具”推进到“更完整的生产级内容系统”：layer 开关/排序 UI、执行历史检索、预算化渲染闭环、精确碰撞和更高质量内容填充。
 
 ## 当前编辑器质量判断
 
 地形、纹理和植被编辑已经具备正确的 sidecar/cell 底座，但还不是业界最佳开放世界方案：
 
-- 地形编辑当前以高度画刷和 procedural 生成结合为主，generation graph 已记录道路切坡、河床、平台、侵蚀、噪声和手工 override 的 operation；terrain manifest 已具备 `ordered-nondestructive-v1` patch layer 元数据，下一阶段要把这些 operation 变成编辑器可调、可禁用、可局部执行的真实合成层。
-- 纹理编辑当前是 splat paint 和 region dirty save，generation graph 已记录 slope/height/wetness/road-distance/biome/decal/macro variation 规则；paint manifest 已具备非破坏 patch layer 元数据，下一阶段要把 material/biome graph 与手工 paint override 合并成可局部重算的材质工作流。
-- 植被编辑当前已有 GLTF instancing、LOD、距离裁剪和画刷，generation graph 已记录 biome、cluster、edge falloff、保护区/排除区、impostor 与 collision/nav 预算规则；vegetation manifest 已具备非破坏 patch layer 元数据，下一阶段要把 ecology scatter executor 接进编辑器局部重散布。
-- 世界对象编辑已从几何代理进入 GLTF archetype + sidecar 事务阶段；source archetype 已登记 spline、prefab、scatter、LOD/instancing budget 和 collision 元数据，并已有基础 spline 控制点编辑，仍需补 prefab 展开执行器、精确 collision shape、可视化验证和高级 spline 操作。
+- 地形编辑当前以高度画刷和 procedural 生成结合为主，generation graph 已记录道路切坡、河床、平台、侵蚀、噪声和手工 override 的 operation；terrain manifest 已具备 `ordered-nondestructive-v1` patch layer stack，生成器已把 procedural landform、road cut、riverbed grade 和 manual override 分层登记，下一阶段要补编辑器内 layer 开关/排序和局部合成预览。
+- 纹理编辑当前是 splat paint 和 region dirty save，generation graph 已记录 slope/height/wetness/road-distance/biome/decal/macro variation 规则；paint manifest 已具备 material biome、road decal mask、water wet edge 和 manual override layer，下一阶段要补手工 paint override 与 graph output 的可视合成 UI。
+- 植被编辑当前已有 GLTF instancing、LOD、距离裁剪和画刷，generation graph 已记录 biome、cluster、edge falloff、保护区/排除区、impostor 与 collision/nav 预算规则；vegetation manifest 已具备 ecology scatter、road/water clearance 和 manual override layer，下一阶段要补局部重散布审查和保护区编辑。
+- 世界对象编辑已从几何代理进入 GLTF archetype + sidecar 事务阶段；source archetype 已登记 spline、prefab、scatter、LOD/instancing budget 和 collision 元数据，并已有 spline append/insert/move/width、prefab 展开、scatter 放置和 per-cell budget cap 阻断，仍需补精确 collision shape、可视化验证和更完整的对象 LOD/instancing 编辑。
 
-因此当前项目已经具备业界级开放世界管线的关键底座：可校验 source/cooked 分层、world partition、content-addressed package、Brotli sidecar 压缩与 runtime loader、generation graph、graph executor dispatcher、局部 rebuild plan、scoped cook、预算阻断、per-cell budget report、collision/nav runtime 调试和编辑器内 target-aware rebuild orchestration layer。距离最终“业界最佳编辑体验”还差真实 layer composition、执行历史检索、prefab/scatter UI、高级 spline 工具、预算化渲染闭环和更高质量美术内容填充。
+因此当前项目已经具备业界级开放世界管线的关键底座：可校验 source/cooked 分层、world partition、content-addressed package、Brotli sidecar 压缩与 runtime loader、generation graph、graph executor dispatcher、局部 rebuild plan、scoped cook、预算阻断、per-cell budget report、sidecar layer stack 审查、collision/nav runtime 调试和编辑器内 target-aware rebuild orchestration layer。距离最终“业界最佳编辑体验”还差 layer 开关/排序 UI、执行历史检索、精确 collision shape、预算化渲染闭环和更高质量美术内容填充。
 
 ## 路线图
 
@@ -181,7 +181,7 @@
 - 引入侵蚀、河床、坡度控制、道路切割、平台和悬崖规则。
 - 生成时考虑通行性、视线、战斗空间和道路连接。
 - 编辑器支持局部重建和手工修整，不强迫全图重算。
-- 建立非破坏性 terrain operation graph，使 procedural 层、spline 切坡层和手工修整层可单独重算、禁用和审查。
+- 建立非破坏性 terrain operation graph，使 procedural 层、spline 切坡层和手工修整层可单独重算、禁用和审查；当前 manifest 已声明可审查 layer stack，后续补编辑器内 layer 操作。
 
 验收标准：
 
@@ -198,7 +198,7 @@
 - 增加 slope/height/biome 自动材质规则。
 - 支持 macro variation、detail normal、湿度、泥土、岩石和道路边缘混合。
 - paint 数据继续保持 region pack 和 dirty save。
-- 建立 material/biome graph，把手工 paint 作为 override/mask，而不是唯一来源。
+- 建立 material/biome graph，把手工 paint 作为 override/mask，而不是唯一来源；当前 paint 生成已显式消费 rut/wet-edge material influence。
 
 验收标准：
 
@@ -215,7 +215,7 @@
 - 按 biome、坡度、高度、湿度、朝向、道路距离和水源距离分布。
 - 支持 cluster、clearing、edge falloff、密度图和手工保护区。
 - 生成 LOD、impostor、碰撞和阴影策略。
-- 建立 ecology scatter graph，并把道路、水体、object 清理、collision/nav 预算作为可验证输入。
+- 建立 ecology scatter graph，并把道路、水体、object 清理、collision/nav 预算作为可验证输入；当前 vegetation 生成已显式消费 ecology clearance/wetland habitat influence。
 
 验收标准：
 
@@ -229,15 +229,15 @@
 
 当前重点：
 
-- 建立 spline road 和 river 工具。
-- 支持 mesh/decal/prop placement、岩石散布、围栏、路牌、小建筑和据点对象。
-- world object 已接入分区、校验、cooked build、真实 GLTF archetype 渲染和编辑事务提交；下一步补齐 spline 工具、prefab 展开、scatter rule 执行和可视化调试。
+- 建立 spline road、river 和 fence 工具，当前已支持 append/insert/move/width 第一版操作。
+- 支持 mesh/decal/prop placement、岩石散布、围栏、路牌、小建筑和据点对象；当前 prefab 展开和 scatter rule 放置已进入 Objects 页。
+- world object 已接入分区、校验、cooked build、真实 GLTF archetype 渲染、编辑事务提交和 per-cell budget cap 阻断；下一步补齐精确 collision shape、对象 LOD/instancing 编辑和可视化验证。
 
 验收标准：
 
-- 道路当前已生成导航成本，并已影响地形、材质和植被清理；runtime 已有 decal-like road surface mesh，后续需要 spline 编辑工具、车辙贴花、边缘融合和更精确的宽度/材质控制。
-- 水体当前已进入 object/collision/nav 派生，并影响地形、边缘材质和植被清理；runtime 已有 TSL water surface shader，后续需要更真实的河床高度、湿地物种和浅/深水规则。
-- 世界对象能按 cell 被 runtime 预取并以真实 mesh/prop archetype 实例化；后续要补 prefab 展开、scatter rule UI、object instancing/LOD budget 和精确碰撞形状。
+- 道路当前已生成导航成本，并已影响地形 road cut、材质 rut mask 和植被清理；runtime 已有 decal-like road surface mesh，编辑器已有 spline 宽度/点位第一版控制，后续需要更高质量车辙贴花和边缘融合。
+- 水体当前已进入 object/collision/nav 派生，并影响地形 riverbed cut、边缘湿度材质和植被清理；runtime 已有 TSL water surface shader，后续需要更细的浅/深水规则和湿地物种内容。
+- 世界对象能按 cell 被 runtime 预取并以真实 mesh/prop archetype 实例化；编辑器已支持 prefab 展开、scatter rule 放置和 object budget cap，后续要补 object instancing/LOD budget 可视化和精确碰撞形状。
 
 ### 11. 渲染质量与性能预算
 
@@ -309,8 +309,8 @@
 
 当前重点：
 
-- 在已有 World Diagnostics 基础上继续增强 region/cell 可视化选择、streaming debug、LOD debug、保存状态、地图统计、cooked stale 诊断、rebuild command plan、scope review、locked scope、持久化执行历史、失败分类、验证 target 跳转和恢复动作。
-- 在已具备项目级 locked scope、受控多计划队列、target routing、恢复动作和预算超限阻断的基础上，补编辑器内 source stage 局部重新生成入口和执行历史检索。
+- 在已有 World Diagnostics 基础上继续增强 streaming debug、LOD debug、保存状态、地图统计、执行历史检索、失败分类和验证 target 跳转；region/cell scope 选择、graph run、layer stack 审查、collision/nav inspector 和 budget hotspot 已进入编辑器。
+- 在已具备项目级 locked scope、受控多计划队列、target routing、恢复动作、预算超限阻断和编辑器内 source stage 局部重新生成入口的基础上，补执行历史检索与更细的局部 nav rebuild 验证。
 - 所有 UI 保持紧凑、严肃的桌面编辑器风格。
 
 验收标准：
@@ -353,11 +353,11 @@
 
 ## 近期优先级
 
-1. 强化 World Diagnostics 执行闭环：补编辑器内 source stage 局部重新生成入口、执行历史检索和 region/cell 可视化选择。
-2. 把 terrain/material/ecology graph 从“可执行 stage dispatcher”推进到“非破坏性局部层”：道路切坡、河床、湿边、道路清理、cluster/edge falloff 和手工 override 都能按 scope 增量重算。
-3. 强化 collision/nav 调试消费：在已有 AI 查询接口和 overlay 基础上补可行走/阻挡问题定位、vegetation clearance 诊断、局部 nav rebuild 验证和更高分辨率寻路。
-4. 继续升级道路、水体和对象表现：补 spline 编辑工具、车辙/湿边 decal、prefab 展开、scatter rule 执行和对象 LOD/instancing budget。
-5. 继续打磨 release cooked package：验证真实发布读取策略、压缩包体评估、增量 patch 元数据和多平台最小运行验证。
+1. 强化 World Diagnostics 执行闭环：在已有 graph run、scope 选择和 layer stack 审查上补执行历史检索、可视化地图选区和 rebuild 结果 diff。
+2. 把 terrain/material/ecology layer stack 从“可审查元数据”推进到“可操作 UI”：layer 开关、排序、局部预览、手工 override 与 graph output 合成。
+3. 强化 collision/nav 调试消费：在已有 AI 查询接口、overlay 和 inspector 基础上补可行走/阻挡问题定位、vegetation clearance 诊断、局部 nav rebuild 验证和更高分辨率寻路。
+4. 继续升级道路、水体和对象表现：补更高质量车辙/湿边 decal、精确 collision shape、对象 LOD/instancing budget 可视化和 prefab/scatter 参数编辑。
+5. 继续打磨 release cooked package：在已有 Brotli smoke 基础上补 web/desktop game 多平台最小启动验证、压缩包体评估和增量 patch 元数据。
 
 ## 路线对齐自检
 

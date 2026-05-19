@@ -18,5 +18,158 @@
       "maxZ": 1536
     }
   },
-  "objects": []
+  "objects": [
+    {
+      "id": "wetland-boardwalk-01",
+      "layer": "road",
+      "archetype": "road-forest-path",
+      "position": {
+        "x": 570,
+        "y": 84.77,
+        "z": 1080
+      },
+      "rotationY": 0.983,
+      "boundsMeters": {
+        "minX": 389.722,
+        "minZ": 899.722,
+        "maxX": 750.278,
+        "maxZ": 1260.278
+      },
+      "spline": {
+        "widthMeters": 4,
+        "points": [
+          {
+            "x": 420,
+            "z": 980
+          },
+          {
+            "x": 720,
+            "z": 1180
+          }
+        ]
+      },
+      "tags": [
+        "road",
+        "nav-preferred",
+        "vegetation-clear"
+      ]
+    },
+    {
+      "id": "wetland-boardwalk-02",
+      "layer": "road",
+      "archetype": "road-forest-path",
+      "position": {
+        "x": 850,
+        "y": 104.087,
+        "z": 1280
+      },
+      "rotationY": 0.915,
+      "boundsMeters": {
+        "minX": 685.988,
+        "minZ": 1115.988,
+        "maxX": 1014.012,
+        "maxZ": 1444.012
+      },
+      "spline": {
+        "widthMeters": 4,
+        "points": [
+          {
+            "x": 720,
+            "z": 1180
+          },
+          {
+            "x": 980,
+            "z": 1380
+          }
+        ]
+      },
+      "tags": [
+        "road",
+        "nav-preferred",
+        "vegetation-clear"
+      ]
+    },
+    {
+      "id": "wetland-cache",
+      "layer": "poi",
+      "archetype": "camp",
+      "position": {
+        "x": 780,
+        "y": 101.916,
+        "z": 1220
+      },
+      "rotationY": 0,
+      "boundsMeters": {
+        "minX": 756,
+        "minZ": 1196,
+        "maxX": 804,
+        "maxZ": 1244
+      },
+      "radiusMeters": 24,
+      "tags": [
+        "poi",
+        "wetland",
+        "supply-cache"
+      ],
+      "collision": {
+        "type": "cylinder",
+        "radiusMeters": 10.8,
+        "heightMeters": 4
+      }
+    },
+    {
+      "id": "wetland-crates",
+      "layer": "prop",
+      "archetype": "supply-crates",
+      "position": {
+        "x": 760,
+        "y": 100.85,
+        "z": 1195
+      },
+      "rotationY": 0,
+      "boundsMeters": {
+        "minX": 753,
+        "minZ": 1188,
+        "maxX": 767,
+        "maxZ": 1202
+      },
+      "radiusMeters": 7,
+      "tags": [
+        "prop",
+        "collision"
+      ],
+      "collision": {
+        "type": "box",
+        "radiusMeters": 7,
+        "heightMeters": 2
+      }
+    },
+    {
+      "id": "wetland-sign",
+      "layer": "prop",
+      "archetype": "road-sign",
+      "position": {
+        "x": 540,
+        "y": 85.396,
+        "z": 1035
+      },
+      "rotationY": 0,
+      "boundsMeters": {
+        "minX": 535,
+        "minZ": 1030,
+        "maxX": 545,
+        "maxZ": 1040
+      },
+      "radiusMeters": 5,
+      "tags": [
+        "prop",
+        "collision"
+      ],
+      "collision": {
+        "type": "box",
+        "radiusMeters": 5,
+        "heightMeters": 2
+      }
+    }
+  ]
 }

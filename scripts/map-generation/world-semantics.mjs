@@ -30,6 +30,24 @@ export const semanticPolylineDefinitions = [
     ],
   },
   {
+    prefix: "wetland-boardwalk",
+    layer: "road",
+    archetype: "road-forest-path",
+    widthMeters: 4,
+    points: [
+      [260, 760], [420, 980], [720, 1180], [980, 1380],
+    ],
+  },
+  {
+    prefix: "west-fence",
+    layer: "prop",
+    archetype: "split-rail-fence",
+    widthMeters: 4,
+    points: [
+      [-1180, 260], [-1080, 560], [-840, 650], [-680, 420],
+    ],
+  },
+  {
     prefix: "main-river",
     layer: "water",
     archetype: "river-segment",
@@ -55,6 +73,8 @@ export const semanticPoiDefinitions = [
   ["south-bridge", "broken-bridge", 430, 980, 38, ["poi", "bridge", "water-crossing"]],
   ["west-homestead", "abandoned-homestead", -1040, 420, 46, ["poi", "building", "cover"]],
   ["forest-clearing", "forest-clearing", 980, -360, 42, ["poi", "clearing", "encounter-space"]],
+  ["wetland-cache", "camp", 780, 1220, 24, ["poi", "wetland", "supply-cache"]],
+  ["ridge-marker", "lookout-tower", -620, -1040, 18, ["poi", "ridge", "vista"]],
 ];
 
 export const semanticPropDefinitions = [
@@ -64,6 +84,10 @@ export const semanticPropDefinitions = [
   ["fence-west-02", "split-rail-fence", -980, 500, 18],
   ["camp-crates", "supply-crates", -145, -220, 8],
   ["bridge-planks", "bridge-debris", 390, 930, 12],
+  ["wetland-crates", "supply-crates", 760, 1195, 7],
+  ["wetland-sign", "road-sign", 540, 1035, 5],
+  ["homestead-crates", "supply-crates", -1010, 470, 7],
+  ["ridge-supplies", "supply-crates", -610, -1070, 6],
 ];
 
 export function createSemanticWorldObjects(heightAt) {
@@ -241,6 +265,10 @@ export function sampleWorldSemantics(x, z, objects) {
     }
     return Math.max(max, boundsInfluence(x, z, object.boundsMeters, 6, 24));
   }, 0);
+  const vegetationClearance = clamp(Math.max(roadCore, waterCore, poiClearance, propClearance), 0, 1);
+  const terrain = createTerrainInfluence(roadCore, roadShoulder, waterCore, waterBank);
+  const material = createMaterialInfluence(roadCore, roadShoulder, waterCore, waterBank, poiClearance);
+  const ecology = createEcologyInfluence(vegetationClearance, roadShoulder, waterBank, poiClearance);
 
   return {
     road,
@@ -251,7 +279,24 @@ export function sampleWorldSemantics(x, z, objects) {
     waterBank,
     poiClearance,
     propClearance,
-    vegetationClearance: clamp(Math.max(roadCore, waterCore, poiClearance, propClearance), 0, 1),
+    vegetationClearance,
+    terrain,
+    material,
+    ecology,
+  };
+}
+
+export function sampleAuthoredTerrainInfluence(x, z) {
+  const roadCore = getSemanticPathInfluence(x, z, { layer: "road" }, 8, 58);
+  const roadShoulder = getSemanticPathInfluence(x, z, { layer: "road" }, 24, 150);
+  const waterCore = getSemanticPathInfluence(x, z, { layer: "water" }, 42, 240);
+  const waterBank = getSemanticPathInfluence(x, z, { layer: "water" }, 72, 340);
+  return {
+    roadCore,
+    roadShoulder,
+    waterCore,
+    waterBank,
+    ...createTerrainInfluence(roadCore, roadShoulder, waterCore, waterBank),
   };
 }
 
@@ -337,7 +382,8 @@ function createPolylineObjects(definition, heightAt) {
           { x: endX, z: endZ },
         ],
       },
-      tags: layer === "water" ? ["water", "nav-cost", "vegetation-clear"] : ["road", "nav-preferred", "vegetation-clear"],
+      tags: createPolylineTags(layer),
+      collision: layer === "prop" ? { type: "box", radiusMeters: widthMeters, heightMeters: 2 } : undefined,
     });
   }
 
@@ -422,4 +468,42 @@ function createBounds(x, z, radiusMeters) {
 
 function round(value) {
   return Math.round(value * 1000) / 1000;
+}
+
+function createTerrainInfluence(roadCore, roadShoulder, waterCore, waterBank) {
+  return {
+    roadCutMeters: round(roadCore * 2.4 + roadShoulder * 0.7),
+    roadShoulderBlend: round(clamp(roadShoulder, 0, 1)),
+    riverbedCutMeters: round(waterCore * 28 + waterBank * 6),
+    bankTerraceMeters: round(waterBank * 4.5),
+  };
+}
+
+function createMaterialInfluence(roadCore, roadShoulder, waterCore, waterBank, poiClearance) {
+  return {
+    rutMask: round(clamp(roadCore * 1.2 + roadShoulder * 0.2, 0, 1)),
+    compactedDirt: round(clamp(roadCore + poiClearance * 0.35, 0, 1)),
+    wetness: round(clamp(waterCore * 0.9 + waterBank * 0.65, 0, 1)),
+    bankMud: round(clamp(waterBank, 0, 1)),
+  };
+}
+
+function createEcologyInfluence(vegetationClearance, roadShoulder, waterBank, poiClearance) {
+  return {
+    clearance: round(vegetationClearance),
+    edgeRegrowth: round(clamp(Math.max(roadShoulder, waterBank) * (1 - poiClearance), 0, 1)),
+    wetlandHabitat: round(clamp(waterBank * (1 - vegetationClearance * 0.6), 0, 1)),
+  };
+}
+
+function createPolylineTags(layer) {
+  if (layer === "water") {
+    return ["water", "nav-cost", "vegetation-clear"];
+  }
+
+  if (layer === "road") {
+    return ["road", "nav-preferred", "vegetation-clear"];
+  }
+
+  return [layer, "spline", "collision"];
 }

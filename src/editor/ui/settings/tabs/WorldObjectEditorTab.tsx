@@ -2,8 +2,8 @@
 // WorldObjectEditorTab：世界对象摆放设置标签。
 
 import { useEffect, useState } from "react";
-import { Eraser, MousePointer2, PackageOpen, Route, Scissors, Square, X } from "lucide-react";
-import type { WorldObjectEditor, WorldObjectEditMode } from "@editor/runtime/world-objects";
+import { Eraser, Minus, MousePointer2, PackageOpen, Plus, Route, Scissors, Square, X } from "lucide-react";
+import type { WorldObjectEditor, WorldObjectEditMode, WorldObjectPlacementBudgetStatus, WorldObjectSplineOperation } from "@editor/runtime/world-objects";
 import type { WorldObjectArchetypeDefinition } from "@game/world/objects";
 import type { TerrainMode } from "@editor/ui/hooks/useEditorWorkspace";
 import type { ActiveEditorType } from "./TerrainEditorTab";
@@ -21,11 +21,14 @@ interface WorldObjectEditorSnapshot {
   mode: WorldObjectEditMode;
   selectedArchetypeId: string;
   selectedArchetype: WorldObjectArchetypeDefinition | null;
+  splineOperation: WorldObjectSplineOperation;
   archetypes: readonly [string, WorldObjectArchetypeDefinition][];
   instanceCount: number;
   dirty: boolean;
   canEditSpline: boolean;
   splineDraftPointCount: number;
+  activeSplineWidthMeters: number;
+  placementBudgetStatus: WorldObjectPlacementBudgetStatus;
 }
 
 export function WorldObjectEditorTab({
@@ -124,9 +127,27 @@ export function WorldObjectEditorTab({
           </div>
         </SettingRow>
         <SettingRow label="Spline">
-          <div className="flex flex-wrap gap-1.5">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap gap-1.5">
+              {(["append", "insert", "move"] as const).map((operation) => (
+                <SettingsButton
+                  key={operation}
+                  Icon={Route}
+                  size="sm"
+                  tone={snapshot.splineOperation === operation ? "primary" : "neutral"}
+                  disabled={!canEdit || snapshot.mode !== "spline"}
+                  onClick={() => worldObjectEditor?.setSplineOperation(operation)}
+                >
+                  {operation}
+                </SettingsButton>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
             <SettingsButton Icon={Square} size="sm" disabled={!canEdit || snapshot.mode !== "spline" || snapshot.splineDraftPointCount === 0} onClick={() => worldObjectEditor?.finishSpline()}>
               Finish
+            </SettingsButton>
+            <SettingsButton Icon={Route} size="sm" disabled={!canEdit || snapshot.mode !== "spline"} onClick={() => worldObjectEditor?.selectNearestSpline()}>
+              Select
             </SettingsButton>
             <SettingsButton Icon={Scissors} size="sm" disabled={!canEdit || snapshot.mode !== "spline"} onClick={() => worldObjectEditor?.deleteNearestSplinePoint()}>
               Delete Point
@@ -134,6 +155,16 @@ export function WorldObjectEditorTab({
             <SettingsButton Icon={X} size="sm" tone="warning" disabled={!canEdit || snapshot.splineDraftPointCount === 0} onClick={() => worldObjectEditor?.clearSplineDraft()}>
               Clear
             </SettingsButton>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <SettingsButton Icon={Minus} size="sm" disabled={!canEdit || snapshot.mode !== "spline" || snapshot.splineDraftPointCount === 0} onClick={() => worldObjectEditor?.nudgeActiveSplineWidth(-1)}>
+                Width
+              </SettingsButton>
+              <ReadonlyField>{snapshot.activeSplineWidthMeters.toFixed(1)} m</ReadonlyField>
+              <SettingsButton Icon={Plus} size="sm" disabled={!canEdit || snapshot.mode !== "spline" || snapshot.splineDraftPointCount === 0} onClick={() => worldObjectEditor?.nudgeActiveSplineWidth(1)}>
+                Width
+              </SettingsButton>
+            </div>
           </div>
         </SettingRow>
         <SettingRow label="Instances">
@@ -141,6 +172,9 @@ export function WorldObjectEditorTab({
         </SettingRow>
         <SettingRow label="Draft">
           <ReadonlyField>{snapshot.splineDraftPointCount.toLocaleString()} spline points</ReadonlyField>
+        </SettingRow>
+        <SettingRow label="Cell Budget">
+          <SettingBadge tone={snapshot.placementBudgetStatus.tone}>{snapshot.placementBudgetStatus.label}</SettingBadge>
         </SettingRow>
       </SettingsSection>
 
@@ -194,15 +228,22 @@ function createSnapshot(editor: WorldObjectEditor | null): WorldObjectEditorSnap
     mode: editor?.currentMode ?? "place",
     selectedArchetypeId: editor?.currentSelectedArchetypeId ?? "",
     selectedArchetype: editor?.selectedArchetype ?? null,
+    splineOperation: editor?.currentSplineOperation ?? "append",
     archetypes: editor?.archetypes ?? [],
     instanceCount: editor?.instanceCount ?? 0,
     dirty: editor?.dirty ?? false,
     canEditSpline: editor?.canEditSpline ?? false,
     splineDraftPointCount: editor?.splineDraftPointCount ?? 0,
+    activeSplineWidthMeters: editor?.activeSplineWidthMeters ?? 0,
+    placementBudgetStatus: editor?.placementBudgetStatus ?? { label: "No editor", tone: "neutral", blocked: false },
   };
 }
 
 function formatBudget(archetype: WorldObjectArchetypeDefinition | null): string {
+  if (archetype?.budget?.maxInstancesPerCell) {
+    return `${archetype.budget.lodGroup ?? archetype.layer}: ${archetype.budget.maxInstancesPerCell} / cell`;
+  }
+
   if (!archetype?.render) return "No render asset";
 
   const visible = archetype.render.maxVisibleDistanceMeters;

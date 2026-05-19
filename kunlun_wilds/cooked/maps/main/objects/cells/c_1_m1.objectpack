@@ -25,7 +25,7 @@
       "archetype": "forest-clearing",
       "position": {
         "x": 980,
-        "y": 89.003,
+        "y": 87.703,
         "z": -360
       },
       "rotationY": 0,
@@ -53,7 +53,7 @@
       "archetype": "road-forest-path",
       "position": {
         "x": 930,
-        "y": 89.183,
+        "y": 87.855,
         "z": -345
       },
       "rotationY": 1.925,
@@ -88,7 +88,7 @@
       "archetype": "road-dirt-segment",
       "position": {
         "x": 940,
-        "y": 97.39,
+        "y": 95.8,
         "z": -400
       },
       "rotationY": 0.464,
@@ -123,7 +123,7 @@
       "archetype": "road-sign",
       "position": {
         "x": 610,
-        "y": 70.302,
+        "y": 61.755,
         "z": -250
       },
       "rotationY": 0,

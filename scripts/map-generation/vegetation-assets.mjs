@@ -32,6 +32,7 @@ import {
 } from "./shared.mjs";
 import { createVegetationModelDefinitions, readAssetRegistry } from "./asset-registry.mjs";
 import { writeWorldGenerationGraph } from "./world-generation-graph.mjs";
+import { createGeneratedPatchLayers } from "./sidecar-patch-layers.mjs";
 
 export async function generateVegetationAssets(context, preset) {
   const mapDir = getMapDir(context, preset);
@@ -102,6 +103,11 @@ export async function generateVegetationAssets(context, preset) {
       regions: regionMasks,
       regionIntegrity,
       modelIds,
+      patchLayers: createGeneratedPatchLayers(Object.keys(regionMasks), "Base Vegetation", [
+        { id: "ecology-scatter", label: "Ecology Scatter", kind: "procedural", source: "generation/graph.json#vegetation.rules" },
+        { id: "road-water-clearance", label: "Road Water Clearance", source: "generation/graph.json#semantics.clearance" },
+        { id: "manual-vegetation-override", label: "Manual Vegetation Override", kind: "manual", regions: [], source: "editor/vegetation" },
+      ]),
     },
   };
   await writeFile(path.join(vegetationDir, "models.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
@@ -200,16 +206,16 @@ function createPreviewVegetationInstances(preset, heightAt, semanticObjects) {
 function resolveTreeDensity(height, slopeDegrees, semantics, worldX, worldZ, seed) {
   const tooSteep = smoothstep(28, 42, slopeDegrees);
   const snowline = smoothstep(132, 182, height);
-  const lowWetEdge = semantics.waterBank * (1 - semantics.waterCore) * 0.22;
+  const lowWetEdge = semantics.ecology.wetlandHabitat * 0.22;
   const roadPenalty = semantics.roadShoulder * 0.55 + semantics.roadCore;
-  const clearPenalty = semantics.vegetationClearance * 1.15;
+  const clearPenalty = semantics.ecology.clearance * 1.15;
   const basinNoise = Math.sin((worldX + seed * 0.01) * 0.004) * Math.cos((worldZ - seed * 0.02) * 0.005) * 0.5 + 0.5;
   return clamp(0.18 + basinNoise * 0.32 + lowWetEdge - tooSteep * 0.65 - snowline * 0.65 - roadPenalty - clearPenalty, 0, 0.82);
 }
 
 function resolveFernDensity(height, slopeDegrees, semantics) {
-  const wetBank = semantics.waterBank * (1 - semantics.waterCore);
-  const clearPenalty = Math.max(semantics.vegetationClearance, semantics.roadShoulder * 0.75);
+  const wetBank = semantics.ecology.wetlandHabitat;
+  const clearPenalty = Math.max(semantics.ecology.clearance, semantics.roadShoulder * 0.75);
   return clamp(0.46 + wetBank * 0.35 - smoothstep(24, 38, slopeDegrees) * 0.55 - smoothstep(116, 166, height) * 0.35 - clearPenalty, 0, 0.9);
 }
 

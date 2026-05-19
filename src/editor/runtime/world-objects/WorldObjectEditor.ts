@@ -20,6 +20,13 @@ type TerrainHeightAvailability = (x: number, z: number) => boolean;
 type EditorCommandRecorder = (command: EditorCommand) => void;
 
 export type WorldObjectEditMode = "place" | "erase" | "spline";
+export type WorldObjectSplineOperation = "append" | "insert" | "move";
+
+export interface WorldObjectPlacementBudgetStatus {
+  label: string;
+  tone: "neutral" | "success" | "warning" | "danger";
+  blocked: boolean;
+}
 
 export interface WorldObjectEditorTarget {
   valid: boolean;
@@ -44,7 +51,9 @@ export class WorldObjectEditor {
   private previousRegionPaths = new Set<string>();
   private selectedArchetypeId = "";
   private mode: WorldObjectEditMode = "place";
+  private splineOperation: WorldObjectSplineOperation = "append";
   private activeSplineObjectId: string | null = null;
+  private lastBudgetBlock: string | null = null;
   private target: WorldObjectEditorTarget = { valid: false, x: 0, y: 0, z: 0 };
   private mapDirectory = "";
   private sequence = 0;
@@ -68,6 +77,10 @@ export class WorldObjectEditor {
 
   get currentMode(): WorldObjectEditMode {
     return this.mode;
+  }
+
+  get currentSplineOperation(): WorldObjectSplineOperation {
+    return this.splineOperation;
   }
 
   get currentTarget(): WorldObjectEditorTarget {
@@ -113,6 +126,15 @@ export class WorldObjectEditor {
   get splineDraftPointCount(): number {
     const object = this.activeSplineObjectId ? this.findObjectById(this.activeSplineObjectId)?.object : null;
     return object?.spline?.points?.length ?? 0;
+  }
+
+  get activeSplineWidthMeters(): number {
+    const object = this.activeSplineObjectId ? this.findObjectById(this.activeSplineObjectId)?.object : null;
+    return object?.spline?.widthMeters ?? createSplineWidth(this.selectedArchetype ?? undefined);
+  }
+
+  get placementBudgetStatus(): WorldObjectPlacementBudgetStatus {
+    return this.createPlacementBudgetStatus();
   }
 
   get instanceCount(): number {
@@ -177,11 +199,18 @@ export class WorldObjectEditor {
 
     this.selectedArchetypeId = archetypeId;
     this.activeSplineObjectId = null;
+    this.lastBudgetBlock = null;
     this.notifyChanged();
   }
 
   setMode(mode: WorldObjectEditMode): void {
     this.mode = mode;
+    this.lastBudgetBlock = null;
+    this.notifyChanged();
+  }
+
+  setSplineOperation(operation: WorldObjectSplineOperation): void {
+    this.splineOperation = operation;
     this.notifyChanged();
   }
 
@@ -198,6 +227,9 @@ export class WorldObjectEditor {
     this.target = result.valid
       ? { valid: true, x: result.x, y: result.y, z: result.z }
       : { valid: false, x: 0, y: 0, z: 0 };
+    if (this.lastBudgetBlock) {
+      this.lastBudgetBlock = null;
+    }
     this.notifyChanged();
   }
 
@@ -208,8 +240,8 @@ export class WorldObjectEditor {
     const changed = this.mode === "erase"
       ? this.eraseNearestObject()
       : this.mode === "spline"
-        ? this.placeSplinePoint()
-        : this.placeSelectedObject();
+        ? this.editSplineObject()
+        : this.placeSelectedObjectWithPlacementRules();
     if (!changed) return;
 
     const after = this.captureSnapshot();
@@ -259,6 +291,32 @@ export class WorldObjectEditor {
     this.notifyChanged();
   }
 
+  selectNearestSpline(): void {
+    if (!this.target.valid) return;
+
+    const nearest = this.findNearestSplinePoint(DEFAULT_ERASE_RADIUS_METERS) ?? this.findNearestSplineSegment(DEFAULT_ERASE_RADIUS_METERS);
+    if (!nearest) return;
+
+    this.activeSplineObjectId = nearest.object.id;
+    this.notifyChanged();
+  }
+
+  nudgeActiveSplineWidth(deltaMeters: number): void {
+    const target = this.activeSplineObjectId ? this.findObjectById(this.activeSplineObjectId) : this.findNearestSplinePoint(DEFAULT_ERASE_RADIUS_METERS);
+    if (!target?.object.spline?.points?.length) return;
+
+    const before = this.captureSnapshot();
+    const currentWidth = target.object.spline.widthMeters ?? target.object.radiusMeters ?? createSplineWidth(this.selectedArchetype ?? undefined);
+    updateSplineObjectGeometry(target.object, target.object.spline.points, Math.max(2, currentWidth + deltaMeters));
+    this.activeSplineObjectId = target.object.id;
+    this.dirtyCellKeys.add(target.key);
+    const after = this.captureSnapshot();
+    this.recordSnapshotCommand(before, after);
+    this.setDirty(true);
+    this.refreshOverlay();
+    this.notifyChanged();
+  }
+
   flushPendingHistory(): void {}
 
   setOnDirtyChange(callback: (dirty: boolean) => void): void {
@@ -282,34 +340,130 @@ export class WorldObjectEditor {
       ?? "";
   }
 
+  private placeSelectedObjectWithPlacementRules(): boolean {
+    const budget = this.createPlacementBudgetStatus();
+    if (budget.blocked) {
+      this.lastBudgetBlock = budget.label;
+      this.notifyChanged();
+      return false;
+    }
+
+    const archetype = this.selectedArchetype;
+    if (archetype?.editor?.placement === "prefab" && archetype.prefab?.length) {
+      return this.placePrefabObject();
+    }
+
+    if (archetype?.editor?.placement === "scatter") {
+      return this.placeScatterObjects();
+    }
+
+    return this.placeSelectedObject();
+  }
+
   private placeSelectedObject(): boolean {
     const archetype = this.selectedArchetype;
     if (!this.manifest || !archetype || !this.selectedArchetypeId) return false;
 
-    const radiusMeters = archetype.editor?.defaultRadiusMeters ?? DEFAULT_PLACE_RADIUS_METERS;
-    const object: WorldObjectEntry = {
-      id: this.createObjectId(this.selectedArchetypeId),
-      layer: archetype.layer,
-      archetype: this.selectedArchetypeId,
-      position: { x: round(this.target.x), y: round(this.target.y), z: round(this.target.z) },
-      rotationY: 0,
-      scale: archetype.editor?.defaultScale ?? 1,
-      radiusMeters,
-      boundsMeters: createBounds(this.target.x, this.target.z, radiusMeters),
-      tags: [archetype.layer, "manual"],
-      collision: archetype.collision && typeof archetype.collision === "object"
-        ? { ...archetype.collision }
-        : archetype.collision === true
-          ? { type: "box", radiusMeters, heightMeters: Math.max(2, radiusMeters * 0.75) }
-          : undefined,
-    };
+    return this.addObjectToTargetCell(createObjectEntry(
+      this.createObjectId(this.selectedArchetypeId),
+      this.selectedArchetypeId,
+      archetype,
+      this.target.x,
+      this.target.y,
+      this.target.z,
+      [archetype.layer, "manual"],
+    ));
+  }
 
-    const cellKey = getWorldObjectCellKey(this.target.x, this.target.z, this.manifest.cellSizeMeters);
-    const pack = this.ensureCellPack(cellKey);
-    pack.objects.push(object);
-    pack.objects.sort((left, right) => left.id.localeCompare(right.id));
-    this.dirtyCellKeys.add(cellKey);
+  private placePrefabObject(): boolean {
+    const archetype = this.selectedArchetype;
+    if (!this.manifest || !archetype || !this.selectedArchetypeId) return false;
+
+    const rootId = this.createObjectId(this.selectedArchetypeId);
+    const objects: WorldObjectEntry[] = [createObjectEntry(
+      rootId,
+      this.selectedArchetypeId,
+      archetype,
+      this.target.x,
+      this.target.y,
+      this.target.z,
+      [archetype.layer, "manual", "prefab-root"],
+    )];
+
+    for (const child of archetype.prefab ?? []) {
+      const childArchetype = this.manifest.archetypes?.[child.archetype];
+      if (!childArchetype) continue;
+
+      objects.push(createObjectEntry(
+        this.createObjectId(child.archetype),
+        child.archetype,
+        childArchetype,
+        this.target.x + (child.offsetX ?? 0),
+        this.target.y,
+        this.target.z + (child.offsetZ ?? 0),
+        [childArchetype.layer, "manual", "prefab-child", rootId],
+        child.rotationY ?? 0,
+        child.scale,
+      ));
+    }
+
+    return this.addObjects(objects);
+  }
+
+  private placeScatterObjects(): boolean {
+    const archetype = this.selectedArchetype;
+    if (!this.manifest || !archetype || !this.selectedArchetypeId) return false;
+
+    const count = estimateScatterPlacementCount(archetype);
+    const radius = archetype.editor?.defaultRadiusMeters ?? DEFAULT_PLACE_RADIUS_METERS;
+    const objects: WorldObjectEntry[] = [];
+    for (let index = 0; index < count; index += 1) {
+      const angle = index * 2.399963229728653;
+      const distance = radius * Math.sqrt((index + 0.5) / count) * 0.88;
+      const x = this.target.x + Math.cos(angle) * distance;
+      const z = this.target.z + Math.sin(angle) * distance;
+      objects.push(createObjectEntry(
+        this.createObjectId(this.selectedArchetypeId),
+        this.selectedArchetypeId,
+        archetype,
+        x,
+        this.target.y,
+        z,
+        [archetype.layer, "manual", "scatter"],
+        angle,
+      ));
+    }
+
+    return this.addObjects(objects);
+  }
+
+  private addObjectToTargetCell(object: WorldObjectEntry): boolean {
+    return this.addObjects([object]);
+  }
+
+  private addObjects(objects: WorldObjectEntry[]): boolean {
+    if (!this.manifest || objects.length === 0) return false;
+
+    for (const object of objects) {
+      const cellKey = getWorldObjectCellKey(object.position.x, object.position.z, this.manifest.cellSizeMeters);
+      const pack = this.ensureCellPack(cellKey);
+      pack.objects.push(object);
+      pack.objects.sort((left, right) => left.id.localeCompare(right.id));
+      this.dirtyCellKeys.add(cellKey);
+    }
+
     return true;
+  }
+
+  private editSplineObject(): boolean {
+    switch (this.splineOperation) {
+      case "insert":
+        return this.insertSplinePoint();
+      case "move":
+        return this.moveNearestSplinePoint();
+      default:
+        return this.placeSplinePoint();
+    }
   }
 
   private placeSplinePoint(): boolean {
@@ -320,12 +474,7 @@ export class WorldObjectEditor {
     const active = this.activeSplineObjectId ? this.findObjectById(this.activeSplineObjectId) : null;
     if (active) {
       const points = active.object.spline?.points ?? [];
-      active.object.spline = {
-        widthMeters: active.object.spline?.widthMeters ?? createSplineWidth(archetype),
-        points: [...points, point],
-      };
-      active.object.boundsMeters = createSplineBounds(active.object.spline.points ?? [point], active.object.spline.widthMeters ?? createSplineWidth(archetype));
-      active.object.radiusMeters = active.object.spline.widthMeters;
+      updateSplineObjectGeometry(active.object, [...points, point], active.object.spline?.widthMeters ?? createSplineWidth(archetype));
       this.dirtyCellKeys.add(active.key);
       return true;
     }
@@ -358,6 +507,40 @@ export class WorldObjectEditor {
     return true;
   }
 
+  private insertSplinePoint(): boolean {
+    const archetype = this.selectedArchetype;
+    if (!this.manifest || !archetype || !isSplineArchetype(archetype)) return false;
+
+    const nearest = this.findNearestSplineSegment(DEFAULT_ERASE_RADIUS_METERS);
+    if (!nearest) {
+      return this.placeSplinePoint();
+    }
+
+    const points = nearest.object.spline?.points ?? [];
+    const point = { x: round(this.target.x), z: round(this.target.z) };
+    const nextPoints = [
+      ...points.slice(0, nearest.segmentIndex + 1),
+      point,
+      ...points.slice(nearest.segmentIndex + 1),
+    ];
+    updateSplineObjectGeometry(nearest.object, nextPoints, nearest.object.spline?.widthMeters ?? createSplineWidth(archetype));
+    this.activeSplineObjectId = nearest.object.id;
+    this.dirtyCellKeys.add(nearest.key);
+    return true;
+  }
+
+  private moveNearestSplinePoint(): boolean {
+    const nearest = this.findNearestSplinePoint(DEFAULT_ERASE_RADIUS_METERS);
+    if (!nearest) return false;
+
+    const points = nearest.object.spline?.points ?? [];
+    const nextPoints = points.map((point, index) => index === nearest.pointIndex ? { x: round(this.target.x), z: round(this.target.z) } : point);
+    updateSplineObjectGeometry(nearest.object, nextPoints, nearest.object.spline?.widthMeters ?? nearest.object.radiusMeters ?? DEFAULT_PLACE_RADIUS_METERS);
+    this.activeSplineObjectId = nearest.object.id;
+    this.dirtyCellKeys.add(nearest.key);
+    return true;
+  }
+
   private eraseNearestObject(): boolean {
     let nearest: { key: string; object: WorldObjectEntry; distance: number } | null = null;
     const radius = DEFAULT_ERASE_RADIUS_METERS;
@@ -384,24 +567,7 @@ export class WorldObjectEditor {
   }
 
   private removeNearestSplinePoint(): boolean {
-    let nearest: { key: string; object: WorldObjectEntry; pointIndex: number; distance: number } | null = null;
-    const radius = DEFAULT_ERASE_RADIUS_METERS;
-
-    for (const [key, pack] of this.packs) {
-      for (const object of pack.objects) {
-        const points = object.spline?.points;
-        if (!points || points.length === 0) continue;
-
-        for (let pointIndex = 0; pointIndex < points.length; pointIndex += 1) {
-          const point = points[pointIndex];
-          const distance = Math.hypot(point.x - this.target.x, point.z - this.target.z);
-          if (distance <= radius && (!nearest || distance < nearest.distance)) {
-            nearest = { key, object, pointIndex, distance };
-          }
-        }
-      }
-    }
-
+    const nearest = this.findNearestSplinePoint(DEFAULT_ERASE_RADIUS_METERS);
     if (!nearest) return false;
 
     const points = nearest.object.spline?.points ?? [];
@@ -420,6 +586,81 @@ export class WorldObjectEditor {
     nearest.object.boundsMeters = createSplineBounds(nextPoints, nearest.object.spline.widthMeters ?? nearest.object.radiusMeters ?? DEFAULT_PLACE_RADIUS_METERS);
     this.dirtyCellKeys.add(nearest.key);
     return true;
+  }
+
+  private findNearestSplinePoint(radiusMeters: number): { key: string; object: WorldObjectEntry; pointIndex: number; distance: number } | null {
+    let nearest: { key: string; object: WorldObjectEntry; pointIndex: number; distance: number } | null = null;
+
+    for (const [key, pack] of this.packs) {
+      for (const object of pack.objects) {
+        const points = object.spline?.points;
+        if (!points || points.length === 0) continue;
+
+        for (let pointIndex = 0; pointIndex < points.length; pointIndex += 1) {
+          const point = points[pointIndex];
+          const distance = Math.hypot(point.x - this.target.x, point.z - this.target.z);
+          if (distance <= radiusMeters && (!nearest || distance < nearest.distance)) {
+            nearest = { key, object, pointIndex, distance };
+          }
+        }
+      }
+    }
+
+    return nearest;
+  }
+
+  private findNearestSplineSegment(radiusMeters: number): { key: string; object: WorldObjectEntry; segmentIndex: number; distance: number } | null {
+    let nearest: { key: string; object: WorldObjectEntry; segmentIndex: number; distance: number } | null = null;
+
+    for (const [key, pack] of this.packs) {
+      for (const object of pack.objects) {
+        const points = object.spline?.points;
+        if (!points || points.length < 2) continue;
+
+        for (let segmentIndex = 0; segmentIndex < points.length - 1; segmentIndex += 1) {
+          const distance = distancePointToSegment(this.target.x, this.target.z, points[segmentIndex], points[segmentIndex + 1]);
+          if (distance <= radiusMeters && (!nearest || distance < nearest.distance)) {
+            nearest = { key, object, segmentIndex, distance };
+          }
+        }
+      }
+    }
+
+    return nearest;
+  }
+
+  private createPlacementBudgetStatus(): WorldObjectPlacementBudgetStatus {
+    if (this.lastBudgetBlock) {
+      return { label: this.lastBudgetBlock, tone: "danger", blocked: true };
+    }
+
+    const archetype = this.selectedArchetype;
+    const cap = archetype?.budget?.maxInstancesPerCell;
+    if (!this.manifest || !archetype || !this.selectedArchetypeId || !this.target.valid || !Number.isFinite(cap)) {
+      return { label: "No per-cell cap", tone: "neutral", blocked: false };
+    }
+
+    const maxInstances = Math.max(0, Math.floor(cap ?? 0));
+    const cellKey = getWorldObjectCellKey(this.target.x, this.target.z, this.manifest.cellSizeMeters);
+    const group = archetype.budget?.lodGroup ?? this.selectedArchetypeId;
+    const currentCount = this.countBudgetGroupObjects(cellKey, group);
+    const nextCount = currentCount + estimatePlacementObjectCount(archetype);
+    const label = `${nextCount}/${maxInstances} ${group}`;
+    return {
+      label,
+      tone: nextCount > maxInstances ? "danger" : nextCount >= maxInstances * 0.85 ? "warning" : "success",
+      blocked: nextCount > maxInstances,
+    };
+  }
+
+  private countBudgetGroupObjects(cellKey: string, group: string): number {
+    const pack = this.packs.get(cellKey);
+    if (!pack) return 0;
+
+    return pack.objects.filter((object) => {
+      const archetype = this.manifest?.archetypes?.[object.archetype];
+      return (archetype?.budget?.lodGroup ?? object.archetype) === group;
+    }).length;
   }
 
   private findObjectById(objectId: string): { key: string; pack: WorldObjectCellPack; object: WorldObjectEntry } | null {
@@ -542,12 +783,81 @@ function createBounds(x: number, z: number, radiusMeters: number) {
   };
 }
 
-function isSplineArchetype(archetype: WorldObjectArchetypeDefinition | null): archetype is WorldObjectArchetypeDefinition {
+function isSplineArchetype(archetype: WorldObjectArchetypeDefinition | null | undefined): archetype is WorldObjectArchetypeDefinition {
   return Boolean(archetype && (archetype.editor?.placement === "spline" || archetype.render?.kind === "ribbon" || archetype.layer === "road" || archetype.layer === "water"));
 }
 
-function createSplineWidth(archetype: WorldObjectArchetypeDefinition): number {
-  return Math.max(3, archetype.editor?.defaultRadiusMeters ?? DEFAULT_PLACE_RADIUS_METERS);
+function createObjectEntry(
+  id: string,
+  archetypeId: string,
+  archetype: WorldObjectArchetypeDefinition,
+  x: number,
+  y: number,
+  z: number,
+  tags: string[],
+  rotationY = 0,
+  scale = archetype.editor?.defaultScale ?? 1,
+): WorldObjectEntry {
+  const radiusMeters = archetype.editor?.defaultRadiusMeters ?? DEFAULT_PLACE_RADIUS_METERS;
+  return {
+    id,
+    layer: archetype.layer,
+    archetype: archetypeId,
+    position: { x: round(x), y: round(y), z: round(z) },
+    rotationY,
+    scale,
+    radiusMeters,
+    boundsMeters: createBounds(x, z, radiusMeters),
+    tags,
+    collision: archetype.collision && typeof archetype.collision === "object"
+      ? { ...archetype.collision }
+      : archetype.collision === true
+        ? { type: "box", radiusMeters, heightMeters: Math.max(2, radiusMeters * 0.75) }
+        : undefined,
+  };
+}
+
+function estimatePlacementObjectCount(archetype: WorldObjectArchetypeDefinition): number {
+  if (archetype.editor?.placement === "prefab" && archetype.prefab?.length) {
+    return 1 + archetype.prefab.length;
+  }
+
+  if (archetype.editor?.placement === "scatter") {
+    return estimateScatterPlacementCount(archetype);
+  }
+
+  return 1;
+}
+
+function estimateScatterPlacementCount(archetype: WorldObjectArchetypeDefinition): number {
+  const radius = archetype.editor?.defaultRadiusMeters ?? DEFAULT_PLACE_RADIUS_METERS;
+  const density = archetype.scatter?.densityPerSquareMeter ?? 0.003;
+  const spacing = Math.max(1, archetype.scatter?.minSpacingMeters ?? radius * 0.35);
+  const areaCount = Math.floor(Math.PI * radius * radius * density);
+  const spacingCount = Math.floor((Math.PI * radius * radius) / (spacing * spacing * 1.8));
+  const cap = Math.max(1, Math.floor(archetype.budget?.maxInstancesPerCell ?? 12));
+  return Math.max(1, Math.min(cap, Math.max(3, Math.min(areaCount, spacingCount))));
+}
+
+function createSplineWidth(archetype: WorldObjectArchetypeDefinition | null | undefined): number {
+  return Math.max(3, archetype?.editor?.defaultRadiusMeters ?? DEFAULT_PLACE_RADIUS_METERS);
+}
+
+function updateSplineObjectGeometry(object: WorldObjectEntry, points: readonly { x: number; z: number }[], widthMeters: number): void {
+  const nextPoints = points.map((point) => ({ x: round(point.x), z: round(point.z) }));
+  object.spline = {
+    ...object.spline,
+    widthMeters: round(widthMeters),
+    points: nextPoints,
+  };
+  object.boundsMeters = createSplineBounds(nextPoints, widthMeters);
+  object.radiusMeters = widthMeters;
+  const center = createSplineCenter(nextPoints);
+  object.position = {
+    ...object.position,
+    x: center.x,
+    z: center.z,
+  };
 }
 
 function createSplineBounds(points: readonly { x: number; z: number }[], widthMeters: number) {
@@ -560,6 +870,27 @@ function createSplineBounds(points: readonly { x: number; z: number }[], widthMe
     maxX: round(Math.max(...xs) + radius),
     maxZ: round(Math.max(...zs) + radius),
   };
+}
+
+function createSplineCenter(points: readonly { x: number; z: number }[]) {
+  if (points.length === 0) {
+    return { x: 0, z: 0 };
+  }
+
+  const total = points.reduce((sum, point) => ({ x: sum.x + point.x, z: sum.z + point.z }), { x: 0, z: 0 });
+  return { x: round(total.x / points.length), z: round(total.z / points.length) };
+}
+
+function distancePointToSegment(x: number, z: number, start: { x: number; z: number }, end: { x: number; z: number }): number {
+  const dx = end.x - start.x;
+  const dz = end.z - start.z;
+  const lengthSquared = dx * dx + dz * dz;
+  if (lengthSquared === 0) {
+    return Math.hypot(x - start.x, z - start.z);
+  }
+
+  const t = Math.min(1, Math.max(0, ((x - start.x) * dx + (z - start.z) * dz) / lengthSquared));
+  return Math.hypot(x - (start.x + dx * t), z - (start.z + dz * t));
 }
 
 function round(value: number): number {

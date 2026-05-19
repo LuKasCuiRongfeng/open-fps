@@ -25,7 +25,7 @@
       "archetype": "bridge-debris",
       "position": {
         "x": 390,
-        "y": 94.186,
+        "y": 79.511,
         "z": 930
       },
       "rotationY": 0,
@@ -52,7 +52,7 @@
       "archetype": "river-segment",
       "position": {
         "x": 290,
-        "y": 53.854,
+        "y": 44.697,
         "z": 630
       },
       "rotationY": 0.449,
@@ -87,7 +87,7 @@
       "archetype": "road-dirt-segment",
       "position": {
         "x": 10,
-        "y": 72.591,
+        "y": 71.445,
         "z": 840
       },
       "rotationY": -1.603,
@@ -122,7 +122,7 @@
       "archetype": "broken-bridge",
       "position": {
         "x": 430,
-        "y": 97.162,
+        "y": 82.487,
         "z": 980
       },
       "rotationY": 0,
@@ -143,6 +143,41 @@
         "radiusMeters": 17.1,
         "heightMeters": 4
       }
+    },
+    {
+      "id": "wetland-boardwalk-00",
+      "layer": "road",
+      "archetype": "road-forest-path",
+      "position": {
+        "x": 340,
+        "y": 72.114,
+        "z": 870
+      },
+      "rotationY": 0.629,
+      "boundsMeters": {
+        "minX": 203.985,
+        "minZ": 733.985,
+        "maxX": 476.015,
+        "maxZ": 1006.015
+      },
+      "spline": {
+        "widthMeters": 4,
+        "points": [
+          {
+            "x": 260,
+            "z": 760
+          },
+          {
+            "x": 420,
+            "z": 980
+          }
+        ]
+      },
+      "tags": [
+        "road",
+        "nav-preferred",
+        "vegetation-clear"
+      ]
     }
   ]
 }

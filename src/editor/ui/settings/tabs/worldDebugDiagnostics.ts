@@ -78,6 +78,22 @@ export type WorldDebugCellBudget = {
   rating: "ok" | "watch" | "over";
 };
 
+export type WorldDebugPatchLayerEntry = {
+  id: string;
+  label: string;
+  kind: string;
+  enabled: boolean;
+  regionCount: number;
+  source: string | null;
+};
+
+export type WorldDebugPatchLayerStack = {
+  asset: "terrain" | "paint" | "vegetation";
+  mode: string;
+  activeLayerId: string;
+  layers: WorldDebugPatchLayerEntry[];
+};
+
 export type EditorRebuildPlan = {
   status: RebuildPlanStatus;
   label: string;
@@ -112,6 +128,7 @@ export type AssetDiagnostics = {
   vegetationRegionKeys: string[];
   partitionCellKeys: string[];
   cellBudgets: WorldDebugCellBudget[];
+  patchLayers: WorldDebugPatchLayerStack[];
   checkedPacks: number;
   checkedBytes: number;
   cookedStatus: CookedManifestStatus;
@@ -145,6 +162,7 @@ export const emptyDiagnostics: AssetDiagnostics = {
   vegetationRegionKeys: [],
   partitionCellKeys: [],
   cellBudgets: [],
+  patchLayers: [],
   checkedPacks: 0,
   checkedBytes: 0,
   cookedStatus: "idle",
@@ -205,6 +223,7 @@ export async function loadAssetDiagnostics(
   const terrainRegions = readRecordProperty(terrainManifest, "regions");
   diagnostics.terrainRegions = countRecordEntries(terrainRegions);
   diagnostics.terrainRegionKeys = uniqueGridKeys(Object.keys(terrainRegions ?? {}));
+  appendPatchLayerStack(diagnostics, "terrain", terrainManifest);
   await validateRegionPacks(mapDirectory, terrainManifest, "heightpack", issues, diagnostics);
 
   const paintManifest = await readJsonManifest(joinPath(mapDirectory, mapData.paintPath), issues);
@@ -212,6 +231,7 @@ export async function loadAssetDiagnostics(
   const paintRegions = readRecordProperty(splatMaps, "regions");
   diagnostics.paintRegions = countRecordEntries(paintRegions);
   diagnostics.paintRegionKeys = uniqueGridKeys(Object.keys(paintRegions ?? {}));
+  appendPatchLayerStack(diagnostics, "paint", splatMaps);
   await validateRegionPacks(mapDirectory, splatMaps, "paintpack", issues, diagnostics);
 
   const vegetationManifest = await readJsonManifest(joinPath(mapDirectory, mapData.vegetationPath), issues);
@@ -221,6 +241,7 @@ export async function loadAssetDiagnostics(
   const vegetationRegions = readRecordProperty(instances, "regions");
   diagnostics.vegetationRegions = countRecordEntries(vegetationRegions);
   diagnostics.vegetationRegionKeys = uniqueGridKeys(Object.keys(vegetationRegions ?? {}));
+  appendPatchLayerStack(diagnostics, "vegetation", instances);
   await validateRegionPacks(mapDirectory, instances, "vegpack", issues, diagnostics);
 
   const objectManifest = await readJsonManifest(joinPath(mapDirectory, mapData.objectsPath ?? "objects/manifest.json"), issues);
@@ -1023,4 +1044,35 @@ export function formatSelectionKind(kind: WorldDebugSelectionKind): string {
     case "cell":
       return "Partition cell";
   }
+}
+
+function appendPatchLayerStack(
+  diagnostics: AssetDiagnostics,
+  asset: WorldDebugPatchLayerStack["asset"],
+  manifestSection: Record<string, unknown> | null,
+): void {
+  const patchLayers = readRecordProperty(manifestSection, "patchLayers");
+  const layers = Array.isArray(patchLayers?.layers) ? patchLayers.layers : [];
+  diagnostics.patchLayers.push({
+    asset,
+    mode: readStringProperty(patchLayers, "mode") ?? "legacy",
+    activeLayerId: readStringProperty(patchLayers, "activeLayerId") ?? "base",
+    layers: layers.flatMap((entry): WorldDebugPatchLayerEntry[] => {
+      const layer = asRecord(entry);
+      if (!layer) {
+        return [];
+      }
+
+      const id = readStringProperty(layer, "id") ?? "unknown";
+      const regions = Array.isArray(layer.regions) ? layer.regions : [];
+      return [{
+        id,
+        label: readStringProperty(layer, "label") ?? id,
+        kind: readStringProperty(layer, "kind") ?? "base",
+        enabled: layer.enabled !== false,
+        regionCount: regions.filter((region) => typeof region === "string").length,
+        source: readStringProperty(layer, "source"),
+      }];
+    }),
+  });
 }

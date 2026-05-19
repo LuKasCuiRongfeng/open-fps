@@ -21,6 +21,16 @@ export interface SidecarPatchLayerManifest {
   layers: SidecarPatchLayer[];
 }
 
+export interface SidecarPatchLayerCompositionEntry {
+  id: string;
+  label: string;
+  kind: SidecarPatchLayerKind;
+  order: number;
+  enabled: boolean;
+  regionCount: number;
+  source?: string;
+}
+
 export const SIDECAR_PATCH_LAYER_MODE = "ordered-nondestructive-v1";
 
 export function createDefaultSidecarPatchLayers(regionKeys: Iterable<string>, label = "Base"): SidecarPatchLayerManifest {
@@ -89,6 +99,41 @@ export function normalizeSidecarPatchLayers(
     activeLayerId,
     layers,
   };
+}
+
+export function createSidecarPatchLayer(
+  id: string,
+  label: string,
+  kind: SidecarPatchLayerKind,
+  order: number,
+  regions: Iterable<string>,
+  source?: string,
+): SidecarPatchLayer {
+  return {
+    id: readSafeId(id) ?? `layer-${Math.max(0, Math.floor(order))}`,
+    label: label.trim() || id,
+    kind,
+    order,
+    enabled: true,
+    regions: sortGridKeys(regions),
+    source,
+  };
+}
+
+export function summarizeSidecarPatchLayerComposition(
+  manifest: SidecarPatchLayerManifest,
+): SidecarPatchLayerCompositionEntry[] {
+  return [...manifest.layers]
+    .sort((left, right) => left.order - right.order || left.id.localeCompare(right.id))
+    .map((layer) => ({
+      id: layer.id,
+      label: layer.label,
+      kind: layer.kind,
+      order: layer.order,
+      enabled: layer.enabled,
+      regionCount: layer.regions.length,
+      source: layer.source,
+    }));
 }
 
 function normalizeLayerKind(value: unknown): SidecarPatchLayerKind {

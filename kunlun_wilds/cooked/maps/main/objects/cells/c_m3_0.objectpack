@@ -20,6 +20,46 @@
   },
   "objects": [
     {
+      "id": "west-fence-00",
+      "layer": "prop",
+      "archetype": "split-rail-fence",
+      "position": {
+        "x": -1130,
+        "y": 123.141,
+        "z": 410
+      },
+      "rotationY": 0.322,
+      "boundsMeters": {
+        "minX": -1288.114,
+        "minZ": 251.886,
+        "maxX": -971.886,
+        "maxZ": 568.114
+      },
+      "spline": {
+        "widthMeters": 4,
+        "points": [
+          {
+            "x": -1180,
+            "z": 260
+          },
+          {
+            "x": -1080,
+            "z": 560
+          }
+        ]
+      },
+      "tags": [
+        "prop",
+        "spline",
+        "collision"
+      ],
+      "collision": {
+        "type": "box",
+        "radiusMeters": 4,
+        "heightMeters": 2
+      }
+    },
+    {
       "id": "west-homestead",
       "layer": "poi",
       "archetype": "abandoned-homestead",

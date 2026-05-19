@@ -76,7 +76,7 @@ test("sidecar patch layers normalize legacy manifests to a base layer", async ()
       tempRoot,
     );
 
-    const { normalizeSidecarPatchLayers } = await import(pathToFileURL(outputPath).href);
+    const { normalizeSidecarPatchLayers, summarizeSidecarPatchLayerComposition } = await import(pathToFileURL(outputPath).href);
     const legacy = normalizeSidecarPatchLayers(undefined, ["1,0", "0,0"], "Base Paint");
     assert.equal(legacy.mode, "ordered-nondestructive-v1");
     assert.equal(legacy.activeLayerId, "base");
@@ -93,6 +93,10 @@ test("sidecar patch layers normalize legacy manifests to a base layer", async ()
     assert.equal(authored.layers[0].kind, "base");
     assert.equal(authored.layers[1].id, "manual-a");
     assert.deepEqual(authored.layers[1].regions, ["0,0"]);
+    assert.deepEqual(
+      summarizeSidecarPatchLayerComposition(authored).map((entry) => [entry.id, entry.kind, entry.regionCount]),
+      [["base", "base", 1], ["manual-a", "manual", 1]],
+    );
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }

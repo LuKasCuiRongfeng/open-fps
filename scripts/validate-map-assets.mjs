@@ -54,6 +54,7 @@ const COOKED_WORLD_PARTITION_DEPENDENCY_KINDS = ["terrain", "paint", "vegetation
 const COOKED_OBJECT_CELL_FORMAT = WORLD_OBJECT_CELL_FORMAT;
 const COOKED_COLLISION_CELL_FORMAT = "world-collision-cell-pack-v1";
 const COOKED_NAV_CELL_FORMAT = "world-nav-cell-pack-v1";
+const SIDECAR_PATCH_LAYER_MODE = "ordered-nondestructive-v1";
 
 const options = parseArgs(process.argv.slice(2));
 const projectDirectory = path.resolve(options.projectDirectory ?? DEFAULT_PROJECT_DIRECTORY);
@@ -523,6 +524,76 @@ function validateRegisteredProjectAssetPath(assetRegistry, projectRelativePath, 
   }
 }
 
+function validatePatchLayers(patchLayers, regionKeys, label, fieldName) {
+  const availableRegions = new Set(regionKeys);
+  if (!isRecord(patchLayers)) {
+    addError(label, `${fieldName} must be an object.`);
+    return;
+  }
+
+  validateEqual(patchLayers.mode, SIDECAR_PATCH_LAYER_MODE, label, `${fieldName}.mode`);
+  if (typeof patchLayers.activeLayerId !== "string" || patchLayers.activeLayerId.length === 0) {
+    addError(label, `${fieldName}.activeLayerId must be a non-empty string.`);
+  }
+  if (!Array.isArray(patchLayers.layers) || patchLayers.layers.length === 0) {
+    addError(label, `${fieldName}.layers must be a non-empty array.`);
+    return;
+  }
+
+  const layerIds = new Set();
+  let hasBaseLayer = false;
+  for (const [index, layer] of patchLayers.layers.entries()) {
+    if (!isRecord(layer)) {
+      addError(label, `${fieldName}.layers[${index}] must be an object.`);
+      continue;
+    }
+
+    if (typeof layer.id !== "string" || !/^[a-z0-9][a-z0-9_-]*$/i.test(layer.id)) {
+      addError(label, `${fieldName}.layers[${index}].id must be a stable layer id.`);
+      continue;
+    }
+    if (layerIds.has(layer.id)) {
+      addError(label, `${fieldName}.layers contains duplicate id '${layer.id}'.`);
+    }
+    layerIds.add(layer.id);
+
+    if (typeof layer.label !== "string" || layer.label.length === 0) {
+      addError(label, `${fieldName}.layers[${index}].label must be a non-empty string.`);
+    }
+    if (!["base", "manual", "generated", "procedural"].includes(layer.kind)) {
+      addError(label, `${fieldName}.layers[${index}].kind is not supported.`);
+    }
+    if (layer.kind === "base") {
+      hasBaseLayer = true;
+    }
+    if (!Number.isFinite(layer.order)) {
+      addError(label, `${fieldName}.layers[${index}].order must be a finite number.`);
+    }
+    if (typeof layer.enabled !== "boolean") {
+      addError(label, `${fieldName}.layers[${index}].enabled must be a boolean.`);
+    }
+    if (!Array.isArray(layer.regions)) {
+      addError(label, `${fieldName}.layers[${index}].regions must be an array.`);
+      continue;
+    }
+    for (const region of layer.regions) {
+      if (typeof region !== "string" || !availableRegions.has(region)) {
+        addError(label, `${fieldName}.layers[${index}].regions references unknown region '${String(region)}'.`);
+      }
+    }
+    if (layer.source !== undefined && typeof layer.source !== "string") {
+      addError(label, `${fieldName}.layers[${index}].source must be a string when present.`);
+    }
+  }
+
+  if (!hasBaseLayer) {
+    addError(label, `${fieldName} must include a base layer.`);
+  }
+  if (typeof patchLayers.activeLayerId === "string" && !layerIds.has(patchLayers.activeLayerId)) {
+    addError(label, `${fieldName}.activeLayerId must reference an existing layer.`);
+  }
+}
+
 function resolveProjectAssetReference(projectPath, baseDirectory, assetPath, label, fieldName) {
   const absolutePath = path.resolve(baseDirectory, assetPath);
   if (!isInsideDirectory(absolutePath, projectPath)) {
@@ -558,6 +629,7 @@ async function validateTerrain(mapDirectory, mapManifest) {
   }
 
   const regions = readRegionMasks(manifest.regions, regionSizePages, label);
+  validatePatchLayers(manifest.patchLayers, regions.map((region) => region.key), label, "terrain patchLayers");
   const integrityMap = readRegionIntegrityMap(manifest.regionIntegrity, regions.map((region) => region.key), label);
   const expectedPaths = new Set();
   for (const region of regions) {
@@ -614,6 +686,7 @@ async function validatePaint(mapDirectory, mapManifest, assetRegistry) {
   }
 
   const regions = readRegionMasks(splatMaps.regions, regionSizePages, label);
+  validatePatchLayers(splatMaps.patchLayers, regions.map((region) => region.key), label, "paint patchLayers");
   const integrityMap = readRegionIntegrityMap(splatMaps.regionIntegrity, regions.map((region) => region.key), label);
   const expectedPaths = new Set();
   for (const region of regions) {
@@ -660,6 +733,7 @@ async function validateVegetation(mapDirectory, assetRegistry) {
   }
 
   const regions = readRegionMasks(instances.regions, regionSizeCells, label);
+  validatePatchLayers(instances.patchLayers, regions.map((region) => region.key), label, "vegetation patchLayers");
   const integrityMap = readRegionIntegrityMap(instances.regionIntegrity, regions.map((region) => region.key), label);
   const expectedPaths = new Set();
   for (const region of regions) {

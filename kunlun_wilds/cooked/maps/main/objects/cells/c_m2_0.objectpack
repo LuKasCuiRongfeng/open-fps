@@ -25,7 +25,7 @@
       "archetype": "split-rail-fence",
       "position": {
         "x": -900,
-        "y": 96.997,
+        "y": 95.894,
         "z": 340
       },
       "rotationY": 0,
@@ -74,12 +74,39 @@
       }
     },
     {
+      "id": "homestead-crates",
+      "layer": "prop",
+      "archetype": "supply-crates",
+      "position": {
+        "x": -1010,
+        "y": 96.99,
+        "z": 470
+      },
+      "rotationY": 0,
+      "boundsMeters": {
+        "minX": -1017,
+        "minZ": 463,
+        "maxX": -1003,
+        "maxZ": 477
+      },
+      "radiusMeters": 7,
+      "tags": [
+        "prop",
+        "collision"
+      ],
+      "collision": {
+        "type": "box",
+        "radiusMeters": 7,
+        "heightMeters": 2
+      }
+    },
+    {
       "id": "main-road-05",
       "layer": "road",
       "archetype": "road-dirt-segment",
       "position": {
         "x": -870,
-        "y": 93.306,
+        "y": 92.127,
         "z": 350
       },
       "rotationY": -2.653,

@@ -24,6 +24,7 @@ import {
 } from "./shared.mjs";
 import { createTerrainPaintLayers, readAssetRegistry } from "./asset-registry.mjs";
 import { writeWorldGenerationGraph } from "./world-generation-graph.mjs";
+import { createGeneratedPatchLayers } from "./sidecar-patch-layers.mjs";
 
 export async function generatePaintAssets(context, preset) {
   const mapDir = getMapDir(context, preset);
@@ -58,6 +59,12 @@ export async function generatePaintAssets(context, preset) {
       indices: [0],
       regions: createPaintRegionMasks(pageBounds),
       regionIntegrity: {},
+      patchLayers: createGeneratedPatchLayers(Object.keys(createPaintRegionMasks(pageBounds)), "Base Paint", [
+        { id: "material-biome", label: "Material Biome", kind: "procedural", source: "generation/graph.json#paint.rules" },
+        { id: "road-decal-mask", label: "Road Decal Mask", source: "generation/graph.json#semantics.road" },
+        { id: "water-wet-edge", label: "Water Wet Edge", source: "generation/graph.json#semantics.water" },
+        { id: "manual-paint-override", label: "Manual Paint Override", kind: "manual", regions: [], source: "editor/paint" },
+      ]),
     },
   };
 
@@ -101,18 +108,18 @@ function resolvePaintWeights(height, slopeDegrees, semantics, seed, worldX, worl
   const lowSand = 1 - smoothstep(14, 34, height);
   const terrainNoise = Math.sin((worldX + seed * 0.013) * 0.008) * Math.cos((worldZ - seed * 0.017) * 0.007) * 0.5 + 0.5;
 
-  let sand = 0.28 + lowSand * 0.7 + semantics.waterBank * 1.35;
-  let mud = 0.42 + semantics.waterCore * 1.25 + semantics.waterBank * 0.65 + semantics.roadShoulder * 0.2;
-  let gravel = 0.2 + steepRock * 1.15 + semantics.roadCore * 3.5 + semantics.poiClearance * 0.55;
+  let sand = 0.28 + lowSand * 0.7 + semantics.material.bankMud * 1.35;
+  let mud = 0.42 + semantics.material.wetness * 1.25 + semantics.material.bankMud * 0.65 + semantics.roadShoulder * 0.2;
+  let gravel = 0.2 + steepRock * 1.15 + semantics.material.rutMask * 3.5 + semantics.material.compactedDirt * 0.55;
   let snow = elevationSnow * (1.2 + steepRock * 0.25);
 
   sand += terrainNoise * 0.08;
   mud += (1 - terrainNoise) * 0.08;
-  if (semantics.waterCore > 0.1) {
+  if (semantics.material.wetness > 0.1) {
     gravel *= 0.35;
     snow *= 0.25;
   }
-  if (semantics.roadCore > 0.2) {
+  if (semantics.material.rutMask > 0.2) {
     sand *= 0.35;
     mud *= 0.55;
     snow *= 0.15;
