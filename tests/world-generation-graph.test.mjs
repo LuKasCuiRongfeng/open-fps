@@ -45,12 +45,13 @@ test("default cooked map hashes generation graph and rebuild metadata", async ()
   assert.equal(graph.format, generationGraphFormat);
   assert.equal(cooked.source.generationGraph.path, `maps/main/${generationGraphPath}`);
   assert.match(cooked.source.generationGraph.sha256, /^[0-9a-f]{64}$/);
-  if (cooked.build.rebuild.mode === "scoped") {
+  if (cooked.build.rebuild.mode === "scoped" || cooked.build.rebuild.planId !== null) {
     assert.match(cooked.build.rebuild.planId, /^[0-9a-f]{16}$/);
   } else {
     assert.equal(cooked.build.rebuild.planId, null);
   }
-  assert.equal(cooked.package.streaming.locality, "world-partition-cell-runtime-path-v1");
+  assert.equal(cooked.package.streaming.locality, "kind-cell-runtime-path-v2");
+  assert.equal(cooked.package.streaming.compression, "brotli-sidecar-v1");
   assert.ok(Array.isArray(navCell.crossCellLinks));
 });
 

@@ -101,17 +101,18 @@
 ## 当前落地状态
 
 - `kunlun_wilds/assets` 已按项目级资产库组织：`registry.json` 记录模型、材质、用途、预算、来源和授权，`sources/polyhaven/.../source.json` 保留 CC0 来源元数据，`imported/models` 与 `imported/materials` 保存生成脚本和 cooked build 可引用的导入产物。
-- `maps/main/generation/graph.json` 已登记 `main` 的 world generation graph v1，把共享语义、地形 operation、材质 biome、植被 ecology scatter、对象 placement、collision 和 nav 派生关系放入可校验 source sidecar，并记录 executor、局部 invalidation、重建 scope 与预算入口。
+- `maps/main/generation/graph.json` 已登记 `main` 的 world generation graph v1，把共享语义、地形 operation、材质 biome、植被 ecology scatter、对象 placement、collision 和 nav 派生关系放入可校验 source sidecar，并记录 executor、局部 invalidation、重建 scope 与预算入口；`pnpm gen:graph` 已把 executor 映射到真实 terrain/paint/vegetation/object/cooked stage dispatcher。
 - `scripts/map-generation/world-object-assets.mjs` 已按本文档生成首批 source world objects：主环路、山脊支路、林中小径、主河、支流、5 个 POI 和若干道路/据点道具。
 - `objects/manifest.json` 已按 512m partition cell 写入 `.objectpack`，记录 byte length 与 SHA-256，并包含 archetype render/editor/scatter/validation/budget 元数据；道路和水体 archetype 已记录 decal、surface、edge blend 与 LOD/instancing 预算入口。
 - cooked manifest v4 已把 asset registry 和 source objects 纳入 build input signature；object cooked cell pack 复制 source object pack，并把注册过的世界对象 GLTF archetype 资产复制到 `cooked/assets/imported/...` package。
 - collision cooked cell pack 已由 terrain heightfield、水体 volume、POI/prop blocker 派生，并记录 vegetation query-clearance 策略。
 - nav cooked cell pack 已由 terrain slope、road cost、water blocker/cost 和 object blocker 派生粗粒度 grid，并记录 cross-cell portal link。
 - game runtime 已接入 cooked world partition planner，并按玩家/摄像机位置加载 object/collision/nav cell pack。
-- game runtime 已把 object cell pack 实例化为道路/水体 ribbon 和 GLTF POI/prop archetype；collision pack 已进入玩家水平阻挡解析，nav pack 已进入运行时缓存。
+- game runtime 已把 object cell pack 实例化为 road decal-like surface、水体 TSL surface shader 和 GLTF POI/prop archetype；collision pack 已进入玩家水平阻挡解析，nav pack 已进入运行时缓存并提供 AI nearest/path 查询。
 - terrain、paint、vegetation、objects 和 cooked nav 已使用共享 world semantics 规则，使道路、水体和 POI 同时影响地形、材质、植被清理、对象和导航。
-- cooked manifest 已把 generation graph 纳入 source hash；生成规则变化会触发 stale cook 诊断，`pnpm cook:map` 已支持 dry-run rebuild plan 与 scoped cook。
-- 编辑器已有 World Diagnostics 页，可检查 source pack integrity、资产健康、generation executor/local scope/budget、partition payload 和 streaming 运行状态；Objects 页已支持 archetype 选择、地形拾取放置、删除、undo/redo 和 manifest-last 保存。
+- cooked manifest 已把 generation graph 纳入 source hash；生成规则变化会触发 stale cook 诊断，`pnpm cook:map` 已支持 dry-run rebuild plan、scoped cook 和预算超限阻断。
+- cooked package 已写入 kind/cell 局部性排序、Brotli sidecar 压缩 blob、content-addressed 去重统计和孤儿 blob 清理/校验。
+- 编辑器已有 World Diagnostics 页，可检查 source pack integrity、资产健康、generation executor/local scope/budget、partition payload 和 streaming 运行状态；实际 cook 会在 UI 和 CLI 双层执行预算阻断；Objects 页已支持 archetype 选择、地形拾取放置、删除、undo/redo 和 manifest-last 保存；game settings 已提供 collision/nav overlay 调试开关。
 - validator 已强制 source paint/vegetation/world object 只能引用注册过的 imported 资产，并禁止旧 `assets/model`、`assets/texture` 裸目录回流。
 
 ## 编辑器质量目标
@@ -135,8 +136,10 @@
 - terrain/paint/vegetation/object/collision/nav 都能按 partition cell 追踪依赖。
 - validator 能发现缺失 object/collision/nav pack、过期 cook、hash mismatch 和 package blob 缺失。
 - runtime world partition planner 能根据玩家位置给出 load/keep/unload cell 和跨资产 dependency 列表，并能加载 object/collision/nav payload。
+- runtime 能显示 loaded collision/nav overlay，并对已加载 nav cell 提供 AI nearest/path 查询。
+- cooked package 校验能覆盖 Brotli 压缩 blob、package 排序、重复 blob 统计、孤儿 blob 和 cache artifact 列表。
 
-已满足的基础项仍不代表最终开放世界质量完成；下一阶段重点是把 graph executor 接进编辑器工作流，把 terrain/material/ecology metadata 变成可执行局部重算层，补真实 road mesh/decal、water surface shader、object spline/prefab/scatter UI、cross-cell nav 可视化、碰撞/导航 overlay 和发布级 cooked package 压缩/排序。
+已满足的基础项仍不代表最终开放世界质量完成；下一阶段重点是把 graph executor 接进编辑器工作流，把 terrain/material/ecology stage dispatcher 继续升级为非破坏性局部重算层，补 object spline/prefab/scatter UI、更高质量的道路/水体边缘融合、局部 nav rebuild 验证和多平台发布包最小运行验证。
 
 ## 非目标
 

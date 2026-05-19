@@ -130,6 +130,11 @@ test("rebuild console builds review-first queue and compact scope summaries", as
     });
     assert.equal(summaries[0].sample, "0,0, 1,0, 2,0, 3,0, 4,0 +1");
     assert.equal(summaries[3].sample, "0,0");
+
+    const blockedQueue = helpers.createCookQueue(request, [], "Estimated artifacts 80 exceeds scoped limit 64");
+    assert.equal(blockedQueue[0].status, "queued");
+    assert.equal(blockedQueue[1].status, "blocked");
+    assert.equal(blockedQueue[1].blockedReason, "Estimated artifacts 80 exceeds scoped limit 64");
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }

@@ -23,6 +23,20 @@ export type RebuildScopes = {
   partitionCells: string[];
 };
 
+export type RebuildBudgetLimits = {
+  maxPartitionCellsPerScopedCook: number | null;
+  maxEstimatedArtifactsPerScopedCook: number | null;
+};
+
+export type EditorRebuildBudget = {
+  estimatedArtifacts: number;
+  partitionCellCount: number;
+  maxPartitionCellsPerScopedCook: number | null;
+  maxEstimatedArtifactsPerScopedCook: number | null;
+  exceeded: boolean;
+  issues: string[];
+};
+
 export type CookedSourceDiagnostic = {
   key: SourceKey;
   label: string;
@@ -53,6 +67,7 @@ export type EditorRebuildPlan = {
   sourceLabels: string[];
   liveLabels: string[];
   scopes: RebuildScopes;
+  budget: EditorRebuildBudget;
   commands: RebuildCommand[];
 };
 
@@ -63,6 +78,7 @@ export type AssetDiagnostics = {
   generationExecutors: number;
   generationLocalScopes: number;
   generationBudgets: number;
+  budgetLimits: RebuildBudgetLimits;
   generationPolicy: string;
   terrainRegionSizePages: number;
   vegetationRegionSizeCells: number;
@@ -87,6 +103,10 @@ export const emptyDiagnostics: AssetDiagnostics = {
   generationExecutors: 0,
   generationLocalScopes: 0,
   generationBudgets: 0,
+  budgetLimits: {
+    maxPartitionCellsPerScopedCook: null,
+    maxEstimatedArtifactsPerScopedCook: null,
+  },
   generationPolicy: "none",
   terrainRegionSizePages: 8,
   vegetationRegionSizeCells: 8,
@@ -146,7 +166,9 @@ export async function loadAssetDiagnostics(
   diagnostics.generationRules = countGenerationGraphRules(generationStages);
   diagnostics.generationExecutors = countGenerationGraphExecutors(generationStages);
   diagnostics.generationLocalScopes = countGenerationGraphLocalScopes(generationStages);
-  diagnostics.generationBudgets = countRecordEntries(readRecordProperty(generationGraph, "budgets"));
+  const generationBudgets = readRecordProperty(generationGraph, "budgets");
+  diagnostics.generationBudgets = countRecordEntries(generationBudgets);
+  diagnostics.budgetLimits = readBudgetLimits(generationBudgets);
   diagnostics.generationPolicy = readStringProperty(defaultPolicy, "mode") ?? "none";
 
   const terrainManifest = await readJsonManifest(joinPath(mapDirectory, mapData.terrainPath), issues);
@@ -267,6 +289,7 @@ export function createEditorRebuildPlan(
   }
 
   const normalizedStages = full ? [] : uniqueStageNames(changedStages);
+  const budget = createEditorRebuildBudget(full, normalizedStages, scopes, diagnostics.budgetLimits);
   const commands = createRebuildCommands(projectPath, mapId, full, normalizedStages, scopes);
   return {
     status: liveRebuild.unsaved ? "save-first" : "ready",
@@ -276,6 +299,7 @@ export function createEditorRebuildPlan(
     sourceLabels: diagnostics.cookedStatus === "missing" ? ["Cooked manifest: missing", ...sourceLabels] : sourceLabels,
     liveLabels: createLiveRebuildLabels(liveRebuild),
     scopes,
+    budget,
     commands,
   };
 }
@@ -487,8 +511,73 @@ function createEmptyEditorRebuildPlan(label: string, status: RebuildPlanStatus, 
     sourceLabels: [],
     liveLabels: [],
     scopes: cloneScopes(emptyScopes),
+    budget: createEditorRebuildBudget(false, [], emptyScopes, emptyDiagnostics.budgetLimits),
     commands: [],
   };
+}
+
+function readBudgetLimits(budgets: Record<string, unknown> | null): RebuildBudgetLimits {
+  const maxPartitionCellsPerScopedCook = readNumberProperty(budgets, "maxPartitionCellsPerScopedCook");
+  const maxEstimatedArtifactsPerScopedCook = readNumberProperty(budgets, "maxEstimatedArtifactsPerScopedCook");
+  return {
+    maxPartitionCellsPerScopedCook: isPositiveInteger(maxPartitionCellsPerScopedCook) ? maxPartitionCellsPerScopedCook : null,
+    maxEstimatedArtifactsPerScopedCook: isPositiveInteger(maxEstimatedArtifactsPerScopedCook) ? maxEstimatedArtifactsPerScopedCook : null,
+  };
+}
+
+function createEditorRebuildBudget(
+  full: boolean,
+  changedStages: readonly string[],
+  scopes: RebuildScopes,
+  limits: RebuildBudgetLimits,
+): EditorRebuildBudget {
+  const estimatedArtifacts = countEstimatedArtifacts(changedStages, scopes);
+  const partitionCellCount = scopes.partitionCells.length;
+  const issues: string[] = [];
+
+  if (!full && limits.maxPartitionCellsPerScopedCook !== null && partitionCellCount > limits.maxPartitionCellsPerScopedCook) {
+    issues.push(`Partition cells ${partitionCellCount} exceeds scoped limit ${limits.maxPartitionCellsPerScopedCook}`);
+  }
+
+  if (!full && limits.maxEstimatedArtifactsPerScopedCook !== null && estimatedArtifacts > limits.maxEstimatedArtifactsPerScopedCook) {
+    issues.push(`Estimated artifacts ${estimatedArtifacts} exceeds scoped limit ${limits.maxEstimatedArtifactsPerScopedCook}`);
+  }
+
+  return {
+    estimatedArtifacts,
+    partitionCellCount,
+    maxPartitionCellsPerScopedCook: limits.maxPartitionCellsPerScopedCook,
+    maxEstimatedArtifactsPerScopedCook: limits.maxEstimatedArtifactsPerScopedCook,
+    exceeded: issues.length > 0,
+    issues,
+  };
+}
+
+function countEstimatedArtifacts(changedStages: readonly string[], scopes: RebuildScopes): number {
+  let total = 0;
+  for (const stage of changedStages) {
+    switch (stage) {
+      case "terrain":
+        total += scopes.terrainRegions.length;
+        break;
+      case "paint":
+        total += scopes.paintRegions.length;
+        break;
+      case "vegetation":
+        total += scopes.vegetationRegions.length;
+        break;
+      case "semantics":
+      case "objects":
+      case "collision":
+      case "nav":
+        total += scopes.partitionCells.length;
+        break;
+      default:
+        break;
+    }
+  }
+
+  return total;
 }
 
 function createRebuildCommands(projectPath: string | null, mapId: string, full: boolean, changedStages: readonly string[], scopes: RebuildScopes): RebuildCommand[] {
@@ -609,6 +698,10 @@ function readStringProperty(value: Record<string, unknown> | null, property: str
 function readNumberProperty(value: Record<string, unknown> | null, property: string): number | null {
   const nextValue = value?.[property];
   return typeof nextValue === "number" && Number.isFinite(nextValue) ? nextValue : null;
+}
+
+function isPositiveInteger(value: number | null): value is number {
+  return value !== null && Number.isInteger(value) && value > 0;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

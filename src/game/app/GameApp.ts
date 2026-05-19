@@ -54,9 +54,14 @@ import { getSplatMapCount, type TextureDefinition } from "../world/terrain/Textu
 import { VegetationScene, type VegetationMapData } from "../world/vegetation";
 import {
   RuntimeWorldObjectScene,
+  DebugWorldPartitionOverlay,
+  createWorldNavGraph,
+  findNearestNavNode,
+  findWorldNavPath,
   isWorldCollisionCellPack,
   isWorldNavCellPack,
   isWorldObjectCellPack,
+  type WorldNavPathResult,
 } from "../world/partition";
 import { assemblePaintSplatMapPixels, getPaintRegions, type MapData } from "@project/MapData";
 import { validateSidecarRegionIntegrity } from "@workspace/SidecarAssetIntegrity";
@@ -106,6 +111,7 @@ export class GameApp implements RuntimeAppSession {
   protected readonly skySystem: SkySystem;
   protected readonly vegetationScene = new VegetationScene();
   protected readonly worldObjectScene = new RuntimeWorldObjectScene();
+  protected readonly worldPartitionDebugOverlay = new DebugWorldPartitionOverlay();
   private readonly gameplayEnabled: boolean;
   private lastFrameMs = 0;
   private lastUpdateMs = 0;
@@ -138,6 +144,7 @@ export class GameApp implements RuntimeAppSession {
     this.vegetationScene.attach(this.gameRenderer.scene);
     this.vegetationScene.configureVisibility(vegetationRenderConfig.game);
     this.worldObjectScene.attach(this.gameRenderer.scene);
+    this.worldPartitionDebugOverlay.attach(this.gameRenderer.scene);
 
     const rawInputState = createRawInputState();
     this.inputManager = new InputManager(this.gameRenderer.domElement, rawInputState);
@@ -281,6 +288,7 @@ export class GameApp implements RuntimeAppSession {
     this.disposed = true;
 
     this.beforeDispose();
+    this.worldPartitionDebugOverlay.dispose();
     this.worldObjectScene.dispose();
     this.vegetationScene.dispose();
     this.inputManager.dispose();
@@ -354,6 +362,16 @@ export class GameApp implements RuntimeAppSession {
     return this.getMousePositionInternal();
   }
 
+  queryNearestNavNode(position: { x: number; z: number }, maxDistanceMeters = Infinity) {
+    const graph = createWorldNavGraph(this.resources.runtime.worldPartition.loadedCells.nav.values());
+    return findNearestNavNode(graph, position, maxDistanceMeters);
+  }
+
+  queryNavPath(start: { x: number; z: number }, end: { x: number; z: number }, maxSnapDistanceMeters = Infinity): WorldNavPathResult {
+    const graph = createWorldNavGraph(this.resources.runtime.worldPartition.loadedCells.nav.values());
+    return findWorldNavPath(graph, start, end, maxSnapDistanceMeters);
+  }
+
   protected getMousePositionInternal(): { x: number; y: number; z: number; valid: boolean } | null {
     return null;
   }
@@ -402,6 +420,7 @@ export class GameApp implements RuntimeAppSession {
     this.resources.runtime.worldPartition.loadedCells.collision.clear();
     this.resources.runtime.worldPartition.loadedCells.nav.clear();
     this.worldObjectScene.clear();
+    this.worldPartitionDebugOverlay.clear();
     this.lastWorldPartitionDependencySignature = "";
     this.pendingWorldPartitionLoads.clear();
   }
@@ -520,6 +539,10 @@ export class GameApp implements RuntimeAppSession {
       this.applySkySettings();
     }
 
+    if (patch.debug) {
+      this.syncWorldPartitionDebugOverlay();
+    }
+
     this.applySettingsExtension(patch);
   }
 
@@ -537,6 +560,7 @@ export class GameApp implements RuntimeAppSession {
     }
 
     this.applySkySettings();
+    this.syncWorldPartitionDebugOverlay();
     this.applyAllSettingsExtension();
   }
 
@@ -656,6 +680,7 @@ export class GameApp implements RuntimeAppSession {
     worldPartition.retainCellAssets?.(createActiveWorldPartitionAssetKeys(plan.dependencies));
     this.retainLoadedWorldPartitionCells(plan.dependencies);
     this.worldObjectScene.retainCells(new Set(plan.dependencies.objects));
+    this.syncWorldPartitionDebugOverlay();
 
     const signature = createWorldPartitionDependencySignature(plan.dependencies);
     if (signature === this.lastWorldPartitionDependencySignature) {
@@ -719,6 +744,7 @@ export class GameApp implements RuntimeAppSession {
       }
 
       loadedCells.collision.set(key, payload);
+      this.syncWorldPartitionDebugOverlay();
       return;
     }
 
@@ -728,6 +754,7 @@ export class GameApp implements RuntimeAppSession {
     }
 
     loadedCells.nav.set(key, payload);
+    this.syncWorldPartitionDebugOverlay();
   }
 
   private isWorldPartitionCellStillActive(kind: BundledWorldPartitionCellKind, key: string): boolean {
@@ -739,6 +766,20 @@ export class GameApp implements RuntimeAppSession {
     retainMapKeys(loadedCells.objects, new Set(dependencies.objects));
     retainMapKeys(loadedCells.collision, new Set(dependencies.collision));
     retainMapKeys(loadedCells.nav, new Set(dependencies.nav));
+    this.syncWorldPartitionDebugOverlay();
+  }
+
+  private syncWorldPartitionDebugOverlay(): void {
+    this.worldPartitionDebugOverlay.setVisibility({
+      collision: this.settings.debug.showCollisionOverlay,
+      nav: this.settings.debug.showNavOverlay,
+    });
+    if (this.settings.debug.showCollisionOverlay) {
+      this.worldPartitionDebugOverlay.setCollisionCells(this.resources.runtime.worldPartition.loadedCells.collision.values());
+    }
+    if (this.settings.debug.showNavOverlay) {
+      this.worldPartitionDebugOverlay.setNavCells(this.resources.runtime.worldPartition.loadedCells.nav.values());
+    }
   }
 
   private syncVegetationTerrainVisibility(): void {

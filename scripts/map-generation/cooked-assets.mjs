@@ -100,7 +100,7 @@ export async function generateCookedMapAssets(context, preset, options = {}) {
   );
   const assets = { ...coreAssets, ...partitionAssets };
   const partition = attachPartitionCellAssetDependencies(basePartition, partitionAssets);
-  const contentPackage = packageBuilder.createPackage();
+  const contentPackage = await packageBuilder.createPackage();
   const build = createCookedBuildMetadata(inputSignature, contentPackage, cache, rebuildPlan);
 
   const manifest = {
@@ -233,7 +233,7 @@ function createCookedRebuildMetadata(rebuildPlan) {
 
 async function writeCookCache(context, mapId, manifest) {
   const artifacts = Object.values(manifest.package.artifacts)
-    .flatMap((artifact) => [artifact.path, artifact.blobPath])
+    .flatMap((artifact) => [artifact.path, artifact.blobPath, artifact.compression?.blobPath].filter(Boolean))
     .sort();
   const cachePath = getCookCachePath(context, mapId);
   await mkdir(path.dirname(cachePath), { recursive: true });

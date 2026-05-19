@@ -22,5 +22,9 @@ export function createDefaultGameSettings(): GameSettings {
     ui: {
       theme: "dark",
     },
+    debug: {
+      showCollisionOverlay: false,
+      showNavOverlay: false,
+    },
   };
 }

@@ -50,6 +50,30 @@ test("cooked world partition planner creates load, keep, unload, and dependency 
   }
 });
 
+test("world nav query resolves paths across loaded cell portals", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "open-fps-nav-query-"));
+  try {
+    const navQueryPath = await transpileTsModule(
+      path.join(rootDirectory, "src/game/world/partition/WorldNavQuery.ts"),
+      tempRoot,
+      (source) => source.replace('} from "./WorldPartitionPayloads";', '} from "./WorldPartitionPayloads.js";'),
+    );
+    await transpileTsModule(
+      path.join(rootDirectory, "src/game/world/partition/WorldPartitionPayloads.ts"),
+      tempRoot,
+    );
+    const { createWorldNavGraph, findWorldNavPath } = await import(pathToFileURL(navQueryPath).href);
+    const graph = createWorldNavGraph(createNavCells());
+    const pathResult = findWorldNavPath(graph, { x: 1, z: 1 }, { x: 65, z: 1 }, 128);
+
+    assert.equal(pathResult.status, "ok");
+    assert.deepEqual(pathResult.nodes.map((node) => node.id), ["0,0:0,0", "0,0:1,0", "1,0:0,0"]);
+    assert.equal(graph.cellKeys.join("|"), "0,0|1,0");
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
 function createPartition() {
   const cells = [];
   for (let z = -1; z <= 1; z += 1) {
@@ -76,5 +100,40 @@ function createPartition() {
     cellSizeMeters: 100,
     dependencyKinds,
     cells,
+  };
+}
+
+function createNavCells() {
+  return [
+    {
+      version: 1,
+      format: "world-nav-cell-pack-v1",
+      cell: { key: "0,0" },
+      nodes: [
+        createNavNode("0,0:0,0", 0, 0, 0, 0),
+        createNavNode("0,0:1,0", 1, 0, 32, 0),
+      ],
+      links: [{ from: "0,0:0,0", to: "0,0:1,0", cost: 1 }],
+      crossCellLinks: [{ from: "0,0:1,0", edge: "east", targetCell: "1,0", sourceCell: "0,0", cost: 1, portalMeters: { x: 32, z: 0 } }],
+    },
+    {
+      version: 1,
+      format: "world-nav-cell-pack-v1",
+      cell: { key: "1,0" },
+      nodes: [createNavNode("1,0:0,0", 0, 0, 64, 0)],
+      links: [],
+      crossCellLinks: [],
+    },
+  ];
+}
+
+function createNavNode(id, x, z, worldX, worldZ) {
+  return {
+    id,
+    x,
+    z,
+    position: { x: worldX, y: 0, z: worldZ },
+    walkable: true,
+    cost: 1,
   };
 }

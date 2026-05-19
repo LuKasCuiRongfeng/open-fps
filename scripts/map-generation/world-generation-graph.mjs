@@ -64,12 +64,13 @@ export function createWorldGenerationGraph(preset) {
       vegetationCellSizeMeters,
       partitionCellSizeMeters: cookedWorldPartitionCellSizePages * pageSizeMeters,
       maxPartitionCellsPerScopedCook: 9,
+      maxEstimatedArtifactsPerScopedCook: 64,
       targetFrameRateFps: 60,
       maxDrawCalls: 1800,
       maxGpuMemoryMiB: 1536,
       maxVisibleVegetationInstances: 120000,
       packageLayout: "content-addressed-sha256-v1",
-      packageCompression: "none-dev-ready-for-zstd",
+      packageCompression: "brotli-sidecar-v1",
     },
   };
 }

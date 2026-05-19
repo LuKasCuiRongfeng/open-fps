@@ -1,6 +1,6 @@
 import type { GameSettings, GameSettingsPatch } from "@game/settings";
 import type { VegetationProfilerSnapshot } from "../world/vegetation";
-import type { RuntimeWorldObjectProfilerSnapshot } from "../world/partition";
+import type { RuntimeWorldObjectProfilerSnapshot, WorldNavNode, WorldNavPathResult } from "../world/partition";
 import type { MapData } from "@project/MapData";
 
 export type GameBootPhase =
@@ -49,6 +49,8 @@ export interface RuntimeAppSession<
   getFps(): number;
   getProfilerSnapshot(): RuntimeProfilerSnapshot;
   getMousePosition(): { x: number; y: number; z: number; valid: boolean } | null;
+  queryNearestNavNode(position: { x: number; z: number }, maxDistanceMeters?: number): WorldNavNode | null;
+  queryNavPath(start: { x: number; z: number }, end: { x: number; z: number }, maxSnapDistanceMeters?: number): WorldNavPathResult;
   exportCurrentMapData(): MapData;
   loadMapData(mapData: MapData): Promise<void>;
   warmUpRuntimeShaders(): Promise<void>;

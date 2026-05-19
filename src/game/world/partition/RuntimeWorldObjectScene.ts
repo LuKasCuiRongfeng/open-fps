@@ -2,15 +2,16 @@
 // RuntimeWorldObjectScene：cooked 世界对象 cell 的可见运行时实例化。
 
 import {
-  BoxGeometry,
   CylinderGeometry,
   Group,
   Mesh,
   MeshBasicNodeMaterial,
+  MeshStandardNodeMaterial,
+  PlaneGeometry,
   type Object3D,
   type Scene,
 } from "three/webgpu";
-import { color } from "three/tsl";
+import { color, float, mix, time, uv } from "three/tsl";
 import type { WorldObjectCellPack, WorldObjectEntry } from "./WorldPartitionPayloads";
 import {
   WorldObjectGltfModelLibrary,
@@ -22,6 +23,7 @@ import {
 const ROAD_RIBBON_HEIGHT_METERS = 0.32;
 const WATER_RIBBON_HEIGHT_METERS = 0.16;
 const SURFACE_OFFSET_METERS = 0.18;
+const DECAL_SURFACE_OFFSET_METERS = 0.08;
 const MARKER_HEIGHT_METERS = 3.5;
 const MARKER_RADIUS_METERS = 2.2;
 const RIBBON_CHUNK_LENGTH_METERS = 96;
@@ -46,10 +48,11 @@ export interface RuntimeWorldObjectProfilerSnapshot {
 
 export class RuntimeWorldObjectScene {
   private readonly root = new Group();
-  private readonly ribbonGeometry = new BoxGeometry(1, 1, 1);
+  private readonly roadGeometry = new PlaneGeometry(1, 1, 1, 1);
+  private readonly waterGeometry = new PlaneGeometry(1, 1, 8, 2);
   private readonly markerGeometry = new CylinderGeometry(1, 1, 1, 12, 1, false);
-  private readonly roadMaterial = createMaterial(0.72, 0.46, 0.25, 0.72);
-  private readonly waterMaterial = createMaterial(0.18, 0.52, 0.9, 0.64);
+  private readonly roadMaterial = createRoadDecalMaterial();
+  private readonly waterMaterial = createWaterSurfaceMaterial();
   private readonly poiMaterial = createMaterial(0.98, 0.72, 0.25, 0.9);
   private readonly propMaterial = createMaterial(0.72, 0.74, 0.78, 0.78);
   private readonly modelLibrary = new WorldObjectGltfModelLibrary();
@@ -170,7 +173,8 @@ export class RuntimeWorldObjectScene {
   dispose(): void {
     this.detach();
     this.clear();
-    this.ribbonGeometry.dispose();
+    this.roadGeometry.dispose();
+    this.waterGeometry.dispose();
     this.markerGeometry.dispose();
     this.roadMaterial.dispose();
     this.waterMaterial.dispose();
@@ -286,15 +290,16 @@ export class RuntimeWorldObjectScene {
     widthMeters: number,
     chunkIndex: number,
   ): void {
-    const mesh = new Mesh(this.ribbonGeometry, object.layer === "water" ? this.waterMaterial : this.roadMaterial);
+    const mesh = new Mesh(object.layer === "water" ? this.waterGeometry : this.roadGeometry, object.layer === "water" ? this.waterMaterial : this.roadMaterial);
     const heightMeters = object.layer === "water" ? WATER_RIBBON_HEIGHT_METERS : ROAD_RIBBON_HEIGHT_METERS;
+    const surfaceOffset = object.layer === "water" ? SURFACE_OFFSET_METERS + heightMeters : DECAL_SURFACE_OFFSET_METERS;
 
     mesh.name = `runtime-world-object-${object.layer}-${object.id}-${chunkIndex}`;
-    mesh.position.set(x, y + SURFACE_OFFSET_METERS, z);
-    mesh.rotation.y = rotationY;
-    mesh.scale.set(widthMeters, heightMeters, lengthMeters);
+    mesh.position.set(x, y + surfaceOffset, z);
+    mesh.rotation.set(-Math.PI * 0.5, 0, -rotationY);
+    mesh.scale.set(widthMeters, lengthMeters, 1);
     mesh.frustumCulled = true;
-    mesh.renderOrder = this.root.renderOrder;
+    mesh.renderOrder = object.layer === "water" ? this.root.renderOrder + 1 : this.root.renderOrder + 2;
     group.add(mesh);
     entries.push({ object: mesh, sampleX: x, sampleZ: z, kind: "ribbon" });
   }
@@ -325,6 +330,29 @@ function createMaterial(red: number, green: number, blue: number, opacity: numbe
   material.colorNode = color(red, green, blue);
   material.transparent = true;
   material.opacity = opacity;
+  material.depthWrite = false;
+  material.depthTest = true;
+  material.fog = true;
+  return material;
+}
+
+function createRoadDecalMaterial(): MeshBasicNodeMaterial {
+  const material = createMaterial(0.72, 0.46, 0.25, 0.78);
+  material.polygonOffset = true;
+  material.polygonOffsetFactor = -1;
+  material.polygonOffsetUnits = -4;
+  return material;
+}
+
+function createWaterSurfaceMaterial(): MeshStandardNodeMaterial {
+  const material = new MeshStandardNodeMaterial();
+  const surfaceUv = uv();
+  const ripple = surfaceUv.x.mul(10).add(surfaceUv.y.mul(18)).add(time.mul(0.65)).sin().mul(0.5).add(0.5);
+  material.colorNode = mix(color(0.05, 0.32, 0.52), color(0.22, 0.7, 0.92), ripple.mul(0.45));
+  material.roughnessNode = float(0.18).add(ripple.mul(0.18));
+  material.metalnessNode = float(0);
+  material.transparent = true;
+  material.opacity = 0.7;
   material.depthWrite = false;
   material.depthTest = true;
   material.fog = true;

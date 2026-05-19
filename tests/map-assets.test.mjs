@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
+import { promisify } from "node:util";
+import { brotliDecompress } from "node:zlib";
 import { test } from "node:test";
 import {
   heightPageResolution,
@@ -18,6 +21,7 @@ const rootDirectory = path.resolve(import.meta.dirname, "..");
 const defaultAssetProjectDirectory = "kunlun_wilds";
 const projectDirectory = path.join(rootDirectory, defaultAssetProjectDirectory);
 const mapDirectory = path.join(projectDirectory, "maps", "main");
+const brotliDecompressAsync = promisify(brotliDecompress);
 
 test("source region pack byte layouts match their manifests", async () => {
   const terrain = await readJson(path.join(mapDirectory, "terrain/height/manifest.json"));
@@ -80,6 +84,22 @@ test("map validator rejects a truncated source pack", async () => {
   }
 });
 
+test("cooked package declares sorted Brotli sidecar artifacts", async () => {
+  const manifest = await readJson(path.join(projectDirectory, "cooked/maps/main/manifest.json"));
+  assert.equal(manifest.package.streaming.locality, "kind-cell-runtime-path-v2");
+  assert.equal(manifest.package.streaming.compression, "brotli-sidecar-v1");
+  const entries = Object.entries(manifest.package.artifacts);
+  assert.ok(entries.length > 0);
+  assert.deepEqual(entries.map(([key]) => key), [...entries].sort(compareArtifactEntries).map(([key]) => key));
+
+  const [runtimePath, artifact] = entries.find(([, entry]) => entry.compression?.algorithm === "brotli") ?? [];
+  assert.ok(runtimePath, "expected at least one compressed artifact");
+  const compressedBytes = await readFile(path.join(projectDirectory, artifact.compression.blobPath));
+  assert.equal(createHash("sha256").update(compressedBytes).digest("hex"), artifact.compression.sha256);
+  const decompressedBytes = await brotliDecompressAsync(compressedBytes);
+  assert.equal(createHash("sha256").update(decompressedBytes).digest("hex"), artifact.sha256);
+});
+
 async function readJson(filePath) {
   return JSON.parse(await readFile(filePath, "utf8"));
 }
@@ -113,4 +133,39 @@ function runNode(args) {
       resolve({ stdout, stderr });
     });
   });
+}
+
+function compareArtifactEntries([leftPath, leftArtifact], [rightPath, rightArtifact]) {
+  const leftOrder = artifactKindOrder(leftArtifact.kind);
+  const rightOrder = artifactKindOrder(rightArtifact.kind);
+  if (leftOrder !== rightOrder) {
+    return leftOrder - rightOrder;
+  }
+
+  const leftCell = readCellCoordinates(leftPath);
+  const rightCell = readCellCoordinates(rightPath);
+  if (leftCell && rightCell) {
+    return leftCell.z - rightCell.z || leftCell.x - rightCell.x || leftPath.localeCompare(rightPath);
+  }
+  if (leftCell) {
+    return -1;
+  }
+  if (rightCell) {
+    return 1;
+  }
+
+  return leftPath.localeCompare(rightPath);
+}
+
+function artifactKindOrder(kind) {
+  return { metadata: 0, terrain: 10, paint: 20, vegetation: 30, objects: 40, collision: 50, nav: 60 }[kind] ?? 100;
+}
+
+function readCellCoordinates(runtimePath) {
+  const match = /\/c_(-?\d+)_(-?\d+)\.[^.]+$/.exec(runtimePath);
+  if (!match) {
+    return null;
+  }
+
+  return { x: Number(match[1]), z: Number(match[2]) };
 }

@@ -145,15 +145,15 @@ export function failCookEntry(entry: CookHistoryEntry, message: string, finished
   };
 }
 
-export function createCookQueue(request: PlatformCookMapRequest, conflicts: readonly LockConflict[] = []): CookQueueItem[] {
+export function createCookQueue(request: PlatformCookMapRequest, conflicts: readonly LockConflict[] = [], budgetBlockReason: string | null = null): CookQueueItem[] {
   return [
-    createCookQueueItem("dryRun", request, conflicts),
-    createCookQueueItem("cook", request, conflicts),
+    createCookQueueItem("dryRun", request, conflicts, budgetBlockReason),
+    createCookQueueItem("cook", request, conflicts, budgetBlockReason),
   ];
 }
 
-export function createCookQueueItem(kind: CookRunKind, request: PlatformCookMapRequest, conflicts: readonly LockConflict[] = []): CookQueueItem {
-  const blockedReason = formatLockConflictReason(conflicts);
+export function createCookQueueItem(kind: CookRunKind, request: PlatformCookMapRequest, conflicts: readonly LockConflict[] = [], budgetBlockReason: string | null = null): CookQueueItem {
+  const blockedReason = formatLockConflictReason(conflicts) ?? (kind === "cook" ? budgetBlockReason : null);
   return {
     id: createCookId(kind),
     kind,
@@ -373,6 +373,9 @@ export function summarizePlanScopes(plan: EditorRebuildPlan): ScopeSummary[] {
 }
 
 export function summarizeCookRisk(plan: EditorRebuildPlan): CookRiskSummary {
+  if (plan.budget.exceeded) {
+    return { label: "Budget", tone: "danger", detail: formatBudgetBlockReason(plan) ?? "Scoped cook budget is exceeded." };
+  }
   if (plan.status === "save-first") {
     return { label: "Save First", tone: "warning", detail: "Unsaved source edits must be committed before cook." };
   }
@@ -387,6 +390,14 @@ export function summarizeCookRisk(plan: EditorRebuildPlan): CookRiskSummary {
   }
 
   return { label: plan.label, tone: plan.tone, detail: "No cook execution is currently needed." };
+}
+
+export function formatBudgetBlockReason(plan: EditorRebuildPlan): string | null {
+  if (!plan.budget.exceeded) {
+    return null;
+  }
+
+  return plan.budget.issues[0] ?? "Scoped cook budget is exceeded.";
 }
 
 export function formatCookKind(kind: CookRunKind): string {

@@ -21,6 +21,7 @@ import {
   createTargetRecoveryRequest,
   emptyRebuildLocks,
   failCookEntry,
+  formatBudgetBlockReason,
   formatLockConflictReason,
   formatCookKind,
   formatShortTime,
@@ -69,9 +70,11 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onDiagnosticsRef
   const cookRequest = createRequest("cook");
   const lockConflicts = createLockConflicts(cookRequest, locks);
   const lockBlocked = lockConflicts.length > 0;
+  const budgetBlockReason = formatBudgetBlockReason(plan);
+  const budgetBlocked = budgetBlockReason !== null;
   const canUseCookExecution = platform.hasCapability("worldCookExecution") && projectPath !== null && mapId !== null;
   const canQueue = canUseCookExecution && plan.status === "ready";
-  const canRunCommand = canQueue && !lockBlocked;
+  const canRunCommand = canQueue && !lockBlocked && !budgetBlocked;
   const canRunQueue = canUseCookExecution && (queue.some((item) => item.status === "queued") || canRunCommand);
   const running = activeRunId !== null;
   const risk = summarizeCookRisk(plan);
@@ -137,6 +140,11 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onDiagnosticsRef
       return;
     }
 
+    if (kind === "cook" && budgetBlockReason) {
+      await notifyBudgetBlocked(budgetBlockReason);
+      return;
+    }
+
     if (kind === "cook" && !(await confirmCook())) {
       return;
     }
@@ -153,7 +161,7 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onDiagnosticsRef
       return;
     }
 
-    setQueueAndPersist([...queue, ...createCookQueue(request, createLockConflicts(request, locks))]);
+    setQueueAndPersist([...queue, ...createCookQueue(request, createLockConflicts(request, locks), budgetBlockReason)]);
   }
 
   async function handleRunQueue(): Promise<void> {
@@ -165,7 +173,7 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onDiagnosticsRef
         return;
       }
 
-      workingQueue = createCookQueue(request, createLockConflicts(request, locks));
+      workingQueue = createCookQueue(request, createLockConflicts(request, locks), budgetBlockReason);
       setQueueAndPersist(workingQueue);
     }
 
@@ -179,6 +187,13 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onDiagnosticsRef
         workingQueue = replaceQueueItem(workingQueue, item.id, { status: "blocked", blockedReason: formatLockConflictReason(conflicts) });
         setQueueAndPersist(workingQueue);
         await notifyBlocked(conflicts);
+        return;
+      }
+
+      if (item.kind === "cook" && budgetBlockReason) {
+        workingQueue = replaceQueueItem(workingQueue, item.id, { status: "blocked", blockedReason: budgetBlockReason });
+        setQueueAndPersist(workingQueue);
+        await notifyBudgetBlocked(budgetBlockReason);
         return;
       }
 
@@ -290,6 +305,10 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onDiagnosticsRef
     await platform.dialogs.notify(formatLockConflictReason(conflicts) ?? "Cook request is blocked by locked scopes", { title: "Cook Map", kind: "warning" });
   }
 
+  async function notifyBudgetBlocked(reason: string): Promise<void> {
+    await platform.dialogs.notify(`Cook request is blocked by budget: ${reason}`, { title: "Cook Map", kind: "warning" });
+  }
+
   async function copyTargets(targets: readonly string[]): Promise<void> {
     if (targets.length === 0) {
       return;
@@ -307,7 +326,7 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onDiagnosticsRef
 
   function queueRecoveryRequest(request: PlatformCookMapRequest, kind: CookRunKind): void {
     const conflicts = createLockConflicts(request, locks);
-    const item = createCookQueueItem(kind, request, conflicts);
+    const item = createCookQueueItem(kind, request, conflicts, budgetBlockReason);
     setQueueAndPersist([...rebuildStateRef.current.queue, item]);
     setCopyStatus(conflicts.length > 0 ? "Recovery blocked" : "Recovery queued");
   }
@@ -358,7 +377,8 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onDiagnosticsRef
           plan={plan}
           copyStatus={copyStatus}
           canRun={canRunCommand}
-          blocked={lockBlocked}
+          blocked={lockBlocked || budgetBlocked}
+          blockReason={formatLockConflictReason(lockConflicts) ?? budgetBlockReason}
           running={running}
           onCopy={handleCopyCommand}
           onRun={handleRun}
@@ -372,6 +392,8 @@ export function WorldRebuildConsole({ projectPath, mapId, plan, onDiagnosticsRef
           running={running}
           risk={risk}
           blocked={lockBlocked}
+          budgetBlocked={budgetBlocked}
+          budgetBlockReason={budgetBlockReason}
           onQueue={handleQueuePlan}
           onRunQueue={handleRunQueue}
         />
@@ -496,6 +518,7 @@ function ScopeReview({ plan, risk, conflicts }: { plan: EditorRebuildPlan; risk:
       <div className="grid grid-cols-2 gap-2">
         <MetricTile label="Mode" value={conflicts.length > 0 ? "Blocked" : risk.label} detail={conflicts.length > 0 ? formatLockConflictReason(conflicts) ?? "Locked scope conflict" : risk.detail} tone={conflicts.length > 0 ? "danger" : risk.tone} />
         <MetricTile label="Stages" value={formatCount(plan.changedStages.length)} detail={formatStageList(plan.changedStages)} tone={plan.changedStages.length > 0 ? "warning" : "success"} />
+        <MetricTile label="Budget" value={formatCount(plan.budget.estimatedArtifacts)} detail={formatBudgetDetail(plan)} tone={plan.budget.exceeded ? "danger" : plan.budget.estimatedArtifacts > 0 ? "info" : "neutral"} />
       </div>
       <div className="grid grid-cols-2 gap-2">
         {summaries.map((summary) => (
@@ -511,6 +534,7 @@ function CommandList({
   copyStatus,
   canRun,
   blocked,
+  blockReason,
   running,
   onCopy,
   onRun,
@@ -519,6 +543,7 @@ function CommandList({
   copyStatus: string;
   canRun: boolean;
   blocked: boolean;
+  blockReason: string | null;
   running: boolean;
   onCopy: (command: string) => Promise<void>;
   onRun: (kind: CookRunKind) => Promise<void>;
@@ -552,7 +577,7 @@ function CommandList({
         </div>
       ))}
       {copyStatus && <ReadonlyField>{copyStatus}</ReadonlyField>}
-      {blocked && <ReadonlyField>Blocked by locked scopes</ReadonlyField>}
+      {blocked && <ReadonlyField>{blockReason ?? "Blocked"}</ReadonlyField>}
     </div>
   );
 }
@@ -564,6 +589,8 @@ function QueuePanel({
   running,
   risk,
   blocked,
+  budgetBlocked,
+  budgetBlockReason,
   onQueue,
   onRunQueue,
 }: {
@@ -573,6 +600,8 @@ function QueuePanel({
   running: boolean;
   risk: { label: string; tone: MetricTone; detail: string };
   blocked: boolean;
+  budgetBlocked: boolean;
+  budgetBlockReason: string | null;
   onQueue: () => void;
   onRunQueue: () => Promise<void>;
 }) {
@@ -593,7 +622,7 @@ function QueuePanel({
         </div>
       </div>
       {queue.length === 0 ? (
-        <ReadonlyField>{blocked ? "Blocked" : canQueue ? "Ready" : "Unavailable"}</ReadonlyField>
+        <ReadonlyField>{blocked ? "Blocked by locked scopes" : budgetBlocked ? budgetBlockReason ?? "Blocked by budget" : canQueue ? "Ready" : "Unavailable"}</ReadonlyField>
       ) : (
         <div className="grid grid-cols-2 gap-2">
           {queue.map((item) => (
@@ -853,4 +882,16 @@ function getRecoveryActionIcon(kind: CookRecoveryActionKind) {
     default:
       return RotateCcw;
   }
+}
+
+function formatBudgetDetail(plan: EditorRebuildPlan): string {
+  if (plan.budget.exceeded) {
+    return formatBudgetBlockReason(plan) ?? "blocked";
+  }
+
+  const limits = [
+    plan.budget.maxEstimatedArtifactsPerScopedCook ? `${plan.budget.maxEstimatedArtifactsPerScopedCook} artifacts` : null,
+    plan.budget.maxPartitionCellsPerScopedCook ? `${plan.budget.maxPartitionCellsPerScopedCook} cells` : null,
+  ].filter(Boolean);
+  return limits.length > 0 ? `limit ${limits.join(" / ")}` : "no scoped limit";
 }

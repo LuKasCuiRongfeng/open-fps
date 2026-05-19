@@ -6,6 +6,7 @@ import {
   CloudSun,
   Footprints,
   Gauge,
+  Radar,
   Monitor,
   Palette,
   UserRound,
@@ -21,6 +22,7 @@ import {
   TimeTab,
   MovementTab,
   PhysicsTab,
+  DebugTab,
   ThirdPersonTab,
 } from "./tabs";
 import { SettingsPanelFrame } from "./SettingsPanelFrame";
@@ -35,6 +37,7 @@ const GAME_SETTINGS_TABS = [
   { id: "movement", label: "Movement", Icon: Footprints },
   { id: "physics", label: "Physics", Icon: Gauge },
   { id: "thirdPerson", label: "3rd Person", Icon: UserRound },
+  { id: "debug", label: "Debug", Icon: Radar },
 ] as const;
 
 type GameSettingsTabId = (typeof GAME_SETTINGS_TABS)[number]["id"];
@@ -84,6 +87,8 @@ export function GameSettingsPanel({
         return <PhysicsTab settings={settings} onPatch={onPatch} />;
       case "thirdPerson":
         return <ThirdPersonTab settings={settings} onPatch={onPatch} />;
+      case "debug":
+        return <DebugTab settings={settings} onPatch={onPatch} />;
       default:
         return <HelpTab />;
     }

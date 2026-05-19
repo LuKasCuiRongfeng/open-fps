@@ -1,6 +1,7 @@
 import { generateCookedMapAssets } from "./map-generation/cooked-assets.mjs";
 import { createGenerationContext } from "./map-generation/shared.mjs";
 import {
+  assertRebuildPlanWithinBudget,
   createRebuildRequestFromArgs,
   createWorldRebuildPlanFromContext,
   formatRebuildPlanForConsole,
@@ -17,6 +18,10 @@ async function main() {
     const rebuildPlan = usesRebuildPlan
       ? await createWorldRebuildPlanFromContext(context, preset, rebuildRequest)
       : null;
+    if (rebuildPlan && !rebuildRequest.dryRun) {
+      assertRebuildPlanWithinBudget(rebuildPlan, rebuildRequest);
+    }
+
     if (rebuildRequest.dryRun && rebuildPlan) {
       results.push({ preset, rebuildPlan, cooked: null });
       continue;

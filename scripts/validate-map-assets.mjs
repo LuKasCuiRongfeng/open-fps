@@ -4,6 +4,10 @@ import { readdir, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
+import { promisify } from "node:util";
+import { brotliDecompress } from "node:zlib";
+
+const brotliDecompressAsync = promisify(brotliDecompress);
 
 const PROJECT_FILE = "project.json";
 const DEFAULT_PROJECT_DIRECTORY = "kunlun_wilds";
@@ -44,6 +48,7 @@ const COOKED_MAP_VERSION = 4;
 const COOKED_CACHE_DIRECTORY = "cooked/cache/maps";
 const COOKED_PACKAGE_LAYOUT = "content-addressed-sha256-v1";
 const COOKED_BLOB_ROOT = "cooked/blobs/sha256";
+const COOKED_COMPRESSED_BLOB_ROOT = "cooked/blobs/brotli";
 const COOKED_WORLD_PARTITION_CELL_SIZE_PAGES = 8;
 const COOKED_WORLD_PARTITION_DEPENDENCY_KINDS = ["terrain", "paint", "vegetation", "objects", "collision", "nav"];
 const COOKED_OBJECT_CELL_FORMAT = WORLD_OBJECT_CELL_FORMAT;
@@ -1529,9 +1534,19 @@ async function validateCookedPackage(projectPath, contentPackage, cookedBuild, l
   }
 
   const artifacts = Object.entries(contentPackage.artifacts);
+  validateCookedPackageOrder(artifacts, label);
   if (artifacts.length !== contentPackage.artifactCount) {
     addError(label, `Cooked package declares ${contentPackage.artifactCount} artifacts, got ${artifacts.length}.`);
   }
+
+  const packageStats = createCookedPackageStats(artifacts.map(([, artifact]) => artifact).filter(isRecord));
+  validateEqual(contentPackage.streaming.uncompressedBytes, packageStats.uncompressedBytes, label, "cooked package streaming.uncompressedBytes");
+  validateEqual(contentPackage.streaming.compressedBytes, packageStats.compressedBytes, label, "cooked package streaming.compressedBytes");
+  validateEqual(contentPackage.streaming.compressionRatio, packageStats.compressionRatio, label, "cooked package streaming.compressionRatio");
+  validateEqual(contentPackage.streaming.duplicateArtifacts, packageStats.duplicateArtifacts, label, "cooked package streaming.duplicateArtifacts");
+  validateEqual(contentPackage.streaming.uniqueBlobCount, packageStats.uniqueBlobCount, label, "cooked package streaming.uniqueBlobCount");
+
+  const usedBlobPaths = new Set();
 
   await Promise.all(artifacts.map(async ([key, artifact]) => {
     if (!isRecord(artifact)) {
@@ -1558,13 +1573,24 @@ async function validateCookedPackage(projectPath, contentPackage, cookedBuild, l
       validateArtifactBytes(runtimeBytes, artifact, label, `cooked package runtime artifact '${key}'`);
     }
     if (typeof artifact.blobPath === "string") {
+      usedBlobPaths.add(artifact.blobPath);
       const blobBytes = await readRequiredFileBytes(path.join(projectPath, artifact.blobPath), `cooked package blob artifact '${key}'`);
       if (blobBytes) {
         validateArtifactBytes(blobBytes, artifact, label, `cooked package blob artifact '${key}'`);
       }
     }
+    if (isRecord(artifact.compression)) {
+      const compressedPath = artifact.compression.blobPath;
+      if (typeof compressedPath === "string") {
+        usedBlobPaths.add(compressedPath);
+      }
+      await validateCompressedArtifactBytes(projectPath, key, artifact, label);
+    } else {
+      addError(label, `Cooked package artifact '${key}' must include Brotli compression metadata.`);
+    }
   }));
 
+  await validateCookedBlobCoverage(projectPath, usedBlobPaths, label);
   await validateCookedImportedAssetCoverage(projectPath, contentPackage.artifacts);
 }
 
@@ -1573,11 +1599,159 @@ function validateCookedPackageStreaming(streaming, label) {
     addError(label, "Cooked package must contain streaming metadata.");
     return;
   }
-  validateEqual(streaming.locality, "world-partition-cell-runtime-path-v1", label, "cooked package streaming.locality");
+  validateEqual(streaming.locality, "kind-cell-runtime-path-v2", label, "cooked package streaming.locality");
   validateEqual(streaming.duplicateBlobPolicy, "content-addressed-sha256", label, "cooked package streaming.duplicateBlobPolicy");
-  if (typeof streaming.compression !== "string" || streaming.compression.length === 0) {
-    addError(label, "Cooked package streaming.compression must be a non-empty string.");
+  validateEqual(streaming.compression, "brotli-sidecar-v1", label, "cooked package streaming.compression");
+  validateEqual(streaming.sort, "kind-cell-runtime-path-v2", label, "cooked package streaming.sort");
+  validateEqual(streaming.compressedBlobRoot, COOKED_COMPRESSED_BLOB_ROOT, label, "cooked package streaming.compressedBlobRoot");
+  for (const field of ["uncompressedBytes", "compressedBytes", "duplicateArtifacts", "uniqueBlobCount"]) {
+    if (!Number.isInteger(streaming[field]) || streaming[field] < 0) {
+      addError(label, `Cooked package streaming.${field} must be a non-negative integer.`);
+    }
   }
+  if (typeof streaming.compressionRatio !== "number" || !Number.isFinite(streaming.compressionRatio) || streaming.compressionRatio < 0) {
+    addError(label, "Cooked package streaming.compressionRatio must be a non-negative finite number.");
+  }
+}
+
+async function validateCompressedArtifactBytes(projectPath, key, artifact, label) {
+  const compression = artifact.compression;
+  if (compression.algorithm !== "brotli") {
+    addError(label, `Cooked package artifact '${key}' compression algorithm must be brotli.`);
+  }
+  if (!Number.isInteger(compression.byteLength) || compression.byteLength < 0) {
+    addError(label, `Cooked package artifact '${key}' compression byteLength must be a non-negative integer.`);
+  }
+  if (!isSha256(compression.sha256)) {
+    addError(label, `Cooked package artifact '${key}' compression sha256 must be a lowercase SHA-256 digest.`);
+  }
+  if (typeof compression.blobPath !== "string" || !compression.blobPath.startsWith(`${COOKED_COMPRESSED_BLOB_ROOT}/${artifact.sha256?.slice?.(0, 2) ?? ""}/`)) {
+    addError(label, `Cooked package artifact '${key}' compression blobPath must point inside the compressed blob root.`);
+    return;
+  }
+
+  const compressedBytes = await readRequiredFileBytes(path.join(projectPath, compression.blobPath), `cooked package compressed blob artifact '${key}'`);
+  if (!compressedBytes) {
+    return;
+  }
+
+  if (compressedBytes.byteLength !== compression.byteLength) {
+    addError(label, `Cooked package artifact '${key}' compressed byteLength mismatch.`);
+  }
+  const compressedSha256 = createHash("sha256").update(compressedBytes).digest("hex");
+  if (compressedSha256 !== compression.sha256) {
+    addError(label, `Cooked package artifact '${key}' compressed sha256 mismatch.`);
+  }
+
+  let decompressedBytes;
+  try {
+    decompressedBytes = await brotliDecompressAsync(compressedBytes);
+  } catch {
+    addError(label, `Cooked package artifact '${key}' compressed blob is not valid Brotli.`);
+    return;
+  }
+  validateArtifactBytes(decompressedBytes, artifact, label, `cooked package compressed artifact '${key}'`);
+}
+
+function validateCookedPackageOrder(artifacts, label) {
+  const actual = artifacts.map(([key]) => key);
+  const expected = [...artifacts].sort(compareCookedPackageArtifactEntries).map(([key]) => key);
+  if (!sameStringArray(actual, expected)) {
+    addError(label, "Cooked package artifacts must be sorted by kind/cell/runtime path locality.");
+  }
+}
+
+function createCookedPackageStats(artifacts) {
+  const uniqueBlobHashes = new Set();
+  const duplicateBlobHashes = new Set();
+  let uncompressedBytes = 0;
+  let compressedBytes = 0;
+  for (const artifact of artifacts) {
+    uncompressedBytes += Number.isInteger(artifact.byteLength) ? artifact.byteLength : 0;
+    compressedBytes += isRecord(artifact.compression) && Number.isInteger(artifact.compression.byteLength)
+      ? artifact.compression.byteLength
+      : Number.isInteger(artifact.byteLength) ? artifact.byteLength : 0;
+    if (typeof artifact.sha256 === "string") {
+      if (uniqueBlobHashes.has(artifact.sha256)) {
+        duplicateBlobHashes.add(artifact.sha256);
+      }
+      uniqueBlobHashes.add(artifact.sha256);
+    }
+  }
+
+  return {
+    uncompressedBytes,
+    compressedBytes,
+    compressionRatio: uncompressedBytes > 0 ? Number((compressedBytes / uncompressedBytes).toFixed(4)) : 1,
+    duplicateArtifacts: duplicateBlobHashes.size,
+    uniqueBlobCount: uniqueBlobHashes.size,
+  };
+}
+
+async function validateCookedBlobCoverage(projectPath, usedBlobPaths, label) {
+  const roots = [COOKED_BLOB_ROOT, COOKED_COMPRESSED_BLOB_ROOT];
+  for (const root of roots) {
+    const files = await listFilesSafe(path.join(projectPath, root));
+    for (const filePath of files) {
+      const projectRelative = relativeProjectPath(projectPath, filePath);
+      if (!usedBlobPaths.has(projectRelative)) {
+        addError(label, `Cooked package blob '${projectRelative}' is not referenced by the artifact index.`);
+      }
+    }
+  }
+}
+
+function compareCookedPackageArtifactEntries([leftPath, leftArtifact], [rightPath, rightArtifact]) {
+  const leftKindOrder = cookedPackageKindOrder(leftArtifact);
+  const rightKindOrder = cookedPackageKindOrder(rightArtifact);
+  if (leftKindOrder !== rightKindOrder) {
+    return leftKindOrder - rightKindOrder;
+  }
+
+  const leftCell = readCookedPackageCellCoordinates(leftPath);
+  const rightCell = readCookedPackageCellCoordinates(rightPath);
+  if (leftCell && rightCell) {
+    return leftCell.z - rightCell.z || leftCell.x - rightCell.x || leftPath.localeCompare(rightPath);
+  }
+  if (leftCell) {
+    return -1;
+  }
+  if (rightCell) {
+    return 1;
+  }
+
+  return leftPath.localeCompare(rightPath);
+}
+
+function cookedPackageKindOrder(artifact) {
+  const kind = isRecord(artifact) ? artifact.kind : null;
+  switch (kind) {
+    case "metadata":
+      return 0;
+    case "terrain":
+      return 10;
+    case "paint":
+      return 20;
+    case "vegetation":
+      return 30;
+    case "objects":
+      return 40;
+    case "collision":
+      return 50;
+    case "nav":
+      return 60;
+    default:
+      return 100;
+  }
+}
+
+function readCookedPackageCellCoordinates(runtimePath) {
+  const match = /\/c_(-?\d+)_(-?\d+)\.[^.]+$/.exec(runtimePath);
+  if (!match) {
+    return null;
+  }
+
+  return { x: Number(match[1]), z: Number(match[2]) };
 }
 
 async function validateCookedImportedAssetCoverage(projectPath, artifacts) {
@@ -1611,7 +1785,7 @@ async function validateCookedCache(projectPath, mapId, cooked, label) {
   validateEqual(cache.artifactCount, cooked.package?.artifactCount, cacheLabel, "cooked cache artifactCount");
 
   const expectedArtifacts = Object.values(cooked.package?.artifacts ?? {})
-    .flatMap((artifact) => isRecord(artifact) ? [artifact.path, artifact.blobPath] : [])
+    .flatMap((artifact) => isRecord(artifact) ? [artifact.path, artifact.blobPath, isRecord(artifact.compression) ? artifact.compression.blobPath : null].filter(Boolean) : [])
     .sort();
   validateExactStringArray(cache.artifacts, expectedArtifacts, cacheLabel, "cooked cache artifacts");
   if (cache.inputSignature !== cooked.build?.inputSignature) {

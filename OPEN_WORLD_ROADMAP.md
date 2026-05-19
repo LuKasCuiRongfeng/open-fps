@@ -48,18 +48,18 @@
 - cooked 输出已复制运行时所需的 region pack、terrain texture、vegetation model 和 world object GLTF 资产，game target 不再依赖 source sidecar 目录读取核心运行资产。
 - cooked 输出现在按 `cooked/assets/imported/...` 保留注册表导入路径结构，避免运行时重新依赖 source 资产库，同时保留 source path 和 content hash 可追溯性。
 - cooked 输出已写入 `cooked/cache/maps/<mapId>.json`，用于记录 build input signature、artifact 列表和 stale cook 诊断依据。
-- cooked package 已生成 `content-addressed-sha256-v1` artifact index，并把 runtime artifact 同步写入 `cooked/blobs/sha256/...`；package manifest 已记录 streaming locality、去重策略和压缩策略入口。
+- cooked package 已生成 `content-addressed-sha256-v1` artifact index，并把 runtime artifact 同步写入 `cooked/blobs/sha256/...`；package manifest 已记录 kind/cell 局部性排序、content-addressed 去重统计、Brotli sidecar 压缩 blob、重复 blob 清理和 release 校验元数据。
 - world partition cell 已收敛到 `dependencies` 结构，统一挂载 terrain、paint、vegetation、objects、collision、nav 六类运行时分区依赖。
 - objects cooked cell pack 现在来自 source object pack，不再是空生成物；collision cell pack 由 terrain heightfield、水体 volume 和对象 blocker 派生；nav cell pack 由 terrain slope、道路、水体和碰撞 blocker 派生。
-- runtime world partition planner 已接入 game streaming hot path，可按玩家/摄像机位置生成 load/keep/unload cell、预取 object/collision/nav cell pack、缓存已加载 payload，并按 archetype 实例化真实 GLTF 世界对象；道路/水体仍以生成 ribbon 表达，但 source archetype 已记录 road decal、water surface、edge blend、LOD/instancing 和 per-cell budget 元数据。
-- game runtime 已把 cooked object cell pack 转成道路、水体、POI 和道具的可见实例；collision pack 已进入玩家水平阻挡解析，并记录 vegetation query-clearance 策略；nav pack 已记录 cross-cell portal link，作为后续 AI 查询和调试可视化的跨 cell 连接入口。
+- runtime world partition planner 已接入 game streaming hot path，可按玩家/摄像机位置生成 load/keep/unload cell、预取 object/collision/nav cell pack、缓存已加载 payload，并按 archetype 实例化真实 GLTF 世界对象；道路已用 decal-like surface mesh 表达，水体已使用 TSL water surface shader，source archetype 继续记录 edge blend、LOD/instancing 和 per-cell budget 元数据。
+- game runtime 已把 cooked object cell pack 转成道路、水体、POI 和道具的可见实例；collision pack 已进入玩家水平阻挡解析，并记录 vegetation query-clearance 策略；nav pack 已记录 cross-cell portal link，runtime 已提供 AI nav nearest/path 查询和 collision/nav overlay 调试开关。
 - 地形、水体/道路对象、paint、vegetation 和 cooked nav 已收敛到共享 world semantics 规则，避免各生成脚本各自维护一套道路、水体和 POI 语义。
-- terrain、paint、vegetation、objects、collision 和 nav 的生成依赖已由 generation graph 显式登记；`scripts/map-generation/world-rebuild-planner.mjs` 可把 graph 输入变化解析为 stage closure 与 region/cell scope，`pnpm cook:map` 已支持 dry-run plan 与 scoped cook。
-- 编辑器设置面板已有 World Diagnostics 页，可查看 generation graph、rebuild executor、local scope、预算、source 资产健康、pack integrity、cooked source stale、rebuild plan 命令、scope review、项目级 locked scope、受控 dry-run/cook 多计划队列、持久化执行历史、失败分类、验证 target 跳转、恢复动作、partition streaming、runtime payload 和可见对象/植被统计；Objects 页已支持 archetype 选择、地形拾取放置、删除、undo/redo 和对象 sidecar 保存。
+- terrain、paint、vegetation、objects、collision 和 nav 的生成依赖已由 generation graph 显式登记；`scripts/map-generation/world-rebuild-planner.mjs` 可把 graph 输入变化解析为 stage closure 与 region/cell scope，`pnpm cook:map` 已支持 dry-run plan、scoped cook 和预算超限阻断，`pnpm gen:graph` 已能把 graph executor 映射到真实 terrain/paint/vegetation/object/cooked stage dispatcher。
+- 编辑器设置面板已有 World Diagnostics 页，可查看 generation graph、rebuild executor、local scope、预算、source 资产健康、pack integrity、cooked source stale、rebuild plan 命令、scope review、项目级 locked scope、受控 dry-run/cook 多计划队列、持久化执行历史、失败分类、验证 target 跳转、恢复动作、partition streaming、runtime payload 和可见对象/植被统计；UI 与 CLI 均会阻断超出 scoped cook 预算的实际 cook；Objects 页已支持 archetype 选择、地形拾取放置、删除、undo/redo 和对象 sidecar 保存。
 - CI/release 已接入 `pnpm verify`，覆盖 lint、Node 回归测试、TypeScript 类型检查和地图资产校验。
 - 已有 [`OPEN_WORLD_DESIGN_SPEC.md`](OPEN_WORLD_DESIGN_SPEC.md)，定义 `main` 10 平方公里地图的区域、道路、水系、兴趣点和生成约束。
 
-当前最重要的方向是把这些能力从“已有 target-aware rebuild orchestration layer”推进到“可局部重生成、可预算阻断、可检索恢复的非破坏性内容生产系统”。
+当前最重要的方向是把这些能力从“已有 target-aware rebuild orchestration layer 和 graph dispatcher”推进到“编辑器内可选择 scope、可局部重生成、可检索历史、可预算化消费的非破坏性内容生产系统”。
 
 ## 当前编辑器质量判断
 
@@ -70,7 +70,7 @@
 - 植被编辑当前已有 GLTF instancing、LOD、距离裁剪和画刷，generation graph 已记录 biome、cluster、edge falloff、保护区/排除区、impostor 与 collision/nav 预算规则；下一阶段要把 ecology scatter executor 接进编辑器局部重散布。
 - 世界对象编辑已从几何代理进入 GLTF archetype + sidecar 事务阶段；source archetype 已登记 spline、prefab、scatter、LOD/instancing budget 和 collision 元数据，仍需补真正的 spline 编辑 UI、prefab 展开执行器、精确 collision shape 和可视化验证。
 
-因此当前项目已经具备业界级开放世界管线的关键底座：可校验 source/cooked 分层、world partition、content-addressed package、generation graph、局部 rebuild plan、scoped cook 和编辑器内 target-aware rebuild orchestration layer。距离最终“业界最佳编辑体验”还差局部重生成入口、执行历史检索、真实 spline 工具、可视化 collision/nav 调试、预算化渲染闭环和更高质量美术内容填充。
+因此当前项目已经具备业界级开放世界管线的关键底座：可校验 source/cooked 分层、world partition、content-addressed package、Brotli sidecar 压缩、generation graph、graph executor dispatcher、局部 rebuild plan、scoped cook、预算阻断、collision/nav runtime 调试和编辑器内 target-aware rebuild orchestration layer。距离最终“业界最佳编辑体验”还差编辑器内直接触发 source stage 局部重生成、执行历史检索、真实 spline 工具、prefab/scatter UI、预算化渲染闭环和更高质量美术内容填充。
 
 ## 路线图
 
@@ -235,9 +235,9 @@
 
 验收标准：
 
-- 道路当前已生成导航成本，并已影响地形、材质和植被清理；后续需要 spline 编辑工具、道路 mesh/decal、车辙和更自然的边缘融合。
-- 水体当前已进入 object/collision/nav 派生，并影响地形、边缘材质和植被清理；后续需要更真实的河床高度、可视水面、湿地物种和浅/深水规则。
-- 世界对象能按 cell 被 runtime 预取并以真实 mesh/prop archetype 实例化；后续要补道路 decal/mesh、水面 shader、object instancing/LOD budget 和精确碰撞形状。
+- 道路当前已生成导航成本，并已影响地形、材质和植被清理；runtime 已有 decal-like road surface mesh，后续需要 spline 编辑工具、车辙贴花、边缘融合和更精确的宽度/材质控制。
+- 水体当前已进入 object/collision/nav 派生，并影响地形、边缘材质和植被清理；runtime 已有 TSL water surface shader，后续需要更真实的河床高度、湿地物种和浅/深水规则。
+- 世界对象能按 cell 被 runtime 预取并以真实 mesh/prop archetype 实例化；后续要补 prefab 展开、scatter rule UI、object instancing/LOD budget 和精确碰撞形状。
 
 ### 11. 渲染质量与性能预算
 
@@ -262,7 +262,7 @@
 当前重点：
 
 - 继续强化已生成的 terrain/object/water collision pack，补 vegetation collision 策略和更精确的形状表达。
-- 继续强化已生成的 navigation grid，补跨 cell link、AI 查询接口、调试可视化和局部重建。
+- 继续强化已生成的 navigation grid；cross-cell link、AI nearest/path 查询接口和 collision/nav overlay 已进入 runtime，后续补可视化问题定位、局部 nav rebuild 验证和更高分辨率/分层寻路。
 - 编辑器继续补可行走区域、碰撞边界和导航问题的可视化。
 
 验收标准：
@@ -309,8 +309,8 @@
 
 当前重点：
 
-- 在已有 World Diagnostics 基础上继续增强 region/cell 可视化、streaming debug、LOD debug、保存状态、地图统计、cooked stale 诊断、rebuild command plan、scope review、locked scope、持久化执行历史、失败分类、验证 target 跳转和恢复动作。
-- 在已具备项目级 locked scope、受控多计划队列、target routing 与恢复动作的基础上，补局部重新生成、执行历史检索和预算超限阻断。
+- 在已有 World Diagnostics 基础上继续增强 region/cell 可视化选择、streaming debug、LOD debug、保存状态、地图统计、cooked stale 诊断、rebuild command plan、scope review、locked scope、持久化执行历史、失败分类、验证 target 跳转和恢复动作。
+- 在已具备项目级 locked scope、受控多计划队列、target routing、恢复动作和预算超限阻断的基础上，补编辑器内 source stage 局部重新生成入口和执行历史检索。
 - 所有 UI 保持紧凑、严肃的桌面编辑器风格。
 
 验收标准：
@@ -341,23 +341,23 @@
 
 当前重点：
 
-- 建立 cooked project 打包、资源索引、版本号、hash、增量构建和缓存失效。
+- 建立 cooked project 打包、资源索引、版本号、hash、增量构建、缓存失效、Brotli sidecar 压缩和局部性排序。
 - game target 默认读取 cooked 输出。
 - 发布包包含资源完整性校验和最小运行验证。
 
 验收标准：
 
 - web 和 desktop game 都能从同一 cooked 数据模型启动。
-- 发布前能自动发现缺失资源、过期 cook 和格式不匹配。
+- 发布前能自动发现缺失资源、过期 cook、格式不匹配、压缩 blob 损坏、孤儿 blob 和 package 排序漂移。
 - 构建结果可追踪到 source project 和生成参数。
 
 ## 近期优先级
 
-1. 强化 World Diagnostics 执行闭环：局部重新生成入口、执行历史检索、预算超限阻断和 region/cell 可视化选择。
-2. 把 terrain/material/ecology graph 从 metadata 推进到真正可执行：道路切坡、河床、湿边、道路清理、cluster/edge falloff 和手工 override 都能局部重算。
-3. 强化 collision/nav 调试消费：cross-cell portal 可视化、AI 查询接口、可行走/阻挡 overlay、vegetation clearance 诊断和局部 nav rebuild 验证。
-4. 把道路、水体和对象表现升级到真实渲染资产：road mesh/decal、water surface shader、prefab 展开、scatter rule 执行和对象 LOD/instancing budget。
-5. 为 content-addressed cooked package 增加发布级压缩、重复 blob 清理、加载局部性排序和 release 校验。
+1. 强化 World Diagnostics 执行闭环：补编辑器内 source stage 局部重新生成入口、执行历史检索和 region/cell 可视化选择。
+2. 把 terrain/material/ecology graph 从“可执行 stage dispatcher”推进到“非破坏性局部层”：道路切坡、河床、湿边、道路清理、cluster/edge falloff 和手工 override 都能按 scope 增量重算。
+3. 强化 collision/nav 调试消费：在已有 AI 查询接口和 overlay 基础上补可行走/阻挡问题定位、vegetation clearance 诊断、局部 nav rebuild 验证和更高分辨率寻路。
+4. 继续升级道路、水体和对象表现：补 spline 编辑工具、车辙/湿边 decal、prefab 展开、scatter rule 执行和对象 LOD/instancing budget。
+5. 继续打磨 release cooked package：验证真实发布读取策略、压缩包体评估、增量 patch 元数据和多平台最小运行验证。
 
 ## 路线对齐自检
 

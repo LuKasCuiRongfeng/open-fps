@@ -47,6 +47,13 @@ export type UiSettings = {
     theme: UiTheme;
 };
 
+export type DebugSettings = {
+    /** Show loaded collision cell shapes. / 显示已加载的碰撞 cell 形状 */
+    showCollisionOverlay: boolean;
+    /** Show loaded navigation nodes, links, and portals. / 显示已加载的导航节点、连接与 portal */
+    showNavOverlay: boolean;
+};
+
 /**
  * Game settings - all values can be modified at runtime.
  * 游戏设置 - 所有值都可以在运行时修改
@@ -62,6 +69,7 @@ export type GameSettings = {
     sky: SkySettings;
     time: TimeSettings;
     ui: UiSettings;
+    debug: DebugSettings;
 };
 
 /** Partial settings patch type (all fields optional). / 部分设置补丁类型（所有字段可选） */

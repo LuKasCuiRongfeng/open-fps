@@ -28,6 +28,7 @@ export interface WorldNavCellPack {
   cell: { key: string };
   nodes: WorldNavNode[];
   links: WorldNavLink[];
+  crossCellLinks?: WorldNavCrossCellLink[];
 }
 
 export interface WorldNavNode {
@@ -43,6 +44,15 @@ export interface WorldNavLink {
   from: string;
   to: string;
   cost: number;
+}
+
+export interface WorldNavCrossCellLink {
+  from: string;
+  edge: "north" | "south" | "east" | "west";
+  targetCell: string;
+  sourceCell: string;
+  cost: number;
+  portalMeters: { x: number; z: number };
 }
 
 export interface WorldBoundsMeters {

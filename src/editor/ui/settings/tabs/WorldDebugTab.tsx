@@ -198,7 +198,7 @@ export function WorldDebugTab({ editorApp, editorWorkspace }: WorldDebugTabProps
               { label: "Stages", value: formatCount(rebuildPlan.changedStages.length), detail: formatStageList(rebuildPlan.changedStages), tone: rebuildPlan.changedStages.length > 0 ? "warning" : "success" },
               { label: "Terrain", value: formatCount(rebuildPlan.scopes.terrainRegions.length), detail: "regions" },
               { label: "Paint", value: formatCount(rebuildPlan.scopes.paintRegions.length), detail: "regions" },
-              { label: "Cells", value: formatCount(rebuildPlan.scopes.partitionCells.length), detail: "partition" },
+              { label: "Budget", value: formatCount(rebuildPlan.budget.estimatedArtifacts), detail: rebuildPlan.budget.exceeded ? "blocked" : "artifacts", tone: rebuildPlan.budget.exceeded ? "danger" : "info" },
             ]}
           />
         </SettingRow>

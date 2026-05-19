@@ -27,6 +27,7 @@ export function createRebuildRequestFromArgs(args) {
   return {
     dryRun: args.includes("--plan") || args.includes("--dry-run"),
     full: args.includes("--full"),
+    allowBudgetOverrun: args.includes("--allow-budget-overrun"),
     targetStages: readStageFlags(args, "--stage"),
     changedStages: readStageFlags(args, "--changed-stage"),
     scopes: {
@@ -89,7 +90,7 @@ export function createWorldRebuildPlan(graph, request = createEmptyRequest()) {
     stages: selectedStages,
     scopes: selectedScopes,
     actions,
-    budget: createPlanBudget(graph, selectedStages, selectedScopes),
+    budget: createPlanBudget(graph, full ? "full" : "scoped", selectedStages, selectedScopes),
   };
 
   plan.planId = createPlanId(plan);
@@ -105,7 +106,15 @@ export function formatRebuildPlanForConsole(plan) {
     `  Vegetation regions: ${formatScope(plan.scopes.vegetationRegions)}`,
     `  Partition cells: ${formatScope(plan.scopes.partitionCells)}`,
     `  Estimated artifacts: ${plan.budget.estimatedArtifacts}`,
+    `  Budget: ${plan.budget.exceeded ? "blocked" : "within limits"}`,
   ];
+
+  if (plan.budget.errors.length > 0) {
+    lines.push("  Budget blockers:");
+    for (const error of plan.budget.errors) {
+      lines.push(`    - ${error}`);
+    }
+  }
 
   if (plan.budget.warnings.length > 0) {
     lines.push("  Warnings:");
@@ -117,10 +126,19 @@ export function formatRebuildPlanForConsole(plan) {
   return lines.join("\n");
 }
 
+export function assertRebuildPlanWithinBudget(plan, request = {}) {
+  if (!plan.budget.exceeded || request.allowBudgetOverrun) {
+    return;
+  }
+
+  throw new Error(`Scoped rebuild budget exceeded for '${plan.mapId}': ${plan.budget.errors.join("; ")}. Use --allow-budget-overrun after review to bypass.`);
+}
+
 function createEmptyRequest() {
   return {
     dryRun: false,
     full: false,
+    allowBudgetOverrun: false,
     targetStages: [],
     changedStages: [],
     scopes: {
@@ -172,6 +190,7 @@ function normalizeRequest(request) {
   return {
     dryRun: Boolean(request.dryRun),
     full: Boolean(request.full),
+    allowBudgetOverrun: Boolean(request.allowBudgetOverrun),
     targetStages: uniqueStringSorted(request.targetStages ?? []),
     changedStages: uniqueStringSorted(request.changedStages ?? []),
     scopes: {
@@ -360,14 +379,25 @@ function createRebuildAction(graph, stageName, scopes) {
   };
 }
 
-function createPlanBudget(graph, stages, scopes) {
+function createPlanBudget(graph, mode, stages, scopes) {
   const warnings = [];
+  const errors = [];
   const estimatedArtifacts = countStageArtifacts(stages, scopes);
+  const maxPartitionCellsPerScopedCook = readPositiveInteger(graph.budgets?.maxPartitionCellsPerScopedCook);
+  const maxEstimatedArtifactsPerScopedCook = readPositiveInteger(graph.budgets?.maxEstimatedArtifactsPerScopedCook);
   if (scopes.terrainRegions.length === graph.budgets?.maxTerrainHeightRegionsPerFullRebuild) {
     warnings.push("terrain rebuild touches every height region");
   }
   if (scopes.paintRegions.length === graph.budgets?.maxPaintRegionsPerFullRebuild) {
     warnings.push("paint rebuild touches every paint region");
+  }
+
+  if (mode === "scoped" && maxPartitionCellsPerScopedCook !== null && scopes.partitionCells.length > maxPartitionCellsPerScopedCook) {
+    errors.push(`partition cells ${scopes.partitionCells.length} exceeds scoped limit ${maxPartitionCellsPerScopedCook}`);
+  }
+
+  if (mode === "scoped" && maxEstimatedArtifactsPerScopedCook !== null && estimatedArtifacts > maxEstimatedArtifactsPerScopedCook) {
+    errors.push(`estimated artifacts ${estimatedArtifacts} exceeds scoped limit ${maxEstimatedArtifactsPerScopedCook}`);
   }
 
   return {
@@ -376,8 +406,16 @@ function createPlanBudget(graph, stages, scopes) {
     paintRegionCount: scopes.paintRegions.length,
     vegetationRegionCount: scopes.vegetationRegions.length,
     partitionCellCount: scopes.partitionCells.length,
+    maxPartitionCellsPerScopedCook,
+    maxEstimatedArtifactsPerScopedCook,
+    exceeded: errors.length > 0,
+    errors,
     warnings,
   };
+}
+
+function readPositiveInteger(value) {
+  return Number.isInteger(value) && value > 0 ? value : null;
 }
 
 function countStageArtifacts(stages, scopes) {

@@ -190,6 +190,20 @@ export interface CookedPackageStreamingInfo {
   locality: string;
   duplicateBlobPolicy: string;
   compression: string;
+  sort?: string;
+  compressedBlobRoot?: string;
+  uncompressedBytes?: number;
+  compressedBytes?: number;
+  compressionRatio?: number;
+  duplicateArtifacts?: number;
+  uniqueBlobCount?: number;
+}
+
+export interface CookedPackageArtifactCompression {
+  algorithm: string;
+  blobPath: string;
+  byteLength: number;
+  sha256: string;
 }
 
 export interface CookedPackageArtifact {
@@ -199,6 +213,7 @@ export interface CookedPackageArtifact {
   byteLength: number;
   sha256: string;
   sourcePath?: string;
+  compression?: CookedPackageArtifactCompression;
 }
 
 export interface CookedMapInfo {
@@ -571,6 +586,17 @@ function readOptionalNonNegativeInteger(value: unknown, label: string): number |
   return readNonNegativeInteger(value, label);
 }
 
+function readOptionalFiniteNumber(value: unknown, label: string): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`${label} must be finite`);
+  }
+
+  return value;
+}
+
 function readNullableNonNegativeInteger(value: unknown, label: string): number | null {
   if (value === null) {
     return null;
@@ -683,6 +709,7 @@ function normalizeCookedPackage(value: unknown): CookedPackageInfo {
       byteLength: readNonNegativeInteger(record.byteLength, `cooked package artifact '${key}' byteLength`),
       sha256: readSha256(record.sha256, `cooked package artifact '${key}' sha256`),
       sourcePath: readOptionalString(record.sourcePath, `cooked package artifact '${key}' sourcePath`),
+      compression: normalizeCookedPackageArtifactCompression(record.compression, `cooked package artifact '${key}' compression`),
     }];
   });
 
@@ -692,6 +719,20 @@ function normalizeCookedPackage(value: unknown): CookedPackageInfo {
     artifactCount: readNonNegativeInteger(contentPackage.artifactCount, "cooked package artifactCount"),
     streaming: normalizeCookedPackageStreaming(contentPackage.streaming),
     artifacts: Object.fromEntries(artifactEntries),
+  };
+}
+
+function normalizeCookedPackageArtifactCompression(value: unknown, label: string): CookedPackageArtifactCompression | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const compression = readRecord(value, label);
+  return {
+    algorithm: readString(compression.algorithm, `${label} algorithm`),
+    blobPath: readString(compression.blobPath, `${label} blobPath`),
+    byteLength: readNonNegativeInteger(compression.byteLength, `${label} byteLength`),
+    sha256: readSha256(compression.sha256, `${label} sha256`),
   };
 }
 
@@ -709,5 +750,12 @@ function normalizeCookedPackageStreaming(value: unknown): CookedPackageStreaming
     locality: readString(streaming.locality, "cooked package streaming locality"),
     duplicateBlobPolicy: readString(streaming.duplicateBlobPolicy, "cooked package streaming duplicateBlobPolicy"),
     compression: readString(streaming.compression, "cooked package streaming compression"),
+    sort: readOptionalString(streaming.sort, "cooked package streaming sort"),
+    compressedBlobRoot: readOptionalString(streaming.compressedBlobRoot, "cooked package streaming compressedBlobRoot"),
+    uncompressedBytes: readOptionalNonNegativeInteger(streaming.uncompressedBytes, "cooked package streaming uncompressedBytes"),
+    compressedBytes: readOptionalNonNegativeInteger(streaming.compressedBytes, "cooked package streaming compressedBytes"),
+    compressionRatio: readOptionalFiniteNumber(streaming.compressionRatio, "cooked package streaming compressionRatio"),
+    duplicateArtifacts: readOptionalNonNegativeInteger(streaming.duplicateArtifacts, "cooked package streaming duplicateArtifacts"),
+    uniqueBlobCount: readOptionalNonNegativeInteger(streaming.uniqueBlobCount, "cooked package streaming uniqueBlobCount"),
   };
 }
