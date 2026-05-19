@@ -7,6 +7,7 @@ import {
   type SidecarRegionIntegrity,
   type SidecarRegionIntegrityMap,
 } from "@workspace/SidecarAssetIntegrity";
+import type { SidecarPatchLayerManifest } from "@workspace/SidecarPatchLayers";
 
 export const VEGETATION_REGIONS_DIRECTORY = "vegetation/regions";
 export const VEGETATION_REGION_FORMAT = "vegetation-region-pack-v1";
@@ -28,6 +29,7 @@ export interface VegetationInstanceManifest {
   regionsDirectory: typeof VEGETATION_REGIONS_DIRECTORY;
   regions: Record<string, string>;
   regionIntegrity: SidecarRegionIntegrityMap;
+  patchLayers: SidecarPatchLayerManifest;
   modelIds: string[];
 }
 

@@ -37,6 +37,11 @@ export interface CookedCellRef {
   objectCount?: number;
   byteLength: number;
   sha256: string;
+  shapeCount?: number;
+  nodeCount?: number;
+  walkableNodeCount?: number;
+  linkCount?: number;
+  portalLinkCount?: number;
 }
 
 export type CookedCellTable = Record<string, CookedCellRef>;
@@ -121,6 +126,18 @@ export interface CookedWorldPartitionCell {
   pageRect: CookedPageRect;
   boundsMeters: CookedBoundsMeters;
   dependencies: CookedWorldPartitionDependencies;
+  budget?: CookedWorldPartitionCellBudget;
+}
+
+export interface CookedWorldPartitionCellBudget {
+  objectCount: number;
+  collisionShapeCount: number;
+  navNodeCount: number;
+  navLinkCount: number;
+  rawBytes: number;
+  compressedBytes: number;
+  estimatedCost: number;
+  rating: "ok" | "watch" | "over";
 }
 
 export interface CookedBoundsMeters {
@@ -456,6 +473,30 @@ function normalizePartitionCell(value: unknown, index: number): CookedWorldParti
     pageRect: normalizePageRect(cell.pageRect, `cooked partition cell ${index} pageRect`),
     boundsMeters: normalizeBoundsMeters(cell.boundsMeters, `cooked partition cell ${index} boundsMeters`),
     dependencies: normalizePartitionDependencies(cell.dependencies, index),
+    budget: normalizePartitionCellBudget(cell.budget, index),
+  };
+}
+
+function normalizePartitionCellBudget(value: unknown, index: number): CookedWorldPartitionCellBudget | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const budget = readRecord(value, `cooked partition cell ${index} budget`);
+  const rating = readString(budget.rating, `cooked partition cell ${index} budget.rating`);
+  if (rating !== "ok" && rating !== "watch" && rating !== "over") {
+    throw new Error(`cooked partition cell ${index} budget.rating is not supported`);
+  }
+
+  return {
+    objectCount: readNonNegativeInteger(budget.objectCount, `cooked partition cell ${index} budget.objectCount`),
+    collisionShapeCount: readNonNegativeInteger(budget.collisionShapeCount, `cooked partition cell ${index} budget.collisionShapeCount`),
+    navNodeCount: readNonNegativeInteger(budget.navNodeCount, `cooked partition cell ${index} budget.navNodeCount`),
+    navLinkCount: readNonNegativeInteger(budget.navLinkCount, `cooked partition cell ${index} budget.navLinkCount`),
+    rawBytes: readNonNegativeInteger(budget.rawBytes, `cooked partition cell ${index} budget.rawBytes`),
+    compressedBytes: readNonNegativeInteger(budget.compressedBytes, `cooked partition cell ${index} budget.compressedBytes`),
+    estimatedCost: readNonNegativeNumber(budget.estimatedCost, `cooked partition cell ${index} budget.estimatedCost`),
+    rating,
   };
 }
 
@@ -622,6 +663,15 @@ function readPositiveNumber(value: unknown, label: string): number {
   return number;
 }
 
+function readNonNegativeNumber(value: unknown, label: string): number {
+  const number = readFiniteNumber(value, label);
+  if (number < 0) {
+    throw new Error(`${label} must be non-negative`);
+  }
+
+  return number;
+}
+
 function readZero(value: unknown, label: string): 0 {
   if (value !== 0) {
     throw new Error(`${label} must be 0`);
@@ -693,6 +743,11 @@ function normalizeCellTable(value: unknown, label: string): CookedCellTable {
       objectCount: readOptionalNonNegativeInteger(cell.objectCount, `${label} '${key}' objectCount`),
       byteLength: readNonNegativeInteger(cell.byteLength, `${label} '${key}' byteLength`),
       sha256: readSha256(cell.sha256, `${label} '${key}' sha256`),
+      shapeCount: readOptionalNonNegativeInteger(cell.shapeCount, `${label} '${key}' shapeCount`),
+      nodeCount: readOptionalNonNegativeInteger(cell.nodeCount, `${label} '${key}' nodeCount`),
+      walkableNodeCount: readOptionalNonNegativeInteger(cell.walkableNodeCount, `${label} '${key}' walkableNodeCount`),
+      linkCount: readOptionalNonNegativeInteger(cell.linkCount, `${label} '${key}' linkCount`),
+      portalLinkCount: readOptionalNonNegativeInteger(cell.portalLinkCount, `${label} '${key}' portalLinkCount`),
     }];
   }));
 }

@@ -5,9 +5,9 @@
   "build": {
     "tool": "open-fps-cook-map-assets",
     "toolVersion": 4,
-    "generatedAt": "2026-05-19T08:27:16.044Z",
+    "generatedAt": "2026-05-19T09:03:55.813Z",
     "inputSignature": "251773b8ca567fee6986dacb5af68852824106c16796a79d5c552cd2517c77c3",
-    "previousInputSignature": "189eed37143018e5550002477ceb2e3063a8db4ee2b1243ace8dd73a85edf080",
+    "previousInputSignature": "251773b8ca567fee6986dacb5af68852824106c16796a79d5c552cd2517c77c3",
     "packageLayout": "content-addressed-sha256-v1",
     "artifactCount": 547,
     "rebuild": {
@@ -3252,322 +3252,386 @@
         "-4,-4": {
           "path": "cooked/maps/main/collision/cells/c_m4_m4.collisionpack",
           "byteLength": 863,
-          "sha256": "1d0031e35a78e062d7c185636f624f0f4b93ba06fb1e60bbb829614e7a9865ab"
+          "sha256": "1d0031e35a78e062d7c185636f624f0f4b93ba06fb1e60bbb829614e7a9865ab",
+          "shapeCount": 1
         },
         "-3,-4": {
           "path": "cooked/maps/main/collision/cells/c_m3_m4.collisionpack",
           "byteLength": 897,
-          "sha256": "0d4c8f5e0a691566264cad9b0333a1ea7bf1ebda3b9459e4ea73ad5c1c954655"
+          "sha256": "0d4c8f5e0a691566264cad9b0333a1ea7bf1ebda3b9459e4ea73ad5c1c954655",
+          "shapeCount": 1
         },
         "-2,-4": {
           "path": "cooked/maps/main/collision/cells/c_m2_m4.collisionpack",
           "byteLength": 894,
-          "sha256": "5b541db4a53f5944c8a96af4d8cfbe184ff72384a51c50d0992f8e9c83697aaa"
+          "sha256": "5b541db4a53f5944c8a96af4d8cfbe184ff72384a51c50d0992f8e9c83697aaa",
+          "shapeCount": 1
         },
         "-1,-4": {
           "path": "cooked/maps/main/collision/cells/c_m1_m4.collisionpack",
           "byteLength": 870,
-          "sha256": "400d43cc2b73aa5c1fb3195ae9e97fa48d4fb5eef2fd7857a40707b2a6faab19"
+          "sha256": "400d43cc2b73aa5c1fb3195ae9e97fa48d4fb5eef2fd7857a40707b2a6faab19",
+          "shapeCount": 1
         },
         "0,-4": {
           "path": "cooked/maps/main/collision/cells/c_0_m4.collisionpack",
           "byteLength": 873,
-          "sha256": "9c99b36eb47a622c63e8727f0520313ed02cd7c2fc9576fbfb2876981311ca5b"
+          "sha256": "9c99b36eb47a622c63e8727f0520313ed02cd7c2fc9576fbfb2876981311ca5b",
+          "shapeCount": 1
         },
         "1,-4": {
           "path": "cooked/maps/main/collision/cells/c_1_m4.collisionpack",
           "byteLength": 880,
-          "sha256": "1cd405ef16e6291fd8652799daf0925d0d16e15d06e090aec59fa178855d1ff7"
+          "sha256": "1cd405ef16e6291fd8652799daf0925d0d16e15d06e090aec59fa178855d1ff7",
+          "shapeCount": 1
         },
         "2,-4": {
           "path": "cooked/maps/main/collision/cells/c_2_m4.collisionpack",
           "byteLength": 851,
-          "sha256": "8a76a12b56f842e33885b68f1567c5e29539fa891439c7425192844eb3edb0c7"
+          "sha256": "8a76a12b56f842e33885b68f1567c5e29539fa891439c7425192844eb3edb0c7",
+          "shapeCount": 1
         },
         "3,-4": {
           "path": "cooked/maps/main/collision/cells/c_3_m4.collisionpack",
           "byteLength": 851,
-          "sha256": "2834fd7027ccebac71ad0d48e988f5a7d87a12fd878b03bb6a96ae76e72b704b"
+          "sha256": "2834fd7027ccebac71ad0d48e988f5a7d87a12fd878b03bb6a96ae76e72b704b",
+          "shapeCount": 1
         },
         "-4,-3": {
           "path": "cooked/maps/main/collision/cells/c_m4_m3.collisionpack",
           "byteLength": 897,
-          "sha256": "d17df7fd045af59c33f3e3eff78e076f06603cb42345faf377ee226146c08682"
+          "sha256": "d17df7fd045af59c33f3e3eff78e076f06603cb42345faf377ee226146c08682",
+          "shapeCount": 1
         },
         "-3,-3": {
           "path": "cooked/maps/main/collision/cells/c_m3_m3.collisionpack",
           "byteLength": 927,
-          "sha256": "1a35a3c2d847d28a64f0d1fc3482771d95bcceba5b9c92faaf12bf2b2c54e249"
+          "sha256": "1a35a3c2d847d28a64f0d1fc3482771d95bcceba5b9c92faaf12bf2b2c54e249",
+          "shapeCount": 1
         },
         "-2,-3": {
           "path": "cooked/maps/main/collision/cells/c_m2_m3.collisionpack",
           "byteLength": 924,
-          "sha256": "4b3824dd3943038ff93a27486c69454e103b3a84923fac8a6ded58a72a60a63d"
+          "sha256": "4b3824dd3943038ff93a27486c69454e103b3a84923fac8a6ded58a72a60a63d",
+          "shapeCount": 1
         },
         "-1,-3": {
           "path": "cooked/maps/main/collision/cells/c_m1_m3.collisionpack",
           "byteLength": 1560,
-          "sha256": "ec129f43b8287e6664bb74342077b5917a8f3a1085981bd9756d97522de9ae27"
+          "sha256": "ec129f43b8287e6664bb74342077b5917a8f3a1085981bd9756d97522de9ae27",
+          "shapeCount": 3
         },
         "0,-3": {
           "path": "cooked/maps/main/collision/cells/c_0_m3.collisionpack",
           "byteLength": 901,
-          "sha256": "30fcf96591eb25da0c5f6d03bb891effe4c5bd9653a75a4d3038c79c6f13032f"
+          "sha256": "30fcf96591eb25da0c5f6d03bb891effe4c5bd9653a75a4d3038c79c6f13032f",
+          "shapeCount": 1
         },
         "1,-3": {
           "path": "cooked/maps/main/collision/cells/c_1_m3.collisionpack",
           "byteLength": 894,
-          "sha256": "6d1fc9011750dd5589daf79fb3b4d07df9d1f8f72ec7e6847417518dcd4c1e17"
+          "sha256": "6d1fc9011750dd5589daf79fb3b4d07df9d1f8f72ec7e6847417518dcd4c1e17",
+          "shapeCount": 1
         },
         "2,-3": {
           "path": "cooked/maps/main/collision/cells/c_2_m3.collisionpack",
           "byteLength": 911,
-          "sha256": "80551cbf3d258d7a5396b30e965d87bf79866b4607512b8793052eb651fc1136"
+          "sha256": "80551cbf3d258d7a5396b30e965d87bf79866b4607512b8793052eb651fc1136",
+          "shapeCount": 1
         },
         "3,-3": {
           "path": "cooked/maps/main/collision/cells/c_3_m3.collisionpack",
           "byteLength": 883,
-          "sha256": "144181313551009cb32d77161516302e461b9b98da950c3bd25cd8d737d37c5b"
+          "sha256": "144181313551009cb32d77161516302e461b9b98da950c3bd25cd8d737d37c5b",
+          "shapeCount": 1
         },
         "-4,-2": {
           "path": "cooked/maps/main/collision/cells/c_m4_m2.collisionpack",
           "byteLength": 894,
-          "sha256": "28474089988c8ff85f95e6ec0aac3d81bfcd3b56bfa93193861e6cb2410ab6a8"
+          "sha256": "28474089988c8ff85f95e6ec0aac3d81bfcd3b56bfa93193861e6cb2410ab6a8",
+          "shapeCount": 1
         },
         "-3,-2": {
           "path": "cooked/maps/main/collision/cells/c_m3_m2.collisionpack",
           "byteLength": 924,
-          "sha256": "f016f53a977b3fa87b29be5158cab9b191dee5e392009be117165f59d604f221"
+          "sha256": "f016f53a977b3fa87b29be5158cab9b191dee5e392009be117165f59d604f221",
+          "shapeCount": 1
         },
         "-2,-2": {
           "path": "cooked/maps/main/collision/cells/c_m2_m2.collisionpack",
           "byteLength": 921,
-          "sha256": "d53686d607f5c355fcf374dc90672cac73552064ea233e8e278171aa0fd34965"
+          "sha256": "d53686d607f5c355fcf374dc90672cac73552064ea233e8e278171aa0fd34965",
+          "shapeCount": 1
         },
         "-1,-2": {
           "path": "cooked/maps/main/collision/cells/c_m1_m2.collisionpack",
           "byteLength": 1555,
-          "sha256": "eea9910bf6bc92f5b5eb595a2e155020f2ce8dd1678aa0b5b59ad535b751f5df"
+          "sha256": "eea9910bf6bc92f5b5eb595a2e155020f2ce8dd1678aa0b5b59ad535b751f5df",
+          "shapeCount": 3
         },
         "0,-2": {
           "path": "cooked/maps/main/collision/cells/c_0_m2.collisionpack",
           "byteLength": 898,
-          "sha256": "12b72e2ddb74a9ab27508111063a02b76ca16a51bc8dc34b13658e04992aaaa3"
+          "sha256": "12b72e2ddb74a9ab27508111063a02b76ca16a51bc8dc34b13658e04992aaaa3",
+          "shapeCount": 1
         },
         "1,-2": {
           "path": "cooked/maps/main/collision/cells/c_1_m2.collisionpack",
           "byteLength": 1182,
-          "sha256": "3e938e3cdde53308255eddf6721c4922d4a49e753204079127bd29c88740a333"
+          "sha256": "3e938e3cdde53308255eddf6721c4922d4a49e753204079127bd29c88740a333",
+          "shapeCount": 2
         },
         "2,-2": {
           "path": "cooked/maps/main/collision/cells/c_2_m2.collisionpack",
           "byteLength": 908,
-          "sha256": "f85dc0e92ded4a7fe7014627bba4cfb0e2afdd367445ea1edbd3576caec0fd26"
+          "sha256": "f85dc0e92ded4a7fe7014627bba4cfb0e2afdd367445ea1edbd3576caec0fd26",
+          "shapeCount": 1
         },
         "3,-2": {
           "path": "cooked/maps/main/collision/cells/c_3_m2.collisionpack",
           "byteLength": 880,
-          "sha256": "089fd14232b4a0a8eb256ddfe22d9c367a4571b49b80b882a22654ab7b6229cf"
+          "sha256": "089fd14232b4a0a8eb256ddfe22d9c367a4571b49b80b882a22654ab7b6229cf",
+          "shapeCount": 1
         },
         "-4,-1": {
           "path": "cooked/maps/main/collision/cells/c_m4_m1.collisionpack",
           "byteLength": 851,
-          "sha256": "865ca4cc823f636f59b6a010aa59403ae15369fd05848cadf547d819eded1889"
+          "sha256": "865ca4cc823f636f59b6a010aa59403ae15369fd05848cadf547d819eded1889",
+          "shapeCount": 1
         },
         "-3,-1": {
           "path": "cooked/maps/main/collision/cells/c_m3_m1.collisionpack",
           "byteLength": 851,
-          "sha256": "bfbfe09176768f391dd5a81c4d59808e5f547ff4095306118161e63f3d6d9fe6"
+          "sha256": "bfbfe09176768f391dd5a81c4d59808e5f547ff4095306118161e63f3d6d9fe6",
+          "shapeCount": 1
         },
         "-2,-1": {
           "path": "cooked/maps/main/collision/cells/c_m2_m1.collisionpack",
           "byteLength": 912,
-          "sha256": "0080ee05a94e169e612110581a197b0b721713b819f8faf8719c4d34b799dfb6"
+          "sha256": "0080ee05a94e169e612110581a197b0b721713b819f8faf8719c4d34b799dfb6",
+          "shapeCount": 1
         },
         "-1,-1": {
           "path": "cooked/maps/main/collision/cells/c_m1_m1.collisionpack",
           "byteLength": 1626,
-          "sha256": "86b5e6c41bda39ea97a44b2bb7b9fdafa920ed1bd096be059ce9eb3264a3d19c"
+          "sha256": "86b5e6c41bda39ea97a44b2bb7b9fdafa920ed1bd096be059ce9eb3264a3d19c",
+          "shapeCount": 3
         },
         "0,-1": {
           "path": "cooked/maps/main/collision/cells/c_0_m1.collisionpack",
           "byteLength": 1150,
-          "sha256": "2c89a6683ab00fce5cfd00b2a54bd8e079076e205f5fb8eaeb196a4f683b98cb"
+          "sha256": "2c89a6683ab00fce5cfd00b2a54bd8e079076e205f5fb8eaeb196a4f683b98cb",
+          "shapeCount": 2
         },
         "1,-1": {
           "path": "cooked/maps/main/collision/cells/c_1_m1.collisionpack",
           "byteLength": 1635,
-          "sha256": "7edea2032c99f0bb452f7b24d96a31b517fefaab2e2709b77f442709bba710b4"
+          "sha256": "7edea2032c99f0bb452f7b24d96a31b517fefaab2e2709b77f442709bba710b4",
+          "shapeCount": 3
         },
         "2,-1": {
           "path": "cooked/maps/main/collision/cells/c_2_m1.collisionpack",
           "byteLength": 899,
-          "sha256": "c3be40360808745940b92a0da57ab49f2d78a557dcde6879eeeafd472c05e905"
+          "sha256": "c3be40360808745940b92a0da57ab49f2d78a557dcde6879eeeafd472c05e905",
+          "shapeCount": 1
         },
         "3,-1": {
           "path": "cooked/maps/main/collision/cells/c_3_m1.collisionpack",
           "byteLength": 857,
-          "sha256": "7f9a25d5e58e02b27e8b0a44c3231330fca12ba3dbf333596cb144726d407394"
+          "sha256": "7f9a25d5e58e02b27e8b0a44c3231330fca12ba3dbf333596cb144726d407394",
+          "shapeCount": 1
         },
         "-4,0": {
           "path": "cooked/maps/main/collision/cells/c_m4_0.collisionpack",
           "byteLength": 859,
-          "sha256": "8dd33a549606623bd14f096e28613a192e814da885dc9bf7a295eab04bef0a9d"
+          "sha256": "8dd33a549606623bd14f096e28613a192e814da885dc9bf7a295eab04bef0a9d",
+          "shapeCount": 1
         },
         "-3,0": {
           "path": "cooked/maps/main/collision/cells/c_m3_0.collisionpack",
           "byteLength": 1244,
-          "sha256": "8f8207c10ec68f65db4054bc8180efdf4dc2f12de7005476a0aee5b8e20f8f96"
+          "sha256": "8f8207c10ec68f65db4054bc8180efdf4dc2f12de7005476a0aee5b8e20f8f96",
+          "shapeCount": 2
         },
         "-2,0": {
           "path": "cooked/maps/main/collision/cells/c_m2_0.collisionpack",
           "byteLength": 1616,
-          "sha256": "0e8f429da315b6237bef11bd659f2eb0f1bd75d90fcf49bb7841ec7addffcc9d"
+          "sha256": "0e8f429da315b6237bef11bd659f2eb0f1bd75d90fcf49bb7841ec7addffcc9d",
+          "shapeCount": 3
         },
         "-1,0": {
           "path": "cooked/maps/main/collision/cells/c_m1_0.collisionpack",
           "byteLength": 889,
-          "sha256": "2bb042cf433f94702050f016390f3c4e840f1cb65833d09be68c0e7fefc4ba58"
+          "sha256": "2bb042cf433f94702050f016390f3c4e840f1cb65833d09be68c0e7fefc4ba58",
+          "shapeCount": 1
         },
         "0,0": {
           "path": "cooked/maps/main/collision/cells/c_0_0.collisionpack",
           "byteLength": 1415,
-          "sha256": "20cd73723ff3d59ceeee4d40ac76f2f1c37ccafb73c668fad88e39f0b994cc73"
+          "sha256": "20cd73723ff3d59ceeee4d40ac76f2f1c37ccafb73c668fad88e39f0b994cc73",
+          "shapeCount": 3
         },
         "1,0": {
           "path": "cooked/maps/main/collision/cells/c_1_0.collisionpack",
           "byteLength": 882,
-          "sha256": "94efcfd9148f489a33754f157c53d6a1536ad0a36092d5644ba3b6b26e74ebdf"
+          "sha256": "94efcfd9148f489a33754f157c53d6a1536ad0a36092d5644ba3b6b26e74ebdf",
+          "shapeCount": 1
         },
         "2,0": {
           "path": "cooked/maps/main/collision/cells/c_2_0.collisionpack",
           "byteLength": 885,
-          "sha256": "9c14ffa929bcc95162049a2ffc8234da98f38fbc6ef59078fdbe04ad6799a6b1"
+          "sha256": "9c14ffa929bcc95162049a2ffc8234da98f38fbc6ef59078fdbe04ad6799a6b1",
+          "shapeCount": 1
         },
         "3,0": {
           "path": "cooked/maps/main/collision/cells/c_3_0.collisionpack",
           "byteLength": 846,
-          "sha256": "278aa8ee67979f7ad41e5b57e6b99a736d6da6099d688847b801baff4d62ecc1"
+          "sha256": "278aa8ee67979f7ad41e5b57e6b99a736d6da6099d688847b801baff4d62ecc1",
+          "shapeCount": 1
         },
         "-4,1": {
           "path": "cooked/maps/main/collision/cells/c_m4_1.collisionpack",
           "byteLength": 848,
-          "sha256": "5d83af14d04b06553ff4cf0825c9c5c3f2a07df279cf7e0dd701d43187e255b2"
+          "sha256": "5d83af14d04b06553ff4cf0825c9c5c3f2a07df279cf7e0dd701d43187e255b2",
+          "shapeCount": 1
         },
         "-3,1": {
           "path": "cooked/maps/main/collision/cells/c_m3_1.collisionpack",
           "byteLength": 908,
-          "sha256": "2a16dbda205338a183b2744abfce7b944d10c8576d74d70233fe5feb46a51d01"
+          "sha256": "2a16dbda205338a183b2744abfce7b944d10c8576d74d70233fe5feb46a51d01",
+          "shapeCount": 1
         },
         "-2,1": {
           "path": "cooked/maps/main/collision/cells/c_m2_1.collisionpack",
           "byteLength": 905,
-          "sha256": "70b3e376ace8432a3306c33d0c340b5c85c77f175bf8eb3044feda240425b49d"
+          "sha256": "70b3e376ace8432a3306c33d0c340b5c85c77f175bf8eb3044feda240425b49d",
+          "shapeCount": 1
         },
         "-1,1": {
           "path": "cooked/maps/main/collision/cells/c_m1_1.collisionpack",
           "byteLength": 882,
-          "sha256": "7ac821eb5731f362ee994cbcf2043caba6a2a2436e0d04fb5452fbbaa2cee482"
+          "sha256": "7ac821eb5731f362ee994cbcf2043caba6a2a2436e0d04fb5452fbbaa2cee482",
+          "shapeCount": 1
         },
         "0,1": {
           "path": "cooked/maps/main/collision/cells/c_0_1.collisionpack",
           "byteLength": 1850,
-          "sha256": "8e826a00cf052910659b1334bda4a170adfa3774db166aaac1daa854a6a9c128"
+          "sha256": "8e826a00cf052910659b1334bda4a170adfa3774db166aaac1daa854a6a9c128",
+          "shapeCount": 4
         },
         "1,1": {
           "path": "cooked/maps/main/collision/cells/c_1_1.collisionpack",
           "byteLength": 876,
-          "sha256": "75bc62f7f806dfbda540ec49b2c90da691bf9f8273d316be0bca6dc5ebf221f1"
+          "sha256": "75bc62f7f806dfbda540ec49b2c90da691bf9f8273d316be0bca6dc5ebf221f1",
+          "shapeCount": 1
         },
         "2,1": {
           "path": "cooked/maps/main/collision/cells/c_2_1.collisionpack",
           "byteLength": 892,
-          "sha256": "3adee76b640786103d0e412d9dfa7f88d8443036ff6be1046a7122b4fafb0711"
+          "sha256": "3adee76b640786103d0e412d9dfa7f88d8443036ff6be1046a7122b4fafb0711",
+          "shapeCount": 1
         },
         "3,1": {
           "path": "cooked/maps/main/collision/cells/c_3_1.collisionpack",
           "byteLength": 853,
-          "sha256": "b96b5d151f1d7ff0d210445ba0362c20693590a0684dbe670167523a3d8f397c"
+          "sha256": "b96b5d151f1d7ff0d210445ba0362c20693590a0684dbe670167523a3d8f397c",
+          "shapeCount": 1
         },
         "-4,2": {
           "path": "cooked/maps/main/collision/cells/c_m4_2.collisionpack",
           "byteLength": 851,
-          "sha256": "fa10e403e4758096a1911afaa6b8c5505bc3b10075b79142fc0835d63bfe352e"
+          "sha256": "fa10e403e4758096a1911afaa6b8c5505bc3b10075b79142fc0835d63bfe352e",
+          "shapeCount": 1
         },
         "-3,2": {
           "path": "cooked/maps/main/collision/cells/c_m3_2.collisionpack",
           "byteLength": 911,
-          "sha256": "1f74036f7c17a63812ef0860903ca841a3075610928ba339955c5c091c52f48e"
+          "sha256": "1f74036f7c17a63812ef0860903ca841a3075610928ba339955c5c091c52f48e",
+          "shapeCount": 1
         },
         "-2,2": {
           "path": "cooked/maps/main/collision/cells/c_m2_2.collisionpack",
           "byteLength": 908,
-          "sha256": "d5cc7ec52300052486367b7564f12542c2398dac9321c40548750ba4d13d3e4e"
+          "sha256": "d5cc7ec52300052486367b7564f12542c2398dac9321c40548750ba4d13d3e4e",
+          "shapeCount": 1
         },
         "-1,2": {
           "path": "cooked/maps/main/collision/cells/c_m1_2.collisionpack",
           "byteLength": 899,
-          "sha256": "bcb575ac465704073a01d778160d2c5fccdbe1fc6b48a8ba0a91ff649a416426"
+          "sha256": "bcb575ac465704073a01d778160d2c5fccdbe1fc6b48a8ba0a91ff649a416426",
+          "shapeCount": 1
         },
         "0,2": {
           "path": "cooked/maps/main/collision/cells/c_0_2.collisionpack",
           "byteLength": 1142,
-          "sha256": "02e5f1df677fdf5f273bdf2c1b5236b8bd3a8beedcca27cbffcdd41f6c564a5b"
+          "sha256": "02e5f1df677fdf5f273bdf2c1b5236b8bd3a8beedcca27cbffcdd41f6c564a5b",
+          "shapeCount": 2
         },
         "1,2": {
           "path": "cooked/maps/main/collision/cells/c_1_2.collisionpack",
           "byteLength": 892,
-          "sha256": "b7226d8af3da5b58e1e3d22354ee0f088291c3440af782bc979e6aceab744337"
+          "sha256": "b7226d8af3da5b58e1e3d22354ee0f088291c3440af782bc979e6aceab744337",
+          "shapeCount": 1
         },
         "2,2": {
           "path": "cooked/maps/main/collision/cells/c_2_2.collisionpack",
           "byteLength": 895,
-          "sha256": "380179cc36ce8ad494ed88fb5044e1d29035c988f5bd949b4f5cab1c816b9a82"
+          "sha256": "380179cc36ce8ad494ed88fb5044e1d29035c988f5bd949b4f5cab1c816b9a82",
+          "shapeCount": 1
         },
         "3,2": {
           "path": "cooked/maps/main/collision/cells/c_3_2.collisionpack",
           "byteLength": 856,
-          "sha256": "1867120c98a3d103e294c9f6135d915a559264e13afa00d1622facfb87bafba6"
+          "sha256": "1867120c98a3d103e294c9f6135d915a559264e13afa00d1622facfb87bafba6",
+          "shapeCount": 1
         },
         "-4,3": {
           "path": "cooked/maps/main/collision/cells/c_m4_3.collisionpack",
           "byteLength": 851,
-          "sha256": "9c6b5d4cc555edc794dfb7f728024518cd12c267c274e1df6f7e37c8808936e1"
+          "sha256": "9c6b5d4cc555edc794dfb7f728024518cd12c267c274e1df6f7e37c8808936e1",
+          "shapeCount": 1
         },
         "-3,3": {
           "path": "cooked/maps/main/collision/cells/c_m3_3.collisionpack",
           "byteLength": 851,
-          "sha256": "aa39d135f545786af0f9e47cf9ab3c58855f4caa551cca922a85b0b01d1000d6"
+          "sha256": "aa39d135f545786af0f9e47cf9ab3c58855f4caa551cca922a85b0b01d1000d6",
+          "shapeCount": 1
         },
         "-2,3": {
           "path": "cooked/maps/main/collision/cells/c_m2_3.collisionpack",
           "byteLength": 866,
-          "sha256": "b78335c1d84989e2b1d3cad90635dfa9341b8ebe3e7158272038c8914101f799"
+          "sha256": "b78335c1d84989e2b1d3cad90635dfa9341b8ebe3e7158272038c8914101f799",
+          "shapeCount": 1
         },
         "-1,3": {
           "path": "cooked/maps/main/collision/cells/c_m1_3.collisionpack",
           "byteLength": 857,
-          "sha256": "c0d4668fc3dd36c85e164900581c34ac5e57194cf5d43ca60556e7d4039dee7a"
+          "sha256": "c0d4668fc3dd36c85e164900581c34ac5e57194cf5d43ca60556e7d4039dee7a",
+          "shapeCount": 1
         },
         "0,3": {
           "path": "cooked/maps/main/collision/cells/c_0_3.collisionpack",
           "byteLength": 846,
-          "sha256": "05c0b65b934d479b6286040f46fb5c88af610c7c279d46e47ee367e1faff9f86"
+          "sha256": "05c0b65b934d479b6286040f46fb5c88af610c7c279d46e47ee367e1faff9f86",
+          "shapeCount": 1
         },
         "1,3": {
           "path": "cooked/maps/main/collision/cells/c_1_3.collisionpack",
           "byteLength": 853,
-          "sha256": "533a6ecdb93b5ea1d9704fa59d7a217a294b30c16ca24810657cc6f4cd001ad2"
+          "sha256": "533a6ecdb93b5ea1d9704fa59d7a217a294b30c16ca24810657cc6f4cd001ad2",
+          "shapeCount": 1
         },
         "2,3": {
           "path": "cooked/maps/main/collision/cells/c_2_3.collisionpack",
           "byteLength": 856,
-          "sha256": "7644b684d3cf62c5bba6d505b93dbf42d8b90414d55c48558ca6f83e2d45960d"
+          "sha256": "7644b684d3cf62c5bba6d505b93dbf42d8b90414d55c48558ca6f83e2d45960d",
+          "shapeCount": 1
         },
         "3,3": {
           "path": "cooked/maps/main/collision/cells/c_3_3.collisionpack",
           "byteLength": 839,
-          "sha256": "a94273d583bee021166aaaaf92aed12ef0709e7f46d22a349d0b7e8f01329e30"
+          "sha256": "a94273d583bee021166aaaaf92aed12ef0709e7f46d22a349d0b7e8f01329e30",
+          "shapeCount": 1
         }
       }
     },
@@ -3579,322 +3643,578 @@
         "-4,-4": {
           "path": "cooked/maps/main/nav/cells/c_m4_m4.navpack",
           "byteLength": 9773,
-          "sha256": "a94768ddf4ae633fc5a4c6557533205ecc9755e60f7d2342f2088294bd9fb88c"
+          "sha256": "a94768ddf4ae633fc5a4c6557533205ecc9755e60f7d2342f2088294bd9fb88c",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-3,-4": {
           "path": "cooked/maps/main/nav/cells/c_m3_m4.navpack",
           "byteLength": 9793,
-          "sha256": "1e62348b520a23c1b4acd1a0678bf3ba0cb9641acb59f456cbc32577a3e22ae7"
+          "sha256": "1e62348b520a23c1b4acd1a0678bf3ba0cb9641acb59f456cbc32577a3e22ae7",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-2,-4": {
           "path": "cooked/maps/main/nav/cells/c_m2_m4.navpack",
           "byteLength": 9741,
-          "sha256": "24c2a09217d2a542969578a75a677ef22d52258541b5ba7a96b4c7770dd36c50"
+          "sha256": "24c2a09217d2a542969578a75a677ef22d52258541b5ba7a96b4c7770dd36c50",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-1,-4": {
           "path": "cooked/maps/main/nav/cells/c_m1_m4.navpack",
           "byteLength": 9718,
-          "sha256": "d2bc049ddaddf3d63ae59651bd0c39010364c87922deef427fe7282c4ec867d8"
+          "sha256": "d2bc049ddaddf3d63ae59651bd0c39010364c87922deef427fe7282c4ec867d8",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "0,-4": {
           "path": "cooked/maps/main/nav/cells/c_0_m4.navpack",
           "byteLength": 9575,
-          "sha256": "7d084d5f1156f08a54902b6f9b863adff9e4b2d8f092226d97073fc60a2cf52a"
+          "sha256": "7d084d5f1156f08a54902b6f9b863adff9e4b2d8f092226d97073fc60a2cf52a",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "1,-4": {
           "path": "cooked/maps/main/nav/cells/c_1_m4.navpack",
           "byteLength": 9585,
-          "sha256": "ad1185d96ff45babcdfd612de0233d9ae7a3ffcb44e4eb86a26b3849e8b3bc67"
+          "sha256": "ad1185d96ff45babcdfd612de0233d9ae7a3ffcb44e4eb86a26b3849e8b3bc67",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "2,-4": {
           "path": "cooked/maps/main/nav/cells/c_2_m4.navpack",
           "byteLength": 9641,
-          "sha256": "b4f79d3f23a4de95afaac9defb28a73ef2f576f4de97b3605c1b3f518bd48081"
+          "sha256": "b4f79d3f23a4de95afaac9defb28a73ef2f576f4de97b3605c1b3f518bd48081",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "3,-4": {
           "path": "cooked/maps/main/nav/cells/c_3_m4.navpack",
           "byteLength": 9640,
-          "sha256": "acf1b93ceff58c77349e197099a92b616a1da55fcfd21ad568944eff65392ee6"
+          "sha256": "acf1b93ceff58c77349e197099a92b616a1da55fcfd21ad568944eff65392ee6",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-4,-3": {
           "path": "cooked/maps/main/nav/cells/c_m4_m3.navpack",
           "byteLength": 9845,
-          "sha256": "957f3ee859cda7c2bedab33c43430dc8d9852de5de069bac5cfa7e4cfda81790"
+          "sha256": "957f3ee859cda7c2bedab33c43430dc8d9852de5de069bac5cfa7e4cfda81790",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-3,-3": {
           "path": "cooked/maps/main/nav/cells/c_m3_m3.navpack",
           "byteLength": 9799,
-          "sha256": "b6410544c609aa09b5daafc53bbd26b5e8bf14cfac0809ba05c4eee4b694ff5f"
+          "sha256": "b6410544c609aa09b5daafc53bbd26b5e8bf14cfac0809ba05c4eee4b694ff5f",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-2,-3": {
           "path": "cooked/maps/main/nav/cells/c_m2_m3.navpack",
           "byteLength": 9937,
-          "sha256": "ad5a6f25cc00ec38d061b2676cc4952b6b60ccca957ad34d0438c517683dd350"
+          "sha256": "ad5a6f25cc00ec38d061b2676cc4952b6b60ccca957ad34d0438c517683dd350",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-1,-3": {
           "path": "cooked/maps/main/nav/cells/c_m1_m3.navpack",
           "byteLength": 9164,
-          "sha256": "d6f1e5c37b7eeaba7f1513db4a8c07566e10b71dc167912d37f9f657d800c682"
+          "sha256": "d6f1e5c37b7eeaba7f1513db4a8c07566e10b71dc167912d37f9f657d800c682",
+          "nodeCount": 16,
+          "walkableNodeCount": 14,
+          "linkCount": 18,
+          "portalLinkCount": 14
         },
         "0,-3": {
           "path": "cooked/maps/main/nav/cells/c_0_m3.navpack",
           "byteLength": 9627,
-          "sha256": "ac48b4946a7df63574dff0da0cd23f0460e1fe44db6201a985cc42224248e43a"
+          "sha256": "ac48b4946a7df63574dff0da0cd23f0460e1fe44db6201a985cc42224248e43a",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "1,-3": {
           "path": "cooked/maps/main/nav/cells/c_1_m3.navpack",
           "byteLength": 9609,
-          "sha256": "bdab10e423ec5c4ae67a04b9941128e6ff8f140febf3d21b6b9af84edb8c8c3f"
+          "sha256": "bdab10e423ec5c4ae67a04b9941128e6ff8f140febf3d21b6b9af84edb8c8c3f",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "2,-3": {
           "path": "cooked/maps/main/nav/cells/c_2_m3.navpack",
           "byteLength": 9744,
-          "sha256": "36df95d15ab3718ab90f02cbe7f45e22dab54b309e17f55d2a243dd5bd0c4d10"
+          "sha256": "36df95d15ab3718ab90f02cbe7f45e22dab54b309e17f55d2a243dd5bd0c4d10",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "3,-3": {
           "path": "cooked/maps/main/nav/cells/c_3_m3.navpack",
           "byteLength": 9640,
-          "sha256": "cb816234f24939f3254f5dfa34bab93fe20bbabe23814bb3732e0eb243fd9b39"
+          "sha256": "cb816234f24939f3254f5dfa34bab93fe20bbabe23814bb3732e0eb243fd9b39",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-4,-2": {
           "path": "cooked/maps/main/nav/cells/c_m4_m2.navpack",
           "byteLength": 9869,
-          "sha256": "98fa8fe93e77ea3c349a29dc3820dfa457587058d9ee7c403e26bee240fd59bd"
+          "sha256": "98fa8fe93e77ea3c349a29dc3820dfa457587058d9ee7c403e26bee240fd59bd",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-3,-2": {
           "path": "cooked/maps/main/nav/cells/c_m3_m2.navpack",
           "byteLength": 9841,
-          "sha256": "0dc12a9b0cec741bd07ca749d428465ed225483423dcd06ccc8b7eee31da74a1"
+          "sha256": "0dc12a9b0cec741bd07ca749d428465ed225483423dcd06ccc8b7eee31da74a1",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-2,-2": {
           "path": "cooked/maps/main/nav/cells/c_m2_m2.navpack",
           "byteLength": 10110,
-          "sha256": "58b1600869533292cbfe81157bdc4162b90c4cb0e73ec03e94d41818ca436d4a"
+          "sha256": "58b1600869533292cbfe81157bdc4162b90c4cb0e73ec03e94d41818ca436d4a",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-1,-2": {
           "path": "cooked/maps/main/nav/cells/c_m1_m2.navpack",
           "byteLength": 10143,
-          "sha256": "1e0cb5b4464508e8d995a77c24db82d5de163fc521f2a58aba3f17366d46ddc0"
+          "sha256": "1e0cb5b4464508e8d995a77c24db82d5de163fc521f2a58aba3f17366d46ddc0",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "0,-2": {
           "path": "cooked/maps/main/nav/cells/c_0_m2.navpack",
           "byteLength": 9793,
-          "sha256": "01e77de503c09e52f2332c45d24eee4d10e60f91e7c64cab36c5d25e150fc506"
+          "sha256": "01e77de503c09e52f2332c45d24eee4d10e60f91e7c64cab36c5d25e150fc506",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "1,-2": {
           "path": "cooked/maps/main/nav/cells/c_1_m2.navpack",
           "byteLength": 9905,
-          "sha256": "7b88c2ffeb579dc2d093d570f03634f30397ed5fec2003156820e482bbd60217"
+          "sha256": "7b88c2ffeb579dc2d093d570f03634f30397ed5fec2003156820e482bbd60217",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "2,-2": {
           "path": "cooked/maps/main/nav/cells/c_2_m2.navpack",
           "byteLength": 9758,
-          "sha256": "147d89d1e9a65d856287002816801ab16a8510908886ba166712469ab3497262"
+          "sha256": "147d89d1e9a65d856287002816801ab16a8510908886ba166712469ab3497262",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "3,-2": {
           "path": "cooked/maps/main/nav/cells/c_3_m2.navpack",
           "byteLength": 9757,
-          "sha256": "81452929108e6f97a1b9438252a8712c3812eb6096c1b849a4ab18d3f2bf1c4e"
+          "sha256": "81452929108e6f97a1b9438252a8712c3812eb6096c1b849a4ab18d3f2bf1c4e",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-4,-1": {
           "path": "cooked/maps/main/nav/cells/c_m4_m1.navpack",
           "byteLength": 9731,
-          "sha256": "a1d3ca3e0952e14aefd9a5aa5a74b0aff558a6d1cd172b3c09c9350b41dd2b60"
+          "sha256": "a1d3ca3e0952e14aefd9a5aa5a74b0aff558a6d1cd172b3c09c9350b41dd2b60",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-3,-1": {
           "path": "cooked/maps/main/nav/cells/c_m3_m1.navpack",
           "byteLength": 9945,
-          "sha256": "fd6da9e2d5357b1b6cece3b0d04774eebbafdc0359ddcd5bd74814f03517018d"
+          "sha256": "fd6da9e2d5357b1b6cece3b0d04774eebbafdc0359ddcd5bd74814f03517018d",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-2,-1": {
           "path": "cooked/maps/main/nav/cells/c_m2_m1.navpack",
           "byteLength": 9787,
-          "sha256": "0c24ee1c18be8302b0f0925b0fcacdb3237f95eb88a3e2a91e798e0ac2d79d12"
+          "sha256": "0c24ee1c18be8302b0f0925b0fcacdb3237f95eb88a3e2a91e798e0ac2d79d12",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-1,-1": {
           "path": "cooked/maps/main/nav/cells/c_m1_m1.navpack",
           "byteLength": 9668,
-          "sha256": "9fc17111beb786b1185e43d57c481c5797a71f6775c93ed573e93e68a441031e"
+          "sha256": "9fc17111beb786b1185e43d57c481c5797a71f6775c93ed573e93e68a441031e",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "0,-1": {
           "path": "cooked/maps/main/nav/cells/c_0_m1.navpack",
           "byteLength": 9981,
-          "sha256": "303cb7d48479dc0357c1bbc273333d2797b504bababfa4741bdc3a02c044f78c"
+          "sha256": "303cb7d48479dc0357c1bbc273333d2797b504bababfa4741bdc3a02c044f78c",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "1,-1": {
           "path": "cooked/maps/main/nav/cells/c_1_m1.navpack",
           "byteLength": 9463,
-          "sha256": "b1aeb9f4ff5091d38ffdb73edcb3c77077c83de07e015ddd8d27e41875237f8c"
+          "sha256": "b1aeb9f4ff5091d38ffdb73edcb3c77077c83de07e015ddd8d27e41875237f8c",
+          "nodeCount": 16,
+          "walkableNodeCount": 15,
+          "linkCount": 21,
+          "portalLinkCount": 15
         },
         "2,-1": {
           "path": "cooked/maps/main/nav/cells/c_2_m1.navpack",
           "byteLength": 9587,
-          "sha256": "72f74539076daa9e1093712a4b033c72ded56a3c0c7ee6639fddfa9d713d593c"
+          "sha256": "72f74539076daa9e1093712a4b033c72ded56a3c0c7ee6639fddfa9d713d593c",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "3,-1": {
           "path": "cooked/maps/main/nav/cells/c_3_m1.navpack",
           "byteLength": 9565,
-          "sha256": "d70e39a41828f3d906974ad131a4667a284714446206a419be16e3e1adeddb10"
+          "sha256": "d70e39a41828f3d906974ad131a4667a284714446206a419be16e3e1adeddb10",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-4,0": {
           "path": "cooked/maps/main/nav/cells/c_m4_0.navpack",
           "byteLength": 9595,
-          "sha256": "4c85bdfb72b6831e42cbc8cb3b12023edea0854b33345de6793dd202e420a660"
+          "sha256": "4c85bdfb72b6831e42cbc8cb3b12023edea0854b33345de6793dd202e420a660",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-3,0": {
           "path": "cooked/maps/main/nav/cells/c_m3_0.navpack",
           "byteLength": 9667,
-          "sha256": "7394f239b552a22f4642679f40dc2892ae3b07a903f26b24db8724a2aa52e745"
+          "sha256": "7394f239b552a22f4642679f40dc2892ae3b07a903f26b24db8724a2aa52e745",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-2,0": {
           "path": "cooked/maps/main/nav/cells/c_m2_0.navpack",
           "byteLength": 9835,
-          "sha256": "94d971ab8e3567523e30140835ebdad0b46799f5b8a1cb63e38407303659b207"
+          "sha256": "94d971ab8e3567523e30140835ebdad0b46799f5b8a1cb63e38407303659b207",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-1,0": {
           "path": "cooked/maps/main/nav/cells/c_m1_0.navpack",
           "byteLength": 9523,
-          "sha256": "7309b5b7d89f36a62c1f01f4da931164fff523a85a9c7a216478cab28146a12d"
+          "sha256": "7309b5b7d89f36a62c1f01f4da931164fff523a85a9c7a216478cab28146a12d",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "0,0": {
           "path": "cooked/maps/main/nav/cells/c_0_0.navpack",
           "byteLength": 9279,
-          "sha256": "40b66cc934733e9717526cc4f85e317bba29f14bc1656466f96a2a7ee9981612"
+          "sha256": "40b66cc934733e9717526cc4f85e317bba29f14bc1656466f96a2a7ee9981612",
+          "nodeCount": 16,
+          "walkableNodeCount": 15,
+          "linkCount": 22,
+          "portalLinkCount": 14
         },
         "1,0": {
           "path": "cooked/maps/main/nav/cells/c_1_0.navpack",
           "byteLength": 9525,
-          "sha256": "b2bd7ad8bdbbec22c3276cb87eac8966d913b2adb0b6a42da7dc5c14de306034"
+          "sha256": "b2bd7ad8bdbbec22c3276cb87eac8966d913b2adb0b6a42da7dc5c14de306034",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "2,0": {
           "path": "cooked/maps/main/nav/cells/c_2_0.navpack",
           "byteLength": 9417,
-          "sha256": "5b47b5ae99ff15e32c382747613b535c0068d7072a78516af2f95daf92a797cd"
+          "sha256": "5b47b5ae99ff15e32c382747613b535c0068d7072a78516af2f95daf92a797cd",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "3,0": {
           "path": "cooked/maps/main/nav/cells/c_3_0.navpack",
           "byteLength": 9419,
-          "sha256": "e1476c1463f8340f34601a7c3966576d56c5450f250cc06fb0e3465efb153c0e"
+          "sha256": "e1476c1463f8340f34601a7c3966576d56c5450f250cc06fb0e3465efb153c0e",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-4,1": {
           "path": "cooked/maps/main/nav/cells/c_m4_1.navpack",
           "byteLength": 9655,
-          "sha256": "bac91f94e45d88bb69677a38548ba616ad95d178672378a993dfc382f90698fe"
+          "sha256": "bac91f94e45d88bb69677a38548ba616ad95d178672378a993dfc382f90698fe",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-3,1": {
           "path": "cooked/maps/main/nav/cells/c_m3_1.navpack",
           "byteLength": 9642,
-          "sha256": "d5ae6e22554fe3ef00d0c518b9877a4a90a7d7068f48e2a38c91d85982cf65af"
+          "sha256": "d5ae6e22554fe3ef00d0c518b9877a4a90a7d7068f48e2a38c91d85982cf65af",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-2,1": {
           "path": "cooked/maps/main/nav/cells/c_m2_1.navpack",
           "byteLength": 9553,
-          "sha256": "58219cdf9bafa0db19ca4ebc1617afcd465b4f0420740c80940a47964fe706bf"
+          "sha256": "58219cdf9bafa0db19ca4ebc1617afcd465b4f0420740c80940a47964fe706bf",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-1,1": {
           "path": "cooked/maps/main/nav/cells/c_m1_1.navpack",
           "byteLength": 9534,
-          "sha256": "0bb0ba9593326b72f3a16801552aba5709ab623c7fdfff6946b511dd4778bc1f"
+          "sha256": "0bb0ba9593326b72f3a16801552aba5709ab623c7fdfff6946b511dd4778bc1f",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "0,1": {
           "path": "cooked/maps/main/nav/cells/c_0_1.navpack",
           "byteLength": 9084,
-          "sha256": "1f4d5c5061a25b1ef00eb70b3bb17a4c737efff68379aaec61e19dce3fba0ecc"
+          "sha256": "1f4d5c5061a25b1ef00eb70b3bb17a4c737efff68379aaec61e19dce3fba0ecc",
+          "nodeCount": 16,
+          "walkableNodeCount": 14,
+          "linkCount": 18,
+          "portalLinkCount": 14
         },
         "1,1": {
           "path": "cooked/maps/main/nav/cells/c_1_1.navpack",
           "byteLength": 9409,
-          "sha256": "74d93e5e7794df72103ed6c74b79dc8a3c8cb1534d8f75ac1c29e5e0366ff26d"
+          "sha256": "74d93e5e7794df72103ed6c74b79dc8a3c8cb1534d8f75ac1c29e5e0366ff26d",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "2,1": {
           "path": "cooked/maps/main/nav/cells/c_2_1.navpack",
           "byteLength": 9471,
-          "sha256": "86b020879c9aae16b966c789cc686ae15c8bf8dcdff78057283651c0ddd07a08"
+          "sha256": "86b020879c9aae16b966c789cc686ae15c8bf8dcdff78057283651c0ddd07a08",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "3,1": {
           "path": "cooked/maps/main/nav/cells/c_3_1.navpack",
           "byteLength": 9430,
-          "sha256": "bfcff6569d9814987e4604a274dcc113645f63f38e096151d0a555077d665340"
+          "sha256": "bfcff6569d9814987e4604a274dcc113645f63f38e096151d0a555077d665340",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-4,2": {
           "path": "cooked/maps/main/nav/cells/c_m4_2.navpack",
           "byteLength": 9619,
-          "sha256": "c889256f4e2a75fea3f9a9667b879d84e76eb57a38220dde814688e015500cda"
+          "sha256": "c889256f4e2a75fea3f9a9667b879d84e76eb57a38220dde814688e015500cda",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-3,2": {
           "path": "cooked/maps/main/nav/cells/c_m3_2.navpack",
           "byteLength": 9619,
-          "sha256": "7589d6adebe846e568bad03045fc441ca5e09b5fc272dddb2a1f82391379b8bd"
+          "sha256": "7589d6adebe846e568bad03045fc441ca5e09b5fc272dddb2a1f82391379b8bd",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-2,2": {
           "path": "cooked/maps/main/nav/cells/c_m2_2.navpack",
           "byteLength": 9582,
-          "sha256": "3a9eaabe5652dd7014e47b8d2e7a2cce730c5eb012bde4f0de5f3f0a3866a33f"
+          "sha256": "3a9eaabe5652dd7014e47b8d2e7a2cce730c5eb012bde4f0de5f3f0a3866a33f",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-1,2": {
           "path": "cooked/maps/main/nav/cells/c_m1_2.navpack",
           "byteLength": 9579,
-          "sha256": "1cf53aaaccdf7ed449c234effc948d71a8e3c83565240b3465e5d68357e11233"
+          "sha256": "1cf53aaaccdf7ed449c234effc948d71a8e3c83565240b3465e5d68357e11233",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "0,2": {
           "path": "cooked/maps/main/nav/cells/c_0_2.navpack",
           "byteLength": 9722,
-          "sha256": "72d16d91a19a061a14486467b393027e34d2f654f07565deaa172f66ae832150"
+          "sha256": "72d16d91a19a061a14486467b393027e34d2f654f07565deaa172f66ae832150",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "1,2": {
           "path": "cooked/maps/main/nav/cells/c_1_2.navpack",
           "byteLength": 9458,
-          "sha256": "abc386eb5476125a87bc16c3ec1ce59e7d4cec003f51908aa1feb5fcd55319d7"
+          "sha256": "abc386eb5476125a87bc16c3ec1ce59e7d4cec003f51908aa1feb5fcd55319d7",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "2,2": {
           "path": "cooked/maps/main/nav/cells/c_2_2.navpack",
           "byteLength": 9486,
-          "sha256": "fd8e6eb4da5461573cdd902875728ee03578284fb1833f36c80f2fb6b20ecfd9"
+          "sha256": "fd8e6eb4da5461573cdd902875728ee03578284fb1833f36c80f2fb6b20ecfd9",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "3,2": {
           "path": "cooked/maps/main/nav/cells/c_3_2.navpack",
           "byteLength": 9461,
-          "sha256": "4c2bb637ea9389baa2f001dfc6c7dfb81e343e57bff03cc16fa292ab2a4c265a"
+          "sha256": "4c2bb637ea9389baa2f001dfc6c7dfb81e343e57bff03cc16fa292ab2a4c265a",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-4,3": {
           "path": "cooked/maps/main/nav/cells/c_m4_3.navpack",
           "byteLength": 9618,
-          "sha256": "6c3d58bcadf105bb9a84728507a10e4f317d97b4a4056814bdbba70468226c0e"
+          "sha256": "6c3d58bcadf105bb9a84728507a10e4f317d97b4a4056814bdbba70468226c0e",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-3,3": {
           "path": "cooked/maps/main/nav/cells/c_m3_3.navpack",
           "byteLength": 9618,
-          "sha256": "61baff922846025d897475970646e9c2c5396ab7a3823e865f93818ba22dc17f"
+          "sha256": "61baff922846025d897475970646e9c2c5396ab7a3823e865f93818ba22dc17f",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-2,3": {
           "path": "cooked/maps/main/nav/cells/c_m2_3.navpack",
           "byteLength": 9585,
-          "sha256": "8c7d960e2536df27038c2f3bf116a0a487b8f838057c0f5110a7532cd3190a44"
+          "sha256": "8c7d960e2536df27038c2f3bf116a0a487b8f838057c0f5110a7532cd3190a44",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "-1,3": {
           "path": "cooked/maps/main/nav/cells/c_m1_3.navpack",
           "byteLength": 9568,
-          "sha256": "607f45895b64f46fe709eaa9ca589b9168b0cdc799bbf37e4789e8a8f2e084cd"
+          "sha256": "607f45895b64f46fe709eaa9ca589b9168b0cdc799bbf37e4789e8a8f2e084cd",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "0,3": {
           "path": "cooked/maps/main/nav/cells/c_0_3.navpack",
           "byteLength": 9436,
-          "sha256": "e292bfbdd72d6642f978686afc3ea00807e0916ce97fc03857a0fe0bbe01e6a0"
+          "sha256": "e292bfbdd72d6642f978686afc3ea00807e0916ce97fc03857a0fe0bbe01e6a0",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "1,3": {
           "path": "cooked/maps/main/nav/cells/c_1_3.navpack",
           "byteLength": 9453,
-          "sha256": "9c407461fbcd3567d935b548f9d22b48865be9a5b75d143592cadacb442b362f"
+          "sha256": "9c407461fbcd3567d935b548f9d22b48865be9a5b75d143592cadacb442b362f",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "2,3": {
           "path": "cooked/maps/main/nav/cells/c_2_3.navpack",
           "byteLength": 9468,
-          "sha256": "5bc058877d40d34ee46d647306aa888f58582760ca229ee0b04fb44956c70a29"
+          "sha256": "5bc058877d40d34ee46d647306aa888f58582760ca229ee0b04fb44956c70a29",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         },
         "3,3": {
           "path": "cooked/maps/main/nav/cells/c_3_3.navpack",
           "byteLength": 9484,
-          "sha256": "cd4bd87568de71792c44be6f0d61e4fb975132682f45c9dd511b7be39a5c955f"
+          "sha256": "cd4bd87568de71792c44be6f0d61e4fb975132682f45c9dd511b7be39a5c955f",
+          "nodeCount": 16,
+          "walkableNodeCount": 16,
+          "linkCount": 24,
+          "portalLinkCount": 16
         }
       }
     }
@@ -3944,6 +4264,16 @@
           "nav": [
             "-4,-4"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10987,
+          "compressedBytes": 1372,
+          "estimatedCost": 42.341,
+          "rating": "ok"
         }
       },
       {
@@ -3982,6 +4312,16 @@
           "nav": [
             "-3,-4"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 11041,
+          "compressedBytes": 1436,
+          "estimatedCost": 42.348,
+          "rating": "ok"
         }
       },
       {
@@ -4020,6 +4360,16 @@
           "nav": [
             "-2,-4"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10984,
+          "compressedBytes": 1406,
+          "estimatedCost": 42.341,
+          "rating": "ok"
         }
       },
       {
@@ -4057,6 +4407,16 @@
           "nav": [
             "-1,-4"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10932,
+          "compressedBytes": 1405,
+          "estimatedCost": 42.334,
+          "rating": "ok"
         }
       },
       {
@@ -4095,6 +4455,16 @@
           "nav": [
             "0,-4"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10787,
+          "compressedBytes": 1398,
+          "estimatedCost": 42.317,
+          "rating": "ok"
         }
       },
       {
@@ -4133,6 +4503,16 @@
           "nav": [
             "1,-4"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10808,
+          "compressedBytes": 1416,
+          "estimatedCost": 42.319,
+          "rating": "ok"
         }
       },
       {
@@ -4168,6 +4548,16 @@
           "nav": [
             "2,-4"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10837,
+          "compressedBytes": 1438,
+          "estimatedCost": 42.323,
+          "rating": "ok"
         }
       },
       {
@@ -4203,6 +4593,16 @@
           "nav": [
             "3,-4"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10836,
+          "compressedBytes": 1399,
+          "estimatedCost": 42.323,
+          "rating": "ok"
         }
       },
       {
@@ -4241,6 +4641,16 @@
           "nav": [
             "-4,-3"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 11093,
+          "compressedBytes": 1485,
+          "estimatedCost": 42.354,
+          "rating": "ok"
         }
       },
       {
@@ -4281,6 +4691,16 @@
           "nav": [
             "-3,-3"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 11077,
+          "compressedBytes": 1448,
+          "estimatedCost": 42.352,
+          "rating": "ok"
         }
       },
       {
@@ -4321,6 +4741,16 @@
           "nav": [
             "-2,-3"
           ]
+        },
+        "budget": {
+          "objectCount": 1,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 11886,
+          "compressedBytes": 1743,
+          "estimatedCost": 44.451,
+          "rating": "ok"
         }
       },
       {
@@ -4361,6 +4791,16 @@
           "nav": [
             "-1,-3"
           ]
+        },
+        "budget": {
+          "objectCount": 2,
+          "collisionShapeCount": 3,
+          "navNodeCount": 16,
+          "navLinkCount": 32,
+          "rawBytes": 12278,
+          "compressedBytes": 1994,
+          "estimatedCost": 46.499,
+          "rating": "ok"
         }
       },
       {
@@ -4401,6 +4841,16 @@
           "nav": [
             "0,-3"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10867,
+          "compressedBytes": 1465,
+          "estimatedCost": 42.327,
+          "rating": "ok"
         }
       },
       {
@@ -4440,6 +4890,16 @@
           "nav": [
             "1,-3"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10846,
+          "compressedBytes": 1450,
+          "estimatedCost": 42.324,
+          "rating": "ok"
         }
       },
       {
@@ -4480,6 +4940,16 @@
           "nav": [
             "2,-3"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 11000,
+          "compressedBytes": 1535,
+          "estimatedCost": 42.343,
+          "rating": "ok"
         }
       },
       {
@@ -4518,6 +4988,16 @@
           "nav": [
             "3,-3"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10868,
+          "compressedBytes": 1443,
+          "estimatedCost": 42.327,
+          "rating": "ok"
         }
       },
       {
@@ -4556,6 +5036,16 @@
           "nav": [
             "-4,-2"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 11112,
+          "compressedBytes": 1517,
+          "estimatedCost": 42.356,
+          "rating": "ok"
         }
       },
       {
@@ -4596,6 +5086,16 @@
           "nav": [
             "-3,-2"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 11114,
+          "compressedBytes": 1517,
+          "estimatedCost": 42.357,
+          "rating": "ok"
         }
       },
       {
@@ -4636,6 +5136,16 @@
           "nav": [
             "-2,-2"
           ]
+        },
+        "budget": {
+          "objectCount": 2,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 12723,
+          "compressedBytes": 1838,
+          "estimatedCost": 46.553,
+          "rating": "ok"
         }
       },
       {
@@ -4676,6 +5186,16 @@
           "nav": [
             "-1,-2"
           ]
+        },
+        "budget": {
+          "objectCount": 3,
+          "collisionShapeCount": 3,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 13894,
+          "compressedBytes": 2107,
+          "estimatedCost": 54.696,
+          "rating": "ok"
         }
       },
       {
@@ -4716,6 +5236,16 @@
           "nav": [
             "0,-2"
           ]
+        },
+        "budget": {
+          "objectCount": 1,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 11696,
+          "compressedBytes": 1737,
+          "estimatedCost": 44.428,
+          "rating": "ok"
         }
       },
       {
@@ -4756,6 +5286,16 @@
           "nav": [
             "1,-2"
           ]
+        },
+        "budget": {
+          "objectCount": 1,
+          "collisionShapeCount": 2,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 12093,
+          "compressedBytes": 1870,
+          "estimatedCost": 47.476,
+          "rating": "ok"
         }
       },
       {
@@ -4796,6 +5336,16 @@
           "nav": [
             "2,-2"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 11009,
+          "compressedBytes": 1556,
+          "estimatedCost": 42.344,
+          "rating": "ok"
         }
       },
       {
@@ -4834,6 +5384,16 @@
           "nav": [
             "3,-2"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10980,
+          "compressedBytes": 1546,
+          "estimatedCost": 42.34,
+          "rating": "ok"
         }
       },
       {
@@ -4869,6 +5429,16 @@
           "nav": [
             "-4,-1"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10926,
+          "compressedBytes": 1410,
+          "estimatedCost": 42.334,
+          "rating": "ok"
         }
       },
       {
@@ -4904,6 +5474,16 @@
           "nav": [
             "-3,-1"
           ]
+        },
+        "budget": {
+          "objectCount": 1,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 11813,
+          "compressedBytes": 1709,
+          "estimatedCost": 44.442,
+          "rating": "ok"
         }
       },
       {
@@ -4944,6 +5524,16 @@
           "nav": [
             "-2,-1"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 11041,
+          "compressedBytes": 1503,
+          "estimatedCost": 42.348,
+          "rating": "ok"
         }
       },
       {
@@ -4984,6 +5574,16 @@
           "nav": [
             "-1,-1"
           ]
+        },
+        "budget": {
+          "objectCount": 2,
+          "collisionShapeCount": 3,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 12690,
+          "compressedBytes": 1782,
+          "estimatedCost": 52.549,
+          "rating": "ok"
         }
       },
       {
@@ -5023,6 +5623,16 @@
           "nav": [
             "0,-1"
           ]
+        },
+        "budget": {
+          "objectCount": 2,
+          "collisionShapeCount": 2,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 12785,
+          "compressedBytes": 1840,
+          "estimatedCost": 49.561,
+          "rating": "ok"
         }
       },
       {
@@ -5063,6 +5673,16 @@
           "nav": [
             "1,-1"
           ]
+        },
+        "budget": {
+          "objectCount": 4,
+          "collisionShapeCount": 3,
+          "navNodeCount": 16,
+          "navLinkCount": 36,
+          "rawBytes": 13841,
+          "compressedBytes": 2158,
+          "estimatedCost": 53.69,
+          "rating": "ok"
         }
       },
       {
@@ -5103,6 +5723,16 @@
           "nav": [
             "2,-1"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10824,
+          "compressedBytes": 1445,
+          "estimatedCost": 42.321,
+          "rating": "ok"
         }
       },
       {
@@ -5140,6 +5770,16 @@
           "nav": [
             "3,-1"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10760,
+          "compressedBytes": 1401,
+          "estimatedCost": 42.313,
+          "rating": "ok"
         }
       },
       {
@@ -5177,6 +5817,16 @@
           "nav": [
             "-4,0"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10793,
+          "compressedBytes": 1414,
+          "estimatedCost": 42.318,
+          "rating": "ok"
         }
       },
       {
@@ -5215,6 +5865,16 @@
           "nav": [
             "-3,0"
           ]
+        },
+        "budget": {
+          "objectCount": 1,
+          "collisionShapeCount": 2,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 11803,
+          "compressedBytes": 1758,
+          "estimatedCost": 47.441,
+          "rating": "ok"
         }
       },
       {
@@ -5255,6 +5915,16 @@
           "nav": [
             "-2,0"
           ]
+        },
+        "budget": {
+          "objectCount": 3,
+          "collisionShapeCount": 3,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 13503,
+          "compressedBytes": 2053,
+          "estimatedCost": 54.648,
+          "rating": "ok"
         }
       },
       {
@@ -5295,6 +5965,16 @@
           "nav": [
             "-1,0"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10744,
+          "compressedBytes": 1392,
+          "estimatedCost": 42.312,
+          "rating": "ok"
         }
       },
       {
@@ -5335,6 +6015,16 @@
           "nav": [
             "0,0"
           ]
+        },
+        "budget": {
+          "objectCount": 2,
+          "collisionShapeCount": 3,
+          "navNodeCount": 16,
+          "navLinkCount": 36,
+          "rawBytes": 12327,
+          "compressedBytes": 1807,
+          "estimatedCost": 49.505,
+          "rating": "ok"
         }
       },
       {
@@ -5375,6 +6065,16 @@
           "nav": [
             "1,0"
           ]
+        },
+        "budget": {
+          "objectCount": 1,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 11384,
+          "compressedBytes": 1662,
+          "estimatedCost": 44.39,
+          "rating": "ok"
         }
       },
       {
@@ -5415,6 +6115,16 @@
           "nav": [
             "2,0"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10635,
+          "compressedBytes": 1395,
+          "estimatedCost": 42.298,
+          "rating": "ok"
         }
       },
       {
@@ -5452,6 +6162,16 @@
           "nav": [
             "3,0"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10598,
+          "compressedBytes": 1382,
+          "estimatedCost": 42.294,
+          "rating": "ok"
         }
       },
       {
@@ -5487,6 +6207,16 @@
           "nav": [
             "-4,1"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10846,
+          "compressedBytes": 1465,
+          "estimatedCost": 42.324,
+          "rating": "ok"
         }
       },
       {
@@ -5527,6 +6257,16 @@
           "nav": [
             "-3,1"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10893,
+          "compressedBytes": 1485,
+          "estimatedCost": 42.33,
+          "rating": "ok"
         }
       },
       {
@@ -5567,6 +6307,16 @@
           "nav": [
             "-2,1"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10799,
+          "compressedBytes": 1410,
+          "estimatedCost": 42.318,
+          "rating": "ok"
         }
       },
       {
@@ -5606,6 +6356,16 @@
           "nav": [
             "-1,1"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10752,
+          "compressedBytes": 1402,
+          "estimatedCost": 42.313,
+          "rating": "ok"
         }
       },
       {
@@ -5645,6 +6405,16 @@
           "nav": [
             "0,1"
           ]
+        },
+        "budget": {
+          "objectCount": 4,
+          "collisionShapeCount": 4,
+          "navNodeCount": 16,
+          "navLinkCount": 32,
+          "rawBytes": 13635,
+          "compressedBytes": 2194,
+          "estimatedCost": 53.664,
+          "rating": "ok"
         }
       },
       {
@@ -5684,6 +6454,16 @@
           "nav": [
             "1,1"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10620,
+          "compressedBytes": 1397,
+          "estimatedCost": 42.296,
+          "rating": "ok"
         }
       },
       {
@@ -5724,6 +6504,16 @@
           "nav": [
             "2,1"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10700,
+          "compressedBytes": 1453,
+          "estimatedCost": 42.306,
+          "rating": "ok"
         }
       },
       {
@@ -5761,6 +6551,16 @@
           "nav": [
             "3,1"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10620,
+          "compressedBytes": 1392,
+          "estimatedCost": 42.296,
+          "rating": "ok"
         }
       },
       {
@@ -5796,6 +6596,16 @@
           "nav": [
             "-4,2"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10815,
+          "compressedBytes": 1400,
+          "estimatedCost": 42.32,
+          "rating": "ok"
         }
       },
       {
@@ -5836,6 +6646,16 @@
           "nav": [
             "-3,2"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10875,
+          "compressedBytes": 1434,
+          "estimatedCost": 42.328,
+          "rating": "ok"
         }
       },
       {
@@ -5876,6 +6696,16 @@
           "nav": [
             "-2,2"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10833,
+          "compressedBytes": 1407,
+          "estimatedCost": 42.322,
+          "rating": "ok"
         }
       },
       {
@@ -5916,6 +6746,16 @@
           "nav": [
             "-1,2"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10816,
+          "compressedBytes": 1424,
+          "estimatedCost": 42.32,
+          "rating": "ok"
         }
       },
       {
@@ -5955,6 +6795,16 @@
           "nav": [
             "0,2"
           ]
+        },
+        "budget": {
+          "objectCount": 1,
+          "collisionShapeCount": 2,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 11854,
+          "compressedBytes": 1739,
+          "estimatedCost": 47.447,
+          "rating": "ok"
         }
       },
       {
@@ -5995,6 +6845,16 @@
           "nav": [
             "1,2"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10687,
+          "compressedBytes": 1452,
+          "estimatedCost": 42.305,
+          "rating": "ok"
         }
       },
       {
@@ -6035,6 +6895,16 @@
           "nav": [
             "2,2"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10720,
+          "compressedBytes": 1431,
+          "estimatedCost": 42.309,
+          "rating": "ok"
         }
       },
       {
@@ -6072,6 +6942,16 @@
           "nav": [
             "3,2"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10656,
+          "compressedBytes": 1399,
+          "estimatedCost": 42.301,
+          "rating": "ok"
         }
       },
       {
@@ -6107,6 +6987,16 @@
           "nav": [
             "-4,3"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10814,
+          "compressedBytes": 1383,
+          "estimatedCost": 42.32,
+          "rating": "ok"
         }
       },
       {
@@ -6142,6 +7032,16 @@
           "nav": [
             "-3,3"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10814,
+          "compressedBytes": 1394,
+          "estimatedCost": 42.32,
+          "rating": "ok"
         }
       },
       {
@@ -6179,6 +7079,16 @@
           "nav": [
             "-2,3"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10794,
+          "compressedBytes": 1414,
+          "estimatedCost": 42.318,
+          "rating": "ok"
         }
       },
       {
@@ -6216,6 +7126,16 @@
           "nav": [
             "-1,3"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10763,
+          "compressedBytes": 1397,
+          "estimatedCost": 42.314,
+          "rating": "ok"
         }
       },
       {
@@ -6253,6 +7173,16 @@
           "nav": [
             "0,3"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10615,
+          "compressedBytes": 1406,
+          "estimatedCost": 42.296,
+          "rating": "ok"
         }
       },
       {
@@ -6290,6 +7220,16 @@
           "nav": [
             "1,3"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10643,
+          "compressedBytes": 1424,
+          "estimatedCost": 42.299,
+          "rating": "ok"
         }
       },
       {
@@ -6327,6 +7267,16 @@
           "nav": [
             "2,3"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10663,
+          "compressedBytes": 1397,
+          "estimatedCost": 42.302,
+          "rating": "ok"
         }
       },
       {
@@ -6362,6 +7312,16 @@
           "nav": [
             "3,3"
           ]
+        },
+        "budget": {
+          "objectCount": 0,
+          "collisionShapeCount": 1,
+          "navNodeCount": 16,
+          "navLinkCount": 40,
+          "rawBytes": 10662,
+          "compressedBytes": 1380,
+          "estimatedCost": 42.302,
+          "rating": "ok"
         }
       }
     ]

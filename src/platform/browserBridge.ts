@@ -334,6 +334,10 @@ export function createBrowserPlatform(): PlatformHost {
       async runCookMap(_request: PlatformCookMapRequest): Promise<PlatformCookMapResult> {
         unsupported("Cook map execution");
       },
+
+      async runGenerationGraph(_request: PlatformCookMapRequest): Promise<PlatformCookMapResult> {
+        unsupported("World generation graph execution");
+      },
     },
   };
 }

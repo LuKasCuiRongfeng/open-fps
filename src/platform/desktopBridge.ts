@@ -23,6 +23,7 @@ const DESKTOP_CAPABILITIES = new Set<PlatformCapability>([
   "windowCloseControl",
   "pngRgbaCodec",
   "worldCookExecution",
+  "worldGraphExecution",
 ]);
 
 let coreModule: Promise<TauriCore> | null = null;
@@ -251,6 +252,10 @@ export function createDesktopPlatform(): PlatformHost {
     world: {
       runCookMap(request: PlatformCookMapRequest): Promise<PlatformCookMapResult> {
         return invokeCommand<PlatformCookMapResult>("run_cook_map", { request });
+      },
+
+      runGenerationGraph(request: PlatformCookMapRequest): Promise<PlatformCookMapResult> {
+        return invokeCommand<PlatformCookMapResult>("run_world_generation_graph", { request });
       },
     },
   };

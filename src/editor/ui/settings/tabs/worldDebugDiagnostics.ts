@@ -59,6 +59,25 @@ export type RebuildCommand = {
   command: string;
 };
 
+export type WorldDebugSelectionKind = "terrain" | "paint" | "vegetation" | "cell";
+
+export type WorldDebugSelection = {
+  kind: WorldDebugSelectionKind;
+  key: string;
+};
+
+export type WorldDebugCellBudget = {
+  key: string;
+  objectCount: number;
+  collisionShapeCount: number;
+  navNodeCount: number;
+  navLinkCount: number;
+  rawBytes: number;
+  compressedBytes: number;
+  estimatedCost: number;
+  rating: "ok" | "watch" | "over";
+};
+
 export type EditorRebuildPlan = {
   status: RebuildPlanStatus;
   label: string;
@@ -88,6 +107,11 @@ export type AssetDiagnostics = {
   vegetationModels: number;
   objectCells: number;
   objectCount: number;
+  terrainRegionKeys: string[];
+  paintRegionKeys: string[];
+  vegetationRegionKeys: string[];
+  partitionCellKeys: string[];
+  cellBudgets: WorldDebugCellBudget[];
   checkedPacks: number;
   checkedBytes: number;
   cookedStatus: CookedManifestStatus;
@@ -116,6 +140,11 @@ export const emptyDiagnostics: AssetDiagnostics = {
   vegetationModels: 0,
   objectCells: 0,
   objectCount: 0,
+  terrainRegionKeys: [],
+  paintRegionKeys: [],
+  vegetationRegionKeys: [],
+  partitionCellKeys: [],
+  cellBudgets: [],
   checkedPacks: 0,
   checkedBytes: 0,
   cookedStatus: "idle",
@@ -173,19 +202,25 @@ export async function loadAssetDiagnostics(
 
   const terrainManifest = await readJsonManifest(joinPath(mapDirectory, mapData.terrainPath), issues);
   diagnostics.terrainRegionSizePages = readNumberProperty(terrainManifest, "regionSizePages") ?? diagnostics.terrainRegionSizePages;
-  diagnostics.terrainRegions = countRecordEntries(readRecordProperty(terrainManifest, "regions"));
+  const terrainRegions = readRecordProperty(terrainManifest, "regions");
+  diagnostics.terrainRegions = countRecordEntries(terrainRegions);
+  diagnostics.terrainRegionKeys = uniqueGridKeys(Object.keys(terrainRegions ?? {}));
   await validateRegionPacks(mapDirectory, terrainManifest, "heightpack", issues, diagnostics);
 
   const paintManifest = await readJsonManifest(joinPath(mapDirectory, mapData.paintPath), issues);
   const splatMaps = readRecordProperty(paintManifest, "splatMaps");
-  diagnostics.paintRegions = countRecordEntries(readRecordProperty(splatMaps, "regions"));
+  const paintRegions = readRecordProperty(splatMaps, "regions");
+  diagnostics.paintRegions = countRecordEntries(paintRegions);
+  diagnostics.paintRegionKeys = uniqueGridKeys(Object.keys(paintRegions ?? {}));
   await validateRegionPacks(mapDirectory, splatMaps, "paintpack", issues, diagnostics);
 
   const vegetationManifest = await readJsonManifest(joinPath(mapDirectory, mapData.vegetationPath), issues);
   diagnostics.vegetationModels = countRecordEntries(readRecordProperty(vegetationManifest, "models"));
   const instances = readRecordProperty(vegetationManifest, "instances");
   diagnostics.vegetationRegionSizeCells = readNumberProperty(instances, "regionSizeCells") ?? diagnostics.vegetationRegionSizeCells;
-  diagnostics.vegetationRegions = countRecordEntries(readRecordProperty(instances, "regions"));
+  const vegetationRegions = readRecordProperty(instances, "regions");
+  diagnostics.vegetationRegions = countRecordEntries(vegetationRegions);
+  diagnostics.vegetationRegionKeys = uniqueGridKeys(Object.keys(vegetationRegions ?? {}));
   await validateRegionPacks(mapDirectory, instances, "vegpack", issues, diagnostics);
 
   const objectManifest = await readJsonManifest(joinPath(mapDirectory, mapData.objectsPath ?? "objects/manifest.json"), issues);
@@ -419,6 +454,7 @@ async function validateObjectPacks(
   }
 
   diagnostics.objectCells = Object.keys(cells).length;
+  diagnostics.partitionCellKeys = uniqueGridKeys(Object.keys(cells));
   for (const [key, value] of Object.entries(cells)) {
     const cell = asRecord(value);
     const cellPath = readStringProperty(cell, "path");
@@ -460,6 +496,10 @@ async function loadCookedSourceDiagnostics(
 
   diagnostics.cookedStatus = "ready";
   diagnostics.cookedGeneratedAt = readStringProperty(readRecordProperty(cookedManifest, "build"), "generatedAt");
+  diagnostics.cellBudgets = readCookedCellBudgets(readRecordProperty(cookedManifest, "partition"));
+  if (diagnostics.cellBudgets.length > 0) {
+    diagnostics.partitionCellKeys = uniqueGridKeys(diagnostics.cellBudgets.map((budget) => budget.key));
+  }
   const sourceManifest = readRecordProperty(cookedManifest, "source");
   const defaultPaths = createDefaultCookedSourcePaths(mapId);
 
@@ -578,6 +618,82 @@ function countEstimatedArtifacts(changedStages: readonly string[], scopes: Rebui
   }
 
   return total;
+}
+
+function getSelectionStages(selection: WorldDebugSelection): string[] {
+  switch (selection.kind) {
+    case "terrain":
+      return ["terrain"];
+    case "paint":
+      return ["paint"];
+    case "vegetation":
+      return ["vegetation"];
+    case "cell":
+      return ["objects", "collision", "nav"];
+  }
+}
+
+function createSelectionScopes(selection: WorldDebugSelection): RebuildScopes {
+  const scopes = cloneScopes(emptyScopes);
+  switch (selection.kind) {
+    case "terrain":
+      scopes.terrainRegions = [selection.key];
+      break;
+    case "paint":
+      scopes.paintRegions = [selection.key];
+      break;
+    case "vegetation":
+      scopes.vegetationRegions = [selection.key];
+      break;
+    case "cell":
+      scopes.partitionCells = [selection.key];
+      break;
+  }
+
+  return scopes;
+}
+
+function isSelectionAvailable(diagnostics: AssetDiagnostics, selection: WorldDebugSelection): boolean {
+  switch (selection.kind) {
+    case "terrain":
+      return diagnostics.terrainRegionKeys.includes(selection.key);
+    case "paint":
+      return diagnostics.paintRegionKeys.includes(selection.key);
+    case "vegetation":
+      return diagnostics.vegetationRegionKeys.includes(selection.key);
+    case "cell":
+      return diagnostics.partitionCellKeys.includes(selection.key);
+  }
+}
+
+function readCookedCellBudgets(partition: Record<string, unknown> | null): WorldDebugCellBudget[] {
+  const cells = Array.isArray(partition?.cells) ? partition.cells : [];
+  return cells.flatMap((value) => {
+    const cell = asRecord(value);
+    const budget = asRecord(cell?.budget);
+    const key = typeof cell?.key === "string" ? cell.key : "";
+    if (!key || !budget) {
+      return [];
+    }
+
+    const rating: WorldDebugCellBudget["rating"] = budget.rating === "watch" || budget.rating === "over" ? budget.rating : "ok";
+    return [{
+      key,
+      objectCount: readNonNegativeNumberProperty(budget, "objectCount"),
+      collisionShapeCount: readNonNegativeNumberProperty(budget, "collisionShapeCount"),
+      navNodeCount: readNonNegativeNumberProperty(budget, "navNodeCount"),
+      navLinkCount: readNonNegativeNumberProperty(budget, "navLinkCount"),
+      rawBytes: readNonNegativeNumberProperty(budget, "rawBytes"),
+      compressedBytes: readNonNegativeNumberProperty(budget, "compressedBytes"),
+      estimatedCost: readNonNegativeNumberProperty(budget, "estimatedCost"),
+      rating,
+    }];
+  }).sort((left, right) => right.estimatedCost - left.estimatedCost || compareGridKeys(left.key, right.key));
+}
+
+function readNonNegativeNumberProperty(value: Record<string, unknown>, property: string): number {
+  const nextValue = value[property];
+  return typeof nextValue === "number" && Number.isFinite(nextValue) && nextValue >= 0 ? nextValue : 0;
 }
 
 function createRebuildCommands(projectPath: string | null, mapId: string, full: boolean, changedStages: readonly string[], scopes: RebuildScopes): RebuildCommand[] {
@@ -830,4 +946,81 @@ function countGenerationGraphLocalScopes(stages: Record<string, unknown> | null)
   }
 
   return scopes.size;
+}
+
+export function createEditorSelectionRebuildPlan(
+  mapId: string | null,
+  diagnostics: AssetDiagnostics,
+  projectPath: string | null,
+  selection: WorldDebugSelection | null,
+): EditorRebuildPlan {
+  if (!mapId || !selection || !isSelectionAvailable(diagnostics, selection)) {
+    return createEmptyEditorRebuildPlan("No Selection", "idle", "warning");
+  }
+
+  const changedStages = getSelectionStages(selection);
+  const scopes = createSelectionScopes(selection);
+  const budget = createEditorRebuildBudget(false, changedStages, scopes, diagnostics.budgetLimits);
+  return {
+    status: "ready",
+    label: "Selected",
+    tone: budget.exceeded ? "danger" : "info",
+    changedStages,
+    sourceLabels: [`${formatSelectionKind(selection.kind)} ${selection.key}`],
+    liveLabels: [],
+    scopes,
+    budget,
+    commands: createRebuildCommands(projectPath, mapId, false, changedStages, scopes),
+  };
+}
+
+export function createEditorGraphRunRequest(
+  projectPath: string | null,
+  mapId: string | null,
+  selection: WorldDebugSelection | null,
+  dryRun: boolean,
+): PlatformCookMapRequest | null {
+  if (!projectPath || !mapId || !selection) {
+    return null;
+  }
+
+  return {
+    projectPath,
+    mapId,
+    dryRun,
+    full: false,
+    changedStages: getSelectionStages(selection),
+    scopes: createSelectionScopes(selection),
+  };
+}
+
+export function createGraphRunCommands(
+  projectPath: string | null,
+  mapId: string | null,
+  selection: WorldDebugSelection | null,
+): RebuildCommand[] {
+  if (!mapId || !selection) {
+    return [];
+  }
+
+  const stages = getSelectionStages(selection);
+  const scopes = createSelectionScopes(selection);
+  const args = createRebuildCommandArgs(projectPath, mapId, false, stages, scopes);
+  return [
+    { kind: "dryRun", label: "Graph Plan", command: ["pnpm gen:graph --", ...args, "--plan"].join(" ") },
+    { kind: "cook", label: "Run Graph", command: ["pnpm gen:graph --", ...args].join(" ") },
+  ];
+}
+
+export function formatSelectionKind(kind: WorldDebugSelectionKind): string {
+  switch (kind) {
+    case "terrain":
+      return "Terrain region";
+    case "paint":
+      return "Paint region";
+    case "vegetation":
+      return "Vegetation region";
+    case "cell":
+      return "Partition cell";
+  }
 }

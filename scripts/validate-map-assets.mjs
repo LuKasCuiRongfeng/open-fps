@@ -790,7 +790,7 @@ async function validateCookedMap(projectPath, mapId, mapManifest, objectManifest
   );
 
   if (cookedWorld && cookedAssets) {
-    validateCookedPartition(cooked.partition, cookedWorld, cookedAssets, label);
+    validateCookedPartition(cooked.partition, cookedWorld, cookedAssets, cooked.package, label);
   }
   await validateCookedPackage(projectPath, cooked.package, cookedBuild, label);
   await validateCookedCache(projectPath, mapId, cooked, label);
@@ -1242,6 +1242,7 @@ function validateCookedCellPayload(pack, key, label, fieldName, expectedFormat, 
       addError(label, `${fieldName} must contain derived collision shapes.`);
       return;
     }
+    validateEqual(cellMetadata.shapeCount, pack.shapes.length, label, `${fieldName} shapeCount`);
     if (!pack.shapes.some((shape) => isRecord(shape) && shape.type === "terrain-heightfield")) {
       addError(label, `${fieldName} must include a terrain-heightfield shape.`);
     }
@@ -1257,6 +1258,16 @@ function validateCookedCellPayload(pack, key, label, fieldName, expectedFormat, 
     }
     if (!Array.isArray(pack.crossCellLinks)) {
       addError(label, `${fieldName} must contain cross-cell nav links.`);
+    }
+    if (Array.isArray(pack.nodes)) {
+      validateEqual(cellMetadata.nodeCount, pack.nodes.length, label, `${fieldName} nodeCount`);
+      validateEqual(cellMetadata.walkableNodeCount, pack.nodes.filter((node) => isRecord(node) && node.walkable === true).length, label, `${fieldName} walkableNodeCount`);
+    }
+    if (Array.isArray(pack.links)) {
+      validateEqual(cellMetadata.linkCount, pack.links.length, label, `${fieldName} linkCount`);
+    }
+    if (Array.isArray(pack.crossCellLinks)) {
+      validateEqual(cellMetadata.portalLinkCount, pack.crossCellLinks.length, label, `${fieldName} portalLinkCount`);
     }
     if (Array.isArray(pack.nodes) && !pack.nodes.some((node) => isRecord(node) && node.walkable === true)) {
       addError(label, `${fieldName} must contain at least one walkable nav node.`);
@@ -1362,7 +1373,7 @@ async function validateCookedVegetationModelFiles(projectPath, mapId, models, la
   }));
 }
 
-function validateCookedPartition(partition, world, assets, label) {
+function validateCookedPartition(partition, world, assets, contentPackage, label) {
   if (!isRecord(partition)) {
     addError(label, "Cooked map manifest must contain world partition metadata.");
     return;
@@ -1389,7 +1400,7 @@ function validateCookedPartition(partition, world, assets, label) {
 
   const coveredPages = new Set();
   for (const cell of partition.cells) {
-    validateCookedPartitionCell(cell, world, assets, coveredPages, label);
+    validateCookedPartitionCell(cell, world, assets, contentPackage, coveredPages, label);
   }
 
   const pageCount = world.sizeMeters / world.pageSizeMeters;
@@ -1410,7 +1421,7 @@ function validateCookedCellAssetCoverage(partitionCells, assetCells, label, asse
   }
 }
 
-function validateCookedPartitionCell(cell, world, assets, coveredPages, label) {
+function validateCookedPartitionCell(cell, world, assets, contentPackage, coveredPages, label) {
   if (!isRecord(cell)) {
     addError(label, "Cooked partition cell must be an object.");
     return;
@@ -1485,6 +1496,46 @@ function validateCookedPartitionCell(cell, world, assets, coveredPages, label) {
     label,
     `cooked partition cell '${cell.key}' dependencies.nav`,
   );
+  validateCookedPartitionCellBudget(cell, assets, contentPackage, label);
+}
+
+function validateCookedPartitionCellBudget(cell, assets, contentPackage, label) {
+  const fieldName = `cooked partition cell '${cell.key}' budget`;
+  if (!isRecord(cell.budget)) {
+    addError(label, `${fieldName} must be an object.`);
+    return;
+  }
+
+  const objectCell = assets.objects.cells[cell.key] ?? null;
+  const collisionCell = assets.collision.cells[cell.key] ?? null;
+  const navCell = assets.nav.cells[cell.key] ?? null;
+  const expectedRawBytes = [objectCell, collisionCell, navCell]
+    .filter(Boolean)
+    .reduce((total, entry) => total + (entry.byteLength ?? 0), 0);
+  const expectedCompressedBytes = [objectCell, collisionCell, navCell]
+    .filter(Boolean)
+    .reduce((total, entry) => total + getCookedArtifactCompressedByteLength(contentPackage, entry), 0);
+
+  validateEqual(cell.budget.objectCount, objectCell?.objectCount ?? 0, label, `${fieldName}.objectCount`);
+  validateEqual(cell.budget.collisionShapeCount, collisionCell?.shapeCount ?? 0, label, `${fieldName}.collisionShapeCount`);
+  validateEqual(cell.budget.navNodeCount, navCell?.nodeCount ?? 0, label, `${fieldName}.navNodeCount`);
+  validateEqual(cell.budget.navLinkCount, (navCell?.linkCount ?? 0) + (navCell?.portalLinkCount ?? 0), label, `${fieldName}.navLinkCount`);
+  validateEqual(cell.budget.rawBytes, expectedRawBytes, label, `${fieldName}.rawBytes`);
+  validateEqual(cell.budget.compressedBytes, expectedCompressedBytes, label, `${fieldName}.compressedBytes`);
+
+  if (typeof cell.budget.estimatedCost !== "number" || !Number.isFinite(cell.budget.estimatedCost) || cell.budget.estimatedCost < 0) {
+    addError(label, `${fieldName}.estimatedCost must be a non-negative finite number.`);
+  }
+  if (!["ok", "watch", "over"].includes(cell.budget.rating)) {
+    addError(label, `${fieldName}.rating must be ok, watch, or over.`);
+  }
+}
+
+function getCookedArtifactCompressedByteLength(contentPackage, cellRef) {
+  const artifact = isRecord(contentPackage?.artifacts) ? contentPackage.artifacts[cellRef.path] : null;
+  return isRecord(artifact?.compression) && Number.isInteger(artifact.compression.byteLength)
+    ? artifact.compression.byteLength
+    : cellRef.byteLength ?? 0;
 }
 
 function readCookedPartitionDependencies(value, label, fieldName) {

@@ -2,7 +2,7 @@
 // WorldObjectEditorTab：世界对象摆放设置标签。
 
 import { useEffect, useState } from "react";
-import { Eraser, MousePointer2, PackageOpen, Square } from "lucide-react";
+import { Eraser, MousePointer2, PackageOpen, Route, Scissors, Square, X } from "lucide-react";
 import type { WorldObjectEditor, WorldObjectEditMode } from "@editor/runtime/world-objects";
 import type { WorldObjectArchetypeDefinition } from "@game/world/objects";
 import type { TerrainMode } from "@editor/ui/hooks/useEditorWorkspace";
@@ -24,6 +24,8 @@ interface WorldObjectEditorSnapshot {
   archetypes: readonly [string, WorldObjectArchetypeDefinition][];
   instanceCount: number;
   dirty: boolean;
+  canEditSpline: boolean;
+  splineDraftPointCount: number;
 }
 
 export function WorldObjectEditorTab({
@@ -109,10 +111,36 @@ export function WorldObjectEditorTab({
               <Eraser className="h-3.5 w-3.5" aria-hidden="true" />
               Erase
             </Button>
+            <Button
+              size="sm"
+              variant={snapshot.mode === "spline" ? "success" : "default"}
+              onClick={() => setMode("spline")}
+              disabled={!canEdit || !snapshot.canEditSpline}
+              className="min-w-20"
+            >
+              <Route className="h-3.5 w-3.5" aria-hidden="true" />
+              Spline
+            </Button>
+          </div>
+        </SettingRow>
+        <SettingRow label="Spline">
+          <div className="flex flex-wrap gap-1.5">
+            <SettingsButton Icon={Square} size="sm" disabled={!canEdit || snapshot.mode !== "spline" || snapshot.splineDraftPointCount === 0} onClick={() => worldObjectEditor?.finishSpline()}>
+              Finish
+            </SettingsButton>
+            <SettingsButton Icon={Scissors} size="sm" disabled={!canEdit || snapshot.mode !== "spline"} onClick={() => worldObjectEditor?.deleteNearestSplinePoint()}>
+              Delete Point
+            </SettingsButton>
+            <SettingsButton Icon={X} size="sm" tone="warning" disabled={!canEdit || snapshot.splineDraftPointCount === 0} onClick={() => worldObjectEditor?.clearSplineDraft()}>
+              Clear
+            </SettingsButton>
           </div>
         </SettingRow>
         <SettingRow label="Instances">
           <ReadonlyField>{snapshot.instanceCount.toLocaleString()} objects</ReadonlyField>
+        </SettingRow>
+        <SettingRow label="Draft">
+          <ReadonlyField>{snapshot.splineDraftPointCount.toLocaleString()} spline points</ReadonlyField>
         </SettingRow>
       </SettingsSection>
 
@@ -126,7 +154,7 @@ export function WorldObjectEditorTab({
                   size="sm"
                   variant={snapshot.selectedArchetypeId === id ? "success" : "default"}
                   onClick={() => worldObjectEditor?.setSelectedArchetype(id)}
-                  disabled={!canEdit || archetype.layer === "road" || archetype.layer === "water"}
+                  disabled={!canEdit}
                   className="w-full min-w-0 justify-start px-2"
                 >
                   <PackageOpen className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -169,6 +197,8 @@ function createSnapshot(editor: WorldObjectEditor | null): WorldObjectEditorSnap
     archetypes: editor?.archetypes ?? [],
     instanceCount: editor?.instanceCount ?? 0,
     dirty: editor?.dirty ?? false,
+    canEditSpline: editor?.canEditSpline ?? false,
+    splineDraftPointCount: editor?.splineDraftPointCount ?? 0,
   };
 }
 

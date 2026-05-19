@@ -6,7 +6,8 @@ export type PlatformCapability =
     | "assetUrlResolution"
     | "windowCloseControl"
     | "pngRgbaCodec"
-    | "worldCookExecution";
+    | "worldCookExecution"
+    | "worldGraphExecution";
 
 export type PlatformDialogFilter = {
     name: string;
@@ -126,6 +127,7 @@ export interface PlatformWindow {
 
 export interface PlatformWorld {
     runCookMap(request: PlatformCookMapRequest): Promise<PlatformCookMapResult>;
+    runGenerationGraph(request: PlatformCookMapRequest): Promise<PlatformCookMapResult>;
 }
 
 export interface PlatformHost {

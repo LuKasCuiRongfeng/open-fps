@@ -100,6 +100,28 @@ test("cooked package declares sorted Brotli sidecar artifacts", async () => {
   assert.equal(createHash("sha256").update(decompressedBytes).digest("hex"), artifact.sha256);
 });
 
+test("cooked partition cells declare performance budget reports", async () => {
+  const manifest = await readJson(path.join(projectDirectory, "cooked/maps/main/manifest.json"));
+  assert.ok(manifest.partition.cells.length > 0);
+
+  for (const cell of manifest.partition.cells) {
+    const objectCell = manifest.assets.objects.cells[cell.key];
+    const collisionCell = manifest.assets.collision.cells[cell.key];
+    const navCell = manifest.assets.nav.cells[cell.key];
+    assert.ok(cell.budget, `partition cell ${cell.key} budget`);
+    assert.equal(cell.budget.objectCount, objectCell.objectCount);
+    assert.equal(cell.budget.collisionShapeCount, collisionCell.shapeCount);
+    assert.equal(cell.budget.navNodeCount, navCell.nodeCount);
+    assert.equal(cell.budget.navLinkCount, navCell.linkCount + navCell.portalLinkCount);
+    assert.equal(cell.budget.rawBytes, objectCell.byteLength + collisionCell.byteLength + navCell.byteLength);
+    assert.equal(
+      cell.budget.compressedBytes,
+      compressedByteLength(manifest, objectCell) + compressedByteLength(manifest, collisionCell) + compressedByteLength(manifest, navCell),
+    );
+    assert.match(cell.budget.rating, /^(ok|watch|over)$/);
+  }
+});
+
 async function readJson(filePath) {
   return JSON.parse(await readFile(filePath, "utf8"));
 }
@@ -168,4 +190,8 @@ function readCellCoordinates(runtimePath) {
   }
 
   return { x: Number(match[1]), z: Number(match[2]) };
+}
+
+function compressedByteLength(manifest, cell) {
+  return manifest.package.artifacts[cell.path]?.compression?.byteLength ?? cell.byteLength;
 }

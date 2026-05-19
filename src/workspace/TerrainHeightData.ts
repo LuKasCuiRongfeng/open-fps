@@ -7,6 +7,7 @@ import {
   type SidecarRegionIntegrity,
   type SidecarRegionIntegrityMap,
 } from "./SidecarAssetIntegrity";
+import { createDefaultSidecarPatchLayers, normalizeSidecarPatchLayers, type SidecarPatchLayerManifest } from "./SidecarPatchLayers";
 import {
   formatGridCoordinate,
   normalizePageKeys,
@@ -39,6 +40,7 @@ export interface TerrainHeightManifest {
   regionsDirectory: typeof MAP_HEIGHT_REGIONS_DIRECTORY;
   regions: Record<string, string>;
   regionIntegrity: SidecarRegionIntegrityMap;
+  patchLayers: SidecarPatchLayerManifest;
 }
 
 export interface TerrainHeightPageLocation {
@@ -88,6 +90,7 @@ export function createTerrainHeightManifest(
     regionsDirectory: MAP_HEIGHT_REGIONS_DIRECTORY,
     regions,
     regionIntegrity: {},
+    patchLayers: createDefaultSidecarPatchLayers(Object.keys(regions), "Base Terrain"),
   };
 }
 
@@ -139,6 +142,7 @@ export function deserializeTerrainHeightManifest(json: string): TerrainHeightMan
       Object.keys(regions),
       "Terrain height manifest regionIntegrity",
     ),
+    patchLayers: normalizeSidecarPatchLayers(parsed.patchLayers, Object.keys(regions), "Base Terrain"),
   };
 }
 

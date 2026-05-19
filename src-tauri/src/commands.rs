@@ -499,6 +499,15 @@ pub async fn run_cook_map(request: CookMapRequest) -> Result<CookMapResult, Stri
         .map_err(|e| format!("Failed to join cook command task: {}", e))?
 }
 
+/// Run the whitelisted world generation graph workflow for the editor.
+/// 为编辑器运行白名单世界生成图工作流。
+#[tauri::command]
+pub async fn run_world_generation_graph(request: CookMapRequest) -> Result<CookMapResult, String> {
+    tauri::async_runtime::spawn_blocking(move || run_world_generation_graph_blocking(request))
+        .await
+        .map_err(|e| format!("Failed to join graph command task: {}", e))?
+}
+
 fn run_cook_map_blocking(request: CookMapRequest) -> Result<CookMapResult, String> {
     // EN: Build argv from structured fields only; never pass user text through a shell.
     // 中文: 只从结构化字段构造 argv；绝不把用户文本交给 shell 解释。
@@ -536,6 +545,43 @@ fn run_cook_map_blocking(request: CookMapRequest) -> Result<CookMapResult, Strin
     })
 }
 
+fn run_world_generation_graph_blocking(request: CookMapRequest) -> Result<CookMapResult, String> {
+    let args = create_world_generation_graph_args(&request)?;
+    let repository_root = repository_root()?;
+    let script_path = repository_root
+        .join("scripts")
+        .join("execute-world-generation-graph.mjs");
+    if !script_path.exists() {
+        return Err("World generation graph script is not available in this build".to_string());
+    }
+
+    let executable = pnpm_executable();
+    let mut command_display = Vec::with_capacity(args.len() + 1);
+    command_display.push(executable.to_string());
+    command_display.extend(args.iter().cloned());
+
+    let started_at = Instant::now();
+    let output = Command::new(executable)
+        .current_dir(&repository_root)
+        .args(&args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .map_err(|e| format!("Failed to run world generation graph command: {}", e))?;
+
+    Ok(CookMapResult {
+        command: command_display,
+        exit_code: output
+            .status
+            .code()
+            .unwrap_or_else(|| if output.status.success() { 0 } else { -1 }),
+        stdout: truncate_command_output(&output.stdout),
+        stderr: truncate_command_output(&output.stderr),
+        duration_ms: started_at.elapsed().as_millis().min(u128::from(u64::MAX)) as u64,
+    })
+}
+
 fn create_cook_map_args(request: &CookMapRequest) -> Result<Vec<String>, String> {
     let project_path = validate_cook_project_path(&request.project_path)?;
     validate_single_path_segment(&request.map_id, "map_id")?;
@@ -554,6 +600,59 @@ fn create_cook_map_args(request: &CookMapRequest) -> Result<Vec<String>, String>
 
     let mut args = vec![
         "cook:map".to_string(),
+        "--".to_string(),
+        project_path.to_string_lossy().to_string(),
+        "--map".to_string(),
+        request.map_id.clone(),
+    ];
+
+    if request.dry_run {
+        args.push("--plan".to_string());
+    }
+
+    if request.full {
+        args.push("--full".to_string());
+        return Ok(args);
+    }
+
+    if !request.changed_stages.is_empty() {
+        args.push("--changed-stage".to_string());
+        args.push(request.changed_stages.join(","));
+    }
+
+    append_cook_scope_args(
+        &mut args,
+        "--terrain-region",
+        &request.scopes.terrain_regions,
+    );
+    append_cook_scope_args(&mut args, "--paint-region", &request.scopes.paint_regions);
+    append_cook_scope_args(
+        &mut args,
+        "--vegetation-region",
+        &request.scopes.vegetation_regions,
+    );
+    append_cook_scope_args(&mut args, "--cell", &request.scopes.partition_cells);
+    Ok(args)
+}
+
+fn create_world_generation_graph_args(request: &CookMapRequest) -> Result<Vec<String>, String> {
+    let project_path = validate_cook_project_path(&request.project_path)?;
+    validate_single_path_segment(&request.map_id, "map_id")?;
+    validate_cook_stages(&request.changed_stages)?;
+    validate_cook_scopes(&request.scopes)?;
+
+    if request.full && (has_cook_stage_input(request) || has_cook_scope_input(&request.scopes)) {
+        return Err("Full graph request cannot include changed stages or local scopes".to_string());
+    }
+
+    if !request.full && !has_cook_stage_input(request) && !has_cook_scope_input(&request.scopes) {
+        return Err(
+            "Graph request must include a full rebuild or at least one local change".to_string(),
+        );
+    }
+
+    let mut args = vec![
+        "gen:graph".to_string(),
         "--".to_string(),
         project_path.to_string_lossy().to_string(),
         "--map".to_string(),

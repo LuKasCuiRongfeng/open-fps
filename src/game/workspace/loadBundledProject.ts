@@ -53,6 +53,8 @@ import {
   type CookedCellAsset,
   type CookedCellRef,
   type CookedMapManifest,
+  type CookedPackageArtifact,
+  type CookedPackageArtifactCompression,
   type CookedRegionTable,
 } from "./CookedMapManifest";
 import { CookedWorldPartitionRuntime } from "./CookedWorldPartitionRuntime";
@@ -162,6 +164,7 @@ export async function loadBundledGameProject(
     const request = (async () => {
       const regionBytes = await loadBundledHeightRegionPack(
         projectBaseUrl,
+        cookedMap,
         location.region,
         terrainManifest.pageResolution,
         cookedMap.assets.terrain.regions,
@@ -214,7 +217,7 @@ function createBundledWorldPartitionRuntime(
         return cached;
       }
 
-      const request = loadCookedCellAsset(projectBaseUrl, cookedMap.assets[kind], kind, key);
+      const request = loadCookedCellAsset(projectBaseUrl, cookedMap, cookedMap.assets[kind], kind, key);
       cache.set(cacheKey, request);
       return request;
     },
@@ -230,18 +233,20 @@ function createBundledWorldPartitionRuntime(
 
 async function loadCookedCellAsset(
   projectBaseUrl: string,
+  cookedMap: CookedMapManifest,
   asset: CookedCellAsset,
   kind: BundledWorldPartitionCellKind,
   key: string,
 ): Promise<unknown> {
   const cell = getCookedCell(asset, key, kind);
-  const bytes = await fetchRequiredBytes(resolveProjectUrl(projectBaseUrl, cell.path), `${kind} cell ${key}`);
+  const bytes = await loadCookedPayloadBytes(projectBaseUrl, cookedMap, cell.path, `${kind} cell ${key}`);
   await validateSidecarRegionIntegrity(`Cooked ${kind} cell`, key, bytes, cell);
   return JSON.parse(new TextDecoder().decode(bytes)) as unknown;
 }
 
 async function loadBundledHeightRegionPack(
   projectBaseUrl: string,
+  cookedMap: CookedMapManifest,
   region: TerrainHeightRegionManifest,
   pageResolution: number,
   cookedRegions: CookedRegionTable,
@@ -254,10 +259,7 @@ async function loadBundledHeightRegionPack(
 
   const request = (async () => {
     const cookedRegion = getCookedRegion(cookedRegions, region.key, "height region");
-    const bytes = await fetchRequiredBytes(
-      resolveProjectUrl(projectBaseUrl, cookedRegion.path),
-      `height region ${region.key}`,
-    );
+    const bytes = await loadCookedPayloadBytes(projectBaseUrl, cookedMap, cookedRegion.path, `height region ${region.key}`);
     const expectedByteLength = getHeightRegionPackByteLength(region, pageResolution);
     if (bytes.byteLength !== expectedByteLength) {
       throw new Error(`Invalid height region '${region.key}' byte length`);
@@ -278,16 +280,93 @@ async function loadBundledVegetationData(
   const regionEntries = await Promise.all(
     getVegetationRegions(manifest).map(async (region) => {
       const cookedRegion = getCookedRegion(cookedMap.assets.vegetation.regions, region.key, "vegetation region");
-      const bytes = await fetchRequiredBytes(
-        resolveProjectUrl(projectBaseUrl, cookedRegion.path),
-        `vegetation region ${region.key}`,
-      );
+      const bytes = await loadCookedPayloadBytes(projectBaseUrl, cookedMap, cookedRegion.path, `vegetation region ${region.key}`);
       await validateSidecarRegionIntegrity("Vegetation region", region.key, bytes, cookedRegion);
       return [region.key, bytes] as const;
     }),
   );
 
   return createVegetationDataFromManifest(manifest, Object.fromEntries(regionEntries));
+}
+
+async function loadCookedPayloadBytes(
+  projectBaseUrl: string,
+  cookedMap: CookedMapManifest,
+  runtimePath: string,
+  label: string,
+): Promise<Uint8Array> {
+  const artifact = cookedMap.package.artifacts[runtimePath];
+  if (artifact?.compression?.algorithm === "brotli") {
+    const compressed = await tryLoadCompressedArtifact(projectBaseUrl, artifact, artifact.compression, label);
+    if (compressed) {
+      return compressed;
+    }
+  }
+
+  return fetchRequiredBytes(resolveProjectUrl(projectBaseUrl, runtimePath), label);
+}
+
+async function tryLoadCompressedArtifact(
+  projectBaseUrl: string,
+  artifact: CookedPackageArtifact,
+  compression: CookedPackageArtifactCompression,
+  label: string,
+): Promise<Uint8Array | null> {
+  try {
+    const compressedBytes = await fetchRequiredBytes(
+      resolveProjectUrl(projectBaseUrl, compression.blobPath),
+      `${label} compressed payload`,
+    );
+    await validateBytesIntegrity(`${label} compressed payload`, compressedBytes, compression.byteLength, compression.sha256);
+    const decompressedBytes = await decompressBrotliBytes(compressedBytes);
+    if (!decompressedBytes) {
+      return null;
+    }
+
+    await validateBytesIntegrity(label, decompressedBytes, artifact.byteLength, artifact.sha256);
+    return decompressedBytes;
+  } catch (error) {
+    console.warn(`[loadBundledProject] Falling back to raw cooked artifact for ${label}`, error);
+    return null;
+  }
+}
+
+async function decompressBrotliBytes(bytes: Uint8Array): Promise<Uint8Array | null> {
+  if (typeof DecompressionStream === "undefined") {
+    return null;
+  }
+
+  try {
+    const stream = new Blob([bytesToArrayBuffer(bytes)]).stream().pipeThrough(new DecompressionStream("brotli" as CompressionFormat));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
+async function validateBytesIntegrity(
+  label: string,
+  bytes: Uint8Array,
+  expectedByteLength: number,
+  expectedSha256: string,
+): Promise<void> {
+  if (bytes.byteLength !== expectedByteLength) {
+    throw new Error(`${label} byteLength ${bytes.byteLength} != ${expectedByteLength}`);
+  }
+
+  const actualSha256 = await sha256Hex(bytes);
+  if (actualSha256 !== expectedSha256) {
+    throw new Error(`${label} sha256 mismatch`);
+  }
+}
+
+async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const hashBuffer = await crypto.subtle.digest("SHA-256", bytesToArrayBuffer(bytes));
+  return Array.from(new Uint8Array(hashBuffer), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function bytesToArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
 function resolveProjectFileDirectoryUrl(projectBaseUrl: string, relativeFilePath: string): string {

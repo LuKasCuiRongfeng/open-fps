@@ -48,29 +48,29 @@
 - cooked 输出已复制运行时所需的 region pack、terrain texture、vegetation model 和 world object GLTF 资产，game target 不再依赖 source sidecar 目录读取核心运行资产。
 - cooked 输出现在按 `cooked/assets/imported/...` 保留注册表导入路径结构，避免运行时重新依赖 source 资产库，同时保留 source path 和 content hash 可追溯性。
 - cooked 输出已写入 `cooked/cache/maps/<mapId>.json`，用于记录 build input signature、artifact 列表和 stale cook 诊断依据。
-- cooked package 已生成 `content-addressed-sha256-v1` artifact index，并把 runtime artifact 同步写入 `cooked/blobs/sha256/...`；package manifest 已记录 kind/cell 局部性排序、content-addressed 去重统计、Brotli sidecar 压缩 blob、重复 blob 清理和 release 校验元数据。
-- world partition cell 已收敛到 `dependencies` 结构，统一挂载 terrain、paint、vegetation、objects、collision、nav 六类运行时分区依赖。
+- cooked package 已生成 `content-addressed-sha256-v1` artifact index，并把 runtime artifact 同步写入 `cooked/blobs/sha256/...`；package manifest 已记录 kind/cell 局部性排序、content-addressed 去重统计、Brotli sidecar 压缩 blob、重复 blob 清理和 release 校验元数据；release runtime loader 会优先读取 Brotli sidecar，并在浏览器不支持 Brotli stream 时回退 raw artifact。
+- world partition cell 已收敛到 `dependencies` 结构，统一挂载 terrain、paint、vegetation、objects、collision、nav 六类运行时分区依赖，并记录 per-cell performance budget report（object、collision shape、nav node/link、raw/compressed bytes、estimated cost、rating）。
 - objects cooked cell pack 现在来自 source object pack，不再是空生成物；collision cell pack 由 terrain heightfield、水体 volume 和对象 blocker 派生；nav cell pack 由 terrain slope、道路、水体和碰撞 blocker 派生。
 - runtime world partition planner 已接入 game streaming hot path，可按玩家/摄像机位置生成 load/keep/unload cell、预取 object/collision/nav cell pack、缓存已加载 payload，并按 archetype 实例化真实 GLTF 世界对象；道路已用 decal-like surface mesh 表达，水体已使用 TSL water surface shader，source archetype 继续记录 edge blend、LOD/instancing 和 per-cell budget 元数据。
 - game runtime 已把 cooked object cell pack 转成道路、水体、POI 和道具的可见实例；collision pack 已进入玩家水平阻挡解析，并记录 vegetation query-clearance 策略；nav pack 已记录 cross-cell portal link，runtime 已提供 AI nav nearest/path 查询和 collision/nav overlay 调试开关。
 - 地形、水体/道路对象、paint、vegetation 和 cooked nav 已收敛到共享 world semantics 规则，避免各生成脚本各自维护一套道路、水体和 POI 语义。
-- terrain、paint、vegetation、objects、collision 和 nav 的生成依赖已由 generation graph 显式登记；`scripts/map-generation/world-rebuild-planner.mjs` 可把 graph 输入变化解析为 stage closure 与 region/cell scope，`pnpm cook:map` 已支持 dry-run plan、scoped cook 和预算超限阻断，`pnpm gen:graph` 已能把 graph executor 映射到真实 terrain/paint/vegetation/object/cooked stage dispatcher。
-- 编辑器设置面板已有 World Diagnostics 页，可查看 generation graph、rebuild executor、local scope、预算、source 资产健康、pack integrity、cooked source stale、rebuild plan 命令、scope review、项目级 locked scope、受控 dry-run/cook 多计划队列、持久化执行历史、失败分类、验证 target 跳转、恢复动作、partition streaming、runtime payload 和可见对象/植被统计；UI 与 CLI 均会阻断超出 scoped cook 预算的实际 cook；Objects 页已支持 archetype 选择、地形拾取放置、删除、undo/redo 和对象 sidecar 保存。
+- terrain、paint、vegetation、objects、collision 和 nav 的生成依赖已由 generation graph 显式登记；`scripts/map-generation/world-rebuild-planner.mjs` 可把 graph 输入变化解析为 stage closure 与 region/cell scope，`pnpm cook:map` 已支持 dry-run plan、scoped cook 和预算超限阻断，`pnpm gen:graph` 已能把 graph executor 映射到真实 terrain/paint/vegetation/object/cooked stage dispatcher，桌面编辑器可从 World Diagnostics 选择 region/cell 后直接执行 graph dry-run/run。
+- 编辑器设置面板已有 World Diagnostics 页，可查看 generation graph、rebuild executor、local scope、预算、source 资产健康、pack integrity、cooked source stale、rebuild plan 命令、scope review、项目级 locked scope、受控 dry-run/cook 多计划队列、持久化执行历史、失败分类、验证 target 跳转、恢复动作、partition streaming、runtime payload、per-cell budget hotspot、collision/nav overlay inspector、nav path probe 和可见对象/植被统计；UI 与 CLI 均会阻断超出 scoped cook 预算的实际 cook；Objects 页已支持 archetype 选择、地形拾取放置、删除、基础 spline road/river 控制点编辑、undo/redo 和对象 sidecar 保存。
 - CI/release 已接入 `pnpm verify`，覆盖 lint、Node 回归测试、TypeScript 类型检查和地图资产校验。
 - 已有 [`OPEN_WORLD_DESIGN_SPEC.md`](OPEN_WORLD_DESIGN_SPEC.md)，定义 `main` 10 平方公里地图的区域、道路、水系、兴趣点和生成约束。
 
-当前最重要的方向是把这些能力从“已有 target-aware rebuild orchestration layer 和 graph dispatcher”推进到“编辑器内可选择 scope、可局部重生成、可检索历史、可预算化消费的非破坏性内容生产系统”。
+当前最重要的方向是把这些能力从“已有可选择 scope 的 graph/cook orchestration layer”推进到“更完整的非破坏性内容生产系统”：真实 layer composition、prefab/scatter UI、历史检索、预算化渲染闭环和更高质量内容填充。
 
 ## 当前编辑器质量判断
 
 地形、纹理和植被编辑已经具备正确的 sidecar/cell 底座，但还不是业界最佳开放世界方案：
 
-- 地形编辑当前以高度画刷和 procedural 生成结合为主，generation graph 已记录道路切坡、河床、平台、侵蚀、噪声和手工 override 的 operation；下一阶段要把这些 operation 变成编辑器可调、可禁用、可局部执行的非破坏性层。
-- 纹理编辑当前是 splat paint 和 region dirty save，generation graph 已记录 slope/height/wetness/road-distance/biome/decal/macro variation 规则；下一阶段要把 material/biome graph 与手工 paint override 合并成可局部重算的材质工作流。
-- 植被编辑当前已有 GLTF instancing、LOD、距离裁剪和画刷，generation graph 已记录 biome、cluster、edge falloff、保护区/排除区、impostor 与 collision/nav 预算规则；下一阶段要把 ecology scatter executor 接进编辑器局部重散布。
-- 世界对象编辑已从几何代理进入 GLTF archetype + sidecar 事务阶段；source archetype 已登记 spline、prefab、scatter、LOD/instancing budget 和 collision 元数据，仍需补真正的 spline 编辑 UI、prefab 展开执行器、精确 collision shape 和可视化验证。
+- 地形编辑当前以高度画刷和 procedural 生成结合为主，generation graph 已记录道路切坡、河床、平台、侵蚀、噪声和手工 override 的 operation；terrain manifest 已具备 `ordered-nondestructive-v1` patch layer 元数据，下一阶段要把这些 operation 变成编辑器可调、可禁用、可局部执行的真实合成层。
+- 纹理编辑当前是 splat paint 和 region dirty save，generation graph 已记录 slope/height/wetness/road-distance/biome/decal/macro variation 规则；paint manifest 已具备非破坏 patch layer 元数据，下一阶段要把 material/biome graph 与手工 paint override 合并成可局部重算的材质工作流。
+- 植被编辑当前已有 GLTF instancing、LOD、距离裁剪和画刷，generation graph 已记录 biome、cluster、edge falloff、保护区/排除区、impostor 与 collision/nav 预算规则；vegetation manifest 已具备非破坏 patch layer 元数据，下一阶段要把 ecology scatter executor 接进编辑器局部重散布。
+- 世界对象编辑已从几何代理进入 GLTF archetype + sidecar 事务阶段；source archetype 已登记 spline、prefab、scatter、LOD/instancing budget 和 collision 元数据，并已有基础 spline 控制点编辑，仍需补 prefab 展开执行器、精确 collision shape、可视化验证和高级 spline 操作。
 
-因此当前项目已经具备业界级开放世界管线的关键底座：可校验 source/cooked 分层、world partition、content-addressed package、Brotli sidecar 压缩、generation graph、graph executor dispatcher、局部 rebuild plan、scoped cook、预算阻断、collision/nav runtime 调试和编辑器内 target-aware rebuild orchestration layer。距离最终“业界最佳编辑体验”还差编辑器内直接触发 source stage 局部重生成、执行历史检索、真实 spline 工具、prefab/scatter UI、预算化渲染闭环和更高质量美术内容填充。
+因此当前项目已经具备业界级开放世界管线的关键底座：可校验 source/cooked 分层、world partition、content-addressed package、Brotli sidecar 压缩与 runtime loader、generation graph、graph executor dispatcher、局部 rebuild plan、scoped cook、预算阻断、per-cell budget report、collision/nav runtime 调试和编辑器内 target-aware rebuild orchestration layer。距离最终“业界最佳编辑体验”还差真实 layer composition、执行历史检索、prefab/scatter UI、高级 spline 工具、预算化渲染闭环和更高质量美术内容填充。
 
 ## 路线图
 

@@ -98,9 +98,13 @@ export async function generateCookedMapAssets(context, preset, options = {}) {
       rebuildPlan,
     },
   );
-  const assets = { ...coreAssets, ...partitionAssets };
-  const partition = attachPartitionCellAssetDependencies(basePartition, partitionAssets);
   const contentPackage = await packageBuilder.createPackage();
+  const assets = { ...coreAssets, ...partitionAssets };
+  const partition = attachPartitionCellPerformanceBudgets(
+    attachPartitionCellAssetDependencies(basePartition, partitionAssets),
+    partitionAssets,
+    contentPackage,
+  );
   const build = createCookedBuildMetadata(inputSignature, contentPackage, cache, rebuildPlan);
 
   const manifest = {
@@ -674,6 +678,7 @@ async function createCookedDerivedCellAssets(preset, mapId, partition, packageBu
       path: runtimePath,
       byteLength: artifact.byteLength,
       sha256: artifact.sha256,
+      ...createDerivedCellMetrics(pack, options.directory),
     }];
   }));
   for (const [key, cell] of cells) {
@@ -900,6 +905,69 @@ function attachPartitionCellAssetDependencies(partition, assets) {
       },
     })),
   };
+}
+
+function attachPartitionCellPerformanceBudgets(partition, assets, contentPackage) {
+  return {
+    ...partition,
+    cells: partition.cells.map((cell) => ({
+      ...cell,
+      budget: createPartitionCellPerformanceBudget(cell.key, assets, contentPackage),
+    })),
+  };
+}
+
+function createPartitionCellPerformanceBudget(cellKey, assets, contentPackage) {
+  const objectCell = assets.objects.cells[cellKey] ?? null;
+  const collisionCell = assets.collision.cells[cellKey] ?? null;
+  const navCell = assets.nav.cells[cellKey] ?? null;
+  const refs = [objectCell, collisionCell, navCell].filter(Boolean);
+  const rawBytes = refs.reduce((total, ref) => total + (ref.byteLength ?? 0), 0);
+  const compressedBytes = refs.reduce((total, ref) => {
+    const artifact = contentPackage.artifacts[ref.path];
+    return total + (artifact?.compression?.byteLength ?? ref.byteLength ?? 0);
+  }, 0);
+  const objectCount = objectCell?.objectCount ?? 0;
+  const collisionShapeCount = collisionCell?.shapeCount ?? 0;
+  const navNodeCount = navCell?.nodeCount ?? 0;
+  const navLinkCount = (navCell?.linkCount ?? 0) + (navCell?.portalLinkCount ?? 0);
+  const estimatedCost = round(
+    objectCount * 2
+    + collisionShapeCount * 3
+    + navNodeCount * 0.5
+    + navLinkCount * 0.75
+    + rawBytes / 8192,
+  );
+
+  return {
+    objectCount,
+    collisionShapeCount,
+    navNodeCount,
+    navLinkCount,
+    rawBytes,
+    compressedBytes,
+    estimatedCost,
+    rating: estimatedCost >= 160 ? "over" : estimatedCost >= 96 ? "watch" : "ok",
+  };
+}
+
+function createDerivedCellMetrics(pack, directory) {
+  if (directory === "collision") {
+    return {
+      shapeCount: Array.isArray(pack.shapes) ? pack.shapes.length : 0,
+    };
+  }
+
+  if (directory === "nav") {
+    return {
+      nodeCount: Array.isArray(pack.nodes) ? pack.nodes.length : 0,
+      walkableNodeCount: Array.isArray(pack.nodes) ? pack.nodes.filter((node) => node.walkable).length : 0,
+      linkCount: Array.isArray(pack.links) ? pack.links.length : 0,
+      portalLinkCount: Array.isArray(pack.crossCellLinks) ? pack.crossCellLinks.length : 0,
+    };
+  }
+
+  return {};
 }
 
 function shouldRebuildStage(rebuildPlan, stageName) {

@@ -7,6 +7,7 @@ import {
   type SidecarRegionIntegrity,
   type SidecarRegionIntegrityMap,
 } from "./SidecarAssetIntegrity";
+import { createDefaultSidecarPatchLayers, normalizeSidecarPatchLayers, type SidecarPatchLayerManifest } from "./SidecarPatchLayers";
 import {
   formatGridCoordinate,
   pageKey,
@@ -25,6 +26,7 @@ export interface MapPaintData {
     indices: number[];
     regions: Record<string, string>;
     regionIntegrity: SidecarRegionIntegrityMap;
+    patchLayers: SidecarPatchLayerManifest;
   };
 }
 
@@ -77,6 +79,7 @@ export function createEmptyPaintData(): MapPaintData {
       indices: [],
       regions: {},
       regionIntegrity: {},
+      patchLayers: createDefaultSidecarPatchLayers([], "Base Paint"),
     },
   };
 }
@@ -91,6 +94,7 @@ export function createPaintDataForMap(
 ): MapPaintData {
   const indices = normalizeSplatMapIndices(Array.from(splatMapIndices));
   const pageKeys = indices.length > 0 ? getPaintPageKeysForWorld(worldSizeMeters, pageSizeMeters) : [];
+  const regions = createPaintRegionMaskMap(pageKeys, regionSizePages);
   return {
     splatMaps: {
       format: MAP_PAINT_REGION_FORMAT,
@@ -100,8 +104,9 @@ export function createPaintDataForMap(
       regionSizePages: normalizePaintRegionSize(regionSizePages),
       regionsDirectory: MAP_PAINT_REGIONS_DIRECTORY,
       indices,
-      regions: createPaintRegionMaskMap(pageKeys, regionSizePages),
+      regions,
       regionIntegrity: {},
+      patchLayers: createDefaultSidecarPatchLayers(Object.keys(regions), "Base Paint"),
     },
   };
 }
@@ -119,6 +124,7 @@ export function clonePaintData(paintData: MapPaintData): MapPaintData {
       indices: [...normalized.splatMaps.indices],
       regions: { ...normalized.splatMaps.regions },
       regionIntegrity,
+      patchLayers: normalizeSidecarPatchLayers(normalized.splatMaps.patchLayers, Object.keys(normalized.splatMaps.regions), "Base Paint"),
     },
   };
 }
@@ -127,6 +133,7 @@ export function normalizePaintData(value: unknown): MapPaintData {
   const record = isRecord(value) ? value : {};
   const splatMaps = isRecord(record.splatMaps) ? record.splatMaps : {};
   const regionSizePages = normalizePaintRegionSize(splatMaps.regionSizePages ?? DEFAULT_PAINT_REGION_SIZE_PAGES);
+  const regions = normalizePaintRegions(splatMaps.regions ?? {}, regionSizePages);
   return {
     splatMaps: {
       format: normalizePaintRegionFormat(splatMaps.format),
@@ -144,8 +151,9 @@ export function normalizePaintData(value: unknown): MapPaintData {
       regionSizePages,
       regionsDirectory: normalizePaintRegionsDirectory(splatMaps.regionsDirectory),
       indices: normalizeSplatMapIndices(splatMaps.indices ?? []),
-      regions: normalizePaintRegions(splatMaps.regions ?? {}, regionSizePages),
+      regions,
       regionIntegrity: isRecord(splatMaps.regionIntegrity) ? (splatMaps.regionIntegrity as SidecarRegionIntegrityMap) : {},
+      patchLayers: normalizeSidecarPatchLayers(splatMaps.patchLayers, Object.keys(regions), "Base Paint"),
     },
   };
 }

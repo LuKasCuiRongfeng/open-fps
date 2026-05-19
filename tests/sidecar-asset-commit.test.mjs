@@ -67,3 +67,33 @@ test("sidecar commit writes packs before the manifest and deletes stale packs af
     await rm(tempRoot, { recursive: true, force: true });
   }
 });
+
+test("sidecar patch layers normalize legacy manifests to a base layer", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "open-fps-patch-layers-"));
+  try {
+    const outputPath = await transpileTsModule(
+      path.join(rootDirectory, "src/workspace/SidecarPatchLayers.ts"),
+      tempRoot,
+    );
+
+    const { normalizeSidecarPatchLayers } = await import(pathToFileURL(outputPath).href);
+    const legacy = normalizeSidecarPatchLayers(undefined, ["1,0", "0,0"], "Base Paint");
+    assert.equal(legacy.mode, "ordered-nondestructive-v1");
+    assert.equal(legacy.activeLayerId, "base");
+    assert.deepEqual(legacy.layers[0].regions, ["0,0", "1,0"]);
+
+    const authored = normalizeSidecarPatchLayers({
+      mode: "ordered-nondestructive-v1",
+      activeLayerId: "manual-a",
+      layers: [
+        { id: "manual-a", label: "Manual A", kind: "manual", order: 4, enabled: true, regions: ["0,0", "missing"] },
+      ],
+    }, ["0,0"], "Base Paint");
+    assert.equal(authored.activeLayerId, "manual-a");
+    assert.equal(authored.layers[0].kind, "base");
+    assert.equal(authored.layers[1].id, "manual-a");
+    assert.deepEqual(authored.layers[1].regions, ["0,0"]);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});

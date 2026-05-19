@@ -7,6 +7,7 @@ import {
   parsePageKey,
   sortPageKeys,
 } from "@project/MapData";
+import { createDefaultSidecarPatchLayers, normalizeSidecarPatchLayers } from "@workspace/SidecarPatchLayers";
 import {
   DEFAULT_VEGETATION_REGION_SIZE_CELLS,
   VEGETATION_INSTANCE_FORMAT,
@@ -217,6 +218,12 @@ export function createVegetationStoragePayload(
     });
   }
 
+  const regionMaskRecord = Object.fromEntries(
+    Array.from(regionMasks.entries())
+      .sort(([left], [right]) => compareRegionKeys(left, right))
+      .map(([key, mask]) => [key, formatRegionMask(mask)]),
+  );
+
   return {
     manifest: {
       version: VEGETATION_DATA_VERSION,
@@ -227,12 +234,9 @@ export function createVegetationStoragePayload(
         cellSizeMeters,
         regionSizeCells,
         regionsDirectory: VEGETATION_REGIONS_DIRECTORY,
-        regions: Object.fromEntries(
-          Array.from(regionMasks.entries())
-            .sort(([left], [right]) => compareRegionKeys(left, right))
-            .map(([key, mask]) => [key, formatRegionMask(mask)]),
-        ),
+        regions: regionMaskRecord,
         regionIntegrity: {},
+        patchLayers: createDefaultSidecarPatchLayers(Object.keys(regionMaskRecord), "Base Vegetation"),
         modelIds,
       },
     },
@@ -498,6 +502,7 @@ function normalizeInstanceManifest(
     regionsDirectory: VEGETATION_REGIONS_DIRECTORY,
     regions,
     regionIntegrity: normalizeVegetationRegionIntegrity(value.regionIntegrity, regions),
+    patchLayers: normalizeSidecarPatchLayers(value.patchLayers, Object.keys(regions), "Base Vegetation"),
     modelIds,
   };
 }

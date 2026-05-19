@@ -4,7 +4,7 @@
   "mapId": "main",
   "manifestPath": "cooked/maps/main/manifest.json",
   "inputSignature": "251773b8ca567fee6986dacb5af68852824106c16796a79d5c552cd2517c77c3",
-  "generatedAt": "2026-05-19T08:27:16.044Z",
+  "generatedAt": "2026-05-19T09:03:55.813Z",
   "packageLayout": "content-addressed-sha256-v1",
   "artifactCount": 547,
   "artifacts": [
